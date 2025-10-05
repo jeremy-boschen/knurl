@@ -12,7 +12,7 @@ import { saveFile } from "@/bindings/knurl"
 
 vi.mock("@/state", () => ({
   useCollection: vi.fn(),
-  useCollections: vi.fn(() => ({ collectionsApi: () => ({ exportCollection: vi.fn() }) })),
+  useCollections: vi.fn(() => ({ actions: { collectionsApi: () => ({ exportCollection: vi.fn() }) } })),
 }))
 import { useCollection, useCollections } from "@/state"
 
@@ -53,9 +53,9 @@ describe("ExportCollectionSheet", () => {
       },
       authentication: { type: "none" },
     }
-    vi.mocked(useCollection).mockReturnValue({ collection } as any)
+    vi.mocked(useCollection).mockReturnValue({ state: { collection }, actions: {} } as any)
     const exportCollection = vi.fn(async () => exportedFixture())
-    vi.mocked(useCollections).mockReturnValue({ collectionsApi: () => ({ exportCollection }) } as any)
+    vi.mocked(useCollections).mockReturnValue({ actions: { collectionsApi: () => ({ exportCollection }) } } as any)
     vi.mocked(saveFile).mockResolvedValue("/tmp/col_export.json")
 
     render(
@@ -87,9 +87,9 @@ describe("ExportCollectionSheet", () => {
       requests: { r1: { id: "r1", name: "A", method: "GET", url: "/a" } },
       authentication: { type: "none" },
     }
-    vi.mocked(useCollection).mockReturnValue({ collection } as any)
+    vi.mocked(useCollection).mockReturnValue({ state: { collection }, actions: {} } as any)
     const exportCollection = vi.fn(async () => exportedFixture())
-    vi.mocked(useCollections).mockReturnValue({ collectionsApi: () => ({ exportCollection }) } as any)
+    vi.mocked(useCollections).mockReturnValue({ actions: { collectionsApi: () => ({ exportCollection }) } } as any)
     const err: any = new Error("[UserCancelled] Cancelled by user")
     err.appError = { kind: "UserCancelled", message: "Cancelled by user", timestamp: new Date().toISOString() }
     vi.mocked(saveFile).mockRejectedValue(err)

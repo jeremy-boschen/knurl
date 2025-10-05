@@ -23,16 +23,18 @@ describe("CollectionAuthPanel", () => {
     const user = userEvent.setup()
 
     vi.mocked(useCollection).mockReturnValue({
-      collection: {
-        id: "col-1",
-        name: "Test",
-        updated: new Date().toISOString(),
-        encryption: { algorithm: "aes-gcm" },
-        environments: {},
-        requests: {},
-        authentication: { type: "none" },
+      state: {
+        collection: {
+          id: "col-1",
+          name: "Test",
+          updated: new Date().toISOString(),
+          encryption: { algorithm: "aes-gcm" },
+          environments: {},
+          requests: {},
+          authentication: { type: "none" },
+        },
       },
-      collectionsApi: () => ({ updateCollection: vi.fn() }),
+      actions: { collectionsApi: () => ({ updateCollection: vi.fn() }) },
       loaded: true,
     } as any)
 
@@ -49,16 +51,18 @@ describe("CollectionAuthPanel", () => {
     const updateCollection = vi.fn()
 
     vi.mocked(useCollection).mockReturnValue({
-      collection: {
-        id: "col-1",
-        name: "Test",
-        updated: new Date().toISOString(),
-        encryption: { algorithm: "aes-gcm" },
-        environments: {},
-        requests: {},
-        authentication: { type: "none" },
+      state: {
+        collection: {
+          id: "col-1",
+          name: "Test",
+          updated: new Date().toISOString(),
+          encryption: { algorithm: "aes-gcm" },
+          environments: {},
+          requests: {},
+          authentication: { type: "none" },
+        },
       },
-      collectionsApi: () => ({ updateCollection }),
+      actions: { collectionsApi: () => ({ updateCollection }) },
       loaded: true,
     } as any)
 
@@ -75,16 +79,18 @@ describe("CollectionAuthPanel", () => {
     const updateCollection = vi.fn()
 
     vi.mocked(useCollection).mockReturnValue({
-      collection: {
-        id: "col-1",
-        name: "Test",
-        updated: new Date().toISOString(),
-        encryption: { algorithm: "aes-gcm" },
-        environments: {},
-        requests: {},
-        authentication: { type: "oauth2", oauth2: { grantType: "client_credentials" } },
+      state: {
+        collection: {
+          id: "col-1",
+          name: "Test",
+          updated: new Date().toISOString(),
+          encryption: { algorithm: "aes-gcm" },
+          environments: {},
+          requests: {},
+          authentication: { type: "oauth2", oauth2: { grantType: "client_credentials" } },
+        },
       },
-      collectionsApi: () => ({ updateCollection }),
+      actions: { collectionsApi: () => ({ updateCollection }) },
       loaded: true,
     } as any)
 

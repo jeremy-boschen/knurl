@@ -15,6 +15,7 @@ describe("EnvironmentSelector", () => {
   beforeEach(() => vi.clearAllMocks())
 
   it("opens Manage Environments sheet with correct context", async () => {
+    const user = userEvent.setup()
     vi.mocked(useRequestTab).mockReturnValue({
       state: { activeTab: { collectionId: "col-1" } },
       actions: {},
@@ -54,15 +55,17 @@ describe("EnvironmentSelector", () => {
       actions: {},
     } as any)
     vi.mocked(useCollection).mockReturnValue({
-      collection: {
-        id: "col-1",
-        name: "C",
-        updated: new Date().toISOString(),
-        encryption: { algorithm: "aes-gcm" },
-        activeEnvironmentId: "e1",
-        environments: { e1: { id: "e1", name: "Env", variables: {} } },
+      state: {
+        collection: {
+          id: "col-1",
+          name: "C",
+          updated: new Date().toISOString(),
+          encryption: { algorithm: "aes-gcm" },
+          activeEnvironmentId: "e1",
+          environments: { e1: { id: "e1", name: "Env", variables: {} } },
+        },
       },
-      collectionsApi: () => ({ setActiveEnvironment }),
+      actions: { collectionsApi: () => ({ setActiveEnvironment }) },
     } as any)
 
     render(<EnvironmentSelector />)
