@@ -30,6 +30,7 @@ use x509_parser::objects::{oid_registry, oid2description, oid2sn};
 use x509_parser::prelude::{FromDer, X509Certificate};
 use x509_parser::public_key::PublicKey;
 use x509_parser::x509::SubjectPublicKeyInfo;
+use webpki_roots::TLS_SERVER_ROOTS;
 
 use super::RequestLogger;
 use crate::errors::{AppError, ErrorKind};
@@ -345,11 +346,24 @@ fn build_tls_config(
     // rustls-native-certs 0.8 returns a CertificateResult with accessors
     // Iterate certificates if available and add them to the root store.
     let native = rustls_native_certs::load_native_certs();
-    for cert in native.certs {
-        let _ = roots.add(cert);
+    let (added_native, ignored_native) = roots.add_parsable_certificates(native.certs);
+
+    if !native.errors.is_empty() {
+        for error in native.errors {
+            log::debug!("tls-certstore: native certificate load error: {:?}", error);
+        }
     }
-    // Native certs should be sufficient for desktop apps
-    // If empty, HTTPS connections will fail which is appropriate feedback
+
+    log::debug!(
+        "tls-certstore: added {added_native} native roots (ignored {ignored_native})"
+    );
+
+    if added_native == 0 {
+        log::warn!(
+            "tls-certstore: no native certificates loaded, falling back to Mozilla root set"
+        );
+        roots.extend(TLS_SERVER_ROOTS.iter().cloned());
+    }
 
     if let Some(path) = custom_ca {
         let data = fs::read(path).map_err(|e| {
@@ -366,6 +380,7 @@ fn build_tls_config(
                 "No valid certificates found in custom CA bundle",
             ));
         }
+        log::debug!("tls-certstore: added {added} certificates from custom CA bundle");
     }
 
     let mut config = ClientConfig::builder()
@@ -468,11 +483,22 @@ where
                     Ok(stream)
                 }
                 Err(err) => {
+                    let mut causes = Vec::new();
+                    let mut current = err.as_ref().source();
+                    while let Some(cause) = current {
+                        causes.push(cause.to_string());
+                        current = cause.source();
+                    }
+
                     logger.error(
                         "tls",
                         Some("error"),
                         format!("TLS connection failed: {err}"),
-                        None,
+                        if causes.is_empty() {
+                            None
+                        } else {
+                            Some(json!({ "causes": causes }))
+                        },
                     );
                     Err(err)
                 }
