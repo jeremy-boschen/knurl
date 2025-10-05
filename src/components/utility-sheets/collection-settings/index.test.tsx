@@ -18,8 +18,8 @@ vi.mock("@/components/utility-sheets/environment-manager", () => ({
 // Mock state hooks
 vi.mock("@/state", () => ({
   useCollection: vi.fn(() => ({
-    collection: { id: "col1", name: "Test Collection", environments: {} },
-    collectionsApi: {},
+    state: { collection: { id: "col1", name: "Test Collection", environments: {} } },
+    actions: {},
   })),
 }))
 

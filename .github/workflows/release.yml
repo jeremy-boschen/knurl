@@ -51,19 +51,22 @@ jobs:
 
       - name: Compute Checksums for Built Artifacts
         id: checksums
-        shell: bash
+        shell: pwsh
         run: |
-          set -euo pipefail
-          # artifactPaths is a newline-separated list
-          echo "Artifacts:\n${{ steps.tauri-build.outputs.artifactPaths }}"
-          tmpdir=$(mktemp -d)
-          echo "checksumDir=$tmpdir" >> $GITHUB_OUTPUT
-          while IFS= read -r artifact; do
-            [ -z "$artifact" ] && continue
-            # Compute SHA256 alongside artifact in a temp dir
-            base=$(basename "$artifact")
-            shasum -a 256 "$artifact" > "$tmpdir/$base.sha256"
-          done <<< "${{ steps.tauri-build.outputs.artifactPaths }}"
+          $artifactJson = @'
+${{ steps.tauri-build.outputs.artifactPaths }}
+'@
+          $artifacts = $artifactJson | ConvertFrom-Json
+          $tmpDir = New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP "knurl-checksums") -Force
+
+          foreach ($artifact in $artifacts) {
+            if ([string]::IsNullOrWhiteSpace($artifact)) { continue }
+            $base = Split-Path -Path $artifact -Leaf
+            $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $artifact).Hash
+            "$hash  $base" | Out-File -FilePath (Join-Path $tmpDir "$base.sha256") -Encoding ascii
+          }
+
+          "checksumDir=$($tmpDir.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
       - name: Upload Checksums to Release
         uses: softprops/action-gh-release@v2
