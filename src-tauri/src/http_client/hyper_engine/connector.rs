@@ -26,11 +26,11 @@ use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
 use tokio::net::TcpStream;
 use tower_service::Service;
+use webpki_roots::TLS_SERVER_ROOTS;
 use x509_parser::objects::{oid_registry, oid2description, oid2sn};
 use x509_parser::prelude::{FromDer, X509Certificate};
 use x509_parser::public_key::PublicKey;
 use x509_parser::x509::SubjectPublicKeyInfo;
-use webpki_roots::TLS_SERVER_ROOTS;
 
 use super::RequestLogger;
 use crate::errors::{AppError, ErrorKind};
@@ -354,9 +354,7 @@ fn build_tls_config(
         }
     }
 
-    log::debug!(
-        "tls-certstore: added {added_native} native roots (ignored {ignored_native})"
-    );
+    log::debug!("tls-certstore: added {added_native} native roots (ignored {ignored_native})");
 
     if added_native == 0 {
         log::warn!(
