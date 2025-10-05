@@ -1,0 +1,7 @@
+[advisories]
+ignore = [
+  "RUSTSEC-2024-0413", # atk (gtk3) via wry/tauri
+  "RUSTSEC-2024-0416", # atk-sys (gtk3) via wry/tauri
+  "RUSTSEC-2024-0370", # proc-macro-error via glib-macros
+]
+informational_warnings = ["unmaintained", "yanked"]

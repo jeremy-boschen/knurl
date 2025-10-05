@@ -1,0 +1,73 @@
+[package]
+name = "knurl"
+version = "0.1.0"
+description = "Desktop HTTP client"
+authors = ["jeremy.boschen@gmail.com"]
+edition = "2024"
+readme = "../README.md"
+repository = "https://github.com/jeremy-boschen/knurl"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant, but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "knurl_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[features]
+default = []
+simulate_file_errors = []
+
+[profile.dev]
+incremental = true # Compile your binary in smaller steps.
+
+[profile.release]
+codegen-units = 1 # Allows LLVM to perform better optimization.
+lto = true # Enables link-time-optimizations.
+opt-level = "z" # Prioritizes small binary size. Use `3` if you prefer speed.
+panic = "abort" # Higher performance by disabling panic handlers.
+strip = true # Ensures debug symbols are removed.
+
+[dependencies]
+tauri = { version = "2", features = ["default", "devtools"] }
+tauri-plugin-opener = "2.5.0"
+tauri-plugin-log = "2.6.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri-plugin-clipboard-manager = "2"
+keyring = { version = "3.6", features = ["apple-native", "windows-native", "linux-native-async-persistent", "tokio", "crypto-rust"] }
+aes-gcm = "0.10"
+rand = "0.9"
+base64 = "0.22"
+log = "0.4"
+chrono = "0.4"
+thiserror = "2"
+# once_cell removed (using std::sync::OnceLock)
+uuid = { version = "1", features = ["v4"] }
+tokio = { version = "*", default-features = false, features = ["macros", "rt-multi-thread", "time", "net", "sync", "io-util"] }
+tokio-util = "0.7"
+serde_urlencoded = "0.7"
+hyper = { version = "1.4", features = ["http1", "http2", "client"] }
+hyper-util = { version = "0.1.7", features = ["client-legacy", "http1", "http2", "tokio"] }
+http-body-util = "0.1"
+tokio-rustls = "0.26"
+rustls = { version = "0.23", default-features = false, features = ["std", "ring"] }
+rustls-native-certs = "0.8"
+rustls-pemfile = "2"
+futures-util = "0.3"
+bytes = "1"
+hyper-rustls = { version = "0.27", default-features = false, features = ["http1", "http2", "ring", "tls12"] }
+tower-service = "0.3"
+sha2 = "0.10"
+hex = "0.4"
+x509-parser = "0.18.0"
+percent-encoding = "2"
+mime_guess = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-dialog = "2"
+tempfile = "3"

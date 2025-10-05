@@ -1,0 +1,8 @@
+# Mirror the workspace config to ensure Cargo invoked from src-tauri/ picks it up.
+[target.x86_64-pc-windows-msvc]
+linker = "rust-lld.exe"
+
+[target.x86_64-pc-windows-msvc.env]
+# Use pre-generated AWS-LC artifacts to avoid needing CMake/NASM on local dev setups.
+AWS_LC_SYS_PREGENERATED = "1"
+AWS_LC_SYS_NO_ASM = "1"

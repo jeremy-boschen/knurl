@@ -1,0 +1,4 @@
+[advisories]
+# Start with no ignores at the repo root; crate-specific ignores live under src-tauri/.cargo/audit.toml
+ignore = []
+informational_warnings = ["unmaintained", "yanked"]
