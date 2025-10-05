@@ -7,13 +7,13 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 use std::time::{Duration, Instant};
 
-use base64::Engine;
 use base64::engine::general_purpose::STANDARD as Base64;
+use base64::Engine;
 use hex::encode as hex_encode;
 use hyper::http::Uri;
 use hyper_rustls::HttpsConnectorBuilder;
-use hyper_util::client::legacy::connect::HttpConnector;
 use hyper_util::client::legacy::connect::dns::{GaiResolver, Name};
+use hyper_util::client::legacy::connect::HttpConnector;
 use hyper_util::rt::TokioIo;
 use rustls::client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier};
 use rustls::pki_types::{CertificateDer, ServerName, UnixTime};
@@ -22,11 +22,12 @@ use rustls::{
 };
 use rustls_pemfile::certs;
 use serde::Serialize;
-use serde_json::{Map, Value, json};
+use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 use tokio::net::TcpStream;
 use tower_service::Service;
-use x509_parser::objects::{oid_registry, oid2description, oid2sn};
+use webpki_roots::TLS_SERVER_ROOTS;
+use x509_parser::objects::{oid2description, oid2sn, oid_registry};
 use x509_parser::prelude::{FromDer, X509Certificate};
 use x509_parser::public_key::PublicKey;
 use x509_parser::x509::SubjectPublicKeyInfo;
@@ -345,11 +346,22 @@ fn build_tls_config(
     // rustls-native-certs 0.8 returns a CertificateResult with accessors
     // Iterate certificates if available and add them to the root store.
     let native = rustls_native_certs::load_native_certs();
-    for cert in native.certs {
-        let _ = roots.add(cert);
+    let (added_native, ignored_native) = roots.add_parsable_certificates(native.certs);
+
+    if !native.errors.is_empty() {
+        for error in native.errors {
+            log::debug!("tls-certstore: native certificate load error: {error}");
+        }
     }
-    // Native certs should be sufficient for desktop apps
-    // If empty, HTTPS connections will fail which is appropriate feedback
+
+    log::debug!("tls-certstore: added {added_native} native roots (ignored {ignored_native})");
+
+    if added_native == 0 {
+        log::warn!(
+            "tls-certstore: no native certificates loaded, falling back to Mozilla root set"
+        );
+        roots.extend(TLS_SERVER_ROOTS.iter().cloned());
+    }
 
     if let Some(path) = custom_ca {
         let data = fs::read(path).map_err(|e| {
@@ -366,6 +378,7 @@ fn build_tls_config(
                 "No valid certificates found in custom CA bundle",
             ));
         }
+        log::debug!("tls-certstore: added {added} certificates from custom CA bundle");
     }
 
     let mut config = ClientConfig::builder()
@@ -468,11 +481,22 @@ where
                     Ok(stream)
                 }
                 Err(err) => {
+                    let mut causes = Vec::new();
+                    let mut current = err.as_ref().source();
+                    while let Some(cause) = current {
+                        causes.push(cause.to_string());
+                        current = cause.source();
+                    }
+
                     logger.error(
                         "tls",
                         Some("error"),
                         format!("TLS connection failed: {err}"),
-                        None,
+                        if causes.is_empty() {
+                            None
+                        } else {
+                            Some(json!({ "causes": causes }))
+                        },
                     );
                     Err(err)
                 }

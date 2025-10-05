@@ -1,0 +1,88 @@
+name: Release (Windows, cross-compiled)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows-on-linux:
+    name: Build Windows Installer (on Ubuntu)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: 'yarn.lock'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: x86_64-pc-windows-msvc
+
+      - name: Install Zig and JQ
+        run: sudo apt-get update && sudo apt-get install -y zig jq
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Install Dependencies
+        run: yarn install --immutable
+
+      - name: Build and Draft Release
+        id: tauri-build
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CC_x86_64_pc_windows_msvc: zig cc -target x86_64-windows-msvc
+          CXX_x86_64_pc_windows_msvc: zig c++ -target x86_64-windows-msvc
+          CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER: rust-lld
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: ${{ github.ref_name }}
+          releaseDraft: true
+          prerelease: false
+          includeDebug: false
+          args: --target x86_64-pc-windows-msvc
+
+      - name: Compute Checksums for Built Artifacts
+        id: checksums
+        shell: bash
+        run: |
+          artifactJson='${{ steps.tauri-build.outputs.artifactPaths }}'
+          tmpDir=$(mktemp -d)
+          
+          echo "$artifactJson" | jq -r '.[]' | while read -r artifact; do
+            if [ -z "$artifact" ]; then continue; fi
+            base=$(basename "$artifact")
+            hash=$(sha256sum "$artifact" | awk '{ print $1 }')
+            echo "$hash  $base" > "$tmpDir/$base.sha256"
+          done
+          
+          echo "checksumDir=$tmpDir" >> $GITHUB_OUTPUT
+
+      - name: Upload Checksums to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            ${{ steps.checksums.outputs.checksumDir }}/*.sha256

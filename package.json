@@ -16,8 +16,9 @@
     "check": "bash scripts/check-local.sh",
     "format": "biome format --write && cd src-tauri && cargo fmt",
     "lint": "biome lint && cd src-tauri && cargo clippy --all-targets -- -D warnings",
-    "tauri": "tauri",
-    "oauth-server": "node scripts/oauth-mock-server.mjs",
+  "tauri": "tauri",
+  "generate:icons": "node scripts/generate-icons.mjs",
+  "oauth-server": "node scripts/oauth-mock-server.mjs",
     "security": "CHECK_TYPES=0 CHECK_LINT=0 CHECK_FMT_RUST=0 CHECK_CLIPPY=0 CHECK_TEST_FE=0 CHECK_TEST_BE=0 CHECK_AUDIT=1 CHECK_DENY=1 CHECK_GITLEAKS=1 bash scripts/check-local.sh",
     "update": "yarn up && cd src-tauri && cargo update",
     "prepare": "lefthook install"

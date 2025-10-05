@@ -100,6 +100,32 @@ export const createSettingsSlice: StateCreator<
   SettingsSlice
 > = (set, get, storeApi) => {
   // Hookup load/save
+  let subscriptionsRegistered = false
+  const registerSubscriptions = () => {
+    if (subscriptionsRegistered) {
+      return
+    }
+    subscriptionsRegistered = true
+
+    storeApi.subscribe(
+      (state) => state.settingsState.appearance.theme,
+      (theme) => applyTheme(theme),
+      { fireImmediately: true },
+    )
+
+    storeApi.subscribe(
+      (state) => state.settingsState.appearance.customTheme,
+      (customTheme) => applyCustomTheme(customTheme),
+      { fireImmediately: true },
+    )
+
+    storeApi.subscribe(
+      (state) => state.settingsState.appearance.fontSize,
+      (size) => applyFontSize(size),
+      { fireImmediately: true },
+    )
+  }
+
   const storageProvider: StorageProvider<Settings> = {
     key: "settings",
     selector: (app) => app.settingsState,
@@ -109,33 +135,23 @@ export const createSettingsSlice: StateCreator<
       const tasks = await runTasks([SettingsStorage.load(SettingsFileName), getAppDataDir()])
 
       const settings = tasks[0]
-      if (settings) {
-        set((app) => {
+      const appDataDir = tasks[1]
+
+      set((app) => {
+        if (settings) {
           app.settingsState = settings
-          // Though this may be stored, we always overwrite it
-          app.settingsState.data.appDataDir = tasks[1]
-        })
+        }
+        app.settingsState.data.appDataDir = appDataDir
+      })
 
-        // Subscribe to theme changes to apply them to the DOM automatically.
-        // This ensures that theme updates from any source (UI action, proxy update)
-        // are always reflected visually.
-        storeApi.subscribe(
-          (state) => state.settingsState.appearance.theme,
-          (theme) => applyTheme(theme),
-          { fireImmediately: true },
-        )
+      registerSubscriptions()
 
-        storeApi.subscribe(
-          (state) => state.settingsState.appearance.customTheme,
-          (customTheme) => applyCustomTheme(customTheme),
-          { fireImmediately: true },
-        )
-
-        storeApi.subscribe(
-          (state) => state.settingsState.appearance.fontSize,
-          (size) => applyFontSize(size),
-          { fireImmediately: true },
-        )
+      if (!settings) {
+        try {
+          await SettingsStorage.save(SettingsFileName, get().settingsState)
+        } catch (error) {
+          console.error("settings: failed to persist default settings", error)
+        }
       }
     },
     save: async () => {
