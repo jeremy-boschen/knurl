@@ -17,13 +17,16 @@ export function EnvironmentList({ collectionId, selectedId, onAction }: Environm
     state: { collection, environments },
     actions: { environmentsApi },
   } = useEnvironments(collectionId)
+  const getEnvironmentsApi = environmentsApi
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-muted-foreground">Environments</h3>
         <Button
-          onClick={() => environmentsApi.createEnvironment(collection.id, "Untitled Environment")}
+          onClick={() => {
+            void getEnvironmentsApi().createEnvironment(collection.id, "Untitled Environment")
+          }}
           size="sm"
           variant="ghost"
           title="Add environment"

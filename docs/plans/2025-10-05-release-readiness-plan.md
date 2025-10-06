@@ -17,6 +17,7 @@
 ### 2. Code Quality Deep-Dive
 - [ ] Frontend audit: review critical React surfaces (`src/components/{collections,request-builder,response}`) for TODOs, error handling, and UX papercuts; capture issues in backlog.
 - [ ] State integrity review: walk Zustand slices under `src/state/` (collections, request-tabs, environments) for immutability, persistence, and migration coverage.
+  - [x] Environment manager APIs now use the stable getter and return full environments for duplication flows (2025-10-05).
 - [ ] Backend audit: review `src-tauri/src/http_client`, `app_data`, and command handlers for panic paths, unwraps, error mapping.
 - [ ] Bindings parity: compare `src/bindings` TypeScript contracts vs Rust commands to ensure schemas and auth enums stay in sync.
 - [ ] Remove or track stray console logging / dev flags left in production builds.

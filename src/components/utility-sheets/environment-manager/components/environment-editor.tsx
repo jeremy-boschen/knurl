@@ -22,20 +22,21 @@ export function EnvironmentEditor({ collectionId, environmentId, action: _action
     state: { collection, environment },
     actions: { environmentsApi },
   } = useEnvironment(collectionId, environmentId)
+  const getEnvironmentsApi = environmentsApi
 
   const nameRef = useRef<HTMLInputElement>(null)
 
   async function addVariable() {
     // Fire & Forget
-    void environmentsApi.addEnvironmentVariable(collection.id, environment.id, {})
+    void getEnvironmentsApi().addEnvironmentVariable(collection.id, environment.id, {})
   }
 
   async function updateVariable(variableId: string, update: Partial<EnvironmentVariable>) {
-    await environmentsApi.updateEnvironmentVariable(collection.id, environment.id, variableId, update)
+    await getEnvironmentsApi().updateEnvironmentVariable(collection.id, environment.id, variableId, update)
   }
 
   async function removeVariable(variableId: string) {
-    await environmentsApi.deleteEnvironmentVariable(collection.id, environment.id, variableId)
+    await getEnvironmentsApi().deleteEnvironmentVariable(collection.id, environment.id, variableId)
   }
 
   return (
@@ -50,7 +51,7 @@ export function EnvironmentEditor({ collectionId, environmentId, action: _action
               id={`${environment.id}-name`}
               value={environment.name}
               onChange={async (e) =>
-                await environmentsApi.updateEnvironment(collection.id, environment.id, {
+                await getEnvironmentsApi().updateEnvironment(collection.id, environment.id, {
                   name: e.currentTarget.value,
                 })
               }
@@ -65,7 +66,7 @@ export function EnvironmentEditor({ collectionId, environmentId, action: _action
               id={`${environment.id}-desc`}
               value={environment.description ?? ""}
               onChange={(e) =>
-                environmentsApi.updateEnvironment(collection.id, environment.id, {
+                getEnvironmentsApi().updateEnvironment(collection.id, environment.id, {
                   description: e.currentTarget.value,
                 })
               }

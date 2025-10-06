@@ -205,6 +205,28 @@ function getFormControlType(element: React.ReactElement): string {
     return "default"
   }
 
+  const slot = (element.props as Record<string, unknown>)["data-slot"]
+  if (typeof slot === "string") {
+    switch (slot) {
+      case "checkbox":
+        return "checkbox"
+      case "select":
+        return "select"
+      case "switch":
+        return "switch"
+      case "radio-group":
+        return "radio-group"
+      case "toggle-group":
+        return "toggle-group"
+      case "slider":
+        return "slider"
+      case "toggle":
+        return "toggle"
+      default:
+        break
+    }
+  }
+
   // Use name to detect the component type
   const name = (element.type as any)?.name
   if (name) {

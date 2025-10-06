@@ -1149,17 +1149,14 @@ export const createCollectionsSlice: StateCreator<
         `createEnvironment called with an unknown collection.id: ${collectionId}`,
       )
 
-      const newEnvironment: Environment = zParse(zEnvironment, {
-        id: generateUniqueId(),
-        name,
-        description,
-        variables: {},
-      })
+      const newEnvironment = createEnvironment({ name, description })
 
       setAndSync((app) => {
         // biome-ignore lint/style/noNonNullAssertion: Safe due to getCollection() check
         touch(app.collectionsState.cache[collection.id]!).environments![newEnvironment.id] = newEnvironment
       })
+
+      return newEnvironment
     },
 
     ///

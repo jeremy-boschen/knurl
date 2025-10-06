@@ -27,6 +27,7 @@ export default function EnvironmentManager({ collectionId, selectedEnvironmentId
   const {
     actions: { environmentsApi },
   } = useEnvironments(collectionId)
+  const getEnvironmentsApi = environmentsApi
   const [state, setState] = useState<EnvironmentProps | null>(null)
 
   useEffect(() => {
@@ -76,7 +77,8 @@ export default function EnvironmentManager({ collectionId, selectedEnvironmentId
         })
         break
       case "duplicate": {
-        const newEnv = await environmentsApi.createEnvironment(collection.id, `${environment.name} Copy`)
+        const api = getEnvironmentsApi()
+        const newEnv = await api.createEnvironment(collection.id, `${environment.name} Copy`)
         if (!newEnv) {
           // TODO: Handle error with a toast
           return
@@ -84,7 +86,7 @@ export default function EnvironmentManager({ collectionId, selectedEnvironmentId
 
         // Copy description
         if (environment.description) {
-          await environmentsApi.updateEnvironment(collection.id, newEnv.id, {
+          await api.updateEnvironment(collection.id, newEnv.id, {
             description: environment.description,
           })
         }
@@ -92,7 +94,7 @@ export default function EnvironmentManager({ collectionId, selectedEnvironmentId
         // Copy variables
         const sourceVariables = Object.values(environment.variables ?? {})
         for (const variable of sourceVariables) {
-          await environmentsApi.addEnvironmentVariable(collection.id, newEnv.id, {
+          await api.addEnvironmentVariable(collection.id, newEnv.id, {
             name: variable.name,
             value: variable.value,
             secure: variable.secure,

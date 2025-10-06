@@ -33,8 +33,9 @@ export interface EnvironmentsApi {
    * @param collectionId - The collection ID to add the environment to
    * @param name - The name of the environment
    * @param description - An optional description for the environment
+   * @returns The newly created environment
    */
-  createEnvironment(collectionId: string, name: string, description?: string): Promise<void>
+  createEnvironment(collectionId: string, name: string, description?: string): Promise<Environment>
 
   /**
    * Update an existing environment
