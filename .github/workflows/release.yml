@@ -9,8 +9,6 @@ jobs:
   build-windows:
     name: Build Windows Installer
     runs-on: windows-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,42 +42,87 @@ jobs:
       - name: Install Dependencies
         run: yarn install --immutable
 
-      - name: Build and Draft Release
-        id: tauri-build
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: ${{ github.ref_name }}
-          releaseDraft: true
-          prerelease: false
-          includeDebug: false
-          args: ''
+      - name: Build Application
+        run: yarn tauri build
 
-      - name: Compute Checksums for Built Artifacts
-        id: checksums
+      - name: Prepare Release Bundle
+        id: bundle
         shell: pwsh
         run: |
-          $artifactJson = '${{ steps.tauri-build.outputs.artifactPaths }}'
-          $artifacts = $artifactJson | ConvertFrom-Json
-          $tmpDir = New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP "knurl-checksums") -Force
-
-          foreach ($artifact in $artifacts) {
-            if ([string]::IsNullOrWhiteSpace($artifact)) { continue }
-            $base = Split-Path -Path $artifact -Leaf
-            $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $artifact).Hash
-            "$hash  $base" | Out-File -FilePath (Join-Path $tmpDir "$base.sha256") -Encoding ascii
+          $bundleRoot = Join-Path $PWD 'src-tauri\\target\\release\\bundle'
+          if (-not (Test-Path -Path $bundleRoot)) {
+            Write-Error "Bundle directory not found: $bundleRoot"
+            exit 1
           }
 
-          "checksumDir=$($tmpDir.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          $artifactDir = Join-Path $env:RUNNER_TEMP 'knurl-windows-release'
+          New-Item -ItemType Directory -Path $artifactDir -Force | Out-Null
 
-      - name: Upload Checksums to Release
-        uses: softprops/action-gh-release@v2
+          $copied = @()
+          $files = Get-ChildItem -Path $bundleRoot -Recurse -File | Where-Object { $_.Extension -match '^\.(msi|exe|zip|sig)$' }
+          foreach ($file in $files) {
+            $destination = Join-Path $artifactDir $file.Name
+            Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
+            $copied += $destination
+          }
+
+          if ($copied.Count -eq 0) {
+            Write-Error "No release artifacts were produced under $bundleRoot"
+            exit 1
+          }
+
+          $checksumDir = Join-Path $artifactDir 'checksums'
+          New-Item -ItemType Directory -Path $checksumDir -Force | Out-Null
+          foreach ($filePath in $copied) {
+            $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $filePath).Hash
+            $baseName = Split-Path -Path $filePath -Leaf
+            "$hash  $baseName" | Out-File -FilePath (Join-Path $checksumDir "$baseName.sha256") -Encoding ascii
+          }
+
+          "artifact_dir=$artifactDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Upload Release Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: ${{ github.ref_name }}
-          files: |
-            ${{ steps.checksums.outputs.checksumDir }}/*.sha256
+          name: knurl-windows-release
+          path: ${{ steps.bundle.outputs.artifact_dir }}
+          if-no-files-found: error
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build-windows
+    permissions:
+      contents: write
+    steps:
+      - name: Download Windows Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: knurl-windows-release
+          path: release-artifacts
+
+      - name: List Downloaded Files
+        run: |
+          ls -R release-artifacts
+
+      - name: Publish Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          FILES=$(find release-artifacts -type f -print)
+          if [ -z "$FILES" ]; then
+            echo "No files to upload" >&2
+            exit 1
+          fi
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" $FILES --clobber
+          else
+            gh release create "$TAG_NAME" $FILES --draft --title "$TAG_NAME" --notes ""
+          fi
 
       # Windows Code Signing (deferred for MVP)
       # - name: Import Code Signing Certificate
