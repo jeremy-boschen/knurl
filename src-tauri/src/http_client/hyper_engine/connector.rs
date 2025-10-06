@@ -22,7 +22,7 @@ use rustls::{
 };
 use rustls_pemfile::certs;
 #[cfg(target_os = "windows")]
-use rustls_platform_verifier::PlatformVerifier;
+use rustls_platform_verifier::Verifier as PlatformVerifier;
 use serde::Serialize;
 use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
@@ -398,7 +398,7 @@ fn build_tls_config(
                 log::debug!("tls-certstore: enabling Windows platform verifier");
                 config
                     .dangerous()
-                    .set_certificate_verifier(PlatformVerifier::new());
+                    .set_certificate_verifier(Arc::new(PlatformVerifier::new()));
             }
         }
     }
