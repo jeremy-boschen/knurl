@@ -20,6 +20,8 @@ use rustls::pki_types::{CertificateDer, ServerName, UnixTime};
 use rustls::{
     ClientConfig, ClientConnection, DigitallySignedStruct, RootCertStore, SignatureScheme,
 };
+#[cfg(target_os = "windows")]
+use rustls_platform_verifier::builders::PlatformVerifierBuilder;
 use rustls_pemfile::certs;
 use serde::Serialize;
 use serde_json::{Map, Value, json};
@@ -389,6 +391,23 @@ fn build_tls_config(
         config
             .dangerous()
             .set_certificate_verifier(Arc::new(NoVerifier));
+    } else {
+        #[cfg(target_os = "windows")]
+        {
+            if custom_ca.is_none() {
+                match PlatformVerifierBuilder::new().build() {
+                    Ok(platform_verifier) => {
+                        log::debug!("tls-certstore: enabling Windows platform verifier");
+                        config
+                            .dangerous()
+                            .set_certificate_verifier(platform_verifier);
+                    }
+                    Err(err) => {
+                        log::warn!("tls-certstore: failed to create Windows platform verifier: {err}");
+                    }
+                }
+            }
+        }
     }
 
     Ok(config)
