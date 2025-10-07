@@ -95,6 +95,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download Windows Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -110,18 +113,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ github.ref_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
+          REPO="$GITHUB_REPOSITORY"
           FILES=$(find release-artifacts -type f -print)
           if [ -z "$FILES" ]; then
             echo "No files to upload" >&2
             exit 1
           fi
 
-          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
-            gh release upload "$TAG_NAME" $FILES --clobber
+          if gh release view "$TAG_NAME" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" $FILES --repo "$REPO" --clobber
           else
-            gh release create "$TAG_NAME" $FILES --draft --title "$TAG_NAME" --notes ""
+            gh release create "$TAG_NAME" $FILES --repo "$REPO" --draft --title "$TAG_NAME" --notes ""
           fi
 
       # Windows Code Signing (deferred for MVP)
