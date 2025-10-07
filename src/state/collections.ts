@@ -64,6 +64,12 @@ const redactAuth = (auth: AuthConfig | undefined): AuthConfig | undefined => {
   return auth
 }
 
+const buildRequestSignature = (method: string | undefined, url: string | undefined): string => {
+  const normalizedMethod = (method ?? "").trim().toUpperCase()
+  const normalizedUrl = (url ?? "").trim()
+  return `${normalizedMethod}::${normalizedUrl}`
+}
+
 const createFolderNode = (id: string, name: string, parentId: string | null, order = 0): CollectionFolderNode => ({
   id,
   name,
@@ -1046,6 +1052,160 @@ export const createCollectionsSlice: StateCreator<
 
       // One final pase to verify
       return internalAddCollection(zParse(zCollectionState, newCollection), setAndSync)
+    },
+
+    mergeCollection: async (collectionId: string, exported: ExportedCollection) => {
+      assert(existsInIndex(collectionId), `mergeCollection called with an unknown collection.id: ${collectionId}`)
+
+      await collectionsApi.getCollection(collectionId)
+
+      const summary = {
+        addedRequests: 0,
+        updatedRequests: 0,
+        addedEnvironments: 0,
+        updatedEnvironments: 0,
+      }
+
+      const exportedCollection = exported.collection ?? {}
+      const exportedRequests = exportedCollection.requests ?? {}
+      const exportedEnvironments = exportedCollection.environments ?? {}
+      const exportedFolders = exportedCollection.folders ?? {}
+
+      set((app) => {
+        const collection = touch(
+          nonNull(
+            app.collectionsState.cache[collectionId],
+            `mergeCollection called with unloaded collection.id: ${collectionId}`,
+          ),
+        )
+
+        const signatureToId = new Map<string, string>()
+        for (const request of Object.values(collection.requests)) {
+          signatureToId.set(buildRequestSignature(request.method, request.url), request.id)
+        }
+
+        const ensureFolderExists = (folderId: string | null | undefined): string => {
+          if (!folderId || folderId === RootCollectionFolderId) {
+            return RootCollectionFolderId
+          }
+          if (collection.folders[folderId]) {
+            return folderId
+          }
+
+          const exportedFolder = exportedFolders[folderId]
+          const parentId = exportedFolder?.parentId ?? RootCollectionFolderId
+          const resolvedParentId = ensureFolderExists(parentId)
+
+          const created = createFolderNode(
+            folderId,
+            exportedFolder?.name ?? "Imported Folder",
+            resolvedParentId,
+            exportedFolder?.order ?? collection.folders[resolvedParentId]?.childFolderIds.length ?? 0,
+          )
+          collection.folders[folderId] = created
+          insertChildFolder(collection, resolvedParentId, folderId, exportedFolder?.order)
+          return folderId
+        }
+
+        for (const [envId, env] of Object.entries(exportedEnvironments)) {
+          const parsed = zParse(
+            zEnvironment,
+            merge(
+              {
+                id: envId,
+                variables: {},
+              },
+              env,
+            ),
+          )
+
+          if (!collection.environments) {
+            collection.environments = {}
+          }
+
+          if (collection.environments[envId]) {
+            collection.environments[envId] = {
+              ...collection.environments[envId],
+              ...parsed,
+              id: envId,
+            }
+            summary.updatedEnvironments += 1
+          } else {
+            collection.environments[envId] = parsed
+            summary.addedEnvironments += 1
+          }
+        }
+
+        for (const [requestId, request] of Object.entries(exportedRequests)) {
+          const parsed = zParse(
+            zRequestState,
+            merge(
+              {
+                id: requestId,
+                collectionId,
+                patch: {},
+              },
+              request,
+            ),
+          )
+
+          const signature = buildRequestSignature(parsed.method, parsed.url)
+          let targetId = requestId
+          let existingRequest = collection.requests[targetId]
+
+          if (!existingRequest) {
+            const matchedId = signatureToId.get(signature)
+            if (matchedId) {
+              targetId = matchedId
+              existingRequest = collection.requests[matchedId]
+            }
+          }
+
+          if (existingRequest) {
+            const oldSignature = buildRequestSignature(existingRequest.method, existingRequest.url)
+            signatureToId.delete(oldSignature)
+
+            const folderId =
+              existingRequest.folderId && collection.folders[existingRequest.folderId]
+                ? existingRequest.folderId
+                : RootCollectionFolderId
+
+            collection.requests[targetId] = {
+              ...existingRequest,
+              ...parsed,
+              id: targetId,
+              collectionId,
+              folderId,
+              order: existingRequest.order,
+              patch: existingRequest.patch ?? {},
+            }
+            buildRequestIndexEntry(collection, targetId)
+            signatureToId.set(buildRequestSignature(parsed.method, parsed.url), targetId)
+            summary.updatedRequests += 1
+          } else {
+            const resolvedFolderId = ensureFolderExists(parsed.folderId)
+            const newRequest: RequestState = {
+              ...parsed,
+              id: targetId,
+              collectionId,
+              folderId: resolvedFolderId,
+              patch: parsed.patch ?? {},
+            }
+            insertRequestIntoFolder(collection, resolvedFolderId, newRequest)
+            signatureToId.set(signature, targetId)
+            summary.addedRequests += 1
+          }
+        }
+
+        const index = nonNull(
+          app.collectionsState.index.find((entry) => entry.id === collectionId),
+          `mergeCollection called with non-indexed collection.id: ${collectionId}`,
+        )
+        index.count = countCollectionRequests(collection)
+        index.updated = collection.updated
+      })
+
+      return summary
     },
 
     ///

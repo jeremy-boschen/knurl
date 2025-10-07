@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { AlertTriangleIcon, UploadIcon, RotateCcwIcon } from "lucide-react"
+import { AlertTriangleIcon, GitMergeIcon, UploadIcon, RotateCcwIcon } from "lucide-react"
 
 import { openFile } from "@/bindings/knurl"
 import { CodeEditor } from "@/components/editor/code-editor"
@@ -53,7 +53,7 @@ export default function ImportCollectionSheet() {
   } = useSelectionManager(parsedCollection)
 
   // Hook 3: Import Actions and Status
-  const { status, setStatus, handleImport, handleOverwrite } = useImportActions(
+  const { status, setStatus, handleImport, handleOverwrite, handleMerge } = useImportActions(
     parsedCollection,
     selectedRequests,
     selectedEnvironments,
@@ -88,8 +88,8 @@ export default function ImportCollectionSheet() {
   // Check for name conflict
   useEffect(() => {
     if (collectionName) {
-      const conflict = collectionsIndex.some((c) => c.name.toLowerCase() === collectionName.trim().toLowerCase())
-      setIsConflict(conflict)
+      const existing = collectionsIndex.find((c) => c.name.toLowerCase() === collectionName.trim().toLowerCase())
+      setIsConflict(Boolean(existing))
     } else {
       setIsConflict(false)
     }
@@ -144,6 +144,10 @@ export default function ImportCollectionSheet() {
 
   const onFinalOverwrite = () => {
     handleOverwrite(collectionName.trim())
+  }
+
+  const onFinalMerge = () => {
+    handleMerge(collectionName.trim())
   }
 
   // --- RENDER ---
@@ -267,14 +271,23 @@ export default function ImportCollectionSheet() {
                 }
               />
             </LabeledField>
-            <Button
-              variant={isConflict ? "destructive" : "default"}
-              onClick={isConflict ? onFinalOverwrite : onFinalImport}
-              disabled={!canProceed}
-            >
-              <UploadIcon className="h-4 w-4" />
-              {isConflict ? "Overwrite" : "Import"}
-            </Button>
+            {isConflict ? (
+              <div className="flex items-center gap-2">
+                <Button variant="default" onClick={onFinalMerge} disabled={!canProceed}>
+                  <GitMergeIcon className="h-4 w-4" />
+                  Merge
+                </Button>
+                <Button variant="destructive" onClick={onFinalOverwrite} disabled={!canProceed}>
+                  <UploadIcon className="h-4 w-4" />
+                  Replace
+                </Button>
+              </div>
+            ) : (
+              <Button variant="default" onClick={onFinalImport} disabled={!canProceed}>
+                <UploadIcon className="h-4 w-4" />
+                Import
+              </Button>
+            )}
           </div>
         </div>
       </div>

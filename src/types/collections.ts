@@ -179,8 +179,22 @@ export interface CollectionsStateApi extends CollectionsIndexStateApi, Environme
    *
    * @param collection A previously exported collection
    * @param overrideName
-   */
+  */
   importCollection(collection: ExportedCollection, overrideName?: string): Promise<CollectionCacheState>
+
+  /**
+   * Merge the provided collection data into an existing collection without replacing it entirely.
+   * Matching requests are identified by ID, then by the pair of HTTP method and URL.
+   */
+  mergeCollection(
+    collectionId: string,
+    collection: ExportedCollection,
+  ): Promise<{
+    addedRequests: number
+    updatedRequests: number
+    addedEnvironments: number
+    updatedEnvironments: number
+  }>
 
   /**
    * Creates an exported collection for saving to disk
