@@ -100,7 +100,7 @@ function FormControl({ name, label, className, children }: FormFieldProps) {
   switch (formControlType) {
     case "select":
       child = React.cloneElement(children as any, {
-        value: values[name] || "",
+        value: values[name] === "" || values[name] === undefined ? undefined : values[name],
         id,
         onValueChange: (value: string) => handleChange(name, value),
       })
