@@ -183,9 +183,7 @@ type PostmanFormDataItem = z.infer<typeof zPostmanFormDataItem>
 type PostmanAuthParam = z.infer<typeof zPostmanAuthParam>
 type PostmanHeader = z.infer<typeof zPostmanKeyValue>
 
-export type PostmanValidationResult =
-  | { success: true; data: PostmanCollection }
-  | { success: false; error: z.ZodError }
+export type PostmanValidationResult = { success: true; data: PostmanCollection } | { success: false; error: z.ZodError }
 
 /**
  * Lightweight heuristic to detect Postman v2 collection exports.
@@ -235,7 +233,12 @@ const extractDescription = (desc: unknown): string => {
   if (typeof desc === "string") {
     return desc
   }
-  if (desc && typeof desc === "object" && "content" in desc && typeof (desc as { content?: unknown }).content === "string") {
+  if (
+    desc &&
+    typeof desc === "object" &&
+    "content" in desc &&
+    typeof (desc as { content?: unknown }).content === "string"
+  ) {
     return (desc as { content?: string }).content ?? ""
   }
   return ""
@@ -700,28 +703,32 @@ export function postmanToNative(collection: PostmanCollection): ExportedCollecti
   traverseItems(collection.item, RootCollectionFolderId)
   folders[RootCollectionFolderId].childFolderIds = Array.from(new Set(folders[RootCollectionFolderId].childFolderIds))
 
-  const environments: Environment[] = Array.isArray(collection.variable) && collection.variable.length > 0
-    ? [
-        {
-          id: generateUniqueId(),
-          name: `${collection.info.name} Variables`,
-          description: "Imported from Postman collection variables.",
-          variables: collection.variable.reduce((acc, variable) => {
-            if (!variable?.key) {
-              return acc
-            }
-            const varId = variable.id ?? generateUniqueId()
-            acc[varId] = {
-              id: varId,
-              name: variable.key,
-              value: toStringValue(variable.value),
-              secure: variable.type === "secret",
-            }
-            return acc
-          }, {} as Record<string, EnvironmentVariable>),
-        },
-      ]
-    : []
+  const environments: Environment[] =
+    Array.isArray(collection.variable) && collection.variable.length > 0
+      ? [
+          {
+            id: generateUniqueId(),
+            name: `${collection.info.name} Variables`,
+            description: "Imported from Postman collection variables.",
+            variables: collection.variable.reduce(
+              (acc, variable) => {
+                if (!variable?.key) {
+                  return acc
+                }
+                const varId = variable.id ?? generateUniqueId()
+                acc[varId] = {
+                  id: varId,
+                  name: variable.key,
+                  value: toStringValue(variable.value),
+                  secure: variable.type === "secret",
+                }
+                return acc
+              },
+              {} as Record<string, EnvironmentVariable>,
+            ),
+          },
+        ]
+      : []
 
   const collectionState: Partial<Collection> = {
     id: collectionId,

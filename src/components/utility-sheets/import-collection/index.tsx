@@ -234,7 +234,9 @@ export default function ImportCollectionSheet() {
 
               <TabsContent value="native-source" className="relative flex-1 min-h-0">
                 <CodeEditor
-                  value={detectedFormat === "openapi" || detectedFormat === "postman" ? convertedData : formattedImportData}
+                  value={
+                    detectedFormat === "openapi" || detectedFormat === "postman" ? convertedData : formattedImportData
+                  }
                   onChange={setImportData}
                   className="absolute inset-0 h-full w-full rounded-sm border"
                   language="json"
