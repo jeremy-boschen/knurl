@@ -179,7 +179,7 @@ export interface CollectionsStateApi extends CollectionsIndexStateApi, Environme
    *
    * @param collection A previously exported collection
    * @param overrideName
-  */
+   */
   importCollection(collection: ExportedCollection, overrideName?: string): Promise<CollectionCacheState>
 
   /**
