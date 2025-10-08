@@ -86,6 +86,11 @@ const runCommandCapture = (command, commandArgs = [], options = {}) => {
   })
 }
 
+const runInShell = (command) => {
+  const shell = process.env.SHELL || (process.platform === 'win32' ? 'bash' : 'sh')
+  runCommand(shell, ['-lc', command])
+}
+
 try {
   runCommandCapture('gh', ['--version'])
 } catch (error) {
@@ -97,7 +102,12 @@ const bundleRoot = path.join(repoRoot, 'src-tauri', 'target', 'release', 'bundle
 
 if (!skipBuild) {
   console.log('\n▶ Building Tauri application (yarn tauri build)...')
-  runCommand('yarn', ['tauri', 'build'])
+  try {
+    runInShell('yarn tauri build')
+  } catch (error) {
+    console.error('Failed to execute `yarn tauri build`. Is Yarn/Corepack available in your shell?')
+    throw error
+  }
 }
 
 if (!existsSync(bundleRoot)) {
