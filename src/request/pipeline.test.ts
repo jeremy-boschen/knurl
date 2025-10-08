@@ -156,6 +156,22 @@ describe("resolveVariablesPhase", () => {
     expect(headerValue).toBe("abc-{{ignored}}-123")
   })
 
+  it("treats variables without explicit enabled flag as active", async () => {
+    const context = makeCtx(
+      {
+        url: "{{baseUrl}}/status",
+      },
+      {
+        variables: {
+          baseUrl: { id: "v1", name: "baseUrl", value: "https://internal.example", secure: false },
+        },
+      },
+    )
+
+    const out = await resolveVariablesPhase(context)
+    expect(out.request.url).toBe("https://internal.example/status")
+  })
+
   it("leaves unknown placeholders intact", async () => {
     const ctx = makeCtx({}, {
       variables: {

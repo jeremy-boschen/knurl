@@ -9,16 +9,19 @@ function getVariableMap(environment: Environment | undefined): Record<string, st
   if (!environment) {
     return {}
   }
-  return Object.values(environment.variables).reduce(
-    (acc, variable: EnvironmentVariable) => {
-      // Only include enabled variables; disabled ones are ignored during substitution
-      if (variable.name && variable.enabled) {
-        acc[variable.name] = variable.value
-      }
+  return Object.values(environment.variables).reduce((acc, variable: EnvironmentVariable & { enabled?: boolean }) => {
+    if (!variable.name) {
       return acc
-    },
-    {} as Record<string, string>,
-  )
+    }
+
+    // Some stored variables may not record an `enabled` flag; treat missing flag as enabled by default.
+    if (variable.enabled === false) {
+      return acc
+    }
+
+    acc[variable.name] = variable.value
+    return acc
+  }, {} as Record<string, string>)
 }
 
 /**

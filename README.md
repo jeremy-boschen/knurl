@@ -1,112 +1,66 @@
-# KNURL - Desktop HTTP Client
+# Knurl
 
-A cloudless HTTP client application built with Tauri, React, and TypeScript.
+[![GitHub release](https://img.shields.io/github/v/release/jeremy-boschen/knurl?logo=github&label=latest)](https://github.com/jeremy-boschen/knurl/releases)
+[![Downloads](https://img.shields.io/github/downloads/jeremy-boschen/knurl/total?logo=tauri&label=downloads)](https://github.com/jeremy-boschen/knurl/releases)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-## Project Overview
+**Knurl** is a privacy-first desktop client for exploring, testing, and documenting HTTP APIs. It runs entirely on your machine—no cloud sync, no telemetry—so you can inspect requests, tweak headers, and ship integrations with confidence.
 
-This application is a desktop HTTP client that allows users to create, save, and execute HTTP requests. It uses Tauri as
-the desktop framework, React for the UI, and TypeScript for type safety.
+> ⚠️ **Pre-release builds:** Knurl is still in rapid development. Expect frequent updates and occasional breaking changes while we stabilise the MVP.
 
-## Simplified Architecture
+---
 
-The application uses a simple and lightweight architecture:
+## Highlights
 
-- **Zustand** for state management
-- **TypeScript interfaces** for type definitions (instead of zod)
-- **Tauri** for desktop integration and native functionality
-- **React hooks** for component logic
+- 🚀 **Powerful request builder** – Compose any HTTP verb, tweak query/path params, and send with a single click.
+- 🔐 **Authentication handled** – Quickly swap between Bearer, Basic, API keys, and OAuth2 flows (with discovery support).
+- 🧩 **Environment variables** – Create collections of variables and inject them with `{{variable}}` syntax across URLs, headers, and bodies.
+- 📂 **Collections that travel with you** – Group requests, duplicate, import/export, and share native JSON bundles.
+- 🧭 **Deep visibility** – Pretty-print JSON, inspect headers, and view raw responses without leaving the app.
+- 🖥️ **Cross-platform & offline** – Built with Tauri + React 19; runs on Windows, macOS, and Linux without extra services.
 
-## Key Features
+## Quick Start
 
-- Create and execute HTTP requests (GET, POST, PUT, DELETE, etc.)
-- Save requests in collections
-- View and analyze HTTP responses
-- Manage environments with variables
-- Authentication support (Bearer, Basic, API Key, OAuth2)
+1. **Download** the latest installer from the [Releases page](https://github.com/jeremy-boschen/knurl/releases).
+2. **Install & launch** the app for your platform (MSI/EXE on Windows, DMG on macOS, AppImage/Deb/ZIP on Linux).
+3. **Create your first request**: choose a method, paste a URL, and hit **Send**.
+4. **Organise** requests into collections and environments as your API surface grows.
 
-### OAuth2 Discovery
+Need a little more help? Check the in-app tips or open a discussion—Knurl keeps every request local, so feel free to explore without worrying about upstream services.
 
-- Use the Discovery URL field to point to your issuer base (e.g., `https://auth.example.com`) or a full `.well-known`
-  URL.
-- Clicking Discover fetches the OpenID configuration and fills the authorization and token endpoints.
+## Feature Tour
 
-### Terminology
+| Request Builder | Response Viewer |
+| --------------- | ---------------- |
+| ![Request builder screenshot](docs/assets/screenshots/request-builder.png) | ![Response screenshot](docs/assets/screenshots/response-viewer.png) |
 
-- The app uses Authentication for request/collection auth settings throughout the UI.
-- Authorization appears only where technically correct: the HTTP `Authorization` header and the OAuth2 authorization
-  endpoint.
+> Don’t see an image above? We’re still capturing production screenshots. Follow the project and watch for updates.
 
-### Environment Variables
+### Roadmap (MVP)
 
-- Define variables per environment and reference them with `{{name}}` in URLs, params, headers, and bodies.
-- URL tokens `{name}` and `:name` also resolve from path/query parameters when present.
-- Only enabled variables substitute; unresolved placeholders remain in the text.
-- The Discovery URL itself is not overwritten by Discover.
+- [ ] GraphQL support with schema introspection
+- [ ] Collection sharing via signed bundles
+- [ ] Env variable diff view
+- [ ] OAuth2 PKCE helper wizard
+- [ ] Workspaces & multi-window support
 
-## Development
+See [`docs/plans`](docs/plans/) for active workstreams.
 
-### Prerequisites
+## Learn More
 
-- Node.js v20+
-- Yarn v1.22+
-- Rust (1.88.0+)
-- MSVC build tools
-- WebView2 runtime
-- On Windows, the repo ships `.cargo/config.toml` files that pin `aws-lc-sys` to its pre-generated artifacts so you
-  don't need CMake/NASM locally. Leave those entries in place, or install both tools before building.
+- 🎥 **Demo video**: _Coming soon_ (we’ll embed a short walkthrough as we approach public beta).
+- 🛠️ **Want to build from source or contribute?** Head over to [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for developer setup, scripts, and testing guidance.
 
-### Setup
+## Support & Feedback
 
-1. Install dependencies:
-   ```bash
-   yarn install
-   ```
-
-2. Start the development server:
-   ```bash
-   # With WebView devtools enabled (recommended during development)
-   yarn tauri:dev
-   # Or explicitly
-   yarn tauri dev --features devtools
-   # Without devtools (smaller, closer to release)
-   yarn tauri dev
-   ```
-
-3. Build for production:
-   ```bash
-   yarn tauri build
-   ```
-
-## Testing
-
-Run tests with:
-
-```bash
-yarn test
-```
-
-## Project Structure
-
-- `src/` - React UI components and hooks
-- `src-tauri/` - Rust backend code
-- `src/lib/` - Shared utilities and types
-- `src/components/` - React components
-- `src/pages/` - Page components
-
-## State Management
-
-The application uses Zustand for state management. The store is defined in `src/state/application.ts` and provides:
-
-- Application state
-- Actions to update state
-- Async operations for data fetching
-
-Components can access the state using the `useApplication` hook:
-
-## Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+- 💬 [GitHub Discussions](https://github.com/jeremy-boschen/knurl/discussions) – ask questions, share ideas.
+- 🐛 [Issues](https://github.com/jeremy-boschen/knurl/issues) – report bugs or request features.
+- 📬 Prefer async? open an issue with the `question` label and we’ll reach out.
 
 ## License
 
-Apache-2.0. See `LICENSE` for details.
+Knurl is licensed under the [Apache 2.0 License](LICENSE). Feel free to explore, fork, or extend the app—just keep the notices intact.
+
+---
+
+_Built with Tauri, React 19, and a love for clean HTTP tooling._
