@@ -1,4 +1,4 @@
-name: Release (Windows)
+name: Release (Tauri)
 
 on:
   push:
@@ -6,19 +6,38 @@ on:
       - 'v*'
 
 jobs:
-  build-windows:
-    name: Build Windows Installer
-    runs-on: windows-latest
+  publish-tauri:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            args: ''
+          - platform: ubuntu-22.04
+            args: ''
+          - platform: macos-latest
+            args: '--target x86_64-apple-darwin'
+          - platform: macos-latest
+            args: '--target aarch64-apple-darwin'
+    runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install dependencies (Ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'yarn'
-          cache-dependency-path: 'yarn.lock'
+          node-version: 20
+          cache: yarn
+          cache-dependency-path: yarn.lock
 
       - name: Enable Corepack
         run: corepack enable
@@ -26,120 +45,25 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      - name: Cache cargo
+      - name: Rust Cache
         uses: Swatinem/rust-cache@v2
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
         with:
-          path: node_modules
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          workspaces: './src-tauri -> target'
 
-      - name: Install Dependencies
+      - name: Install Frontend Dependencies
         run: yarn install --immutable
 
-      - name: Build Application
-        run: yarn tauri build
-
-      - name: Prepare Release Bundle
-        id: bundle
-        shell: pwsh
-        run: |
-          $bundleRoot = Join-Path $PWD 'src-tauri\\target\\release\\bundle'
-          if (-not (Test-Path -Path $bundleRoot)) {
-            Write-Error "Bundle directory not found: $bundleRoot"
-            exit 1
-          }
-
-          $artifactDir = Join-Path $env:RUNNER_TEMP 'knurl-windows-release'
-          New-Item -ItemType Directory -Path $artifactDir -Force | Out-Null
-
-          $copied = @()
-          $files = Get-ChildItem -Path $bundleRoot -Recurse -File | Where-Object { $_.Extension -match '^\.(msi|exe|zip|sig)$' }
-          foreach ($file in $files) {
-            $destination = Join-Path $artifactDir $file.Name
-            Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
-            $copied += $destination
-          }
-
-          if ($copied.Count -eq 0) {
-            Write-Error "No release artifacts were produced under $bundleRoot"
-            exit 1
-          }
-
-          $checksumDir = Join-Path $artifactDir 'checksums'
-          New-Item -ItemType Directory -Path $checksumDir -Force | Out-Null
-          foreach ($filePath in $copied) {
-            $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $filePath).Hash
-            $baseName = Split-Path -Path $filePath -Leaf
-            "$hash  $baseName" | Out-File -FilePath (Join-Path $checksumDir "$baseName.sha256") -Encoding ascii
-          }
-
-          "artifact_dir=$artifactDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-
-      - name: Upload Release Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: knurl-windows-release
-          path: ${{ steps.bundle.outputs.artifact_dir }}
-          if-no-files-found: error
-
-  create-release:
-    name: Create GitHub Release
-    runs-on: ubuntu-latest
-    needs: build-windows
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download Windows Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: knurl-windows-release
-          path: release-artifacts
-
-      - name: List Downloaded Files
-        run: |
-          ls -R release-artifacts
-
-      - name: Publish Release
+      - name: Build and Publish with Tauri
+        uses: tauri-apps/tauri-action@v0
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ github.ref_name }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          REPO="$GITHUB_REPOSITORY"
-          FILES=$(find release-artifacts -type f -print)
-          if [ -z "$FILES" ]; then
-            echo "No files to upload" >&2
-            exit 1
-          fi
-
-          if gh release view "$TAG_NAME" --repo "$REPO" >/dev/null 2>&1; then
-            gh release upload "$TAG_NAME" $FILES --repo "$REPO" --clobber
-          else
-            gh release create "$TAG_NAME" $FILES --repo "$REPO" --draft --title "$TAG_NAME" --notes ""
-          fi
-
-      # Windows Code Signing (deferred for MVP)
-      # - name: Import Code Signing Certificate
-      #   if: false # enable when signing is configured
-      #   shell: pwsh
-      #   env:
-      #     WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
-      #     WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
-      #   run: |
-      #     New-Item -ItemType Directory -Force -Path certificate | Out-Null
-      #     Set-Content -Path certificate\\tempCert.txt -Value $env:WINDOWS_CERTIFICATE
-      #     certutil -decode certificate\\tempCert.txt certificate\\cert.pfx
-      #     Remove-Item certificate\\tempCert.txt
-      #     $password = ConvertTo-SecureString -String $env:WINDOWS_CERTIFICATE_PASSWORD -AsPlainText -Force
-      #     Import-PfxCertificate -FilePath certificate\\cert.pfx -CertStoreLocation Cert:\\LocalMachine\\My -Password $password | Out-Null
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: ${{ github.ref_name }}
+          releaseBody: 'See the assets to download this version and install.'
+          releaseDraft: true
+          prerelease: false
+          includeDebug: false
+          args: ${{ matrix.args }}
