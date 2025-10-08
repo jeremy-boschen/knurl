@@ -47,7 +47,9 @@ export default function AppLayout() {
   const activeTabId = useActiveTabId()
   const windowSize = useTauriWindowSize()
 
-  const collapsedSize = windowSize?.width ? (50 / windowSize.width) * 100 : 4
+  const collapsedSize = windowSize?.width
+    ? Math.max((50 / windowSize.width) * 100, (36 / windowSize.width) * 100, 3)
+    : 4
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
