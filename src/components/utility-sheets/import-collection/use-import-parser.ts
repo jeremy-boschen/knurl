@@ -4,13 +4,21 @@ import yaml from "js-yaml"
 import type { core } from "zod"
 
 import type { ExportedCollection } from "@/types"
-import { isOpenApiDocument, openApiToNative, validateNativeDocument, type OpenApiToNativeOptions } from "./parsers"
+import {
+  isOpenApiDocument,
+  isPostmanCollection,
+  openApiToNative,
+  postmanToNative,
+  validateNativeDocument,
+  validatePostmanDocument,
+  type OpenApiToNativeOptions,
+} from "./parsers"
 import type { ImportFormat } from "./types"
 
 interface ParsingResult {
   collection: ExportedCollection | null
   issues: core.$ZodIssue[] | null
-  detectedFormat: "native" | "openapi" | null
+  detectedFormat: "native" | "openapi" | "postman" | null
   convertedData: string
 }
 
@@ -51,7 +59,14 @@ export function useImportParser(
       return
     }
 
-    const format = importFormat === "auto" ? (isOpenApiDocument(parsedSource) ? "openapi" : "native") : importFormat
+    const format: ImportFormat =
+      importFormat === "auto"
+        ? isPostmanCollection(parsedSource)
+          ? "postman"
+          : isOpenApiDocument(parsedSource)
+            ? "openapi"
+            : "native"
+        : importFormat
     let nativeDoc: ExportedCollection | null = null
     let converted = ""
 
@@ -64,6 +79,19 @@ export function useImportParser(
           ...initialState,
           detectedFormat: format,
           issues: [customIssue("File is not a valid OpenAPI v3 document.")],
+        })
+        return
+      }
+    } else if (format === "postman") {
+      const validation = validatePostmanDocument(parsedSource)
+      if (validation.success) {
+        nativeDoc = postmanToNative(validation.data)
+        converted = JSON.stringify(nativeDoc, null, 2)
+      } else {
+        setParsingResult({
+          ...initialState,
+          detectedFormat: format,
+          issues: validation.error.issues,
         })
         return
       }

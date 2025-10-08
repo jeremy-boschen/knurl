@@ -52,3 +52,34 @@ describe("useImportParser", () => {
     spy.mockRestore()
   })
 })
+
+describe("useImportParser with Postman collections", () => {
+  const postmanDoc = {
+    info: {
+      name: "API Suite",
+      schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    },
+    item: [
+      {
+        name: "Ping",
+        request: {
+          method: "GET",
+          url: {
+            raw: "https://example.com/ping",
+          },
+        },
+      },
+    ],
+  }
+
+  it("auto-detects and converts Postman collections", async () => {
+    const { result } = renderHook(() => useImportParser(JSON.stringify(postmanDoc), "auto", {}))
+
+    await waitFor(() => {
+      expect(result.current.detectedFormat).toBe("postman")
+    })
+
+    expect(result.current.collection?.collection.name).toBe("API Suite")
+    expect(result.current.convertedData).toContain('"format": "native"')
+  })
+})

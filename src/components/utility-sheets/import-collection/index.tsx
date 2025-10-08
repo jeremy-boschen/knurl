@@ -19,7 +19,7 @@ import { ImportSourceStep } from "./components/import-source-step"
 import { ImportPreviewStep } from "./components/import-preview-step"
 import type { ImportFormat } from "./types"
 
-type TabValue = "preview" | "native-source" | "openapi-source"
+type TabValue = "preview" | "native-source" | "openapi-source" | "postman-source"
 
 export default function ImportCollectionSheet() {
   // --- STATE MANAGEMENT ---
@@ -206,6 +206,7 @@ export default function ImportCollectionSheet() {
                   Native Source
                 </TabsTrigger>
                 {detectedFormat === "openapi" && <TabsTrigger value="openapi-source">OpenAPI Source</TabsTrigger>}
+                {detectedFormat === "postman" && <TabsTrigger value="postman-source">Postman Source</TabsTrigger>}
               </TabsList>
 
               <TabsContent value="preview" className="flex-1 min-h-0">
@@ -233,7 +234,7 @@ export default function ImportCollectionSheet() {
 
               <TabsContent value="native-source" className="relative flex-1 min-h-0">
                 <CodeEditor
-                  value={detectedFormat === "openapi" ? convertedData : formattedImportData}
+                  value={detectedFormat === "openapi" || detectedFormat === "postman" ? convertedData : formattedImportData}
                   onChange={setImportData}
                   className="absolute inset-0 h-full w-full rounded-sm border"
                   language="json"
@@ -246,6 +247,17 @@ export default function ImportCollectionSheet() {
                     onChange={setImportData}
                     className="absolute h-full w-full rounded-sm border"
                     language={importData.trim().startsWith("{") ? "json" : "yaml"}
+                    lineNumbers
+                  />
+                </TabsContent>
+              )}
+              {detectedFormat === "postman" && (
+                <TabsContent value="postman-source" className="relative flex-1 min-h-0">
+                  <CodeEditor
+                    value={formattedImportData}
+                    onChange={setImportData}
+                    className="absolute h-full w-full rounded-sm border"
+                    language="json"
                     lineNumbers
                   />
                 </TabsContent>
