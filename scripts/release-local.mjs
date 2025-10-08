@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -22,6 +22,7 @@ const tag = args[0]
 if (!/^v\d+\.\d+\.\d+(-[\w.-]+)?$/.test(tag)) {
   usage(`Invalid tag "${tag}". Expected semantic version with leading v (e.g., v0.1.0).`)
 }
+const tagVersion = tag.replace(/^v/, '')
 
 let notesFile = null
 let notesText = ''
@@ -68,16 +69,16 @@ if (notesFile && !existsSync(notesFile)) {
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(scriptDir, '..')
 
-function run(command, options = {}) {
-  return execSync(command, {
+const runCommand = (command, commandArgs = [], options = {}) => {
+  execFileSync(command, commandArgs, {
     cwd: repoRoot,
     stdio: 'inherit',
     ...options,
   })
 }
 
-function runCapture(command, options = {}) {
-  return execSync(command, {
+const runCommandCapture = (command, commandArgs = [], options = {}) => {
+  return execFileSync(command, commandArgs, {
     cwd: repoRoot,
     stdio: ['ignore', 'pipe', 'pipe'],
     encoding: 'utf8',
@@ -86,7 +87,7 @@ function runCapture(command, options = {}) {
 }
 
 try {
-  runCapture('gh --version')
+  runCommandCapture('gh', ['--version'])
 } catch (error) {
   console.error('The GitHub CLI (gh) is required but was not found in PATH.')
   process.exit(1)
@@ -96,7 +97,7 @@ const bundleRoot = path.join(repoRoot, 'src-tauri', 'target', 'release', 'bundle
 
 if (!skipBuild) {
   console.log('\n▶ Building Tauri application (yarn tauri build)...')
-  run('yarn tauri build')
+  runCommand('yarn', ['tauri', 'build'])
 }
 
 if (!existsSync(bundleRoot)) {
@@ -104,21 +105,20 @@ if (!existsSync(bundleRoot)) {
   process.exit(1)
 }
 
-function collectArtifacts(root) {
-  const allowedExtensions = new Set([
-    '.msi',
-    '.exe',
-    '.zip',
-    '.dmg',
-    '.app',
-    '.gz',
-    '.tar',
-    '.AppImage',
-    '.deb',
-    '.pkg',
-    '.sig',
-  ])
+const allowedExtensions = new Set([
+  '.msi',
+  '.exe',
+  '.zip',
+  '.dmg',
+  '.gz',
+  '.tar',
+  '.appimage',
+  '.deb',
+  '.pkg',
+  '.sig',
+])
 
+const collectArtifacts = (root) => {
   /** @type {string[]} */
   const files = []
 
@@ -129,8 +129,8 @@ function collectArtifacts(root) {
       if (stats.isDirectory()) {
         walk(fullPath)
       } else if (stats.isFile()) {
-        const ext = path.extname(entry)
-        if (allowedExtensions.has(ext) || allowedExtensions.has(path.extname(entry).split('.').pop())) {
+        const ext = path.extname(entry).toLowerCase()
+        if (allowedExtensions.has(ext) && fullPath.includes(tagVersion)) {
           files.push(fullPath)
         }
       }
@@ -143,7 +143,7 @@ function collectArtifacts(root) {
 
 const artifacts = collectArtifacts(bundleRoot)
 if (artifacts.length === 0) {
-  console.error(`No release artifacts were found under ${bundleRoot}.`)
+  console.error(`No release artifacts containing version "${tagVersion}" were found under ${bundleRoot}.`)
   process.exit(1)
 }
 
@@ -154,7 +154,7 @@ for (const file of artifacts) {
 
 let repo
 try {
-  repo = runCapture('gh repo view --json nameWithOwner --jq .nameWithOwner').trim()
+  repo = runCommandCapture('gh', ['repo', 'view', '--json', 'nameWithOwner', '--jq', '.nameWithOwner']).trim()
 } catch (error) {
   console.error('Failed to determine the repository via `gh repo view`. Are you authenticated?')
   process.exit(1)
@@ -162,43 +162,42 @@ try {
 
 const releaseExists = (() => {
   try {
-    runCapture(`gh release view ${tag} --repo ${repo}`)
+    runCommandCapture('gh', ['release', 'view', tag, '--repo', repo])
     return true
   } catch {
     return false
   }
 })()
 
-const baseArgs = ['gh', 'release', releaseExists ? 'upload' : 'create', tag]
+const ghArgs = releaseExists ? ['release', 'upload', tag] : ['release', 'create', tag]
+
 if (!releaseExists) {
-  baseArgs.push('--title', tag)
-  if (publish) {
-    baseArgs.push('--latest')
-  } else {
-    baseArgs.push('--draft')
+  ghArgs.push('--title', tag)
+  ghArgs.push(publish ? '--latest' : '--draft')
+  if (notesFile) {
+    ghArgs.push('--notes-file', notesFile)
+  } else if (notesText) {
+    ghArgs.push('--notes', notesText)
   }
+} else {
+  if (notesFile) {
+    ghArgs.push('--notes-file', notesFile)
+  } else if (notesText) {
+    ghArgs.push('--notes', notesText)
+  }
+  ghArgs.push('--clobber')
 }
 
-if (notesFile) {
-  baseArgs.push('--notes-file', notesFile)
-} else if (notesText) {
-  baseArgs.push('--notes', notesText)
-} else if (!releaseExists) {
-  baseArgs.push('--notes', '')
+ghArgs.push('--repo', repo)
+for (const artifact of artifacts) {
+  ghArgs.push(artifact)
 }
-
-if (releaseExists) {
-  baseArgs.push('--clobber')
-}
-
-baseArgs.push('--repo', repo)
-baseArgs.push(...artifacts)
 
 console.log('\n▶ Publishing release via GitHub CLI...')
-console.log(`   ${baseArgs.join(' ')}`)
+console.log(`   gh ${ghArgs.join(' ')}`)
 
 try {
-  run(baseArgs.join(' '))
+  runCommand('gh', ghArgs)
   console.log('\n✅ Release completed successfully.')
 } catch (error) {
   console.error('\nRelease command failed.')
