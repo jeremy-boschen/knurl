@@ -58,6 +58,9 @@ yarn test
 
 # Production build
 yarn tauri build
+
+# Portal distribution bundle (zips platform images under dist/portal/<version>)
+yarn portal:package
 ```
 
 ## Project Structure

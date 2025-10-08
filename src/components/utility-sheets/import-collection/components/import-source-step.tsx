@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch"
 
 interface ImportSourceStepProps {
   importFormat: ImportFormat
-  detectedFormat: "native" | "openapi" | null
+  detectedFormat: "native" | "openapi" | "postman" | null
   onChooseFile: () => void
   onPaste: () => void
   onFormatChange: (format: ImportFormat) => void
@@ -26,6 +26,7 @@ const ImportFormatName: { [K in ImportFormat]: string } = {
   auto: "Auto-Detect",
   native: "Native Knurl",
   openapi: "OpenAPI v3+",
+  postman: "Postman Collection v2.1",
 }
 
 export function ImportSourceStep({

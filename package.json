@@ -17,6 +17,7 @@
     "format": "biome format --write && cd src-tauri && cargo fmt",
     "lint": "biome lint && cd src-tauri && cargo clippy --all-targets -- -D warnings",
     "tauri": "tauri",
+    "portal:package": "node scripts/portal-package.mjs",
     "generate:icons": "node scripts/generate-icons.mjs",
     "oauth-server": "node scripts/oauth-mock-server.mjs",
     "security": "CHECK_TYPES=0 CHECK_LINT=0 CHECK_FMT_RUST=0 CHECK_CLIPPY=0 CHECK_TEST_FE=0 CHECK_TEST_BE=0 CHECK_AUDIT=1 CHECK_DENY=1 CHECK_GITLEAKS=1 bash scripts/check-local.sh",
@@ -119,7 +120,8 @@
     "vite-plugin-checker": "^0.11.0",
     "vitest": "^3.2.4",
     "vitest-browser-react": "^1.0.1",
-    "webdriverio": "^9.20.0"
+    "webdriverio": "^9.20.0",
+    "yazl": "^2.5.1"
   },
   "optionalDependencies": {
     "@biomejs/cli-linux-x64": "^2.2.5",
