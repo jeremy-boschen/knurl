@@ -28,11 +28,11 @@ export default function AppLayout() {
   }
 
   // Apply size changes when isCollapsed changes
-  // This runs after the component re-renders with the new preferredSize
   useEffect(() => {
     // Only trigger on actual changes, not initial mount
     if (prevCollapsedRef.current !== isCollapsed && splitviewRef.current) {
-      splitviewRef.current.reset()
+      const targetSize = isCollapsed ? COLLAPSED_SIZE : MIN_EXPANDED_SIZE
+      splitviewRef.current.resize([targetSize])
     }
     prevCollapsedRef.current = isCollapsed
   }, [isCollapsed])
@@ -62,7 +62,7 @@ export default function AppLayout() {
       const targetSize = currentSize < midpoint ? COLLAPSED_SIZE : MIN_EXPANDED_SIZE
 
       if (splitviewRef.current) {
-        splitviewRef.current.resize(0, targetSize)
+        splitviewRef.current.resize([targetSize])
       }
     }
   }
