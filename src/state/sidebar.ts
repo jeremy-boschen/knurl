@@ -1,8 +1,11 @@
-import type { ImperativePanelHandle } from "react-resizable-panels"
+import type { AllotmentHandle } from "allotment"
 
 import type { StateCreator } from "zustand"
 
 import type { Application, SidebarApi, SidebarSlice } from "@/types"
+
+const COLLAPSED_SIZE = 50
+const EXPANDED_SIZE = 250
 
 export const sidebarSliceCreator: StateCreator<
   Application,
@@ -16,9 +19,9 @@ export const sidebarSliceCreator: StateCreator<
         app.sidebarState.isCollapsed = collapsed
       })
 
-      const panelApi = get().sidebarState.panelApi
-      if (panelApi) {
-        collapsed ? panelApi.collapse() : panelApi.expand()
+      const splitviewApi = get().sidebarState.splitviewApi
+      if (splitviewApi) {
+        splitviewApi.resize(0, collapsed ? COLLAPSED_SIZE : EXPANDED_SIZE)
       }
     },
 
@@ -30,9 +33,9 @@ export const sidebarSliceCreator: StateCreator<
       sidebarApi.setCollapsed(false)
     },
 
-    setPanelApi(panel: ImperativePanelHandle | null) {
+    setSplitviewApi(splitview: AllotmentHandle | null) {
       set((app) => {
-        app.sidebarState.panelApi = panel
+        app.sidebarState.splitviewApi = splitview
       })
     },
   }
@@ -40,7 +43,7 @@ export const sidebarSliceCreator: StateCreator<
   return {
     sidebarState: {
       isCollapsed: true,
-      panelApi: null,
+      splitviewApi: null,
     },
     sidebarApi,
   }

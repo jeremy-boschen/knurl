@@ -1,6 +1,7 @@
 import type * as React from "react"
 import { useRef, useState } from "react"
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
+import { Allotment } from "allotment"
+import "allotment/dist/style.css"
 
 import { ChevronDownIcon, LayoutPanelLeftIcon, LayoutPanelTopIcon, SaveIcon, SendIcon, SquareIcon } from "lucide-react"
 
@@ -104,10 +105,6 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
   }
 
   const isVerticalLayout = layout === "vertical"
-  const panelResizeCursor = isVerticalLayout ? "cursor-row-resize" : "cursor-col-resize"
-  const panelGroupDirection = isVerticalLayout ? "vertical" : "horizontal"
-  const panelGroupFlexDirection = isVerticalLayout ? "flex-col" : "flex-row"
-  const resizeHandleLineClass = isVerticalLayout ? "h-[1px] w-full" : "w-[1px] h-full"
   const hasResponse = Boolean(activeTab.response)
 
   const handleExport = async (format: "curl" | "wget" | "fetch") => {
@@ -146,13 +143,8 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
       )}
 
       <div className="flex h-full flex-1 flex-col overflow-auto" data-test-id="request-workspace">
-        <PanelGroup
-          key={layout}
-          direction={panelGroupDirection}
-          className={cn("flex h-full w-full", panelGroupFlexDirection)}
-          onLayout={handleResize}
-        >
-          <Panel minSize={hasResponse ? (isVerticalLayout ? 5 : 20) : undefined} className="overflow-hidden">
+        <Allotment key={layout} vertical={isVerticalLayout} proportionalLayout={false} onChange={handleResize}>
+          <Allotment.Pane minSize={hasResponse ? (isVerticalLayout ? 100 : 200) : 100} className="overflow-hidden">
             <div className="flex h-full w-full flex-col">
               <div className="w-full shrink-0 bg-muted py-3 px-2">
                 <div className="flex w-full items-center gap-2">
@@ -287,23 +279,17 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
                 <RequestEditor tabId={activeTab.tabId} />
               </ErrorBoundary>
             </div>
-          </Panel>
+          </Allotment.Pane>
 
           {hasResponse && (
-            <>
-              <PanelResizeHandle className={cn("z-10 flex items-center justify-center", panelResizeCursor)}>
-                <div className={cn("bg-muted", resizeHandleLineClass)} />
-              </PanelResizeHandle>
-
-              <Panel className="overflow-auto" minSize={isVerticalLayout ? undefined : 20}>
-                <ResponseViewer
-                  tabId={activeTab.tabId}
-                  className={cn(!isVerticalLayout && "border-l border-l-background")}
-                />
-              </Panel>
-            </>
+            <Allotment.Pane className="overflow-auto" minSize={isVerticalLayout ? 100 : 200}>
+              <ResponseViewer
+                tabId={activeTab.tabId}
+                className={cn(!isVerticalLayout && "border-l border-l-background")}
+              />
+            </Allotment.Pane>
           )}
-        </PanelGroup>
+        </Allotment>
       </div>
     </>
   )
