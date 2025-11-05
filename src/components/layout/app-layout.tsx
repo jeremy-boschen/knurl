@@ -18,57 +18,36 @@ export default function AppLayout() {
     isCollapsed,
   } = useSidebar()
   const activeTabId = useActiveTabId()
-  const isProgrammaticResizeRef = useRef(false)
   const splitviewRef = useRef<AllotmentHandle | null>(null)
 
-  // Handle ref setup and track programmatic resizes
+  // Handle ref setup
   const handleSplitviewRef = (ref: AllotmentHandle | null) => {
     splitviewRef.current = ref
-
-    // Wrap the resize method to track programmatic resizes
-    if (ref) {
-      const originalResize = ref.resize.bind(ref)
-      ref.resize = (index: number, size: number) => {
-        isProgrammaticResizeRef.current = true
-        originalResize(index, size)
-        // Reset after a short delay to allow onChange to fire
-        setTimeout(() => {
-          isProgrammaticResizeRef.current = false
-        }, 50)
-      }
-    }
-
     setSplitviewApi(ref)
   }
 
-  // Implement hysteresis for content switching
+  // Simple VSCode-like behavior: snap between collapsed and expanded
   const handleResize = (sizes: number[]) => {
     const sidebarSize = sizes[0]
 
-    // Skip state updates during programmatic resizes (button clicks)
-    if (isProgrammaticResizeRef.current) {
-      return
-    }
-
-    // Hysteresis: maintain current state until crossing the opposite threshold
-    if (isCollapsed) {
-      // Currently collapsed - only switch to expanded when reaching MIN_EXPANDED_SIZE
-      if (sidebarSize >= MIN_EXPANDED_SIZE) {
-        setCollapsed(false)
-      }
-    } else {
-      // Currently expanded - only switch to collapsed when reaching COLLAPSED_SIZE
-      if (sidebarSize <= COLLAPSED_SIZE + 10) { // Small buffer to trigger collapse
+    // Determine if we should be collapsed or expanded based on size
+    // Simple rule: if below threshold, snap to collapsed; if above, ensure minimum expanded size
+    if (sidebarSize < SNAP_THRESHOLD) {
+      // Below threshold - snap to collapsed
+      if (sidebarSize !== COLLAPSED_SIZE) {
+        setCollapsed(true)
+        if (splitviewRef.current && sidebarSize > COLLAPSED_SIZE) {
+          splitviewRef.current.resize(0, COLLAPSED_SIZE)
+        }
+      } else {
         setCollapsed(true)
       }
-    }
-
-    // Snap to valid sizes during manual resize
-    if (sidebarSize > COLLAPSED_SIZE && sidebarSize < MIN_EXPANDED_SIZE) {
-      // Determine snap target based on which side of threshold we're closer to
-      const targetSize = sidebarSize < SNAP_THRESHOLD ? COLLAPSED_SIZE : MIN_EXPANDED_SIZE
-      if (splitviewRef.current) {
-        splitviewRef.current.resize(0, targetSize)
+    } else {
+      // Above threshold - ensure expanded
+      setCollapsed(false)
+      if (sidebarSize < MIN_EXPANDED_SIZE && splitviewRef.current) {
+        // Snap to minimum expanded size if below it
+        splitviewRef.current.resize(0, MIN_EXPANDED_SIZE)
       }
     }
   }
