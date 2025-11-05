@@ -1,4 +1,4 @@
-import type { ImperativePanelHandle } from "react-resizable-panels"
+import type { PanelHandle } from "@/components/ui/resizable"
 
 import type { StateCreator } from "zustand"
 
@@ -30,7 +30,7 @@ export const sidebarSliceCreator: StateCreator<
       sidebarApi.setCollapsed(false)
     },
 
-    setPanelApi(panel: ImperativePanelHandle | null) {
+    setPanelApi(panel: PanelHandle | null) {
       set((app) => {
         app.sidebarState.panelApi = panel
       })

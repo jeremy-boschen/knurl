@@ -1,55 +1,15 @@
-import { useEffect, useState } from "react"
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
-
-import { getCurrentWindow } from "@tauri-apps/api/window"
-
+import { Panel, PanelGroup, PanelResizeHandle } from "@/components/ui/resizable"
 import RequestWorkspace from "@/components/request/request-workspace"
 import { UtilitySheetHost } from "@/components/utility-sheets/utility-sheet-host"
 import { useActiveTabId, useSidebar } from "@/state"
 import { AppHeader } from "./app-header"
 import Sidebar from "./sidebar"
 
-export function useTauriWindowSize() {
-  const [size, setSize] = useState<{ width: number; height: number } | null>(null)
-
-  useEffect(() => {
-    let unlisten: (() => void) | undefined
-    const setup = async () => {
-      const w = getCurrentWindow()
-      // seed initial size
-      const inner = await w.innerSize()
-      setSize({ width: inner.width, height: inner.height })
-
-      // listen for resizes
-      unlisten = await w.onResized(({ payload }) => {
-        // Reduce the number of setSize updates we make
-        if (payload.width % 2 === 0) {
-          setSize({ width: payload.width, height: payload.height })
-        }
-      })
-    }
-    void setup()
-
-    return () => {
-      if (unlisten) {
-        unlisten()
-      }
-    }
-  }, [])
-
-  return size
-}
-
 export default function AppLayout() {
   const {
     actions: { setPanelApi, collapseSidebar, expandSidebar },
   } = useSidebar()
   const activeTabId = useActiveTabId()
-  const windowSize = useTauriWindowSize()
-
-  const collapsedSize = windowSize?.width
-    ? Math.max((50 / windowSize.width) * 100, (36 / windowSize.width) * 100, 4)
-    : 4
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground" data-test-id="app-layout">
@@ -58,9 +18,9 @@ export default function AppLayout() {
         <PanelGroup direction="horizontal" className="flex h-full w-full">
           <Panel
             ref={setPanelApi}
-            minSize={20}
-            defaultSize={25}
-            collapsedSize={collapsedSize}
+            minSize="20%"
+            defaultSize="25%"
+            collapsedSize="50px"
             className="overflow-hidden"
             collapsible
             onCollapse={collapseSidebar}

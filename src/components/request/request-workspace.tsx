@@ -1,6 +1,6 @@
 import type * as React from "react"
 import { useRef, useState } from "react"
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
+import { Panel, PanelGroup, PanelResizeHandle } from "@/components/ui/resizable"
 
 import { ChevronDownIcon, LayoutPanelLeftIcon, LayoutPanelTopIcon, SaveIcon, SendIcon, SquareIcon } from "lucide-react"
 
@@ -152,7 +152,7 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
           className={cn("flex h-full w-full", panelGroupFlexDirection)}
           onLayout={handleResize}
         >
-          <Panel minSize={hasResponse ? (isVerticalLayout ? 5 : 20) : undefined} className="overflow-hidden">
+          <Panel minSize={hasResponse ? (isVerticalLayout ? "5%" : "20%") : undefined} className="overflow-hidden">
             <div className="flex h-full w-full flex-col">
               <div className="w-full shrink-0 bg-muted py-3 px-2">
                 <div className="flex w-full items-center gap-2">
@@ -295,7 +295,7 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
                 <div className={cn("bg-muted", resizeHandleLineClass)} />
               </PanelResizeHandle>
 
-              <Panel className="overflow-auto" minSize={isVerticalLayout ? undefined : 20}>
+              <Panel className="overflow-auto" minSize={isVerticalLayout ? undefined : "20%"}>
                 <ResponseViewer
                   tabId={activeTab.tabId}
                   className={cn(!isVerticalLayout && "border-l border-l-background")}
