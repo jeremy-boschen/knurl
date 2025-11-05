@@ -4,9 +4,6 @@ import type { StateCreator } from "zustand"
 
 import type { Application, SidebarApi, SidebarSlice } from "@/types"
 
-const COLLAPSED_SIZE = 50
-const MIN_EXPANDED_SIZE = 250
-
 export const sidebarSliceCreator: StateCreator<
   Application,
   [["zustand/immer", never], ["zustand/subscribeWithSelector", never]],
@@ -17,7 +14,9 @@ export const sidebarSliceCreator: StateCreator<
     setCollapsed(collapsed: boolean) {
       // Only update state if it's actually changing
       const currentState = get().sidebarState.isCollapsed
-      if (currentState === collapsed) return
+      if (currentState === collapsed) {
+        return
+      }
 
       set((app) => {
         app.sidebarState.isCollapsed = collapsed
@@ -30,10 +29,10 @@ export const sidebarSliceCreator: StateCreator<
         app.sidebarState.isCollapsed = true
       })
 
-      // Resize to collapsed size
+      // Reset to apply the new preferredSize
       const splitviewApi = get().sidebarState.splitviewApi
       if (splitviewApi) {
-        splitviewApi.resize(0, COLLAPSED_SIZE)
+        splitviewApi.reset()
       }
     },
 
@@ -43,10 +42,10 @@ export const sidebarSliceCreator: StateCreator<
         app.sidebarState.isCollapsed = false
       })
 
-      // Resize to expanded size
+      // Reset to apply the new preferredSize
       const splitviewApi = get().sidebarState.splitviewApi
       if (splitviewApi) {
-        splitviewApi.resize(0, MIN_EXPANDED_SIZE)
+        splitviewApi.reset()
       }
     },
 
