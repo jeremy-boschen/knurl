@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Allotment, type AllotmentHandle } from "allotment"
 import "allotment/dist/style.css"
 
@@ -13,56 +13,64 @@ const MIN_EXPANDED_SIZE = 250
 
 export default function AppLayout() {
   const {
-    actions: { setSplitviewApi, setCollapsed },
+    actions: { setCollapsed },
     isCollapsed,
   } = useSidebar()
   const activeTabId = useActiveTabId()
-  const splitviewRef = useRef<AllotmentHandle | null>(null)
-  const lastSizeRef = useRef<number>(COLLAPSED_SIZE)
-  const prevCollapsedRef = useRef<boolean>(isCollapsed)
+  const allotmentRef = useRef<AllotmentHandle | null>(null)
+  const [containerWidth, setContainerWidth] = useState<number>(0)
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
-  // Handle ref setup
-  const handleSplitviewRef = (ref: AllotmentHandle | null) => {
-    splitviewRef.current = ref
-    setSplitviewApi(ref)
-  }
-
-  // Apply size changes when isCollapsed changes
+  // Track container width
   useEffect(() => {
-    // Only trigger on actual changes, not initial mount
-    if (prevCollapsedRef.current !== isCollapsed && splitviewRef.current) {
-      const targetSize = isCollapsed ? COLLAPSED_SIZE : MIN_EXPANDED_SIZE
-      splitviewRef.current.resize([targetSize])
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth)
+      }
     }
-    prevCollapsedRef.current = isCollapsed
-  }, [isCollapsed])
 
-  // Track size changes and update collapsed state
-  // DO NOT call resize() here - that creates infinite loop
+    updateWidth()
+    window.addEventListener('resize', updateWidth)
+    return () => window.removeEventListener('resize', updateWidth)
+  }, [])
+
+  // When isCollapsed changes, resize both panes
+  useEffect(() => {
+    if (allotmentRef.current && containerWidth > 0) {
+      const sidebarSize = isCollapsed ? COLLAPSED_SIZE : MIN_EXPANDED_SIZE
+      const mainContentSize = containerWidth - sidebarSize
+      allotmentRef.current.resize([sidebarSize, mainContentSize])
+    }
+  }, [isCollapsed, containerWidth])
+
+  // Track size changes from user dragging
   const handleResize = (sizes: number[]) => {
     const sidebarSize = sizes[0]
-    lastSizeRef.current = sidebarSize
 
     // Update collapsed state based on current size
-    // Simple rule: below min expanded size = collapsed
     if (sidebarSize < MIN_EXPANDED_SIZE) {
-      setCollapsed(true)
+      if (!isCollapsed) {
+        setCollapsed(true)
+      }
     } else {
-      setCollapsed(false)
+      if (isCollapsed) {
+        setCollapsed(false)
+      }
     }
   }
 
-  // When user releases the drag, snap to appropriate size
-  const handleDragEnd = () => {
-    const currentSize = lastSizeRef.current
+  // When user releases drag, snap to appropriate size
+  const handleDragEnd = (sizes: number[]) => {
+    const sidebarSize = sizes[0]
 
-    if (currentSize > COLLAPSED_SIZE && currentSize < MIN_EXPANDED_SIZE) {
-      // In the "snap zone" - decide which way to snap
+    if (sidebarSize > COLLAPSED_SIZE && sidebarSize < MIN_EXPANDED_SIZE) {
+      // In the snap zone - decide which way to snap
       const midpoint = (COLLAPSED_SIZE + MIN_EXPANDED_SIZE) / 2
-      const targetSize = currentSize < midpoint ? COLLAPSED_SIZE : MIN_EXPANDED_SIZE
+      const targetSize = sidebarSize < midpoint ? COLLAPSED_SIZE : MIN_EXPANDED_SIZE
+      const mainContentSize = containerWidth - targetSize
 
-      if (splitviewRef.current) {
-        splitviewRef.current.resize([targetSize])
+      if (allotmentRef.current) {
+        allotmentRef.current.resize([targetSize, mainContentSize])
       }
     }
   }
@@ -70,19 +78,15 @@ export default function AppLayout() {
   return (
     <div className="flex h-screen flex-col bg-background text-foreground" data-test-id="app-layout">
       <UtilitySheetHost />
-      <div className="flex h-full flex-1 overflow-hidden">
+      <div className="flex h-full flex-1 overflow-hidden" ref={containerRef}>
         <Allotment
-          ref={handleSplitviewRef}
+          ref={allotmentRef}
           vertical={false}
           proportionalLayout={false}
           onChange={handleResize}
           onDragEnd={handleDragEnd}
         >
-          <Allotment.Pane
-            minSize={COLLAPSED_SIZE}
-            preferredSize={isCollapsed ? COLLAPSED_SIZE : MIN_EXPANDED_SIZE}
-            className="overflow-hidden"
-          >
+          <Allotment.Pane minSize={COLLAPSED_SIZE} className="overflow-hidden">
             <Sidebar />
           </Allotment.Pane>
 

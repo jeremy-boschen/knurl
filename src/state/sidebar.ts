@@ -1,5 +1,3 @@
-import type { AllotmentHandle } from "allotment"
-
 import type { StateCreator } from "zustand"
 
 import type { Application, SidebarApi, SidebarSlice } from "@/types"
@@ -12,7 +10,6 @@ export const sidebarSliceCreator: StateCreator<
 > = (set, get, _storeApi) => {
   const sidebarApi: SidebarApi = {
     setCollapsed(collapsed: boolean) {
-      // Only update state if it's actually changing
       const currentState = get().sidebarState.isCollapsed
       if (currentState === collapsed) {
         return
@@ -34,18 +31,11 @@ export const sidebarSliceCreator: StateCreator<
         app.sidebarState.isCollapsed = false
       })
     },
-
-    setSplitviewApi(splitview: AllotmentHandle | null) {
-      set((app) => {
-        app.sidebarState.splitviewApi = splitview
-      })
-    },
   }
 
   return {
     sidebarState: {
       isCollapsed: true,
-      splitviewApi: null,
     },
     sidebarApi,
   }
