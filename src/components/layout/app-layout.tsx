@@ -1,4 +1,4 @@
-import { useRef } from "react"
+import { useEffect, useRef } from "react"
 import { Allotment, type AllotmentHandle } from "allotment"
 import "allotment/dist/style.css"
 
@@ -19,12 +19,23 @@ export default function AppLayout() {
   const activeTabId = useActiveTabId()
   const splitviewRef = useRef<AllotmentHandle | null>(null)
   const lastSizeRef = useRef<number>(COLLAPSED_SIZE)
+  const prevCollapsedRef = useRef<boolean>(isCollapsed)
 
   // Handle ref setup
   const handleSplitviewRef = (ref: AllotmentHandle | null) => {
     splitviewRef.current = ref
     setSplitviewApi(ref)
   }
+
+  // Apply size changes when isCollapsed changes
+  // This runs after the component re-renders with the new preferredSize
+  useEffect(() => {
+    // Only trigger on actual changes, not initial mount
+    if (prevCollapsedRef.current !== isCollapsed && splitviewRef.current) {
+      splitviewRef.current.reset()
+    }
+    prevCollapsedRef.current = isCollapsed
+  }, [isCollapsed])
 
   // Track size changes and update collapsed state
   // DO NOT call resize() here - that creates infinite loop

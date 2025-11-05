@@ -24,29 +24,15 @@ export const sidebarSliceCreator: StateCreator<
     },
 
     collapseSidebar() {
-      // Update state
       set((app) => {
         app.sidebarState.isCollapsed = true
       })
-
-      // Reset to apply the new preferredSize
-      const splitviewApi = get().sidebarState.splitviewApi
-      if (splitviewApi) {
-        splitviewApi.reset()
-      }
     },
 
     expandSidebar() {
-      // Update state
       set((app) => {
         app.sidebarState.isCollapsed = false
       })
-
-      // Reset to apply the new preferredSize
-      const splitviewApi = get().sidebarState.splitviewApi
-      if (splitviewApi) {
-        splitviewApi.reset()
-      }
     },
 
     setSplitviewApi(splitview: AllotmentHandle | null) {
