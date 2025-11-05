@@ -4,6 +4,9 @@ import type { StateCreator } from "zustand"
 
 import type { Application, SidebarApi, SidebarSlice } from "@/types"
 
+// Store panelApi outside of Immer state to avoid circular reference issues
+let panelApiRef: PanelHandle | null = null
+
 export const sidebarSliceCreator: StateCreator<
   Application,
   [["zustand/immer", never], ["zustand/subscribeWithSelector", never]],
@@ -16,9 +19,9 @@ export const sidebarSliceCreator: StateCreator<
         app.sidebarState.isCollapsed = collapsed
       })
 
-      const panelApi = get().sidebarState.panelApi
-      if (panelApi) {
-        collapsed ? panelApi.collapse() : panelApi.expand()
+      // Use the module-level ref instead of state
+      if (panelApiRef) {
+        collapsed ? panelApiRef.collapse() : panelApiRef.expand()
       }
     },
 
@@ -31,9 +34,9 @@ export const sidebarSliceCreator: StateCreator<
     },
 
     setPanelApi(panel: PanelHandle | null) {
-      set((app) => {
-        app.sidebarState.panelApi = panel
-      })
+      // Store in module-level ref only, not in Immer state
+      // This avoids circular reference issues with Immer proxies
+      panelApiRef = panel
     },
   }
 

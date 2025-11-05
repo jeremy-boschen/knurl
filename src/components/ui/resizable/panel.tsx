@@ -84,9 +84,11 @@ export const Panel = forwardRef<PanelHandle, PanelProps>(function Panel(
   )
 
   const currentSize = context.getPanelSize(panelId)
-  const flexGrow = currentSize > 0 ? currentSize : 1
-  const flexShrink = currentSize > 0 ? 0 : 1
-  const flexBasis = currentSize > 0 ? `${currentSize}%` : "0%"
+
+  // If panel has an explicit size, don't grow/shrink (fixed size)
+  // If panel has no size, grow to fill remaining space
+  const hasSize = currentSize > 0
+  const flex = hasSize ? `0 0 ${currentSize}%` : "1 1 0%"
 
   return (
     <div
@@ -95,9 +97,7 @@ export const Panel = forwardRef<PanelHandle, PanelProps>(function Panel(
       className={className}
       style={{
         ...style,
-        flexGrow,
-        flexShrink,
-        flexBasis,
+        flex,
         overflow: "hidden",
         position: "relative",
       }}
