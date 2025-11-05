@@ -3,7 +3,6 @@ import { forwardRef } from "react"
 
 const KnurlIcon = forwardRef<SVGSVGElement, SVGProps<SVGSVGElement>>((props, ref) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 355 355" ref={ref} {...props}>
-    \<title>KNURL</title>
     <path
       d="M350 101 256 6c-2-3-6-5-11-5h-14c-3 0-5 3-5 5l1 41c0 2 1 4 3 5 36 14 64 44 77 81 0 2 2 3 4 3l39 1c2 1 5-2 5-5v-20c0-4-2-8-5-11Z"
       style={{ fill: "#f26522" }}
