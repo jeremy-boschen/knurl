@@ -163,7 +163,7 @@ type SidebarHookActions = {
   setCollapsed: (collapsed: boolean) => void
   collapseSidebar: () => void
   expandSidebar: () => void
-  setPanelApi: SidebarApi["setPanelApi"]
+  setSplitviewApi: SidebarApi["setSplitviewApi"]
 }
 
 type SidebarHookState = Pick<SidebarState, "isCollapsed">
@@ -180,7 +180,7 @@ export const useSidebar = (): HookResult<SidebarHookState, SidebarHookActions> =
       setCollapsed: (collapsed: boolean) => getSidebarApi().setCollapsed(collapsed),
       collapseSidebar: () => getSidebarApi().collapseSidebar(),
       expandSidebar: () => getSidebarApi().expandSidebar(),
-      setPanelApi: (panel) => getSidebarApi().setPanelApi(panel),
+      setSplitviewApi: (splitview) => getSidebarApi().setSplitviewApi(splitview),
     },
   }
 }
