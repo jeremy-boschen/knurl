@@ -29,30 +29,14 @@ export function PanelGroup({ direction, className, style, children, onLayout }: 
     return () => resizeObserver.disconnect()
   }, [direction])
 
-  // Register a panel
-  const registerPanel = useCallback(
-    (panel: PanelData) => {
-      setPanels((prev) => {
-        const next = new Map(prev)
-        next.set(panel.id, panel)
-        return next
-      })
-
-      // Initialize size if defaultSize is provided
-      if (panel.constraints.defaultSize !== undefined) {
-        const parsed = parseSize(panel.constraints.defaultSize)
-        if (parsed && containerSize > 0) {
-          const percentage = sizeToPercentage(parsed, containerSize)
-          setPanelSizes((prev) => {
-            const next = new Map(prev)
-            next.set(panel.id, percentage)
-            return next
-          })
-        }
-      }
-    },
-    [containerSize],
-  )
+  // Register a panel - stable callback
+  const registerPanel = useCallback((panel: PanelData) => {
+    setPanels((prev) => {
+      const next = new Map(prev)
+      next.set(panel.id, panel)
+      return next
+    })
+  }, [])
 
   // Unregister a panel
   const unregisterPanel = useCallback((id: string) => {
@@ -67,6 +51,30 @@ export function PanelGroup({ direction, className, style, children, onLayout }: 
       return next
     })
   }, [])
+
+  // Initialize panel sizes when panels register or container size changes
+  useEffect(() => {
+    if (containerSize === 0) {
+      return
+    }
+
+    panels.forEach((panel) => {
+      const currentSize = panelSizes.get(panel.id)
+
+      // Only initialize if not already set and has defaultSize
+      if (currentSize === undefined && panel.constraints.defaultSize !== undefined) {
+        const parsed = parseSize(panel.constraints.defaultSize)
+        if (parsed) {
+          const percentage = sizeToPercentage(parsed, containerSize)
+          setPanelSizes((prev) => {
+            const next = new Map(prev)
+            next.set(panel.id, percentage)
+            return next
+          })
+        }
+      }
+    })
+  }, [panels, containerSize, panelSizes])
 
   // Get current size of a panel
   const getPanelSize = useCallback(
@@ -159,6 +167,9 @@ export function PanelGroup({ direction, className, style, children, onLayout }: 
     // For now, we'll implement the basic structure
     console.log("Start resize", handleIndex)
   }, [])
+
+  // Get group element - stable function that returns current ref
+  const getGroupElement = useCallback(() => groupRef.current, [])
 
   // Notify parent of layout changes
   useEffect(() => {

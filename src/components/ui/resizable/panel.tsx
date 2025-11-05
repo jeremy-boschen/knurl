@@ -24,7 +24,13 @@ export const Panel = forwardRef<PanelHandle, PanelProps>(function Panel(
   const elementRef = useRef<HTMLDivElement>(null)
   const context = usePanelGroupContext()
 
-  // Register panel with group
+  // Store callbacks in ref to avoid re-registration
+  const callbacksRef = useRef({ onCollapse, onExpand, onResize })
+  useEffect(() => {
+    callbacksRef.current = { onCollapse, onExpand, onResize }
+  }, [onCollapse, onExpand, onResize])
+
+  // Register panel with group ONCE on mount
   useEffect(() => {
     const panelData = {
       id: panelId,
@@ -37,9 +43,9 @@ export const Panel = forwardRef<PanelHandle, PanelProps>(function Panel(
       },
       element: elementRef.current,
       callbacks: {
-        onCollapse,
-        onExpand,
-        onResize,
+        onCollapse: () => callbacksRef.current.onCollapse?.(),
+        onExpand: () => callbacksRef.current.onExpand?.(),
+        onResize: (size: number) => callbacksRef.current.onResize?.(size),
       },
     }
 
@@ -48,7 +54,9 @@ export const Panel = forwardRef<PanelHandle, PanelProps>(function Panel(
     return () => {
       context.unregisterPanel(panelId)
     }
-  }, [panelId, defaultSize, minSize, maxSize, collapsible, collapsedSize, onCollapse, onExpand, onResize, context])
+    // Only register once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panelId])
 
   // Expose imperative handle
   useImperativeHandle(
