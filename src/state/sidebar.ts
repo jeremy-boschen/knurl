@@ -5,7 +5,7 @@ import type { StateCreator } from "zustand"
 import type { Application, SidebarApi, SidebarSlice } from "@/types"
 
 const COLLAPSED_SIZE = 50
-const EXPANDED_SIZE = 250
+const MIN_EXPANDED_SIZE = 250
 
 export const sidebarSliceCreator: StateCreator<
   Application,
@@ -15,22 +15,39 @@ export const sidebarSliceCreator: StateCreator<
 > = (set, get, _storeApi) => {
   const sidebarApi: SidebarApi = {
     setCollapsed(collapsed: boolean) {
+      // Only update state if it's actually changing
+      const currentState = get().sidebarState.isCollapsed
+      if (currentState === collapsed) return
+
       set((app) => {
         app.sidebarState.isCollapsed = collapsed
       })
-
-      const splitviewApi = get().sidebarState.splitviewApi
-      if (splitviewApi) {
-        splitviewApi.resize(0, collapsed ? COLLAPSED_SIZE : EXPANDED_SIZE)
-      }
     },
 
     collapseSidebar() {
-      sidebarApi.setCollapsed(true)
+      // Update state
+      set((app) => {
+        app.sidebarState.isCollapsed = true
+      })
+
+      // Resize to collapsed size
+      const splitviewApi = get().sidebarState.splitviewApi
+      if (splitviewApi) {
+        splitviewApi.resize(0, COLLAPSED_SIZE)
+      }
     },
 
     expandSidebar() {
-      sidebarApi.setCollapsed(false)
+      // Update state
+      set((app) => {
+        app.sidebarState.isCollapsed = false
+      })
+
+      // Resize to expanded size
+      const splitviewApi = get().sidebarState.splitviewApi
+      if (splitviewApi) {
+        splitviewApi.resize(0, MIN_EXPANDED_SIZE)
+      }
     },
 
     setSplitviewApi(splitview: AllotmentHandle | null) {
