@@ -10,7 +10,6 @@ import Sidebar from "./sidebar"
 
 const COLLAPSED_SIZE = 50
 const MIN_EXPANDED_SIZE = 250
-const SNAP_THRESHOLD = 150
 
 export default function AppLayout() {
   const {
@@ -19,6 +18,7 @@ export default function AppLayout() {
   } = useSidebar()
   const activeTabId = useActiveTabId()
   const splitviewRef = useRef<AllotmentHandle | null>(null)
+  const lastSizeRef = useRef<number>(COLLAPSED_SIZE)
 
   // Handle ref setup
   const handleSplitviewRef = (ref: AllotmentHandle | null) => {
@@ -26,28 +26,32 @@ export default function AppLayout() {
     setSplitviewApi(ref)
   }
 
-  // Simple VSCode-like behavior: snap between collapsed and expanded
+  // Track size changes and update collapsed state
+  // DO NOT call resize() here - that creates infinite loop
   const handleResize = (sizes: number[]) => {
     const sidebarSize = sizes[0]
+    lastSizeRef.current = sidebarSize
 
-    // Determine if we should be collapsed or expanded based on size
-    // Simple rule: if below threshold, snap to collapsed; if above, ensure minimum expanded size
-    if (sidebarSize < SNAP_THRESHOLD) {
-      // Below threshold - snap to collapsed
-      if (sidebarSize !== COLLAPSED_SIZE) {
-        setCollapsed(true)
-        if (splitviewRef.current && sidebarSize > COLLAPSED_SIZE) {
-          splitviewRef.current.resize(0, COLLAPSED_SIZE)
-        }
-      } else {
-        setCollapsed(true)
-      }
+    // Update collapsed state based on current size
+    // Simple rule: below min expanded size = collapsed
+    if (sidebarSize < MIN_EXPANDED_SIZE) {
+      setCollapsed(true)
     } else {
-      // Above threshold - ensure expanded
       setCollapsed(false)
-      if (sidebarSize < MIN_EXPANDED_SIZE && splitviewRef.current) {
-        // Snap to minimum expanded size if below it
-        splitviewRef.current.resize(0, MIN_EXPANDED_SIZE)
+    }
+  }
+
+  // When user releases the drag, snap to appropriate size
+  const handleDragEnd = () => {
+    const currentSize = lastSizeRef.current
+
+    if (currentSize > COLLAPSED_SIZE && currentSize < MIN_EXPANDED_SIZE) {
+      // In the "snap zone" - decide which way to snap
+      const midpoint = (COLLAPSED_SIZE + MIN_EXPANDED_SIZE) / 2
+      const targetSize = currentSize < midpoint ? COLLAPSED_SIZE : MIN_EXPANDED_SIZE
+
+      if (splitviewRef.current) {
+        splitviewRef.current.resize(0, targetSize)
       }
     }
   }
@@ -61,6 +65,7 @@ export default function AppLayout() {
           vertical={false}
           proportionalLayout={false}
           onChange={handleResize}
+          onDragEnd={handleDragEnd}
         >
           <Allotment.Pane
             minSize={COLLAPSED_SIZE}
