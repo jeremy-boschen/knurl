@@ -69,7 +69,7 @@ export default function AppLayout() {
         >
           <Allotment.Pane
             minSize={COLLAPSED_SIZE}
-            preferredSize={COLLAPSED_SIZE}
+            preferredSize={isCollapsed ? COLLAPSED_SIZE : MIN_EXPANDED_SIZE}
             className="overflow-hidden"
           >
             <Sidebar />
