@@ -18,37 +18,58 @@ export default function AppLayout() {
     isCollapsed,
   } = useSidebar()
   const activeTabId = useActiveTabId()
-  const isResizingRef = useRef(false)
+  const isProgrammaticResizeRef = useRef(false)
   const splitviewRef = useRef<AllotmentHandle | null>(null)
 
-  // Handle ref setup
+  // Handle ref setup and track programmatic resizes
   const handleSplitviewRef = (ref: AllotmentHandle | null) => {
     splitviewRef.current = ref
+
+    // Wrap the resize method to track programmatic resizes
+    if (ref) {
+      const originalResize = ref.resize.bind(ref)
+      ref.resize = (index: number, size: number) => {
+        isProgrammaticResizeRef.current = true
+        originalResize(index, size)
+        // Reset after a short delay to allow onChange to fire
+        setTimeout(() => {
+          isProgrammaticResizeRef.current = false
+        }, 50)
+      }
+    }
+
     setSplitviewApi(ref)
   }
 
-  // Enforce snap behavior: either collapsed (50px) or expanded (>=250px)
+  // Implement hysteresis for content switching
   const handleResize = (sizes: number[]) => {
     const sidebarSize = sizes[0]
 
-    // Update collapsed state based on size
-    if (sidebarSize < MIN_EXPANDED_SIZE) {
-      setCollapsed(true)
-    } else {
-      setCollapsed(false)
+    // Skip state updates during programmatic resizes (button clicks)
+    if (isProgrammaticResizeRef.current) {
+      return
     }
 
-    // Snap to collapsed or min expanded size
-    if (!isResizingRef.current && sidebarSize > COLLAPSED_SIZE && sidebarSize < MIN_EXPANDED_SIZE) {
-      isResizingRef.current = true
-      setTimeout(() => {
-        if (splitviewRef.current) {
-          // Snap based on which side of threshold we're on
-          const targetSize = sidebarSize < SNAP_THRESHOLD ? COLLAPSED_SIZE : MIN_EXPANDED_SIZE
-          splitviewRef.current.resize(0, targetSize)
-        }
-        isResizingRef.current = false
-      }, 0)
+    // Hysteresis: maintain current state until crossing the opposite threshold
+    if (isCollapsed) {
+      // Currently collapsed - only switch to expanded when reaching MIN_EXPANDED_SIZE
+      if (sidebarSize >= MIN_EXPANDED_SIZE) {
+        setCollapsed(false)
+      }
+    } else {
+      // Currently expanded - only switch to collapsed when reaching COLLAPSED_SIZE
+      if (sidebarSize <= COLLAPSED_SIZE + 10) { // Small buffer to trigger collapse
+        setCollapsed(true)
+      }
+    }
+
+    // Snap to valid sizes during manual resize
+    if (sidebarSize > COLLAPSED_SIZE && sidebarSize < MIN_EXPANDED_SIZE) {
+      // Determine snap target based on which side of threshold we're closer to
+      const targetSize = sidebarSize < SNAP_THRESHOLD ? COLLAPSED_SIZE : MIN_EXPANDED_SIZE
+      if (splitviewRef.current) {
+        splitviewRef.current.resize(0, targetSize)
+      }
     }
   }
 
@@ -64,8 +85,7 @@ export default function AppLayout() {
         >
           <Allotment.Pane
             minSize={COLLAPSED_SIZE}
-            preferredSize={isCollapsed ? COLLAPSED_SIZE : MIN_EXPANDED_SIZE}
-            snap
+            preferredSize={COLLAPSED_SIZE}
             className="overflow-hidden"
           >
             <Sidebar />
