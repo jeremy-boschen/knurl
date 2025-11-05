@@ -1,0 +1,99 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.2.5/schema.json",
+  "vcs": {
+    "enabled": false,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": [
+      "src/**/*",
+      "__tests__/**/*",
+      "!src-tauri",
+      "!node_modules",
+      "!src/components/ui/*.tsx",
+      "src/components/ui/knurl/**/*",
+      "!src/App.css",
+      "!src/**/*.test.ts",
+      "!src/**/*.test.tsx"
+    ]
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.test.ts", "**/*.test.tsx", "src/test/*.ts"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedFunctionParameters": "off"
+          },
+          "suspicious": {
+            "noDebugger": "off",
+            "noExplicitAny": "off"
+          },
+          "style": {
+            "noNonNullAssertion": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.css"],
+      "linter": {
+        "enabled": false
+      }
+    }
+  ],
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "lineWidth": 120,
+    "lineEnding": "lf"
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "correctness": {
+        // Fail on using undeclared variables (e.g., missing React imports)
+        "noUndeclaredVariables": "error"
+      },
+      "style": {
+        "useBlockStatements": "error"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "asNeeded",
+      "arrowParentheses": "always"
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": {
+          "level": "on",
+          "options": {
+            "groups": [
+              // 1) React-related first
+              ["react", "react-dom", "@types/react", "react*"],
+              ":BLANK_LINE:",
+              // 2) All packages (Node built-ins + external), excluding your alias
+              [":NODE:", ":PACKAGE:", "!@/**"],
+              ":BLANK_LINE:",
+              // 3) Project-local imports
+              ["@/**", "./**", "../**"]
+            ]
+          }
+        }
+      }
+    }
+  },
+  "css": {
+    "formatter": {
+      "quoteStyle": "double"
+    }
+  }
+}

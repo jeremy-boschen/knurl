@@ -1,0 +1,24 @@
+id: core.api-logging-and-monitoring
+name: API Logging and Monitoring
+area: Core
+summary_user: Monitor API requests and responses for debugging and performance improvement.
+summary_business: Helps identify and resolve issues in API usage, ensuring better performance and reliability.
+status: active
+confidence: 0.8
+last_verified: '2025-11-02T16:39:33.541Z'
+evidence:
+  - filePath: wdio.conf.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 05823afcc8edc215
+    snippet: Evidence from wdio.conf.ts
+  - filePath: third-party-rust-licenses.json
+    lineStart: 1
+    lineEnd: 100
+    contentHash: de2a6bc4054a2439
+    snippet: Evidence from third-party-rust-licenses.json
+  - filePath: package.json
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 108ef07cc5e186c9
+    snippet: Evidence from package.json

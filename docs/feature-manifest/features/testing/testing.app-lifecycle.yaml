@@ -1,0 +1,55 @@
+id: testing.app-lifecycle
+name: Application Lifecycle Management
+area: Testing
+summary_user: Automatic handling of app lifecycle events, such as startup and shutdown.
+summary_business: Ensures smooth operation and resource management across different stages of application execution.
+status: active
+confidence: 0.8
+last_verified: '2025-10-31T15:11:33.294Z'
+evidence:
+  - filePath: test/migration-parse.test.js
+    lineStart: 1
+    lineEnd: 100
+    contentHash: ffdc4a68c7776c30
+    snippet: Evidence from test/migration-parse.test.js
+  - filePath: test/support/state.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 2730b23be09bc9e7
+    snippet: Evidence from test/support/state.ts
+  - filePath: test/support/e2e-bridge.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 14a1b09ba5ba4a6e
+    snippet: Evidence from test/support/e2e-bridge.ts
+entry_points:
+  ui_routes:
+    - path: src/App.test.tsx
+      component: null
+      files:
+        - test/migration-parse.test.js
+        - test/support/state.ts
+data_model:
+  entities:
+    - name: ApplicationState
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - test/migration-parse.test.js
+        - test/support/state.ts
+    - name: LifecycleEvent
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - test/migration-parse.test.js
+        - test/support/state.ts
+configuration:
+  env_vars:
+    - name: APP_LIFECYCLE_ENABLED
+      required: false
+      default: null
+      used_in_files:
+        - test/migration-parse.test.js
+        - test/support/state.ts

@@ -1,0 +1,24 @@
+id: collections.manage-requests-within-collections
+name: Manage Requests within Collections
+area: Collections
+summary_user: Enables users to add, edit, rename, and delete requests within their collections.
+summary_business: Facilitates efficient organization and reuse of API requests through structured collection management.
+status: active
+confidence: 0.8
+last_verified: '2025-10-31T15:34:53.844Z'
+evidence:
+  - filePath: test/support/collections.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 1efb8a542407a5d2
+    snippet: Evidence from test/support/collections.ts
+  - filePath: test/specs/workspace-restore.e2e.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: d61c70c140a8f2c4
+    snippet: Evidence from test/specs/workspace-restore.e2e.ts
+  - filePath: test/specs/large-collections.e2e.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 3511a794eeebfd69
+    snippet: Evidence from test/specs/large-collections.e2e.ts

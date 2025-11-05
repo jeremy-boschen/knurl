@@ -1,0 +1,296 @@
+{
+  "metadata": {
+    "generatedAt": "2025-11-03T14:39:32.851Z",
+    "totalFeatures": 14,
+    "totalCategories": 3,
+    "ollamaModel": "qwen2.5-coder:7b",
+    "ollamaAvailable": true
+  },
+  "documentation": [
+    {
+      "category": "Collections",
+      "order": 1,
+      "description": "Organize your API requests into collections",
+      "features": [
+        {
+          "id": "collections.add-request",
+          "originalName": "Add Request to Collection",
+          "area": "Collections",
+          "summary": "Enables users to add requests to existing collections for better organization.",
+          "status": "active",
+          "confidence": 0.8,
+          "uiComponents": [],
+          "uiRoutes": [],
+          "relatedFeatures": [],
+          "userCategory": "Collections",
+          "complexity": "beginner",
+          "userTitle": "Organize Your Requests",
+          "userDescription": "To keep your web tests neat and tidy, add them to collections like putting emails in folders.",
+          "userWorkflow": "collections"
+        },
+        {
+          "id": "collections.create-collection",
+          "originalName": "Create Collection",
+          "area": "Collections",
+          "summary": "Allows users to create new collections for organizing API requests.",
+          "status": "active",
+          "confidence": 0.8,
+          "uiComponents": [],
+          "uiRoutes": [],
+          "relatedFeatures": [],
+          "userCategory": "Collections",
+          "complexity": "beginner",
+          "userTitle": "Organize Your Requests",
+          "userDescription": "To keep your API testing tidy, you can create collections to sort your requests, just like organizing emails into folders.",
+          "userWorkflow": "collections"
+        },
+        {
+          "id": "collections.delete-collection",
+          "originalName": "Delete Collection",
+          "area": "Collections",
+          "summary": "Allows users to remove collections that are no longer needed.",
+          "status": "active",
+          "confidence": 0.8,
+          "uiComponents": [],
+          "uiRoutes": [],
+          "relatedFeatures": [],
+          "userCategory": "Collections",
+          "complexity": "beginner",
+          "userTitle": "Delete Unused Requests",
+          "userDescription": "To remove collections of requests you no longer need, making your workspace cleaner and more organized.",
+          "userWorkflow": "collections"
+        },
+        {
+          "id": "collections.delete-request",
+          "originalName": "Delete Request from Collection",
+          "area": "Collections",
+          "summary": "Allows users to remove requests from collections that are no longer needed.",
+          "status": "active",
+          "confidence": 0.8,
+          "uiComponents": [],
+          "uiRoutes": [],
+          "relatedFeatures": [],
+          "userCategory": "Collections",
+          "complexity": "beginner",
+          "userTitle": "Remove Unused Requests",
+          "userDescription": "Easily delete requests from collections to keep your testing organized.",
+          "userWorkflow": "collections"
+        },
+        {
+          "id": "collections.edit-request",
+          "originalName": "Edit Request in Collection",
+          "area": "Collections",
+          "summary": "Allows users to edit existing requests within their collections, such as updating details or parameters.",
+          "status": "active",
+          "confidence": 0.8,
+          "uiComponents": [],
+          "uiRoutes": [],
+          "relatedFeatures": [],
+          "userCategory": "Collections",
+          "complexity": "beginner",
+          "userTitle": "Edit Your Requests",
+          "userDescription": "Update details or parameters of your requests easily within collections, just like organizing your favorite recipes in folders.",
+          "userWorkflow": "collections"
+        },
+        {
+          "id": "collections.move-request-between-collections",
+          "originalName": "Move Request Between Collections",
+          "area": "Collections",
+          "summary": "Enables users to move requests between different collections for better organization.",
+          "status": "active",
+          "confidence": 0.8,
+          "uiComponents": [],
+          "uiRoutes": [],
+          "relatedFeatures": [],
+          "userCategory": "Collections",
+          "complexity": "beginner",
+          "userTitle": "Organize Requests with Ease",
+          "userDescription": "Move requests between collections to keep your project tidy, just like sorting your emails into folders.",
+          "userWorkflow": "collections"
+        },
+        {
+          "id": "collections.rename-collection",
+          "originalName": "Rename Collection",
+          "area": "Collections",
+          "summary": "Enables users to rename existing collections for better clarity and categorization.",
+          "status": "active",
+          "confidence": 0.8,
+          "uiComponents": [],
+          "uiRoutes": [],
+          "relatedFeatures": [],
+          "userCategory": "Collections",
+          "complexity": "beginner",
+          "userTitle": "Rename Your Request Groups",
+          "userDescription": "Change the name of your request groups to make them easier to organize and understand, just like sorting your emails into different folders.",
+          "userWorkflow": "collections"
+        }
+      ]
+    },
+    {
+      "category": "Execution & Configuration",
+      "order": 4,
+      "description": "Execute requests, manage variables, and configure your workspace",
+      "features": [
+        {
+          "id": "core.api-logging-and-monitoring",
+          "originalName": "API Logging and Monitoring",
+          "area": "Core",
+          "summary": "Monitor API requests and responses for debugging and performance improvement.",
+          "status": "active",
+          "confidence": 0.8,
+          "uiComponents": [],
+          "uiRoutes": [],
+          "relatedFeatures": [],
+          "userCategory": "Execution & Configuration",
+          "complexity": "beginner",
+          "userTitle": "Track API Calls",
+          "userDescription": "Easily monitor your requests to see how they perform and debug issues.",
+          "userWorkflow": "execution-&-configuration"
+        },
+        {
+          "id": "core.request-authoring",
+          "originalName": "Request Authoring",
+          "area": "Core",
+          "summary": "Create, customize, and execute HTTP requests easily with headers, params, and body options.",
+          "status": "active",
+          "confidence": 0.8,
+          "uiComponents": [],
+          "uiRoutes": [],
+          "relatedFeatures": [],
+          "userCategory": "Execution & Configuration",
+          "complexity": "beginner",
+          "userTitle": "Send HTTP Requests Effortlessly",
+          "userDescription": "Easily create and customize requests to test APIs without any coding knowledge.",
+          "userWorkflow": "execution-&-configuration"
+        },
+        {
+          "id": "core.ui-theme-customization",
+          "originalName": "UI Theme Customization",
+          "area": "Core",
+          "summary": "Customize the UI theme to match preferences, change colors, fonts, and layout.",
+          "status": "active",
+          "confidence": 0.8,
+          "uiComponents": [],
+          "uiRoutes": [],
+          "relatedFeatures": [],
+          "userCategory": "Execution & Configuration",
+          "complexity": "beginner",
+          "userTitle": "Customize Knurl's Look",
+          "userDescription": "Change colors, fonts, and layout to match your style, just like organizing your photos or documents.",
+          "userWorkflow": "execution-&-configuration"
+        }
+      ]
+    },
+    {
+      "category": "Settings",
+      "order": 5,
+      "description": "Customize your Knurl experience",
+      "features": [
+        {
+          "id": "settings.collection-settings",
+          "originalName": "Collection Settings",
+          "area": "Settings",
+          "summary": "Manages settings for collections, including environments and authentication defaults.",
+          "status": "active",
+          "confidence": 0.8,
+          "uiComponents": [],
+          "uiRoutes": [],
+          "relatedFeatures": [],
+          "userCategory": "Settings",
+          "complexity": "beginner",
+          "userTitle": "Organize Your Requests",
+          "userDescription": "Create custom folders to keep your API requests tidy, just like organizing files on your computer.",
+          "userWorkflow": "settings"
+        },
+        {
+          "id": "settings.data-settings",
+          "originalName": "Data Settings",
+          "area": "Settings",
+          "summary": "Allows users to manage data-related settings such as auto-save intervals and storage location.",
+          "status": "active",
+          "confidence": 0.8,
+          "uiComponents": [],
+          "uiRoutes": [],
+          "relatedFeatures": [],
+          "userCategory": "Settings",
+          "complexity": "beginner",
+          "userTitle": "Manage Your Data",
+          "userDescription": "Save time by setting auto-save intervals and choose where to store your data, just like organizing your digital files.",
+          "userWorkflow": "settings"
+        },
+        {
+          "id": "settings.settings-ui",
+          "originalName": "Settings UI",
+          "area": "Settings",
+          "summary": "Enables users to customize various application settings such as appearance, request behavior, and advanced options.",
+          "status": "active",
+          "confidence": 0.8,
+          "uiComponents": [],
+          "uiRoutes": [],
+          "relatedFeatures": [],
+          "userCategory": "Settings",
+          "complexity": "beginner",
+          "userTitle": "Customize Knurl to Fit Your Needs",
+          "userDescription": "Change how Knurl looks and works to better match your preferences and make testing easier.",
+          "userWorkflow": "settings"
+        },
+        {
+          "id": "settings.theme-management",
+          "originalName": "Theme Management",
+          "area": "Settings",
+          "summary": "Allows users to select and apply different themes for the application, including light, dark, and system modes.",
+          "status": "active",
+          "confidence": 0.8,
+          "uiComponents": [],
+          "uiRoutes": [],
+          "relatedFeatures": [],
+          "userCategory": "Settings",
+          "complexity": "beginner",
+          "userTitle": "Change Your Knurl Look",
+          "userDescription": "Customize your Knurl app with light, dark, or system themes to make it easier on the eyes.",
+          "userWorkflow": "settings"
+        }
+      ]
+    }
+  ],
+  "learningPaths": {
+    "getting-started": {
+      "title": "Getting Started",
+      "description": "Learn the basics of using Knurl",
+      "featureIds": [
+        "collections.create-collection",
+        "core.request-authoring",
+        "core.api-logging"
+      ]
+    },
+    "managing-collections": {
+      "title": "Managing Collections",
+      "description": "Organize and share your API requests",
+      "prerequisite": "getting-started",
+      "featureIds": [
+        "collections.create-collection",
+        "collections.add-request-to-collection",
+        "collections.rename-collection"
+      ]
+    },
+    "organization": {
+      "title": "Request Organization",
+      "description": "Ways to organize and manage your requests",
+      "prerequisite": "getting-started",
+      "featureIds": [
+        "collections.move-request-between-collections",
+        "collections.edit-request-in-collection",
+        "http-client.collections-management"
+      ]
+    },
+    "advanced": {
+      "title": "Advanced Features",
+      "description": "Power user features and workflows",
+      "featureIds": [
+        "core.ui-theme-customization",
+        "settings.collection-settings",
+        "settings.data-settings"
+      ]
+    }
+  }
+}

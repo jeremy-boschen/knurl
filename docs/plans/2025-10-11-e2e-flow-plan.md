@@ -1,0 +1,4 @@
+- [x] Refactor `collections-flow.e2e.ts` into sequential tests covering each user flow step.
+- [x] Extend specs to cover tab closing, scratch request creation, and saving into a collection.
+- [x] Add accessibility affordances (aria-label) for the new request controls used by tests.
+- [ ] Verify selectors and waits to keep tests stable (manual WDIO run pending).

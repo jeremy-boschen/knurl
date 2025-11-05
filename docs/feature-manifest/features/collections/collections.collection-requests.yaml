@@ -1,0 +1,60 @@
+id: collections.collection-requests
+name: Request Management in Collections
+area: Collections
+summary_user: Enables users to manage requests within collections, including adding, renaming, and deleting.
+summary_business: Facilitates organization of related requests by grouping them under logical collection structures.
+status: active
+confidence: 0.8
+last_verified: '2025-10-31T15:08:53.887Z'
+evidence:
+  - filePath: test/support/collections.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 1efb8a542407a5d2
+    snippet: Evidence from test/support/collections.ts
+  - filePath: test/specs/workspace-restore.e2e.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: d61c70c140a8f2c4
+    snippet: Evidence from test/specs/workspace-restore.e2e.ts
+  - filePath: test/specs/large-collections.e2e.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 3511a794eeebfd69
+    snippet: Evidence from test/specs/large-collections.e2e.ts
+entry_points:
+  ui_routes:
+    - path: 'UI: Collection tabs'
+      component: null
+      files:
+        - test/support/collections.ts
+        - test/specs/workspace-restore.e2e.ts
+    - path: 'API: /api/collections/requests'
+      component: null
+      files:
+        - test/support/collections.ts
+        - test/specs/workspace-restore.e2e.ts
+data_model:
+  entities:
+    - name: RequestState
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - test/support/collections.ts
+        - test/specs/workspace-restore.e2e.ts
+    - name: CollectionRequestLocation
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - test/support/collections.ts
+        - test/specs/workspace-restore.e2e.ts
+configuration:
+  env_vars:
+    - name: DEFAULT_REQUESTS_PER_COLLECTION
+      required: false
+      default: null
+      used_in_files:
+        - test/support/collections.ts
+        - test/specs/workspace-restore.e2e.ts

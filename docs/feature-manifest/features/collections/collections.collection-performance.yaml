@@ -1,0 +1,24 @@
+id: collections.collection-performance
+name: Large Collection Performance
+area: Collections
+summary_user: Ensures that the application remains responsive and performant even when dealing with many collections.
+summary_business: Improves user experience by maintaining performance during operations involving a large number of collections, ensuring smooth interactions.
+status: active
+confidence: 0.8
+last_verified: '2025-10-31T17:40:09.120Z'
+evidence:
+  - filePath: test/support/collections.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 1efb8a542407a5d2
+    snippet: Evidence from test/support/collections.ts
+  - filePath: test/specs/workspace-restore.e2e.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: d61c70c140a8f2c4
+    snippet: Evidence from test/specs/workspace-restore.e2e.ts
+  - filePath: test/specs/large-collections.e2e.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 3511a794eeebfd69
+    snippet: Evidence from test/specs/large-collections.e2e.ts

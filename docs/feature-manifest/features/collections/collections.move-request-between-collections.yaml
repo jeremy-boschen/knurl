@@ -1,0 +1,24 @@
+id: collections.move-request-between-collections
+name: Move Request Between Collections
+area: Collections
+summary_user: Enables users to move requests between different collections for better organization.
+summary_business: Enhances flexibility in managing requests across multiple categories or projects.
+status: active
+confidence: 0.8
+last_verified: '2025-11-02T16:38:55.428Z'
+evidence:
+  - filePath: test/support/collections.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 1efb8a542407a5d2
+    snippet: Evidence from test/support/collections.ts
+  - filePath: test/specs/workspace-restore.e2e.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: d61c70c140a8f2c4
+    snippet: Evidence from test/specs/workspace-restore.e2e.ts
+  - filePath: test/specs/large-collections.e2e.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 3511a794eeebfd69
+    snippet: Evidence from test/specs/large-collections.e2e.ts

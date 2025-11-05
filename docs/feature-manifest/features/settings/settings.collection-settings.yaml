@@ -1,0 +1,24 @@
+id: settings.collection-settings
+name: Collection Settings
+area: Settings
+summary_user: Manages settings for collections, including environments and authentication defaults.
+summary_business: Facilitates organization and management of user data, streamlining workflow processes.
+status: active
+confidence: 0.8
+last_verified: '2025-11-02T16:40:44.024Z'
+evidence:
+  - filePath: vitest.config.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 103fee397d8e60df
+    snippet: Evidence from vitest.config.ts
+  - filePath: vitest.config.js
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 08948e9690249f6b
+    snippet: Evidence from vitest.config.js
+  - filePath: vite.config.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 85d73ae3882c9d3c
+    snippet: Evidence from vite.config.ts

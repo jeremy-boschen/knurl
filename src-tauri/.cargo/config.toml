@@ -1,0 +1,6 @@
+# This file configures Cargo to use the correct linker when cross-compiling
+# for Windows from a non-Windows host. This is used in conjunction with
+# a toolchain like Zig (via cargo-zigbuild) or MinGW.
+
+[target.x86_64-pc-windows-msvc]
+linker = "rust-lld"

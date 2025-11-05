@@ -1,0 +1,60 @@
+id: documentation.appearance
+name: Appearance Customization
+area: Documentation
+summary_user: Allows users to customize the look and feel of Knurl.
+summary_business: Enhances user experience and personalizes the tool according to individual preferences.
+status: active
+confidence: 0.8
+last_verified: '2025-10-31T15:09:45.394Z'
+evidence:
+  - filePath: documentation/.astro/types.d.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 38ea3df3779cce22
+    snippet: Evidence from documentation/.astro/types.d.ts
+  - filePath: documentation/.astro/content.d.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 2c1925a6a14ee125
+    snippet: Evidence from documentation/.astro/content.d.ts
+  - filePath: docs/examples/postman/nested-v2-collection.json
+    lineStart: 1
+    lineEnd: 100
+    contentHash: a67c8210eaaf8bdc
+    snippet: Evidence from docs/examples/postman/nested-v2-collection.json
+entry_points:
+  ui_routes:
+    - path: Theme Editor
+      component: null
+      files:
+        - documentation/.astro/types.d.ts
+        - documentation/.astro/content.d.ts
+    - path: Toggle Theme
+      component: null
+      files:
+        - documentation/.astro/types.d.ts
+        - documentation/.astro/content.d.ts
+data_model:
+  entities:
+    - name: Theme
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - documentation/.astro/types.d.ts
+        - documentation/.astro/content.d.ts
+    - name: Settings
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - documentation/.astro/types.d.ts
+        - documentation/.astro/content.d.ts
+configuration:
+  env_vars:
+    - name: THEME
+      required: false
+      default: null
+      used_in_files:
+        - documentation/.astro/types.d.ts
+        - documentation/.astro/content.d.ts

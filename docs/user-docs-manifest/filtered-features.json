@@ -1,0 +1,345 @@
+{
+  "metadata": {
+    "generatedAt": "2025-11-03T14:39:22.654Z",
+    "totalFeatures": 40,
+    "userVisibleFeatures": 14,
+    "filterCriteria": {
+      "requiresUIComponents": true,
+      "excludedAreas": [
+        "testing",
+        "build-ci",
+        "documentation",
+        "auth"
+      ],
+      "excludedKeywords": [
+        "performance",
+        "optimization",
+        "caching",
+        "internal",
+        "lifecycle",
+        "data management",
+        "data structure",
+        "oauth",
+        "authentication"
+      ]
+    }
+  },
+  "features": [
+    {
+      "id": "collections.add-request",
+      "originalName": "Add Request to Collection",
+      "area": "Collections",
+      "summary": "Enables users to add requests to existing collections for better organization.",
+      "status": "active",
+      "confidence": 0.8,
+      "uiComponents": [],
+      "uiRoutes": [],
+      "relatedFeatures": []
+    },
+    {
+      "id": "core.api-logging-and-monitoring",
+      "originalName": "API Logging and Monitoring",
+      "area": "Core",
+      "summary": "Monitor API requests and responses for debugging and performance improvement.",
+      "status": "active",
+      "confidence": 0.8,
+      "uiComponents": [],
+      "uiRoutes": [],
+      "relatedFeatures": []
+    },
+    {
+      "id": "settings.collection-settings",
+      "originalName": "Collection Settings",
+      "area": "Settings",
+      "summary": "Manages settings for collections, including environments and authentication defaults.",
+      "status": "active",
+      "confidence": 0.8,
+      "uiComponents": [],
+      "uiRoutes": [],
+      "relatedFeatures": []
+    },
+    {
+      "id": "collections.create-collection",
+      "originalName": "Create Collection",
+      "area": "Collections",
+      "summary": "Allows users to create new collections for organizing API requests.",
+      "status": "active",
+      "confidence": 0.8,
+      "uiComponents": [],
+      "uiRoutes": [],
+      "relatedFeatures": []
+    },
+    {
+      "id": "settings.data-settings",
+      "originalName": "Data Settings",
+      "area": "Settings",
+      "summary": "Allows users to manage data-related settings such as auto-save intervals and storage location.",
+      "status": "active",
+      "confidence": 0.8,
+      "uiComponents": [],
+      "uiRoutes": [],
+      "relatedFeatures": []
+    },
+    {
+      "id": "collections.delete-collection",
+      "originalName": "Delete Collection",
+      "area": "Collections",
+      "summary": "Allows users to remove collections that are no longer needed.",
+      "status": "active",
+      "confidence": 0.8,
+      "uiComponents": [],
+      "uiRoutes": [],
+      "relatedFeatures": []
+    },
+    {
+      "id": "collections.delete-request",
+      "originalName": "Delete Request from Collection",
+      "area": "Collections",
+      "summary": "Allows users to remove requests from collections that are no longer needed.",
+      "status": "active",
+      "confidence": 0.8,
+      "uiComponents": [],
+      "uiRoutes": [],
+      "relatedFeatures": []
+    },
+    {
+      "id": "collections.edit-request",
+      "originalName": "Edit Request in Collection",
+      "area": "Collections",
+      "summary": "Allows users to edit existing requests within their collections, such as updating details or parameters.",
+      "status": "active",
+      "confidence": 0.8,
+      "uiComponents": [],
+      "uiRoutes": [],
+      "relatedFeatures": []
+    },
+    {
+      "id": "collections.move-request-between-collections",
+      "originalName": "Move Request Between Collections",
+      "area": "Collections",
+      "summary": "Enables users to move requests between different collections for better organization.",
+      "status": "active",
+      "confidence": 0.8,
+      "uiComponents": [],
+      "uiRoutes": [],
+      "relatedFeatures": []
+    },
+    {
+      "id": "collections.rename-collection",
+      "originalName": "Rename Collection",
+      "area": "Collections",
+      "summary": "Enables users to rename existing collections for better clarity and categorization.",
+      "status": "active",
+      "confidence": 0.8,
+      "uiComponents": [],
+      "uiRoutes": [],
+      "relatedFeatures": []
+    },
+    {
+      "id": "core.request-authoring",
+      "originalName": "Request Authoring",
+      "area": "Core",
+      "summary": "Create, customize, and execute HTTP requests easily with headers, params, and body options.",
+      "status": "active",
+      "confidence": 0.8,
+      "uiComponents": [],
+      "uiRoutes": [],
+      "relatedFeatures": []
+    },
+    {
+      "id": "settings.settings-ui",
+      "originalName": "Settings UI",
+      "area": "Settings",
+      "summary": "Enables users to customize various application settings such as appearance, request behavior, and advanced options.",
+      "status": "active",
+      "confidence": 0.8,
+      "uiComponents": [],
+      "uiRoutes": [],
+      "relatedFeatures": []
+    },
+    {
+      "id": "settings.theme-management",
+      "originalName": "Theme Management",
+      "area": "Settings",
+      "summary": "Allows users to select and apply different themes for the application, including light, dark, and system modes.",
+      "status": "active",
+      "confidence": 0.8,
+      "uiComponents": [],
+      "uiRoutes": [],
+      "relatedFeatures": []
+    },
+    {
+      "id": "core.ui-theme-customization",
+      "originalName": "UI Theme Customization",
+      "area": "Core",
+      "summary": "Customize the UI theme to match preferences, change colors, fonts, and layout.",
+      "status": "active",
+      "confidence": 0.8,
+      "uiComponents": [],
+      "uiRoutes": [],
+      "relatedFeatures": []
+    }
+  ],
+  "byArea": {
+    "Collections": [
+      {
+        "id": "collections.add-request",
+        "originalName": "Add Request to Collection",
+        "area": "Collections",
+        "summary": "Enables users to add requests to existing collections for better organization.",
+        "status": "active",
+        "confidence": 0.8,
+        "uiComponents": [],
+        "uiRoutes": [],
+        "relatedFeatures": []
+      },
+      {
+        "id": "collections.create-collection",
+        "originalName": "Create Collection",
+        "area": "Collections",
+        "summary": "Allows users to create new collections for organizing API requests.",
+        "status": "active",
+        "confidence": 0.8,
+        "uiComponents": [],
+        "uiRoutes": [],
+        "relatedFeatures": []
+      },
+      {
+        "id": "collections.delete-collection",
+        "originalName": "Delete Collection",
+        "area": "Collections",
+        "summary": "Allows users to remove collections that are no longer needed.",
+        "status": "active",
+        "confidence": 0.8,
+        "uiComponents": [],
+        "uiRoutes": [],
+        "relatedFeatures": []
+      },
+      {
+        "id": "collections.delete-request",
+        "originalName": "Delete Request from Collection",
+        "area": "Collections",
+        "summary": "Allows users to remove requests from collections that are no longer needed.",
+        "status": "active",
+        "confidence": 0.8,
+        "uiComponents": [],
+        "uiRoutes": [],
+        "relatedFeatures": []
+      },
+      {
+        "id": "collections.edit-request",
+        "originalName": "Edit Request in Collection",
+        "area": "Collections",
+        "summary": "Allows users to edit existing requests within their collections, such as updating details or parameters.",
+        "status": "active",
+        "confidence": 0.8,
+        "uiComponents": [],
+        "uiRoutes": [],
+        "relatedFeatures": []
+      },
+      {
+        "id": "collections.move-request-between-collections",
+        "originalName": "Move Request Between Collections",
+        "area": "Collections",
+        "summary": "Enables users to move requests between different collections for better organization.",
+        "status": "active",
+        "confidence": 0.8,
+        "uiComponents": [],
+        "uiRoutes": [],
+        "relatedFeatures": []
+      },
+      {
+        "id": "collections.rename-collection",
+        "originalName": "Rename Collection",
+        "area": "Collections",
+        "summary": "Enables users to rename existing collections for better clarity and categorization.",
+        "status": "active",
+        "confidence": 0.8,
+        "uiComponents": [],
+        "uiRoutes": [],
+        "relatedFeatures": []
+      }
+    ],
+    "Core": [
+      {
+        "id": "core.api-logging-and-monitoring",
+        "originalName": "API Logging and Monitoring",
+        "area": "Core",
+        "summary": "Monitor API requests and responses for debugging and performance improvement.",
+        "status": "active",
+        "confidence": 0.8,
+        "uiComponents": [],
+        "uiRoutes": [],
+        "relatedFeatures": []
+      },
+      {
+        "id": "core.request-authoring",
+        "originalName": "Request Authoring",
+        "area": "Core",
+        "summary": "Create, customize, and execute HTTP requests easily with headers, params, and body options.",
+        "status": "active",
+        "confidence": 0.8,
+        "uiComponents": [],
+        "uiRoutes": [],
+        "relatedFeatures": []
+      },
+      {
+        "id": "core.ui-theme-customization",
+        "originalName": "UI Theme Customization",
+        "area": "Core",
+        "summary": "Customize the UI theme to match preferences, change colors, fonts, and layout.",
+        "status": "active",
+        "confidence": 0.8,
+        "uiComponents": [],
+        "uiRoutes": [],
+        "relatedFeatures": []
+      }
+    ],
+    "Settings": [
+      {
+        "id": "settings.collection-settings",
+        "originalName": "Collection Settings",
+        "area": "Settings",
+        "summary": "Manages settings for collections, including environments and authentication defaults.",
+        "status": "active",
+        "confidence": 0.8,
+        "uiComponents": [],
+        "uiRoutes": [],
+        "relatedFeatures": []
+      },
+      {
+        "id": "settings.data-settings",
+        "originalName": "Data Settings",
+        "area": "Settings",
+        "summary": "Allows users to manage data-related settings such as auto-save intervals and storage location.",
+        "status": "active",
+        "confidence": 0.8,
+        "uiComponents": [],
+        "uiRoutes": [],
+        "relatedFeatures": []
+      },
+      {
+        "id": "settings.settings-ui",
+        "originalName": "Settings UI",
+        "area": "Settings",
+        "summary": "Enables users to customize various application settings such as appearance, request behavior, and advanced options.",
+        "status": "active",
+        "confidence": 0.8,
+        "uiComponents": [],
+        "uiRoutes": [],
+        "relatedFeatures": []
+      },
+      {
+        "id": "settings.theme-management",
+        "originalName": "Theme Management",
+        "area": "Settings",
+        "summary": "Allows users to select and apply different themes for the application, including light, dark, and system modes.",
+        "status": "active",
+        "confidence": 0.8,
+        "uiComponents": [],
+        "uiRoutes": [],
+        "relatedFeatures": []
+      }
+    ]
+  }
+}

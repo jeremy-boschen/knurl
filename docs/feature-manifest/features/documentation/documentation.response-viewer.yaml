@@ -1,0 +1,24 @@
+id: documentation.response-viewer
+name: Response Viewer
+area: Documentation
+summary_user: Displays and allows inspection of API response data.
+summary_business: Enables detailed analysis of responses for debugging, testing, and performance optimization.
+status: active
+confidence: 0.8
+last_verified: '2025-10-31T15:24:02.534Z'
+evidence:
+  - filePath: documentation/.astro/types.d.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 38ea3df3779cce22
+    snippet: Evidence from documentation/.astro/types.d.ts
+  - filePath: documentation/.astro/content.d.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 2c1925a6a14ee125
+    snippet: Evidence from documentation/.astro/content.d.ts
+  - filePath: docs/feature-manifest/feature-manifest.yaml
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 9cb22f2629044658
+    snippet: Evidence from docs/feature-manifest/feature-manifest.yaml

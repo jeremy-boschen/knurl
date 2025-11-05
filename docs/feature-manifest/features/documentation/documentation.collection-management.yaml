@@ -1,0 +1,24 @@
+id: documentation.collection-management
+name: Collection Management
+area: Documentation
+summary_user: Allows users to create, save, and manage requests within collections.
+summary_business: Organizes API requests for better management and reuse across projects.
+status: active
+confidence: 0.8
+last_verified: '2025-10-31T17:41:03.938Z'
+evidence:
+  - filePath: documentation/.astro/types.d.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 38ea3df3779cce22
+    snippet: Evidence from documentation/.astro/types.d.ts
+  - filePath: documentation/.astro/content.d.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 2c1925a6a14ee125
+    snippet: Evidence from documentation/.astro/content.d.ts
+  - filePath: docs/feature-manifest/feature-manifest.yaml
+    lineStart: 1
+    lineEnd: 100
+    contentHash: b39083938b01cdc2
+    snippet: Evidence from docs/feature-manifest/feature-manifest.yaml

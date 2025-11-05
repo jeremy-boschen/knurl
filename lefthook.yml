@@ -1,0 +1,20 @@
+pre-commit:
+  parallel: true
+  commands:
+    format-all:
+      run: yarn format
+    lint-all:
+      run: yarn lint
+
+pre-push:
+  parallel: false
+  commands:
+    test-all:
+      run: yarn test:fe --run
+    coverage:
+      run: yarn coverage:check
+
+commit-msg:
+  commands:
+    commitlint:
+      run: yarn commitlint --edit {1}

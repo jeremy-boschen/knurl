@@ -1,0 +1,72 @@
+# Plan for adding data-test-id attributes
+
+**IMPORTANT:** Only `data-test-id` attributes should be added. No other code changes, including formatting or
+refactoring, should be made.
+
+This document outlines the plan for adding `data-test-id` attributes to components in the `src` directory.
+
+- [x] `src/App.tsx`
+- [x] `src/components/auth/oauth2-editor.tsx`
+- [ ] `src/components/collection/collection-menu-content.tsx` (skipped)
+- [x] `src/components/collection/new-collection-dialog.tsx`
+- [x] `src/components/editor/code-editor.tsx`
+- [x] `src/components/editor/code-viewer.tsx`
+- [x] `src/components/error/error-boundary.tsx`
+- [x] `src/components/layout/app-header.tsx`
+- [x] `src/components/layout/app-layout.tsx`
+- [x] `src/components/layout/breadcrumbs.tsx`
+- [x] `src/components/layout/collection-tree.tsx`
+- [x] `src/components/layout/environment-selector.tsx`
+- [x] `src/components/layout/sidebar.tsx`
+- [x] `src/components/layout/title-bar.tsx`
+- [x] `src/components/request/editor/empty-state.tsx`
+- [x] `src/components/request/editor/field-row.tsx`
+- [x] `src/components/request/editor/request-auth-panel.tsx`
+- [x] `src/components/request/editor/request-body-panel.tsx`
+- [x] `src/components/request/editor/request-editor.tsx`
+- [x] `src/components/request/editor/request-headers-panel.tsx`
+- [x] `src/components/request/editor/request-options-panel.tsx`
+- [x] `src/components/request/editor/request-parameters-panel.tsx`
+- [x] `src/components/request/editor/section-header.tsx`
+- [x] `src/components/request/request-workspace.tsx`
+- [x] `src/components/request/save-request-dialog.tsx`
+- [x] `src/components/request/tabbar/request-tab-bar.tsx`
+- [x] `src/components/request/tabbar/request-tab.tsx`
+- [x] `src/components/response/components/cookie-list.tsx`
+- [x] `src/components/response/components/headers-list.tsx`
+- [x] `src/components/response/components/logs-list.tsx`
+- [x] `src/components/response/response-viewer.tsx`
+- [x] `src/components/shared/data-table.tsx`
+- [x] `src/components/shared/delete-dialog.tsx`
+- [ ] `src/components/ui/knurl/clickable.tsx` (excluded — do not modify)
+- [ ] `src/components/ui/knurl/copy.tsx` (excluded — do not modify)
+- [ ] `src/components/ui/knurl/dialog.tsx` (excluded — do not modify)
+- [ ] `src/components/ui/knurl/file-input.tsx` (excluded — do not modify)
+- [ ] `src/components/ui/knurl/form.tsx` (excluded — do not modify)
+- [ ] `src/components/ui/knurl/http-badge.tsx` (excluded — do not modify)
+- [ ] `src/components/ui/knurl/input.tsx` (excluded — do not modify)
+- [ ] `src/components/ui/knurl/labeled-field.tsx` (excluded — do not modify)
+- [ ] `src/components/ui/knurl/rename-dialog.tsx` (excluded — do not modify)
+- [ ] `src/components/ui/knurl/tooltip.tsx` (excluded — do not modify)
+- [x] `src/components/utility-sheets/collection-settings/collection-auth-panel.tsx`
+- [x] `src/components/utility-sheets/collection-settings/index.tsx`
+- [x] `src/components/utility-sheets/environment-manager/components/environment-editor.tsx`
+- [x] `src/components/utility-sheets/environment-manager/components/environment-list.tsx`
+- [x] `src/components/utility-sheets/environment-manager/index.tsx`
+- [x] `src/components/utility-sheets/export-collection/index.tsx`
+- [x] `src/components/utility-sheets/import-collection/components/import-preview-step.tsx`
+- [x] `src/components/utility-sheets/import-collection/components/import-source-step.tsx`
+- [x] `src/components/utility-sheets/import-collection/components/validation-error-display.tsx`
+- [x] `src/components/utility-sheets/import-collection/index.tsx`
+- [x] `src/components/utility-sheets/settings/index.tsx`
+- [x] `src/components/utility-sheets/settings/sections/about.tsx`
+- [x] `src/components/utility-sheets/settings/sections/appearance.tsx`
+- [x] `src/components/utility-sheets/settings/sections/data/data.tsx`
+- [x] `src/components/utility-sheets/settings/sections/data/dialogs.tsx`
+- [x] `src/components/utility-sheets/settings/sections/requests.tsx`
+- [x] `src/components/utility-sheets/settings/sections/setting-row.tsx`
+- [x] `src/components/utility-sheets/settings/sections/theme-selector.tsx`
+- [x] `src/components/utility-sheets/theme-editor/index.tsx`
+- [x] `src/components/utility-sheets/utility-sheet-host.tsx`
+- [x] `src/components/windows/main.tsx` (no interactive elements)
+- [x] `src/pages/home.tsx` (no interactive elements)

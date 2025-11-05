@@ -1,0 +1,60 @@
+id: documentation.api-request-authoring
+name: API Request Authoring
+area: Documentation
+summary_user: Enables users to create, edit, and save HTTP requests with various configurations and authentication options.
+summary_business: Improves productivity by providing a visual interface for API testing and development, reducing manual coding errors and improving code quality.
+status: active
+confidence: 0.8
+last_verified: '2025-10-31T15:36:01.965Z'
+evidence:
+  - filePath: documentation/.astro/types.d.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 38ea3df3779cce22
+    snippet: Evidence from documentation/.astro/types.d.ts
+  - filePath: documentation/.astro/content.d.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 2c1925a6a14ee125
+    snippet: Evidence from documentation/.astro/content.d.ts
+  - filePath: docs/feature-manifest/feature-manifest.yaml
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 360aca0d46e0664c
+    snippet: Evidence from docs/feature-manifest/feature-manifest.yaml
+entry_points:
+  ui_routes:
+    - path:
+        path: /request-authoring
+        description: UI route where users can create and edit API requests.
+      component: null
+      files:
+        - documentation/.astro/types.d.ts
+        - documentation/.astro/content.d.ts
+    - path:
+        path: /api-request-editor
+        description: UI route for editing specific API request entries.
+      component: null
+      files:
+        - documentation/.astro/types.d.ts
+        - documentation/.astro/content.d.ts
+data_model:
+  entities:
+    - name:
+        name: Request
+        description: The core entity representing an HTTP request with various configurations such as method, URL, headers, and body.
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - documentation/.astro/types.d.ts
+        - documentation/.astro/content.d.ts
+    - name:
+        name: AuthConfig
+        description: Configuration settings related to authentication for requests, including different methods like Basic Auth, Bearer Token, etc.
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - documentation/.astro/types.d.ts
+        - documentation/.astro/content.d.ts

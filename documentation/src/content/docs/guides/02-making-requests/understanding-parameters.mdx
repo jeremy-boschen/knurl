@@ -1,0 +1,65 @@
+---
+title: "Understanding Parameters"
+description: "How to use path, query, and cookie parameters in requests"
+sidebar: {"parent":"02-making-requests","order":2}
+---
+
+
+## Parameters Overview
+
+Parameters let you send data to an API. The **Params tab** handles three types:
+
+## Path Parameters
+
+Path parameters are part of the URL itself.
+
+**Example URL**: `https://api.example.com/users/{userId}/posts/{postId}`
+
+In Knurl:
+1. Go to the **Params tab**
+2. Under **Path Parameters**, add `userId = 123`
+3. Add `postId = 456`
+4. Knurl replaces `{userId}` and `{postId}` in the URL
+
+**Result**: `https://api.example.com/users/123/posts/456`
+
+## Query Parameters
+
+Query parameters are added to the end of the URL with `?`.
+
+**Example**: `https://api.example.com/users?limit=10&offset=20&sort=name`
+
+In Knurl:
+1. Go to the **Params tab**
+2. Under **Query Parameters**, add:
+   - `limit = 10`
+   - `offset = 20`
+   - `sort = name`
+3. Knurl automatically builds the query string
+
+**Result**: `https://api.example.com/users?limit=10&offset=20&sort=name`
+
+### Disabling Parameters
+
+You can disable a parameter without deleting it:
+- Uncheck the checkbox next to the parameter name
+- The parameter won't be included in the request
+- Useful for testing with/without certain filters
+
+## Cookies
+
+Cookies are sent in the `Cookie` header of your request.
+
+In Knurl:
+1. Go to the **Params tab**
+2. Under **Cookies**, add a cookie:
+   - `session_id = abc123xyz`
+3. Knurl adds it to the request
+
+These are **request cookies** (you're sending them to the server). When the server responds with cookies, you'll see them in the **Cookies** tab of the response.
+
+## Tips
+
+- **Don't hardcode values**: If you need to change `limit=10` to `limit=50` frequently, use an environment variable: `{{limit}}`
+- **Spaces in values**: If a parameter value has spaces, Knurl handles URL encoding automatically
+- **Disabling vs deleting**: Disable parameters to quickly test different variations without losing your configuration

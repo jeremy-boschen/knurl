@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "knurl",
+  "version": "0.1.7",
+  "identifier": "org.newtco.knurl",
+  "build": {
+    "beforeDevCommand": "yarn dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "yarn build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "KNURL",
+        "width": 1000,
+        "height": 900,
+        "backgroundColor": "#18181BFF",
+        "zoomHotkeysEnabled": true,
+        "browserExtensionsEnabled": true,
+        "center": true,
+        "decorations": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "nsis",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      }
+    }
+  },
+  "plugins": {
+    "cli": {
+      "description": "KNURL",
+      "args": [
+        {
+          "short": "c",
+          "name": "config-dir",
+          "takesValue": true,
+          "description": "KNURL configuration directory"
+        },
+        {
+          "name": "window-width",
+          "takesValue": true,
+          "description": "Initial window width in pixels"
+        },
+        {
+          "name": "window-height",
+          "takesValue": true,
+          "description": "Initial window height in pixels"
+        }
+      ]
+    }
+  }
+}

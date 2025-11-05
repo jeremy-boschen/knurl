@@ -1,0 +1,24 @@
+id: ui-ux.copy-to-clipboard
+name: Copy to Clipboard
+area: UI/UX
+summary_user: Easily copy API keys, request URLs, or response data with a simple click.
+summary_business: Increase convenience and reduce manual input errors for sensitive information, improving user experience.
+status: active
+confidence: 0.8
+last_verified: '2025-11-02T16:41:52.823Z'
+evidence:
+  - filePath: components.json
+    lineStart: 1
+    lineEnd: 100
+    contentHash: e5e9a17eae49456f
+    snippet: Evidence from components.json
+  - filePath: test/support/ui.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: d7f2320e7b9eaac9
+    snippet: Evidence from test/support/ui.ts
+  - filePath: test/specs/ui-library.e2e.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: fd82829257df1fd0
+    snippet: Evidence from test/specs/ui-library.e2e.ts

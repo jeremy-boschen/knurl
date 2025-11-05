@@ -1,0 +1,24 @@
+id: documentation.general
+name: General UI Flow
+area: Documentation
+summary_user: Provides an overview of the Knurl workspace and environment controls.
+summary_business: Enables users to start using Knurl with basic setup and configuration.
+status: active
+confidence: 0.8
+last_verified: '2025-11-02T16:39:53.255Z'
+evidence:
+  - filePath: documentation/.astro/types.d.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 38ea3df3779cce22
+    snippet: Evidence from documentation/.astro/types.d.ts
+  - filePath: documentation/.astro/data-store.json
+    lineStart: 1
+    lineEnd: 100
+    contentHash: bf9d6663bb8a34be
+    snippet: Evidence from documentation/.astro/data-store.json
+  - filePath: documentation/.astro/content.d.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 865e2817d6771b97
+    snippet: Evidence from documentation/.astro/content.d.ts

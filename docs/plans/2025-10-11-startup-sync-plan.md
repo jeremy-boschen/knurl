@@ -1,0 +1,4 @@
+- [x] Implement minimal startup state globals to signal hydration progress.
+- [x] Update React entry flow so stores hydrate before signaling readiness.
+- [x] Wait for startup state == 2 inside WDIO `before` hook and add small post-ready pause.
+- [ ] Optionally run targeted e2e smoke to confirm the new wait logic (manual follow-up).

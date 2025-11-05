@@ -1,0 +1,44 @@
+id: documentation.environment-management
+name: Environment Management
+area: Documentation
+summary_user: Facilitates management of API environments for different stages (development, staging, production).
+summary_business: Ensures that users can configure and switch between different environment settings without leaving the flow.
+status: active
+confidence: 0.8
+last_verified: '2025-10-31T15:36:01.965Z'
+evidence:
+  - filePath: documentation/.astro/types.d.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 38ea3df3779cce22
+    snippet: Evidence from documentation/.astro/types.d.ts
+  - filePath: documentation/.astro/content.d.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 2c1925a6a14ee125
+    snippet: Evidence from documentation/.astro/content.d.ts
+  - filePath: docs/feature-manifest/feature-manifest.yaml
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 360aca0d46e0664c
+    snippet: Evidence from docs/feature-manifest/feature-manifest.yaml
+entry_points:
+  ui_routes:
+    - path:
+        path: /collections/settings
+        description: UI route where users can review, duplicate presets, and adjust variables for environments.
+      component: null
+      files:
+        - documentation/.astro/types.d.ts
+        - documentation/.astro/content.d.ts
+data_model:
+  entities:
+    - name:
+        name: Environment Settings
+        description: Configuration entity representing settings for different API environments, including URLs, authentication tokens, etc.
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - documentation/.astro/types.d.ts
+        - documentation/.astro/content.d.ts

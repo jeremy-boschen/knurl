@@ -1,0 +1,60 @@
+id: collections.collections-management
+name: Collections Management
+area: Collections
+summary_user: Allows users to create, rename, and delete collections easily.
+summary_business: Enhances organization of requests by enabling structured collection management.
+status: active
+confidence: 0.8
+last_verified: '2025-10-31T15:08:53.887Z'
+evidence:
+  - filePath: test/support/collections.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 1efb8a542407a5d2
+    snippet: Evidence from test/support/collections.ts
+  - filePath: test/specs/workspace-restore.e2e.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: d61c70c140a8f2c4
+    snippet: Evidence from test/specs/workspace-restore.e2e.ts
+  - filePath: test/specs/large-collections.e2e.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 3511a794eeebfd69
+    snippet: Evidence from test/specs/large-collections.e2e.ts
+entry_points:
+  ui_routes:
+    - path: 'UI: Sidebar menu'
+      component: null
+      files:
+        - test/support/collections.ts
+        - test/specs/workspace-restore.e2e.ts
+    - path: 'API: /api/collections'
+      component: null
+      files:
+        - test/support/collections.ts
+        - test/specs/workspace-restore.e2e.ts
+data_model:
+  entities:
+    - name: Collection
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - test/support/collections.ts
+        - test/specs/workspace-restore.e2e.ts
+    - name: CollectionsIndexEntry
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - test/support/collections.ts
+        - test/specs/workspace-restore.e2e.ts
+configuration:
+  env_vars:
+    - name: COLLECTIONS_STORAGE_PATH
+      required: false
+      default: null
+      used_in_files:
+        - test/support/collections.ts
+        - test/specs/workspace-restore.e2e.ts

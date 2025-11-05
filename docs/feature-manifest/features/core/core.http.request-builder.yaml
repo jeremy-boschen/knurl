@@ -1,0 +1,68 @@
+id: core.http.request-builder
+name: HTTP Request Builder
+area: Core
+summary_user: Build and execute HTTP requests easily.
+summary_business: Enables developers to quickly create, test, and debug API interactions without writing raw code.
+status: active
+confidence: 0.8
+last_verified: '2025-10-31T15:09:36.230Z'
+evidence:
+  - filePath: wdio.conf.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 05823afcc8edc215
+    snippet: Evidence from wdio.conf.ts
+  - filePath: third-party-rust-licenses.json
+    lineStart: 1
+    lineEnd: 100
+    contentHash: de2a6bc4054a2439
+    snippet: Evidence from third-party-rust-licenses.json
+  - filePath: package.json
+    lineStart: 1
+    lineEnd: 100
+    contentHash: a7b8197615736260
+    snippet: Evidence from package.json
+entry_points:
+  ui_routes:
+    - path: UI routes
+      component: null
+      files:
+        - wdio.conf.ts
+        - third-party-rust-licenses.json
+data_model:
+  entities:
+    - name: Request
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - wdio.conf.ts
+        - third-party-rust-licenses.json
+    - name: Response
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - wdio.conf.ts
+        - third-party-rust-licenses.json
+    - name: Cookie
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - wdio.conf.ts
+        - third-party-rust-licenses.json
+configuration:
+  env_vars:
+    - name: disableSsl
+      required: false
+      default: null
+      used_in_files:
+        - wdio.conf.ts
+        - third-party-rust-licenses.json
+    - name: caPath
+      required: false
+      default: null
+      used_in_files:
+        - wdio.conf.ts
+        - third-party-rust-licenses.json

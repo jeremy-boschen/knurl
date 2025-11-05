@@ -1,0 +1,62 @@
+id: testing.auto-doc-generation
+name: Automatic Documentation Generation
+area: Testing
+summary_user: Automated documentation generation based on user interactions and feature usage.
+summary_business: Reduces manual documentation effort, ensures consistency across different platforms, and provides up-to-date references for users.
+status: active
+confidence: 0.8
+last_verified: '2025-10-31T15:11:33.294Z'
+evidence:
+  - filePath: test/migration-parse.test.js
+    lineStart: 1
+    lineEnd: 100
+    contentHash: ffdc4a68c7776c30
+    snippet: Evidence from test/migration-parse.test.js
+  - filePath: test/support/state.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 2730b23be09bc9e7
+    snippet: Evidence from test/support/state.ts
+  - filePath: test/support/e2e-bridge.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 14a1b09ba5ba4a6e
+    snippet: Evidence from test/support/e2e-bridge.ts
+entry_points:
+  ui_routes:
+    - path: src/lib/theme/custom-css-vars.test.ts
+      component: null
+      files:
+        - test/migration-parse.test.js
+        - test/support/state.ts
+data_model:
+  entities:
+    - name: Step
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - test/migration-parse.test.js
+        - test/support/state.ts
+    - name: Flow
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - test/migration-parse.test.js
+        - test/support/state.ts
+    - name: WorkspaceSnapshot
+      fields: {}
+      primary_keys: []
+      relations: {}
+      files:
+        - test/migration-parse.test.js
+        - test/support/state.ts
+configuration:
+  env_vars:
+    - name: AUTO_DOC_ROOT
+      required: false
+      default: null
+      used_in_files:
+        - test/migration-parse.test.js
+        - test/support/state.ts

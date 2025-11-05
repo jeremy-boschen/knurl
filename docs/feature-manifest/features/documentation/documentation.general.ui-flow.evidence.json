@@ -1,0 +1,23 @@
+[
+  {
+    "filePath": "documentation/.astro/types.d.ts",
+    "lineStart": 1,
+    "lineEnd": 100,
+    "contentHash": "38ea3df3779cce22",
+    "snippet": "Evidence from documentation/.astro/types.d.ts"
+  },
+  {
+    "filePath": "documentation/.astro/content.d.ts",
+    "lineStart": 1,
+    "lineEnd": 100,
+    "contentHash": "865e2817d6771b97",
+    "snippet": "Evidence from documentation/.astro/content.d.ts"
+  },
+  {
+    "filePath": "docs/feature-manifest/feature-manifest.yaml",
+    "lineStart": 1,
+    "lineEnd": 100,
+    "contentHash": "b39083938b01cdc2",
+    "snippet": "Evidence from docs/feature-manifest/feature-manifest.yaml"
+  }
+]

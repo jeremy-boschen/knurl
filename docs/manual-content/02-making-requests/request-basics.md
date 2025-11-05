@@ -1,0 +1,89 @@
+---
+title: Making Requests
+description: How to create and configure HTTP requests in Knurl
+category: making-requests
+order: 1
+---
+
+## Creating a Request
+
+To create a new request:
+
+1. Click the **"+" button** in the left sidebar
+2. Enter the **URL** (example: `https://api.example.com/users`)
+3. Select the **HTTP method** (GET, POST, PUT, DELETE, PATCH, etc.)
+4. **Click Send** or press Ctrl+Enter / Cmd+Enter
+
+## The Request Tabs
+
+Knurl organizes request configuration into 5 tabs:
+
+### Params Tab
+Add parameters to your request:
+- **Path Parameters**: Variables in the URL (example: `/users/{id}`)
+- **Query Parameters**: Parameters appended to the URL (example: `?limit=10&offset=20`)
+- **Cookies**: HTTP cookies to send with the request
+
+### Headers Tab
+Add custom HTTP headers:
+- Standard headers like `Content-Type`, `Authorization`, `User-Agent`
+- Custom headers for your API
+
+### Body Tab
+Send data with your request (for POST, PUT, PATCH):
+- **None**: No request body
+- **Raw**: Send plain text, JSON, XML, HTML, or other formats
+- **Form Data**: URL-encoded form data
+- **Multipart Form**: Upload files
+
+### Authentication Tab
+Configure how to authenticate with the API:
+- **None**: No authentication
+- **Bearer Token**: OAuth2 bearer tokens
+- **Basic Auth**: Username and password
+- **API Key**: Custom API key headers
+- **OAuth2**: Full OAuth2 flow
+
+### Options Tab
+Configure request behavior:
+- **SSL/TLS**: Verify SSL certificates or disable for self-signed certs
+- **Timeout**: How long to wait for a response
+- **Redirects**: Whether to follow HTTP redirects
+- **Other options**: User agent, HTTP version, DNS settings, proxy
+
+## Reading Responses
+
+After you send a request, the response appears on the right:
+
+**Body Tab**
+- Shows the response data with syntax highlighting (JSON, XML, HTML, etc.)
+- Use the **Copy** button to copy the response body
+- Use the **Save** button to save the response to a file
+
+**Headers Tab**
+- Lists all HTTP headers from the server
+- Useful for debugging issues with caching, compression, etc.
+
+**Cookies Tab**
+- Shows any cookies set by the server
+- Helpful for debugging session-based APIs
+
+**Logs Tab**
+- Shows detailed logging from the request
+- Helpful for diagnosing connection issues
+
+## Saving Requests
+
+Once you've created a request, you should save it to a collection:
+
+1. Look for the **Save** button or right-click the request tab
+2. Choose which collection to save to
+3. Give it a descriptive name
+4. Saved requests appear in the left sidebar for future use
+
+## Tips
+
+- **Use descriptive names**: Instead of "Request 1", use "Get User by ID"
+- **Organize with folders**: Create folders within collections to group related requests
+- **Reuse successful requests**: Once a request works, save it for next time
+- **Copy curl/fetch**: Right-click a request to copy as curl or fetch() code

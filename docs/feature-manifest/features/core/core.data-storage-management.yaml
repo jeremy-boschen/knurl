@@ -1,0 +1,24 @@
+id: core.data-storage-management
+name: Data Management
+area: Core
+summary_user: Efficiently view, edit, and delete data entries within the application.
+summary_business: Improves data management capabilities for developers, ensuring quick access to important information without manual retrieval.
+status: active
+confidence: 0.8
+last_verified: '2025-10-31T15:35:34.021Z'
+evidence:
+  - filePath: wdio.conf.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 05823afcc8edc215
+    snippet: Evidence from wdio.conf.ts
+  - filePath: third-party-rust-licenses.json
+    lineStart: 1
+    lineEnd: 100
+    contentHash: de2a6bc4054a2439
+    snippet: Evidence from third-party-rust-licenses.json
+  - filePath: package.json
+    lineStart: 1
+    lineEnd: 100
+    contentHash: a7b8197615736260
+    snippet: Evidence from package.json

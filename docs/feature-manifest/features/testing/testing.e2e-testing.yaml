@@ -1,0 +1,24 @@
+id: testing.e2e-testing
+name: End-to-End Testing
+area: Testing
+summary_user: Automated tests to ensure the application works as expected across different functionalities and user interactions.
+summary_business: Ensures high-quality, reliable software release by catching bugs early in development cycle.
+status: active
+confidence: 0.8
+last_verified: '2025-10-31T17:42:37.161Z'
+evidence:
+  - filePath: test/migration-parse.test.js
+    lineStart: 1
+    lineEnd: 100
+    contentHash: ffdc4a68c7776c30
+    snippet: Evidence from test/migration-parse.test.js
+  - filePath: test/support/state.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 2730b23be09bc9e7
+    snippet: Evidence from test/support/state.ts
+  - filePath: test/support/e2e-bridge.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 14a1b09ba5ba4a6e
+    snippet: Evidence from test/support/e2e-bridge.ts

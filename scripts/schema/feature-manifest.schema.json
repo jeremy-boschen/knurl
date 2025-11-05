@@ -1,0 +1,479 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://knurl.dev/schemas/feature-manifest.schema.json",
+  "title": "Application Feature Manifest",
+  "description": "Authoritative, machine-readable manifest of all supported features in a multi-tech application, with evidence-backed citations.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["app_name", "app_description", "tech_stack", "modules", "generated_at", "generator_version", "features"],
+  "properties": {
+    "app_name": {
+      "type": "string",
+      "description": "Application name"
+    },
+    "app_description": {
+      "type": "string",
+      "description": "One-line application description"
+    },
+    "tech_stack": {
+      "type": "array",
+      "description": "Detected technologies (Node, Rust, TypeScript, Vite, etc.)",
+      "items": {
+        "type": "string"
+      }
+    },
+    "modules": {
+      "type": "array",
+      "description": "High-level functional modules (Frontend, Backend, Documentation, etc.)",
+      "items": {
+        "type": "string"
+      }
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of generation"
+    },
+    "generator_version": {
+      "type": "string",
+      "description": "Version of the manifest generator"
+    },
+    "features": {
+      "type": "array",
+      "description": "Array of features discovered in the application",
+      "items": {
+        "$ref": "#/$defs/Feature"
+      }
+    }
+  },
+  "$defs": {
+    "Feature": {
+      "type": "object",
+      "description": "A discrete, user-visible feature of the application",
+      "additionalProperties": false,
+      "required": ["id", "name", "area", "summary_user", "summary_business", "status", "confidence", "evidence"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$",
+          "description": "Stable, slugified feature ID (e.g., 'auth.oauth2', 'http.request-builder')"
+        },
+        "name": {
+          "type": "string",
+          "description": "User-facing feature name"
+        },
+        "area": {
+          "type": "string",
+          "enum": ["Auth", "HTTP Client", "Settings", "Sync", "Build/CI", "Collections", "Core", "UI", "Data", "Documentation"],
+          "description": "Functional category"
+        },
+        "summary_user": {
+          "type": "string",
+          "description": "Plain-language value proposition for end users"
+        },
+        "summary_business": {
+          "type": "string",
+          "description": "Why this feature exists; problem it solves or outcome it enables"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "experimental", "deprecated"],
+          "description": "Feature lifecycle status"
+        },
+        "entry_points": {
+          "type": "object",
+          "description": "User entry points (UI routes, CLI commands, API endpoints)",
+          "additionalProperties": true,
+          "properties": {
+            "ui_routes": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/UIRoute"
+              }
+            },
+            "cli_commands": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/CLICommand"
+              }
+            },
+            "api_endpoints": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/APIEndpoint"
+              }
+            }
+          }
+        },
+        "data_model": {
+          "type": "object",
+          "description": "Data structures and storage",
+          "additionalProperties": true,
+          "properties": {
+            "entities": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/DataEntity"
+              }
+            },
+            "storage": {
+              "type": "string",
+              "enum": ["database", "filesystem", "localstorage", "memory", "remote", "hybrid"],
+              "description": "Primary storage mechanism"
+            }
+          }
+        },
+        "workflows": {
+          "type": "array",
+          "description": "User workflows; step descriptions",
+          "items": {
+            "type": "string"
+          }
+        },
+        "configuration": {
+          "type": "object",
+          "description": "Configuration (env vars, feature flags)",
+          "additionalProperties": true,
+          "properties": {
+            "env_vars": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/EnvVar"
+              }
+            },
+            "feature_flags": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/FeatureFlag"
+              }
+            }
+          }
+        },
+        "security_privacy": {
+          "type": "object",
+          "description": "Security and privacy considerations",
+          "additionalProperties": true,
+          "properties": {
+            "permissions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "auth_flows": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "secrets_handling": {
+              "type": "string"
+            }
+          }
+        },
+        "dependencies": {
+          "type": "object",
+          "description": "Internal and external dependencies",
+          "additionalProperties": true,
+          "properties": {
+            "internal_modules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "external_libs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  },
+                  "critical": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "observability": {
+          "type": "object",
+          "description": "Logging, metrics, traces",
+          "additionalProperties": true
+        },
+        "tests": {
+          "type": "object",
+          "description": "Test references and coverage",
+          "additionalProperties": true,
+          "properties": {
+            "unit": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "integration": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "e2e": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "docs_refs": {
+          "type": "array",
+          "description": "References to documentation (file paths, anchors, headings)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "risks_todos": {
+          "type": "array",
+          "description": "Known gaps, FIXME, TODO items, and risks",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "description": "Citations backing this feature claim; minimum 1 required",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Confidence score (0.0 to 1.0); <0.6 should have TODO"
+        },
+        "last_verified": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of last verification"
+        }
+      }
+    },
+    "Evidence": {
+      "type": "object",
+      "description": "Citation for a feature claim",
+      "additionalProperties": false,
+      "required": ["file_path", "line_start", "line_end", "content_hash"],
+      "properties": {
+        "file_path": {
+          "type": "string",
+          "description": "Relative path to source file"
+        },
+        "line_start": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Starting line number (1-indexed)"
+        },
+        "line_end": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Ending line number (1-indexed)"
+        },
+        "content_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{12,64}$",
+          "description": "SHA256 hash (truncated or full) of cited content"
+        },
+        "snippet": {
+          "type": "string",
+          "description": "Optional excerpt of cited code"
+        }
+      }
+    },
+    "UIRoute": {
+      "type": "object",
+      "description": "Client-side route",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Route path (e.g., '/settings', '/collections/:id')"
+        },
+        "component": {
+          "type": ["string", "null"],
+          "description": "React component or handler (optional)"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "CLICommand": {
+      "type": "object",
+      "description": "Command-line interface entry point",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Command name"
+        },
+        "args": {
+          "type": "string",
+          "description": "Argument specification"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "APIEndpoint": {
+      "type": "object",
+      "description": "REST or RPC endpoint",
+      "additionalProperties": false,
+      "required": ["method", "path"],
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
+          "description": "HTTP method"
+        },
+        "path": {
+          "type": "string",
+          "description": "Endpoint path"
+        },
+        "request_schema": {
+          "type": "string",
+          "description": "Request shape (TypeScript, JSON Schema, Zod, etc.)"
+        },
+        "response_schema": {
+          "type": "string",
+          "description": "Response shape"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "DataEntity": {
+      "type": "object",
+      "description": "Data model entity",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Entity name"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Field name to type mapping",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "primary_keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "relations": {
+          "type": "object",
+          "description": "Relation name to target entity mapping",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "EnvVar": {
+      "type": "object",
+      "description": "Environment variable configuration",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Variable name"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this var is required"
+        },
+        "default": {
+          "type": ["string", "null"],
+          "description": "Default value if not set"
+        },
+        "used_in_files": {
+          "type": "array",
+          "description": "Files that reference this env var",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "FeatureFlag": {
+      "type": "object",
+      "description": "Feature flag for conditional features",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["global", "per-user", "per-workspace", "per-request"],
+          "default": "global"
+        },
+        "default": {
+          "type": "boolean",
+          "default": false
+        },
+        "rollout_notes": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

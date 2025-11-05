@@ -1,0 +1,24 @@
+id: core.oauth2-authentication-management
+name: OAuth 2.0 Authentication Management
+area: Core
+summary_user: Manage OAuth 2.0 access tokens for secure user authentication and authorization.
+summary_business: Facilitates the integration of third-party services by providing a secure way to authenticate users and obtain access tokens.
+status: active
+confidence: 0.8
+last_verified: '2025-11-02T16:39:33.541Z'
+evidence:
+  - filePath: wdio.conf.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 05823afcc8edc215
+    snippet: Evidence from wdio.conf.ts
+  - filePath: third-party-rust-licenses.json
+    lineStart: 1
+    lineEnd: 100
+    contentHash: de2a6bc4054a2439
+    snippet: Evidence from third-party-rust-licenses.json
+  - filePath: package.json
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 108ef07cc5e186c9
+    snippet: Evidence from package.json

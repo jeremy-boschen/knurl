@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run App" type="CompoundRunConfigurationType">
+    <toRun name="Run Knurl" targetId="RsBuildProfile:dev" type="CargoCommandRunConfiguration" />
+    <toRun name="Run Node" type="js.build_tools.npm" />
+    <method v="2" />
+  </configuration>
+</component>

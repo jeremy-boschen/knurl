@@ -1,0 +1,24 @@
+id: collections.edit-request-in-collection
+name: Edit Request in Collection
+area: Collections
+summary_user: Allows users to edit existing requests within their collections, such as updating details or parameters.
+summary_business: Enables efficient maintenance and updates of API requests directly from the collection context.
+status: active
+confidence: 0.8
+last_verified: '2025-10-31T17:40:09.120Z'
+evidence:
+  - filePath: test/support/collections.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 1efb8a542407a5d2
+    snippet: Evidence from test/support/collections.ts
+  - filePath: test/specs/workspace-restore.e2e.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: d61c70c140a8f2c4
+    snippet: Evidence from test/specs/workspace-restore.e2e.ts
+  - filePath: test/specs/large-collections.e2e.ts
+    lineStart: 1
+    lineEnd: 100
+    contentHash: 3511a794eeebfd69
+    snippet: Evidence from test/specs/large-collections.e2e.ts
