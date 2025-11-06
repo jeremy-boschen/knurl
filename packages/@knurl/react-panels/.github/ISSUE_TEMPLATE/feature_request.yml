@@ -1,0 +1,56 @@
+name: Feature Request
+description: Suggest a new feature or enhancement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please provide as much detail as possible.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Description
+      description: Is your feature request related to a problem? Please describe.
+      placeholder: I'm frustrated when I try to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like
+      placeholder: I would like to be able to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What alternative solutions or features have you considered?
+      placeholder: I considered using... but it doesn't...
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Example API (Optional)
+      description: If applicable, show what the API might look like
+      placeholder: |
+        ```tsx
+        <PanelGroup
+          direction="horizontal"
+          newFeature="value"
+        >
+          <Panel>...</Panel>
+        </PanelGroup>
+        ```
+      render: tsx
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context, mockups, or examples about the feature

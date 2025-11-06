@@ -1,5 +1,10 @@
 # @jeremy-boschen/react-panels
 
+[![npm version](https://badge.fury.io/js/@jeremy-boschen%2Freact-panels.svg)](https://www.npmjs.com/package/@jeremy-boschen/react-panels)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
+[![CI](https://github.com/jeremy-boschen/react-panels/actions/workflows/ci.yml/badge.svg)](https://github.com/jeremy-boschen/react-panels/actions/workflows/ci.yml)
+
 A lightweight, zero-dependency React panel library with pixel and percentage-based sizing support.
 
 ## Features
@@ -163,6 +168,25 @@ setSizes(['200px', '100%']);
 setSizes(['30%', '70%']);
 // Result: splits container 30/70
 ```
+
+## Contributing
+
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and development process.
+
+## Documentation
+
+- [Contributing Guide](CONTRIBUTING.md) - How to contribute to the project
+- [Release Guide](RELEASING.md) - How to publish new versions
+- [Changelog](CHANGELOG.md) - Version history and changes
+- [Code of Conduct](CODE_OF_CONDUCT.md) - Community guidelines
+- [Security Policy](SECURITY.md) - How to report security vulnerabilities
+
+## Support
+
+- 🐛 [Report a bug](https://github.com/jeremy-boschen/react-panels/issues/new?template=bug_report.yml)
+- ✨ [Request a feature](https://github.com/jeremy-boschen/react-panels/issues/new?template=feature_request.yml)
+- 💬 [Start a discussion](https://github.com/jeremy-boschen/react-panels/discussions)
+- 📖 [Read the docs](https://github.com/jeremy-boschen/react-panels#readme)
 
 ## License
 
