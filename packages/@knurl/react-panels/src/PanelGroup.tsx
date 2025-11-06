@@ -68,7 +68,7 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
       if (!containerRef.current || panelSizes.length === 0) return;
 
       const updateSizes = () => {
-        if (!containerRef.current) return;
+        if (!containerRef.current || isDraggingRef.current) return;
 
         const rect = containerRef.current.getBoundingClientRect();
         const containerSize = direction === 'horizontal' ? rect.width : rect.height;
@@ -129,10 +129,10 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
         // Use ref to get current sizes (not stale state)
         const currentSizes = currentPixelSizesRef.current;
         const newPixelSizes = [...currentSizes];
-        newPixelSizes[leftIndex] += delta;
-        newPixelSizes[rightIndex] -= delta;
 
-        // Apply constraints
+        const expectedTotal = currentSizes[leftIndex] + currentSizes[rightIndex];
+
+        // Calculate constraints in pixels
         const leftConstraints = constraintsRef.current[leftIndex];
         const rightConstraints = constraintsRef.current[rightIndex];
 
@@ -149,17 +149,30 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
           ? convertToPixels(parseSize(rightConstraints.maxSize), containerSize)
           : Infinity;
 
-        newPixelSizes[leftIndex] = clampSize(newPixelSizes[leftIndex], leftMinPx, leftMaxPx);
-        newPixelSizes[rightIndex] = clampSize(newPixelSizes[rightIndex], rightMinPx, rightMaxPx);
+        // Apply delta and constraints while maintaining total size
+        let newLeft = currentSizes[leftIndex] + delta;
+        let newRight = expectedTotal - newLeft;
 
-        // Ensure total equals container size
-        const total = newPixelSizes[leftIndex] + newPixelSizes[rightIndex];
-        const expectedTotal = currentSizes[leftIndex] + currentSizes[rightIndex];
-        if (Math.abs(total - expectedTotal) > 0.1) {
-          const correction = expectedTotal - total;
-          newPixelSizes[rightIndex] += correction;
-          newPixelSizes[rightIndex] = clampSize(newPixelSizes[rightIndex], rightMinPx, rightMaxPx);
+        // Clamp left panel
+        newLeft = clampSize(newLeft, leftMinPx, leftMaxPx);
+        newRight = expectedTotal - newLeft;
+
+        // Check if right panel violates constraints after left was clamped
+        if (newRight < rightMinPx) {
+          newRight = rightMinPx;
+          newLeft = expectedTotal - newRight;
+          newLeft = clampSize(newLeft, leftMinPx, leftMaxPx);
+        } else if (newRight > rightMaxPx) {
+          newRight = rightMaxPx;
+          newLeft = expectedTotal - newRight;
+          newLeft = clampSize(newLeft, leftMinPx, leftMaxPx);
         }
+
+        // Final adjustment to guarantee total is maintained
+        newRight = expectedTotal - newLeft;
+
+        newPixelSizes[leftIndex] = newLeft;
+        newPixelSizes[rightIndex] = newRight;
 
         // Update ref immediately for next drag event
         currentPixelSizesRef.current = newPixelSizes;
