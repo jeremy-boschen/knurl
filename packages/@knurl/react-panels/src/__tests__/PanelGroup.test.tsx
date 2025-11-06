@@ -9,7 +9,7 @@ import type { PanelGroupHandle, PanelSize } from '../types';
 describe('PanelGroup Integration Tests', () => {
   describe('Basic Rendering', () => {
     it('renders panels with correct initial sizes', async () => {
-      const { container } = render(
+      render(
         <div style={{ width: '1000px', height: '600px' }}>
           <PanelGroup direction="horizontal">
             <Panel defaultSize="30%">
@@ -380,7 +380,7 @@ describe('PanelGroup Integration Tests', () => {
 
   describe('Direction Support', () => {
     it('renders horizontal panels correctly', async () => {
-      const { container } = render(
+      render(
         <div style={{ width: '1000px', height: '600px' }}>
           <PanelGroup direction="horizontal">
             <Panel defaultSize="50%">
@@ -402,7 +402,7 @@ describe('PanelGroup Integration Tests', () => {
     });
 
     it('renders vertical panels correctly', async () => {
-      const { container } = render(
+      render(
         <div style={{ width: '1000px', height: '600px' }}>
           <PanelGroup direction="vertical">
             <Panel defaultSize="50%">
@@ -426,7 +426,7 @@ describe('PanelGroup Integration Tests', () => {
 
   describe('Mixed Size Units', () => {
     it('handles pixel and percentage sizes together', async () => {
-      const { container } = render(
+      render(
         <div style={{ width: '1000px', height: '600px' }}>
           <PanelGroup direction="horizontal">
             <Panel defaultSize="200px">
