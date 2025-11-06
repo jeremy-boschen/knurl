@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react"
-import { Split, SplitStateProvider } from "a-multilayout-splitter"
-import "a-multilayout-splitter/dist/style.css"
+import {useEffect, useState} from "react"
 
-import { getCurrentWindow } from "@tauri-apps/api/window"
+import {Split, SplitStateProvider} from "a-multilayout-splitter"
+import "a-multilayout-splitter/dist/style/index.css"
+
+import {getCurrentWindow} from "@tauri-apps/api/window"
 
 import RequestWorkspace from "@/components/request/request-workspace"
-import { UtilitySheetHost } from "@/components/utility-sheets/utility-sheet-host"
-import { useActiveTabId, useSidebar } from "@/state"
-import { AppHeader } from "./app-header"
+import {UtilitySheetHost} from "@/components/utility-sheets/utility-sheet-host"
+import {useActiveTabId, useSidebar} from "@/state"
+import {AppHeader} from "./app-header"
 import Sidebar from "./sidebar"
 
 export function useTauriWindowSize() {
@@ -19,13 +20,13 @@ export function useTauriWindowSize() {
       const w = getCurrentWindow()
       // seed initial size
       const inner = await w.innerSize()
-      setSize({ width: inner.width, height: inner.height })
+      setSize({width: inner.width, height: inner.height})
 
       // listen for resizes
-      unlisten = await w.onResized(({ payload }) => {
+      unlisten = await w.onResized(({payload}) => {
         // Reduce the number of setSize updates we make
         if (payload.width % 2 === 0) {
-          setSize({ width: payload.width, height: payload.height })
+          setSize({width: payload.width, height: payload.height})
         }
       })
     }
@@ -43,15 +44,15 @@ export function useTauriWindowSize() {
 
 export default function AppLayout() {
   const {
-    state: { isCollapsed },
-    actions: { collapseSidebar, expandSidebar },
+    state: {isCollapsed},
+    actions: {collapseSidebar, expandSidebar},
   } = useSidebar()
   const activeTabId = useActiveTabId()
 
   return (
     <SplitStateProvider>
       <div className="flex h-screen flex-col bg-background text-foreground" data-test-id="app-layout">
-        <UtilitySheetHost />
+        <UtilitySheetHost/>
         <div className="flex h-full flex-1 overflow-hidden">
           {/* biome-ignore lint/correctness/useUniqueElementIds: Split library requires static ID for instance management */}
           <Split
@@ -70,18 +71,18 @@ export default function AppLayout() {
                 }
               }
             }}
-            renderBar={(props, _position) => <div {...props} className="z-10 flex w-[1px] h-full bg-muted" />}
+            renderBar={(props, _position) => <div {...props} className="z-10 flex w-[1px] h-full bg-muted"/>}
           >
             <div className="overflow-hidden">
-              <Sidebar />
+              <Sidebar/>
             </div>
 
             <div className="overflow-auto">
               <div className="flex h-full flex-col bg-background">
-                <AppHeader className="bg-muted border-b" />
+                <AppHeader className="bg-muted border-b"/>
                 <div className="flex-1 overflow-hidden ">
                   {activeTabId ? (
-                    <RequestWorkspace tabId={activeTabId} />
+                    <RequestWorkspace tabId={activeTabId}/>
                   ) : (
                     <div
                       className="flex h-full items-center justify-center text-foreground"
