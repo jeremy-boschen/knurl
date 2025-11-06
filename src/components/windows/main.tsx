@@ -17,6 +17,7 @@ const combinedPromise = Promise.all([import("@/pages/home"), new Promise((resolv
 
 const Home = lazy(() => combinedPromise)
 const TestUxReference = import.meta.env.MODE === "e2e" ? lazy(() => import("@/pages/e2e-ux-reference")) : null
+const PanelsExample = lazy(() => import("@/pages/panels-example"))
 
 function LoadingSplash() {
   return (
@@ -34,6 +35,7 @@ function Router() {
     <Suspense fallback={<LoadingSplash />}>
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/panels-example" component={PanelsExample} />
         {import.meta.env.MODE === "e2e" && TestUxReference ? (
           <Route path="/__tests/ui" component={TestUxReference} />
         ) : null}
