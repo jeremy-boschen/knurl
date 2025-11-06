@@ -20,7 +20,8 @@ describe('Panel', () => {
       </Panel>
     );
 
-    expect(container.firstChild).toHaveClass('test-class');
+    const panel = container.firstChild as HTMLElement;
+    expect(panel.className).toContain('test-class');
   });
 
   it('sets data attributes correctly', () => {
