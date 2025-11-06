@@ -1,4 +1,4 @@
-import {getSplitPaneInstance, setPaneSize} from "a-multilayout-splitter"
+import {getSplitPaneInstance} from "a-multilayout-splitter"
 import type {StateCreator} from "zustand"
 
 import type {Application, SidebarApi, SidebarSlice} from "@/types"
@@ -28,11 +28,19 @@ export const sidebarSliceCreator: StateCreator<
         const instance = instances?.[splitId]
         if (instance) {
           const targetSize = collapsed ? COLLAPSED_SIZE : get().sidebarState.lastExpandedSize
-          setPaneSize(instance, {0: targetSize}, "horizontal")
 
-          set((app) => {
-            app.sidebarState.currentSize = targetSize
-          })
+          // Directly manipulate the first child's flex-basis (sidebar pane)
+          const sections = instance.children
+          if (sections && sections.length > 0) {
+            const sidebarPane = sections[0] as HTMLDivElement
+            if (sidebarPane) {
+              sidebarPane.style.flexBasis = `${targetSize}%`
+
+              set((app) => {
+                app.sidebarState.currentSize = targetSize
+              })
+            }
+          }
         }
       }
     },
