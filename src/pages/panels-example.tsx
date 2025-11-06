@@ -24,11 +24,11 @@ export default function PanelsExample() {
   }
 
   const handleReset = () => {
-    horizontalGroupRef.current?.setSizes(["50%", "50%"])
+    horizontalGroupRef.current?.setSizes(["250px", "100%"])
   }
 
   const handleCustomSplit = () => {
-    horizontalGroupRef.current?.setSizes(["200px", "100%"])
+    horizontalGroupRef.current?.setSizes(["400px", "100%"])
   }
 
   const handleNestedCollapse = () => {
@@ -47,13 +47,13 @@ export default function PanelsExample() {
         <h2>Controls</h2>
         <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
           <button type="button" onClick={handleCollapseLeft}>
-            Collapse Left
+            Collapse Sidebar
           </button>
           <button type="button" onClick={handleReset}>
-            Reset 50/50
+            Reset (250px Sidebar)
           </button>
           <button type="button" onClick={handleCustomSplit}>
-            200px Left / Rest Right
+            Wide Sidebar (400px)
           </button>
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
@@ -84,25 +84,28 @@ export default function PanelsExample() {
           onResizeEnd={(sizes) => console.log("Resize ended:", sizes)}
         >
           <Panel
-            defaultSize="30%"
-            minSize="10%"
-            maxSize="70%"
+            defaultSize="250px"
+            minSize="150px"
+            maxSize="500px"
             style={{
               background: "#f0f0f0",
               padding: "20px",
               borderRight: "1px solid #ccc",
             }}
           >
-            <h3>Left Panel</h3>
-            <p>Default: 30%</p>
-            <p>Min: 10%</p>
-            <p>Max: 70%</p>
+            <h3>Left Panel (Sidebar)</h3>
+            <p>Default: 250px</p>
+            <p>Min: 150px</p>
+            <p>Max: 500px</p>
             <p>Try dragging the resize handle!</p>
+            <p style={{ fontSize: "12px", marginTop: "10px", color: "#666" }}>
+              This panel uses pixel sizing, so it maintains its width when you resize the browser window.
+            </p>
           </Panel>
 
           <Panel
-            defaultSize="70%"
-            minSize="100px"
+            defaultSize="100%"
+            minSize="200px"
             style={{
               padding: "20px",
               display: "flex",
@@ -110,8 +113,11 @@ export default function PanelsExample() {
             }}
           >
             <h3>Right Panel (with nested panels)</h3>
-            <p>Default: 70%</p>
-            <p>Min: 100px</p>
+            <p>Default: 100% (fills remaining space)</p>
+            <p>Min: 200px</p>
+            <p style={{ fontSize: "12px", marginTop: "5px", color: "#666" }}>
+              This panel uses percentage sizing to automatically fill the remaining space.
+            </p>
 
             <div style={{ flex: 1, marginTop: "10px", border: "1px solid #ccc" }}>
               <PanelGroup ref={nestedGroupRef} direction="vertical">
