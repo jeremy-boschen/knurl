@@ -46,7 +46,7 @@ export function useTauriWindowSize() {
 export default function AppLayout() {
   const {
     state: {isCollapsed},
-    actions: {collapseSidebar, expandSidebar},
+    actions: {updateSize},
   } = useSidebar()
   const activeTabId = useActiveTabId()
 
@@ -60,16 +60,19 @@ export default function AppLayout() {
             id="app-layout"
             mode="horizontal"
             initialSizes={["25%", "75%"]}
-            minSizes={[20, 0]}
-            collapsed={[isCollapsed]}
-            lineBar={true}
-            onLayoutChange={(sectionNumber, _paneId, reason, _direction) => {
-              if (sectionNumber === 0) {
-                if (reason === "close") {
-                  collapseSidebar()
-                } else if (reason === "open") {
-                  expandSidebar()
-                }
+            minSizes={[4, 0]}
+            collapsed={[false]}
+            lineBar={false}
+            onDragging={(preSize, _nextSize, paneNumber) => {
+              // Update sidebar size in real-time during drag
+              if (paneNumber === 0) {
+                updateSize(preSize)
+              }
+            }}
+            onDragEnd={(preSize, _nextSize, paneNumber) => {
+              // Ensure final size is recorded
+              if (paneNumber === 0) {
+                updateSize(preSize)
               }
             }}
             renderBar={(props, _position) => (
