@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from "react"
 
-import {Split, SplitStateProvider} from "a-multilayout-splitter"
+import {getSplitPaneInstance, Split, SplitStateProvider} from "a-multilayout-splitter"
 import "a-multilayout-splitter/dist/style/index.css"
 
 import {getCurrentWindow} from "@tauri-apps/api/window"
@@ -53,6 +53,7 @@ export default function AppLayout() {
   } = useSidebar()
   const activeTabId = useActiveTabId()
   const containerRef = useRef<HTMLDivElement>(null)
+  const splitInstanceRef = useRef<HTMLElement | null>(null)
   const [containerWidth, setLocalContainerWidth] = useState(1400)
 
   // Track container width for percentage/pixel conversions
@@ -69,15 +70,49 @@ export default function AppLayout() {
     // Initial width
     updateWidth()
 
-    // Watch for resize
-    const resizeObserver = new ResizeObserver(updateWidth)
+    // Watch for resize - when window resizes, enforce minimum pixel size
+    const resizeObserver = new ResizeObserver(() => {
+      updateWidth()
+
+      // After window resize, ensure sidebar doesn't violate pixel constraints
+      if (splitInstanceRef.current) {
+        const sections = splitInstanceRef.current.children
+        if (sections && sections.length > 0) {
+          const sidebarPane = sections[0] as HTMLDivElement
+          if (sidebarPane) {
+            const currentWidth = sidebarPane.getBoundingClientRect().width
+            const newContainerWidth = container.getBoundingClientRect().width
+
+            // If current pixel width is below minimum, set to minimum
+            if (currentWidth < MIN_SIDEBAR_SIZE_PX) {
+              const minPercent = (MIN_SIDEBAR_SIZE_PX / newContainerWidth) * 100
+              sidebarPane.style.flexBasis = `${minPercent}%`
+            }
+          }
+        }
+      }
+    })
     resizeObserver.observe(container)
 
     return () => resizeObserver.disconnect()
   }, [setContainerWidth])
 
-  // Calculate minSize as percentage based on pixel constant
-  const minSizePercent = containerWidth > 0 ? (MIN_SIDEBAR_SIZE_PX / containerWidth) * 100 : 1
+  // Store split instance ref when component mounts
+  useEffect(() => {
+    const instances = getSplitPaneInstance()
+    if (instances?.["app-layout"]) {
+      splitInstanceRef.current = instances["app-layout"] as HTMLElement
+    }
+  }, [])
+
+  // Helper to enforce pixel-based minimum size
+  const enforceMinimumSize = (sizePercent: number, containerWidth: number): number => {
+    const sizePx = (sizePercent / 100) * containerWidth
+    if (sizePx < MIN_SIDEBAR_SIZE_PX) {
+      return (MIN_SIDEBAR_SIZE_PX / containerWidth) * 100
+    }
+    return sizePercent
+  }
 
   return (
     <SplitStateProvider>
@@ -89,21 +124,49 @@ export default function AppLayout() {
             id="app-layout"
             mode="horizontal"
             initialSizes={["300px", "auto"]}
-            minSizes={[minSizePercent, 0]}
+            minSizes={[0, 0]}
             collapsed={[false]}
             lineBar={false}
             onDragging={(preSize, _nextSize, paneNumber) => {
               // Update sidebar size in real-time during drag
               if (paneNumber === 0) {
-                console.log(`[AppLayout] onDragging: ${preSize.toFixed(1)}% (${((preSize / 100) * containerWidth).toFixed(0)}px)`)
-                updateSize(preSize, containerWidth)
+                const sizePx = (preSize / 100) * containerWidth
+                const enforcedSize = enforceMinimumSize(preSize, containerWidth)
+
+                // If we need to enforce minimum, set it directly
+                if (enforcedSize !== preSize && splitInstanceRef.current) {
+                  const sections = splitInstanceRef.current.children
+                  if (sections && sections.length > 0) {
+                    const sidebarPane = sections[0] as HTMLDivElement
+                    if (sidebarPane) {
+                      sidebarPane.style.flexBasis = `${enforcedSize}%`
+                    }
+                  }
+                }
+
+                console.log(`[AppLayout] onDragging: ${preSize.toFixed(1)}% (${sizePx.toFixed(0)}px) → enforced: ${enforcedSize.toFixed(1)}%`)
+                updateSize(enforcedSize, containerWidth)
               }
             }}
             onDragEnd={(preSize, _nextSize, paneNumber) => {
-              // Ensure final size is recorded
+              // Ensure final size is recorded with minimum enforced
               if (paneNumber === 0) {
-                console.log(`[AppLayout] onDragEnd: ${preSize.toFixed(1)}% (${((preSize / 100) * containerWidth).toFixed(0)}px)`)
-                updateSize(preSize, containerWidth)
+                const sizePx = (preSize / 100) * containerWidth
+                const enforcedSize = enforceMinimumSize(preSize, containerWidth)
+
+                // Set the enforced size
+                if (enforcedSize !== preSize && splitInstanceRef.current) {
+                  const sections = splitInstanceRef.current.children
+                  if (sections && sections.length > 0) {
+                    const sidebarPane = sections[0] as HTMLDivElement
+                    if (sidebarPane) {
+                      sidebarPane.style.flexBasis = `${enforcedSize}%`
+                    }
+                  }
+                }
+
+                console.log(`[AppLayout] onDragEnd: ${preSize.toFixed(1)}% (${sizePx.toFixed(0)}px) → enforced: ${enforcedSize.toFixed(1)}%`)
+                updateSize(enforcedSize, containerWidth)
               }
             }}
             renderBar={(props, _position) => (
