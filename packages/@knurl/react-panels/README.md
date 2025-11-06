@@ -1,4 +1,4 @@
-# @knurl/react-panels
+# @jeremy-boschen/react-panels
 
 A lightweight, zero-dependency React panel library with pixel and percentage-based sizing support.
 
@@ -12,11 +12,14 @@ A lightweight, zero-dependency React panel library with pixel and percentage-bas
 - ⚛️ React 19+ and modern browsers only
 - 📦 Zero dependencies (except React)
 - 📘 Full TypeScript support
+- ✅ 98.2% test coverage
 
 ## Installation
 
 ```bash
-yarn add @knurl/react-panels
+yarn add @jeremy-boschen/react-panels
+# or
+npm install @jeremy-boschen/react-panels
 ```
 
 ## Usage
@@ -24,8 +27,8 @@ yarn add @knurl/react-panels
 ### Basic Example
 
 ```tsx
-import { Panel, PanelGroup } from '@knurl/react-panels';
-import '@knurl/react-panels/style.css';
+import { Panel, PanelGroup } from '@jeremy-boschen/react-panels';
+import '@jeremy-boschen/react-panels/style.css';
 
 function App() {
   return (
@@ -45,7 +48,7 @@ function App() {
 
 ```tsx
 import { useRef } from 'react';
-import { Panel, PanelGroup, PanelGroupHandle } from '@knurl/react-panels';
+import { Panel, PanelGroup, PanelGroupHandle } from '@jeremy-boschen/react-panels';
 
 function App() {
   const panelGroupRef = useRef<PanelGroupHandle>(null);

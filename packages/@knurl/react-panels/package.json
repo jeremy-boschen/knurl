@@ -1,5 +1,5 @@
 {
-  "name": "@knurl/react-panels",
+  "name": "@jeremy-boschen/react-panels",
   "version": "0.1.0",
   "description": "Lightweight React panel library with pixel and percentage-based sizing",
   "type": "module",
@@ -23,7 +23,8 @@
     "dev": "vite build --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "yarn test && yarn build"
   },
   "keywords": [
     "react",
@@ -39,12 +40,11 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jeremy-boschen/knurl",
-    "directory": "packages/@knurl/react-panels"
+    "url": "https://github.com/jeremy-boschen/react-panels"
   },
-  "homepage": "https://github.com/jeremy-boschen/knurl/tree/main/packages/@knurl/react-panels#readme",
+  "homepage": "https://github.com/jeremy-boschen/react-panels#readme",
   "bugs": {
-    "url": "https://github.com/jeremy-boschen/knurl/issues"
+    "url": "https://github.com/jeremy-boschen/react-panels/issues"
   },
   "peerDependencies": {
     "react": "^19.0.0",
