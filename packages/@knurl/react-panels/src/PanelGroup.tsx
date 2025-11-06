@@ -21,6 +21,7 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
     const [pixelSizes, setPixelSizes] = useState<number[]>([]);
     const constraintsRef = useRef<Array<{ minSize?: PanelSize; maxSize?: PanelSize }>>([]);
     const originalUnitsRef = useRef<Array<'px' | '%'>>([]);
+    const isDraggingRef = useRef(false);
 
     // Initialize panel sizes and constraints
     useEffect(() => {
@@ -156,28 +157,45 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
           newPixelSizes[rightIndex] = clampSize(newPixelSizes[rightIndex], rightMinPx, rightMaxPx);
         }
 
+        // During drag, only update pixel sizes (not panel sizes)
+        // This prevents the useEffect from recalculating and causing jumps
         setPixelSizes(newPixelSizes);
 
-        // Convert back to original units for callback
+        // Convert to sizes for callback only
         const newSizes = newPixelSizes.map((px, i) => {
           const unit = originalUnitsRef.current[i];
           const value = convertFromPixels(px, containerSize, unit);
           return formatSize(value, unit);
         });
 
-        setPanelSizes(newSizes);
         onResize?.(newSizes);
       },
       [pixelSizes, direction, onResize]
     );
 
     const handleResizeStart = useCallback(() => {
+      isDraggingRef.current = true;
       onResizeStart?.();
     }, [onResizeStart]);
 
     const handleResizeEnd = useCallback(() => {
-      onResizeEnd?.(panelSizes);
-    }, [onResizeEnd, panelSizes]);
+      isDraggingRef.current = false;
+
+      // Update panelSizes to match the final pixelSizes
+      if (!containerRef.current) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const containerSize = direction === 'horizontal' ? rect.width : rect.height;
+
+      const newSizes = pixelSizes.map((px, i) => {
+        const unit = originalUnitsRef.current[i];
+        const value = convertFromPixels(px, containerSize, unit);
+        return formatSize(value, unit);
+      });
+
+      setPanelSizes(newSizes);
+      onResizeEnd?.(newSizes);
+    }, [pixelSizes, direction, onResizeEnd]);
 
     const flexDirection = direction === 'horizontal' ? 'row' : 'column';
 
