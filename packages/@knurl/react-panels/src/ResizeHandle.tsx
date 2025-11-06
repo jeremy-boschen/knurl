@@ -24,6 +24,15 @@ export function ResizeHandle({
       e.preventDefault();
       isDraggingRef.current = true;
       startPosRef.current = direction === 'horizontal' ? e.clientX : e.clientY;
+
+      // Set cursor globally during drag to prevent cursor drift
+      const cursor = direction === 'horizontal' ? 'col-resize' : 'row-resize';
+      const previousCursor = document.body.style.cursor;
+      const previousUserSelect = document.body.style.userSelect;
+
+      document.body.style.cursor = cursor;
+      document.body.style.userSelect = 'none';
+
       onDragStart();
 
       const handleMouseMove = (moveEvent: MouseEvent) => {
@@ -39,6 +48,11 @@ export function ResizeHandle({
       const handleMouseUp = () => {
         if (isDraggingRef.current) {
           isDraggingRef.current = false;
+
+          // Restore previous cursor and user-select
+          document.body.style.cursor = previousCursor;
+          document.body.style.userSelect = previousUserSelect;
+
           onDragEnd();
           document.removeEventListener('mousemove', handleMouseMove);
           document.removeEventListener('mouseup', handleMouseUp);
