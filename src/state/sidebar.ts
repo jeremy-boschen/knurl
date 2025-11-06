@@ -47,7 +47,7 @@ export const sidebarSliceCreator: StateCreator<
 
   return {
     sidebarState: {
-      isCollapsed: true,
+      isCollapsed: false,
       splitId: "app-layout",
     },
     sidebarApi,
