@@ -2137,6 +2137,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@knurl/react-panels@workspace:packages/@knurl/react-panels":
+  version: 0.0.0-use.local
+  resolution: "@knurl/react-panels@workspace:packages/@knurl/react-panels"
+  dependencies:
+    "@types/react": "npm:^19.2.2"
+    "@types/react-dom": "npm:^19.2.1"
+    typescript: "npm:^5.9.3"
+    vite: "npm:^7.1.9"
+  peerDependencies:
+    react: ^19.0.0
+    react-dom: ^19.0.0
+  languageName: unknown
+  linkType: soft
+
 "@lezer/common@npm:^1.0.0, @lezer/common@npm:^1.0.2, @lezer/common@npm:^1.1.0, @lezer/common@npm:^1.2.0":
   version: 1.2.3
   resolution: "@lezer/common@npm:1.2.3"

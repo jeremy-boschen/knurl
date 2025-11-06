@@ -137,5 +137,8 @@
     "@biomejs/cli-linux-x64": "^2.2.5",
     "@biomejs/cli-win32-x64": "^2.2.5"
   },
+  "workspaces": [
+    "packages/@knurl/*"
+  ],
   "packageManager": "yarn@4.10.3"
 }

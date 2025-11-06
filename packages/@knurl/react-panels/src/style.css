@@ -1,0 +1,26 @@
+/* Default styles for resize handles */
+[data-resize-handle="true"] {
+  flex-shrink: 0;
+  position: relative;
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+
+[data-resize-handle="true"]:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-resize-handle="true"]:active {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Prevent text selection during drag */
+[data-panel-group] {
+  user-select: none;
+}
+
+/* Ensure panels don't shrink below their size */
+[data-panel="true"] {
+  flex-shrink: 0;
+  overflow: auto;
+}
