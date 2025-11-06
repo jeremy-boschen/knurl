@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
+import { Link } from "wouter"
 
 import { getCurrentWindow } from "@tauri-apps/api/window"
 
@@ -86,7 +87,10 @@ export default function AppLayout() {
                   >
                     <div className="text-center">
                       <p className="mb-2 text-lg">No request open</p>
-                      <p className="text-sm">Select a request from the sidebar or create a new one</p>
+                      <p className="text-sm mb-4">Select a request from the sidebar or create a new one</p>
+                      <Link href="/panels-example">
+                        <a className="text-sm text-primary hover:underline">View Panels Library Example →</a>
+                      </Link>
                     </div>
                   </div>
                 )}
