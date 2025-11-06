@@ -154,7 +154,7 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
             lineBar={false}
             onDragEnd={handleResize}
             renderBar={(props, _position) => (
-              <div {...props} className={cn("z-10 flex items-center justify-center", panelResizeCursor)}>
+              <div {...props} className={cn(props.className, "z-10 flex items-center justify-center", panelResizeCursor)}>
                 <div className={cn("bg-muted", resizeHandleLineClass)} />
               </div>
             )}

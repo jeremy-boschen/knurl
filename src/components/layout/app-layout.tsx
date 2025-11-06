@@ -7,6 +7,7 @@ import {getCurrentWindow} from "@tauri-apps/api/window"
 
 import RequestWorkspace from "@/components/request/request-workspace"
 import {UtilitySheetHost} from "@/components/utility-sheets/utility-sheet-host"
+import {cn} from "@/lib"
 import {useActiveTabId, useSidebar} from "@/state"
 import {AppHeader} from "./app-header"
 import Sidebar from "./sidebar"
@@ -71,7 +72,9 @@ export default function AppLayout() {
                 }
               }
             }}
-            renderBar={(props, _position) => <div {...props} className="z-10 flex w-[1px] h-full bg-muted"/>}
+            renderBar={(props, _position) => (
+              <div {...props} className={cn(props.className, "z-10 flex w-[1px] h-full bg-muted")}/>
+            )}
           >
             <div className="overflow-hidden">
               <Sidebar/>
