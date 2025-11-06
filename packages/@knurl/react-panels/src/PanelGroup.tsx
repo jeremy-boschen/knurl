@@ -22,16 +22,15 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
     const constraintsRef = useRef<Array<{ minSize?: PanelSize; maxSize?: PanelSize }>>([]);
     const originalUnitsRef = useRef<Array<'px' | '%'>>([]);
 
-    // Extract panel children (all valid React elements are considered panels)
-    const panelChildren = Children.toArray(children).filter(
-      (child): child is ReactElement<PanelProps> =>
-        isValidElement(child)
-    );
-
-    const panelCount = panelChildren.length;
-
     // Initialize panel sizes and constraints
     useEffect(() => {
+      // Extract panel children inside useEffect to avoid dependency issues
+      const panelChildren = Children.toArray(children).filter(
+        (child): child is ReactElement<PanelProps> =>
+          isValidElement(child)
+      );
+
+      const panelCount = panelChildren.length;
       if (panelCount === 0) return;
 
       const newConstraints: Array<{ minSize?: PanelSize; maxSize?: PanelSize }> = [];
@@ -60,7 +59,7 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
       constraintsRef.current = newConstraints;
       originalUnitsRef.current = newUnits;
       setPanelSizes(newSizes);
-    }, [panelCount, panelChildren]);
+    }, [children]);
 
     // Calculate pixel sizes whenever panel sizes or container changes
     useEffect(() => {
@@ -89,6 +88,12 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
       ref,
       () => ({
         setSizes: (sizes: PanelSize[]) => {
+          const panelChildren = Children.toArray(children).filter(
+            (child): child is ReactElement<PanelProps> =>
+              isValidElement(child)
+          );
+          const panelCount = panelChildren.length;
+
           if (sizes.length !== panelCount) {
             console.warn(
               `setSizes: Expected ${panelCount} sizes, got ${sizes.length}. Ignoring.`
@@ -103,7 +108,7 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
         },
         getSizes: () => panelSizes
       }),
-      [panelSizes, panelCount]
+      [panelSizes, children]
     );
 
     // Handle resize drag
@@ -208,7 +213,8 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
           } as Partial<PanelProps>);
 
           // Add resize handle after each panel except the last one
-          if (index < panelCount - 1) {
+          const totalPanels = Children.count(children);
+          if (index < totalPanels - 1) {
             return (
               <>
                 {panel}
