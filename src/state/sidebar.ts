@@ -1,6 +1,6 @@
-import type { ImperativePanelHandle } from "react-resizable-panels"
-
 import type { StateCreator } from "zustand"
+
+import { closeSplitter, getSplitInstance, openSplitter } from "a-multilayout-splitter"
 
 import type { Application, SidebarApi, SidebarSlice } from "@/types"
 
@@ -16,9 +16,17 @@ export const sidebarSliceCreator: StateCreator<
         app.sidebarState.isCollapsed = collapsed
       })
 
-      const panelApi = get().sidebarState.panelApi
-      if (panelApi) {
-        collapsed ? panelApi.collapse() : panelApi.expand()
+      const splitId = get().sidebarState.splitId
+      if (splitId) {
+        const instances = getSplitInstance()
+        const instance = instances[splitId]
+        if (instance) {
+          if (collapsed) {
+            closeSplitter(instance, 0, "horizontal")
+          } else {
+            openSplitter(instance, 0, "horizontal")
+          }
+        }
       }
     },
 
@@ -30,9 +38,9 @@ export const sidebarSliceCreator: StateCreator<
       sidebarApi.setCollapsed(false)
     },
 
-    setPanelApi(panel: ImperativePanelHandle | null) {
+    setSplitId(id: string) {
       set((app) => {
-        app.sidebarState.panelApi = panel
+        app.sidebarState.splitId = id
       })
     },
   }
@@ -40,7 +48,7 @@ export const sidebarSliceCreator: StateCreator<
   return {
     sidebarState: {
       isCollapsed: true,
-      panelApi: null,
+      splitId: "app-layout",
     },
     sidebarApi,
   }

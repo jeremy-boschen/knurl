@@ -1,6 +1,6 @@
 import type * as React from "react"
 import { useRef, useState } from "react"
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
+import { Split } from "a-multilayout-splitter"
 
 import { ChevronDownIcon, LayoutPanelLeftIcon, LayoutPanelTopIcon, SaveIcon, SendIcon, SquareIcon } from "lucide-react"
 
@@ -105,8 +105,6 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
 
   const isVerticalLayout = layout === "vertical"
   const panelResizeCursor = isVerticalLayout ? "cursor-row-resize" : "cursor-col-resize"
-  const panelGroupDirection = isVerticalLayout ? "vertical" : "horizontal"
-  const panelGroupFlexDirection = isVerticalLayout ? "flex-col" : "flex-row"
   const resizeHandleLineClass = isVerticalLayout ? "h-[1px] w-full" : "w-[1px] h-full"
   const hasResponse = Boolean(activeTab.response)
 
@@ -146,14 +144,22 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
       )}
 
       <div className="flex h-full flex-1 flex-col overflow-auto" data-test-id="request-workspace">
-        <PanelGroup
-          key={layout}
-          direction={panelGroupDirection}
-          className={cn("flex h-full w-full", panelGroupFlexDirection)}
-          onLayout={handleResize}
-        >
-          <Panel minSize={hasResponse ? (isVerticalLayout ? 5 : 20) : undefined} className="overflow-hidden">
-            <div className="flex h-full w-full flex-col">
+        {hasResponse ? (
+          <Split
+            key={`${layout}-${activeTab.tabId}`}
+            id={`request-${activeTab.tabId}`}
+            mode={layout}
+            initialSizes={["50%", "50%"]}
+            minSizes={isVerticalLayout ? [5, 5] : [20, 20]}
+            lineBar={false}
+            onDragEnd={handleResize}
+            renderBar={(props, _position) => (
+              <div {...props} className={cn("z-10 flex items-center justify-center", panelResizeCursor)}>
+                <div className={cn("bg-muted", resizeHandleLineClass)} />
+              </div>
+            )}
+          >
+            <div className="flex h-full w-full flex-col overflow-hidden">
               <div className="w-full shrink-0 bg-muted py-3 px-2">
                 <div className="flex w-full items-center gap-2">
                   <Select name="method" key={activeTab.tabId} value={request.method} onValueChange={handleMethodChange}>
@@ -287,23 +293,150 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
                 <RequestEditor tabId={activeTab.tabId} />
               </ErrorBoundary>
             </div>
-          </Panel>
 
-          {hasResponse && (
-            <>
-              <PanelResizeHandle className={cn("z-10 flex items-center justify-center", panelResizeCursor)}>
-                <div className={cn("bg-muted", resizeHandleLineClass)} />
-              </PanelResizeHandle>
+            <div className="overflow-auto">
+              <ResponseViewer
+                tabId={activeTab.tabId}
+                className={cn(!isVerticalLayout && "border-l border-l-background")}
+              />
+            </div>
+          </Split>
+        ) : (
+          <div className="flex h-full w-full flex-col">
+            <div className="w-full shrink-0 bg-muted py-3 px-2">
+              <div className="flex w-full items-center gap-2">
+                <Select name="method" key={activeTab.tabId} value={request.method} onValueChange={handleMethodChange}>
+                  <SelectTrigger
+                    className={cn("w-[120px] font-mono", original.method !== request.method && "unsaved-changes")}
+                    data-test-id="request-workspace:method-select"
+                  >
+                    <SelectValue placeholder="Method" />
+                  </SelectTrigger>
+                  <SelectContent
+                    onCloseAutoFocus={(e) => {
+                      e.preventDefault()
+                    }}
+                  >
+                    <SelectGroup>
+                      <SelectLabel>Method</SelectLabel>
+                      {httpMethods.map((method) => (
+                        <SelectItem key={method} value={method}>
+                          {method}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
 
-              <Panel className="overflow-auto" minSize={isVerticalLayout ? undefined : 20}>
-                <ResponseViewer
-                  tabId={activeTab.tabId}
-                  className={cn(!isVerticalLayout && "border-l border-l-background")}
+                <Input
+                  ref={urlInputRef}
+                  name="url"
+                  type="text"
+                  placeholder="Enter request URL..."
+                  value={request.url}
+                  onChange={handleUrlChange}
+                  className={cn("flex-1 font-mono", original.url !== request.url && "unsaved-changes")}
+                  data-test-id="request-workspace:url-input"
                 />
-              </Panel>
-            </>
-          )}
-        </PanelGroup>
+
+                {activeTab.sending ? (
+                  <Button
+                    onClick={() => requestTabsApi.cancelRequest(activeTab.tabId)}
+                    variant="destructive"
+                    data-test-id="request-workspace:cancel-button"
+                  >
+                    <SquareIcon className="mr-1 h-4 w-4" />
+                    Cancel
+                  </Button>
+                ) : (
+                  <Button onClick={handleSendRequest} data-test-id="request-workspace:send-button">
+                    <SendIcon className="mr-1 h-4 w-4" />
+                    Send
+                  </Button>
+                )}
+
+                <InputGroup className="w-fit">
+                  <InputGroupButton
+                    onClick={handleSaveRequest}
+                    variant="ghost"
+                    className="h-full"
+                    size="sm"
+                    disabled={!isDirty}
+                    data-testid="save-request-button"
+                    data-test-id="request-workspace:save-button"
+                  >
+                    <SaveIcon className="mr-1 h-4 w-4" />
+                    Save
+                  </InputGroupButton>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <InputGroupButton
+                        aria-label="Export request"
+                        variant="ghost"
+                        size="icon-sm"
+                        className="h-full"
+                        disabled={exporting !== null}
+                        data-test-id="request-workspace:export-menu-button"
+                      >
+                        <ChevronDownIcon className="h-4 w-4" />
+                      </InputGroupButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" sideOffset={4}>
+                      <DropdownMenuGroup>
+                        <DropdownMenuLabel>Copy As</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={() => void handleExport("curl")}
+                          disabled={exporting !== null}
+                          data-test-id="request-workspace:export-option-curl"
+                        >
+                          cURL
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={() => void handleExport("wget")}
+                          disabled={exporting !== null}
+                          data-test-id="request-workspace:export-option-wget"
+                        >
+                          Wget
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={() => void handleExport("fetch")}
+                          disabled={exporting !== null}
+                          data-test-id="request-workspace:export-option-fetch"
+                        >
+                          fetch()
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </InputGroup>
+
+                <Toggle
+                  className="ml-1"
+                  aria-label="Toggle response layout"
+                  title={isVerticalLayout ? "Show response beside request" : "Show response below request"}
+                  pressed={!isVerticalLayout}
+                  onPressedChange={(pressed) => {
+                    setLayout(pressed ? "horizontal" : "vertical")
+                  }}
+                  size="sm"
+                  variant="outline"
+                  data-test-id="request-workspace:layout-toggle-button"
+                >
+                  {isVerticalLayout ? (
+                    <LayoutPanelTopIcon className="h-4 w-4" />
+                  ) : (
+                    <LayoutPanelLeftIcon className="h-4 w-4" />
+                  )}
+                </Toggle>
+              </div>
+            </div>
+
+            <ErrorBoundary>
+              <RequestEditor tabId={activeTab.tabId} />
+            </ErrorBoundary>
+          </div>
+        )}
       </div>
     </>
   )

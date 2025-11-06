@@ -1,11 +1,10 @@
-import type { ImperativePanelHandle } from "react-resizable-panels"
 import { z } from "zod"
 
 export const zSidebarState = z.object({
   isCollapsed: z.boolean().default(true),
 })
 export type SidebarState = z.infer<typeof zSidebarState> & {
-  panelApi: ImperativePanelHandle | null
+  splitId: string
 }
 
 export interface SidebarApi {
@@ -15,7 +14,7 @@ export interface SidebarApi {
 
   expandSidebar(): void
 
-  setPanelApi(panel: ImperativePanelHandle | null): void
+  setSplitId(id: string): void
 }
 
 export interface SidebarSlice {
