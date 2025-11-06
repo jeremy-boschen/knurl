@@ -14,7 +14,9 @@
     "./style.css": "./dist/style.css"
   },
   "files": [
-    "dist"
+    "dist",
+    "LICENSE",
+    "README.md"
   ],
   "scripts": {
     "build": "vite build && tsc --emitDeclarationOnly --outDir dist",
@@ -22,6 +24,27 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
+  },
+  "keywords": [
+    "react",
+    "panels",
+    "resize",
+    "split-pane",
+    "layout",
+    "resizable",
+    "pixel-sizing",
+    "percentage-sizing"
+  ],
+  "author": "Jeremy Boschen",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jeremy-boschen/knurl",
+    "directory": "packages/@knurl/react-panels"
+  },
+  "homepage": "https://github.com/jeremy-boschen/knurl/tree/main/packages/@knurl/react-panels#readme",
+  "bugs": {
+    "url": "https://github.com/jeremy-boschen/knurl/issues"
   },
   "peerDependencies": {
     "react": "^19.0.0",

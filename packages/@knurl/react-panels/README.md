@@ -163,4 +163,4 @@ setSizes(['30%', '70%']);
 
 ## License
 
-MIT
+Apache-2.0
