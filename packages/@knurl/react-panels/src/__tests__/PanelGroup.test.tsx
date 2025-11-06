@@ -453,4 +453,90 @@ describe('PanelGroup Integration Tests', () => {
       });
     });
   });
+
+  describe('Constraint Edge Cases', () => {
+    it('handles drag when right panel hits its minimum constraint', async () => {
+      const { container } = render(
+        <div style={{ width: '1000px', height: '600px' }}>
+          <PanelGroup direction="horizontal">
+            <Panel defaultSize="400px" minSize="100px" maxSize="900px">
+              <div data-testid="panel-1">Panel 1</div>
+            </Panel>
+            <Panel defaultSize="600px" minSize="200px">
+              <div data-testid="panel-2">Panel 2</div>
+            </Panel>
+          </PanelGroup>
+        </div>
+      );
+
+      await waitFor(() => {
+        const panel1 = screen.getByTestId('panel-1').parentElement;
+        expect(panel1).toBeTruthy();
+      });
+
+      const handle = container.querySelector('[data-resize-handle="true"]') as HTMLElement;
+      expect(handle).toBeTruthy();
+
+      // Drag right so much that it would push right panel below its minimum
+      // Right panel min is 200px, so left can't go above 800px
+      fireEvent.mouseDown(handle, { clientX: 400, clientY: 300 });
+      fireEvent.mouseMove(document, { clientX: 900, clientY: 300 }); // Try to drag to 900px (delta +500)
+      fireEvent.mouseUp(document);
+
+      await waitFor(() => {
+        const panel1 = screen.getByTestId('panel-1').parentElement;
+        const panel2 = screen.getByTestId('panel-2').parentElement;
+
+        const width1 = parseFloat(panel1?.style.width || '0');
+        const width2 = parseFloat(panel2?.style.width || '0');
+
+        // Left panel should be clamped to 800px (1000 - 200)
+        expect(width1).toBeCloseTo(800, 0);
+        // Right panel should be at its minimum of 200px
+        expect(width2).toBeCloseTo(200, 0);
+      });
+    });
+
+    it('handles drag when right panel hits its maximum constraint', async () => {
+      const { container } = render(
+        <div style={{ width: '1000px', height: '600px' }}>
+          <PanelGroup direction="horizontal">
+            <Panel defaultSize="600px" minSize="100px">
+              <div data-testid="panel-1">Panel 1</div>
+            </Panel>
+            <Panel defaultSize="400px" maxSize="700px">
+              <div data-testid="panel-2">Panel 2</div>
+            </Panel>
+          </PanelGroup>
+        </div>
+      );
+
+      await waitFor(() => {
+        const panel1 = screen.getByTestId('panel-1').parentElement;
+        expect(panel1).toBeTruthy();
+      });
+
+      const handle = container.querySelector('[data-resize-handle="true"]') as HTMLElement;
+      expect(handle).toBeTruthy();
+
+      // Drag left so much that it would push right panel above its maximum
+      // Right panel max is 700px, so left can't go below 300px
+      fireEvent.mouseDown(handle, { clientX: 600, clientY: 300 });
+      fireEvent.mouseMove(document, { clientX: 100, clientY: 300 }); // Try to drag to 100px (delta -500)
+      fireEvent.mouseUp(document);
+
+      await waitFor(() => {
+        const panel1 = screen.getByTestId('panel-1').parentElement;
+        const panel2 = screen.getByTestId('panel-2').parentElement;
+
+        const width1 = parseFloat(panel1?.style.width || '0');
+        const width2 = parseFloat(panel2?.style.width || '0');
+
+        // Left panel should be clamped to 300px (1000 - 700)
+        expect(width1).toBeCloseTo(300, 0);
+        // Right panel should be at its maximum of 700px
+        expect(width2).toBeCloseTo(700, 0);
+      });
+    });
+  });
 });
