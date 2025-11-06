@@ -5,8 +5,9 @@ export const zSidebarState = z.object({
 })
 export type SidebarState = z.infer<typeof zSidebarState> & {
   splitId: string
-  currentSize: number // Current percentage width
-  lastExpandedSize: number // Last width when expanded (for restoration)
+  currentSizePercent: number // Current percentage width
+  lastExpandedSizePercent: number // Last percentage when expanded (for restoration)
+  containerWidth: number // Container width in pixels for calculations
 }
 
 export interface SidebarApi {
@@ -18,9 +19,11 @@ export interface SidebarApi {
 
   setSplitId(id: string): void
 
-  updateSize(size: number): void
+  updateSize(sizePercent: number, containerWidth: number): void
 
-  setLastExpandedSize(size: number): void
+  setLastExpandedSize(sizePercent: number): void
+
+  setContainerWidth(width: number): void
 }
 
 export interface SidebarSlice {

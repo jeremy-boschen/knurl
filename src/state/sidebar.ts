@@ -3,12 +3,22 @@ import type {StateCreator} from "zustand"
 
 import type {Application, SidebarApi, SidebarSlice} from "@/types"
 
-// Minimum width percentage for collapsed (icon-only) view
-const COLLAPSED_SIZE = 4 // ~25-50px depending on window width
-// Default expanded size
-const DEFAULT_EXPANDED_SIZE = 25
-// Threshold percentage - below this, auto-switch to collapsed view
-const COLLAPSE_THRESHOLD = 8 // ~100px on 1400px window
+// Pixel-based sizing constants
+const COLLAPSED_SIZE_PX = 50 // Collapsed width in pixels (icon-only view)
+const COLLAPSE_THRESHOLD_PX = 100 // Below this width, auto-switch to collapsed view
+const DEFAULT_EXPANDED_SIZE_PX = 300 // Default expanded width in pixels
+const MIN_SIZE_PX = 25 // Absolute minimum width
+
+// Helper function to convert pixels to percentage
+const pxToPercent = (px: number, containerWidth: number): number => {
+  if (containerWidth === 0) return 0
+  return (px / containerWidth) * 100
+}
+
+// Helper function to convert percentage to pixels
+const percentToPx = (percent: number, containerWidth: number): number => {
+  return (percent / 100) * containerWidth
+}
 
 export const sidebarSliceCreator: StateCreator<
   Application,
@@ -23,21 +33,24 @@ export const sidebarSliceCreator: StateCreator<
       })
 
       const splitId = get().sidebarState.splitId
-      if (splitId) {
+      const containerWidth = get().sidebarState.containerWidth
+
+      if (splitId && containerWidth > 0) {
         const instances = getSplitPaneInstance()
         const instance = instances?.[splitId]
         if (instance) {
-          const targetSize = collapsed ? COLLAPSED_SIZE : get().sidebarState.lastExpandedSize
+          const targetSizePx = collapsed ? COLLAPSED_SIZE_PX : percentToPx(get().sidebarState.lastExpandedSizePercent, containerWidth)
+          const targetSizePercent = pxToPercent(targetSizePx, containerWidth)
 
           // Directly manipulate the first child's flex-basis (sidebar pane)
           const sections = instance.children
           if (sections && sections.length > 0) {
             const sidebarPane = sections[0] as HTMLDivElement
             if (sidebarPane) {
-              sidebarPane.style.flexBasis = `${targetSize}%`
+              sidebarPane.style.flexBasis = `${targetSizePercent}%`
 
               set((app) => {
-                app.sidebarState.currentSize = targetSize
+                app.sidebarState.currentSizePercent = targetSizePercent
               })
             }
           }
@@ -48,8 +61,10 @@ export const sidebarSliceCreator: StateCreator<
     collapseSidebar() {
       // Store current size if we're currently expanded
       const currentState = get().sidebarState
-      if (!currentState.isCollapsed && currentState.currentSize > COLLAPSE_THRESHOLD) {
-        sidebarApi.setLastExpandedSize(currentState.currentSize)
+      const currentSizePx = percentToPx(currentState.currentSizePercent, currentState.containerWidth)
+
+      if (!currentState.isCollapsed && currentSizePx > COLLAPSE_THRESHOLD_PX) {
+        sidebarApi.setLastExpandedSize(currentState.currentSizePercent)
       }
       sidebarApi.setCollapsed(true)
     },
@@ -64,34 +79,46 @@ export const sidebarSliceCreator: StateCreator<
       })
     },
 
-    updateSize(size: number) {
+    updateSize(sizePercent: number, containerWidth: number) {
       set((app) => {
-        app.sidebarState.currentSize = size
+        app.sidebarState.currentSizePercent = sizePercent
+        app.sidebarState.containerWidth = containerWidth
       })
 
-      // Auto-switch view based on size threshold
+      // Convert to pixels for threshold comparison
+      const sizePx = percentToPx(sizePercent, containerWidth)
+
+      // Auto-switch view based on pixel threshold
       const currentState = get().sidebarState
-      if (size < COLLAPSE_THRESHOLD && !currentState.isCollapsed) {
+      if (sizePx < COLLAPSE_THRESHOLD_PX && !currentState.isCollapsed) {
         // Crossed below threshold while dragging - switch to collapsed view
+        console.log(`[Sidebar] Auto-collapse: ${sizePx.toFixed(0)}px < ${COLLAPSE_THRESHOLD_PX}px`)
         set((app) => {
           app.sidebarState.isCollapsed = true
         })
-      } else if (size >= COLLAPSE_THRESHOLD && currentState.isCollapsed) {
+      } else if (sizePx >= COLLAPSE_THRESHOLD_PX && currentState.isCollapsed) {
         // Crossed above threshold while dragging - switch to expanded view
+        console.log(`[Sidebar] Auto-expand: ${sizePx.toFixed(0)}px >= ${COLLAPSE_THRESHOLD_PX}px`)
         set((app) => {
           app.sidebarState.isCollapsed = false
         })
       }
 
       // Store as last expanded size if above threshold
-      if (size >= COLLAPSE_THRESHOLD) {
-        sidebarApi.setLastExpandedSize(size)
+      if (sizePx >= COLLAPSE_THRESHOLD_PX) {
+        sidebarApi.setLastExpandedSize(sizePercent)
       }
     },
 
-    setLastExpandedSize(size: number) {
+    setLastExpandedSize(sizePercent: number) {
       set((app) => {
-        app.sidebarState.lastExpandedSize = size
+        app.sidebarState.lastExpandedSizePercent = sizePercent
+      })
+    },
+
+    setContainerWidth(width: number) {
+      set((app) => {
+        app.sidebarState.containerWidth = width
       })
     },
   }
@@ -100,8 +127,9 @@ export const sidebarSliceCreator: StateCreator<
     sidebarState: {
       isCollapsed: false,
       splitId: "app-layout",
-      currentSize: DEFAULT_EXPANDED_SIZE,
-      lastExpandedSize: DEFAULT_EXPANDED_SIZE,
+      currentSizePercent: 25, // Will be updated on mount
+      lastExpandedSizePercent: 25,
+      containerWidth: 1400, // Default, will be updated with actual width
     },
     sidebarApi,
   }

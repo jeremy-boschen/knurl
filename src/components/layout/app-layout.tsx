@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react"
+import {useEffect, useRef, useState} from "react"
 
 import {Split, SplitStateProvider} from "a-multilayout-splitter"
 import "a-multilayout-splitter/dist/style/index.css"
@@ -11,6 +11,9 @@ import {cn} from "@/lib"
 import {useActiveTabId, useSidebar} from "@/state"
 import {AppHeader} from "./app-header"
 import Sidebar from "./sidebar"
+
+// Pixel-based sizing constants for sidebar
+const MIN_SIDEBAR_SIZE_PX = 25
 
 export function useTauriWindowSize() {
   const [size, setSize] = useState<{ width: number; height: number } | null>(null)
@@ -46,33 +49,61 @@ export function useTauriWindowSize() {
 export default function AppLayout() {
   const {
     state: {isCollapsed},
-    actions: {updateSize},
+    actions: {updateSize, setContainerWidth},
   } = useSidebar()
   const activeTabId = useActiveTabId()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setLocalContainerWidth] = useState(1400)
+
+  // Track container width for percentage/pixel conversions
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const updateWidth = () => {
+      const width = container.getBoundingClientRect().width
+      setLocalContainerWidth(width)
+      setContainerWidth(width)
+    }
+
+    // Initial width
+    updateWidth()
+
+    // Watch for resize
+    const resizeObserver = new ResizeObserver(updateWidth)
+    resizeObserver.observe(container)
+
+    return () => resizeObserver.disconnect()
+  }, [setContainerWidth])
+
+  // Calculate minSize as percentage based on pixel constant
+  const minSizePercent = containerWidth > 0 ? (MIN_SIDEBAR_SIZE_PX / containerWidth) * 100 : 1
 
   return (
     <SplitStateProvider>
       <div className="flex h-screen flex-col bg-background text-foreground" data-test-id="app-layout">
         <UtilitySheetHost/>
-        <div className="flex h-full flex-1 overflow-hidden">
+        <div ref={containerRef} className="flex h-full flex-1 overflow-hidden">
           {/* biome-ignore lint/correctness/useUniqueElementIds: Split library requires static ID for instance management */}
           <Split
             id="app-layout"
             mode="horizontal"
-            initialSizes={["25%", "75%"]}
-            minSizes={[4, 0]}
+            initialSizes={["300px", "auto"]}
+            minSizes={[minSizePercent, 0]}
             collapsed={[false]}
             lineBar={false}
             onDragging={(preSize, _nextSize, paneNumber) => {
               // Update sidebar size in real-time during drag
               if (paneNumber === 0) {
-                updateSize(preSize)
+                console.log(`[AppLayout] onDragging: ${preSize.toFixed(1)}% (${((preSize / 100) * containerWidth).toFixed(0)}px)`)
+                updateSize(preSize, containerWidth)
               }
             }}
             onDragEnd={(preSize, _nextSize, paneNumber) => {
               // Ensure final size is recorded
               if (paneNumber === 0) {
-                updateSize(preSize)
+                console.log(`[AppLayout] onDragEnd: ${preSize.toFixed(1)}% (${((preSize / 100) * containerWidth).toFixed(0)}px)`)
+                updateSize(preSize, containerWidth)
               }
             }}
             renderBar={(props, _position) => (
