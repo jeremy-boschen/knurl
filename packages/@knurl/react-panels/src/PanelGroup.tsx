@@ -19,6 +19,7 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const [panelSizes, setPanelSizes] = useState<PanelSize[]>([]);
     const [pixelSizes, setPixelSizes] = useState<number[]>([]);
+    const currentPixelSizesRef = useRef<number[]>([]);
     const constraintsRef = useRef<Array<{ minSize?: PanelSize; maxSize?: PanelSize }>>([]);
     const originalUnitsRef = useRef<Array<'px' | '%'>>([]);
     const isDraggingRef = useRef(false);
@@ -73,6 +74,7 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
         const containerSize = direction === 'horizontal' ? rect.width : rect.height;
 
         const pixels = calculateSizes(panelSizes, containerSize, constraintsRef.current);
+        currentPixelSizesRef.current = pixels;
         setPixelSizes(pixels);
       };
 
@@ -124,7 +126,9 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
         const leftIndex = handleIndex;
         const rightIndex = handleIndex + 1;
 
-        const newPixelSizes = [...pixelSizes];
+        // Use ref to get current sizes (not stale state)
+        const currentSizes = currentPixelSizesRef.current;
+        const newPixelSizes = [...currentSizes];
         newPixelSizes[leftIndex] += delta;
         newPixelSizes[rightIndex] -= delta;
 
@@ -150,12 +154,15 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
 
         // Ensure total equals container size
         const total = newPixelSizes[leftIndex] + newPixelSizes[rightIndex];
-        const expectedTotal = pixelSizes[leftIndex] + pixelSizes[rightIndex];
+        const expectedTotal = currentSizes[leftIndex] + currentSizes[rightIndex];
         if (Math.abs(total - expectedTotal) > 0.1) {
           const correction = expectedTotal - total;
           newPixelSizes[rightIndex] += correction;
           newPixelSizes[rightIndex] = clampSize(newPixelSizes[rightIndex], rightMinPx, rightMaxPx);
         }
+
+        // Update ref immediately for next drag event
+        currentPixelSizesRef.current = newPixelSizes;
 
         // During drag, only update pixel sizes (not panel sizes)
         // This prevents the useEffect from recalculating and causing jumps
@@ -170,7 +177,7 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
 
         onResize?.(newSizes);
       },
-      [pixelSizes, direction, onResize]
+      [direction, onResize]
     );
 
     const handleResizeStart = useCallback(() => {
@@ -187,7 +194,8 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
       const rect = containerRef.current.getBoundingClientRect();
       const containerSize = direction === 'horizontal' ? rect.width : rect.height;
 
-      const newSizes = pixelSizes.map((px, i) => {
+      // Use ref to get final sizes
+      const newSizes = currentPixelSizesRef.current.map((px, i) => {
         const unit = originalUnitsRef.current[i];
         const value = convertFromPixels(px, containerSize, unit);
         return formatSize(value, unit);
@@ -195,7 +203,7 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
 
       setPanelSizes(newSizes);
       onResizeEnd?.(newSizes);
-    }, [pixelSizes, direction, onResizeEnd]);
+    }, [direction, onResizeEnd]);
 
     const flexDirection = direction === 'horizontal' ? 'row' : 'column';
 

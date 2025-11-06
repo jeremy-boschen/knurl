@@ -88,8 +88,8 @@ export default function AppLayout() {
                     <div className="text-center">
                       <p className="mb-2 text-lg">No request open</p>
                       <p className="text-sm mb-4">Select a request from the sidebar or create a new one</p>
-                      <Link href="/panels-example">
-                        <a className="text-sm text-primary hover:underline">View Panels Library Example →</a>
+                      <Link href="/panels-example" className="text-sm text-primary hover:underline">
+                        View Panels Library Example →
                       </Link>
                     </div>
                   </div>
