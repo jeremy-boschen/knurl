@@ -1,29 +1,21 @@
+import type { ImperativePanelHandle } from "react-resizable-panels"
 import { z } from "zod"
 
 export const zSidebarState = z.object({
   isCollapsed: z.boolean().default(true),
 })
 export type SidebarState = z.infer<typeof zSidebarState> & {
-  splitId: string
-  currentSizePercent: number // Current percentage width
-  lastExpandedSizePercent: number // Last percentage when expanded (for restoration)
-  containerWidth: number // Container width in pixels for calculations
+  panelApi: ImperativePanelHandle | null
 }
 
 export interface SidebarApi {
-  setCollapsed(collapsed: boolean): void
+  setCollapsed(open: boolean): void
 
   collapseSidebar(): void
 
   expandSidebar(): void
 
-  setSplitId(id: string): void
-
-  updateSize(sizePercent: number, containerWidth: number): void
-
-  setLastExpandedSize(sizePercent: number): void
-
-  setContainerWidth(width: number): void
+  setPanelApi(panel: ImperativePanelHandle | null): void
 }
 
 export interface SidebarSlice {
