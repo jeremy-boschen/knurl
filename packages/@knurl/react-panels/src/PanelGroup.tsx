@@ -10,19 +10,9 @@ import {
   isValidElement,
   type ReactElement
 } from 'react';
-import type { PanelGroupProps, PanelGroupHandle, PanelSize } from './types';
+import type { PanelGroupProps, PanelGroupHandle, PanelSize, PanelProps } from './types';
 import { ResizeHandle } from './ResizeHandle';
 import { parseSize, formatSize, calculateSizes, convertToPixels, convertFromPixels, clampSize } from './utils';
-
-interface PanelElementProps {
-  'data-panel'?: boolean;
-  'data-default-size'?: PanelSize;
-  'data-min-size'?: PanelSize;
-  'data-max-size'?: PanelSize;
-  'data-resize-handle-class'?: string;
-  style?: React.CSSProperties;
-  [key: string]: unknown;
-}
 
 export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
   ({ children, direction = 'horizontal', className, style, onResize, onResizeStart, onResizeEnd }, ref) => {
@@ -32,10 +22,10 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
     const constraintsRef = useRef<Array<{ minSize?: PanelSize; maxSize?: PanelSize }>>([]);
     const originalUnitsRef = useRef<Array<'px' | '%'>>([]);
 
-    // Extract panel children (filter out non-Panel elements)
+    // Extract panel children (all valid React elements are considered panels)
     const panelChildren = Children.toArray(children).filter(
-      (child): child is ReactElement<PanelElementProps> =>
-        isValidElement(child) && (child.props as PanelElementProps)['data-panel'] !== undefined
+      (child): child is ReactElement<PanelProps> =>
+        isValidElement(child)
     );
 
     const panelCount = panelChildren.length;
@@ -48,31 +38,29 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
       const newSizes: PanelSize[] = [];
       const newUnits: Array<'px' | '%'> = [];
 
-      Children.forEach(children, (child) => {
-        if (isValidElement<PanelElementProps>(child)) {
-          const props = child.props as PanelElementProps;
-          const defaultSize = props['data-default-size'];
-          const minSize = props['data-min-size'];
-          const maxSize = props['data-max-size'];
+      panelChildren.forEach((child) => {
+        const props = child.props as PanelProps;
+        const defaultSize = props.defaultSize;
+        const minSize = props.minSize;
+        const maxSize = props.maxSize;
 
-          newConstraints.push({ minSize, maxSize });
+        newConstraints.push({ minSize, maxSize });
 
-          if (defaultSize) {
-            newSizes.push(defaultSize);
-            newUnits.push(parseSize(defaultSize).unit);
-          } else {
-            // Default to equal percentage distribution
-            const equalPercent = Math.floor(10000 / panelCount) / 100;
-            newSizes.push(`${equalPercent}%`);
-            newUnits.push('%');
-          }
+        if (defaultSize) {
+          newSizes.push(defaultSize);
+          newUnits.push(parseSize(defaultSize).unit);
+        } else {
+          // Default to equal percentage distribution
+          const equalPercent = Math.floor(10000 / panelCount) / 100;
+          newSizes.push(`${equalPercent}%` as PanelSize);
+          newUnits.push('%');
         }
       });
 
       constraintsRef.current = newConstraints;
       originalUnitsRef.current = newUnits;
       setPanelSizes(newSizes);
-    }, [children, panelCount]);
+    }, [panelCount, panelChildren]);
 
     // Calculate pixel sizes whenever panel sizes or container changes
     useEffect(() => {
@@ -203,10 +191,10 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
         data-panel-group={direction}
       >
         {Children.map(children, (child, index) => {
-          if (!isValidElement<PanelElementProps>(child)) return child;
+          if (!isValidElement(child)) return child;
 
-          const props = child.props as PanelElementProps;
-          const panelStyle = {
+          const props = child.props as PanelProps;
+          const panelStyle: React.CSSProperties = {
             ...props.style,
             flex: 'none',
             overflow: 'hidden',
@@ -216,9 +204,8 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
           };
 
           const panel = cloneElement(child, {
-            ...props,
             style: panelStyle
-          } as PanelElementProps);
+          } as Partial<PanelProps>);
 
           // Add resize handle after each panel except the last one
           if (index < panelCount - 1) {
@@ -230,7 +217,6 @@ export const PanelGroup = forwardRef<PanelGroupHandle, PanelGroupProps>(
                   onDragStart={handleResizeStart}
                   onDrag={(delta) => handleResize(index, delta)}
                   onDragEnd={handleResizeEnd}
-                  className={props['data-resize-handle-class']}
                 />
               </>
             );
