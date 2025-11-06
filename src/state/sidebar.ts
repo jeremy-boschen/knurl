@@ -1,6 +1,6 @@
 import type { StateCreator } from "zustand"
 
-import { closeSplitter, getSplitInstance, openSplitter } from "a-multilayout-splitter"
+import { closeSplitter, getSplitPaneInstance, openSplitter } from "a-multilayout-splitter"
 
 import type { Application, SidebarApi, SidebarSlice } from "@/types"
 
@@ -18,7 +18,7 @@ export const sidebarSliceCreator: StateCreator<
 
       const splitId = get().sidebarState.splitId
       if (splitId) {
-        const instances = getSplitInstance()
+        const instances = getSplitPaneInstance()
         const instance = instances[splitId]
         if (instance) {
           if (collapsed) {
