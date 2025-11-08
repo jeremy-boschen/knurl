@@ -23,7 +23,13 @@ export default defineConfig(({
       endpoint: "/api/debug/client-logs",
       levels: ["log", "warn", "error", "info", "debug"],
     }),
-    react(),
+    react({
+      babel: {
+        plugins: [
+          ['babel-plugin-react-compiler', {}],
+        ],
+      },
+    }),
     {
       name: "react-devtools-inject",
       apply: "serve",
