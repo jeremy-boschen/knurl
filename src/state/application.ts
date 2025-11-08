@@ -1,16 +1,16 @@
-import { use as resource, useMemo } from "react"
+import {use as resource, useMemo} from "react"
 
-import { create } from "zustand"
-import { subscribeWithSelector } from "zustand/middleware"
-import { immer } from "zustand/middleware/immer"
-import { useShallow } from "zustand/shallow"
+import {create} from "zustand"
+import {subscribeWithSelector} from "zustand/middleware"
+import {immer} from "zustand/middleware/immer"
+import {useShallow} from "zustand/shallow"
 
-import { assert, generateUniqueId } from "@/lib"
-import { formatWithPrettier } from "@/lib/prettier"
-import { createCredentialsCacheSlice } from "@/state/credentials"
-import { requestTabsSliceCreator } from "@/state/request-tabs"
-import { createSettingsSlice } from "@/state/settings"
-import { utilitySheetsSliceCreator } from "@/state/utility-sheets"
+import {assert, generateUniqueId} from "@/lib"
+import {formatWithPrettier} from "@/lib/prettier"
+import {createCredentialsCacheSlice} from "@/state/credentials"
+import {requestTabsSliceCreator} from "@/state/request-tabs"
+import {createSettingsSlice} from "@/state/settings"
+import {utilitySheetsSliceCreator} from "@/state/utility-sheets"
 import {
   type Application,
   type ClientOptionsData,
@@ -39,9 +39,9 @@ import {
   zFormField,
   zRequestPathParam,
 } from "@/types"
-import { withStorageManager } from "@/types/middleware/storage-manager"
-import { createCollectionsSlice, isScratchCollection } from "./collections"
-import { sidebarSliceCreator } from "./sidebar"
+import {withStorageManager} from "@/types/middleware/storage-manager"
+import {createCollectionsSlice, isScratchCollection} from "./collections"
+import {sidebarSliceCreator} from "./sidebar"
 
 export const useApplication = create<Application>()(
   withStorageManager(
@@ -163,7 +163,7 @@ type SidebarHookActions = {
   setCollapsed: (collapsed: boolean) => void
   collapseSidebar: () => void
   expandSidebar: () => void
-  setPanelApi: SidebarApi["setPanelApi"]
+  setPanelGroupApi: SidebarApi["setPanelGroupApi"]
 }
 
 type SidebarHookState = Pick<SidebarState, "isCollapsed">
@@ -180,7 +180,7 @@ export const useSidebar = (): HookResult<SidebarHookState, SidebarHookActions> =
       setCollapsed: (collapsed: boolean) => getSidebarApi().setCollapsed(collapsed),
       collapseSidebar: () => getSidebarApi().collapseSidebar(),
       expandSidebar: () => getSidebarApi().expandSidebar(),
-      setPanelApi: (panel) => getSidebarApi().setPanelApi(panel),
+      setPanelGroupApi: (panel) => getSidebarApi().setPanelGroupApi(panel),
     },
   }
 }
@@ -324,7 +324,7 @@ export const useRequestsTabSummary = (tabId: string): UseRequestsTabSummary => {
       const method = merged.method
       const isDirty = isRequestDirty(originalRequest)
 
-      return { isActive, name, method, isDirty, requestId: tab.requestId }
+      return {isActive, name, method, isDirty, requestId: tab.requestId}
     }),
   )
 }
@@ -482,7 +482,7 @@ export const useRequestParameters = (tabId: string): HookResult<RequestParameter
   const result = useRequestTab(tabId)
   assert(result, `useRequestParameters called with unknown tabId:${tabId}`)
   const {
-    state: { request, original, activeTab },
+    state: {request, original, activeTab},
   } = result
 
   return {
@@ -515,7 +515,7 @@ export const useRequestParameters = (tabId: string): HookResult<RequestParameter
           activeTab.collectionId,
           activeTab.requestId,
           id,
-          zRequestPathParam.parse({ id }),
+          zRequestPathParam.parse({id}),
         )
       },
       updateCookieParam: (id: string, updates: Partial<RequestCookieParam>) =>
@@ -545,7 +545,7 @@ export const useRequestHeaders = (tabId: string): HookResult<RequestHeadersState
   const result = useRequestTab(tabId)
   assert(result, `useRequestHeaders called with unknown tabId:${tabId}`)
   const {
-    state: { request, original, activeTab },
+    state: {request, original, activeTab},
   } = result
 
   return {
@@ -582,7 +582,7 @@ export const useRequestCookies = (tabId: string): HookResult<RequestCookiesState
   const result = useRequestTab(tabId)
   assert(result, `useRequestCookies called with unknown tabId:${tabId}`)
   const {
-    state: { request, original, activeTab },
+    state: {request, original, activeTab},
   } = result
 
   return {
@@ -638,7 +638,7 @@ export const useRequestBody = (tabId: string): HookResult<RequestBodyState, Requ
   const result = useRequestTab(tabId)
   assert(result, `useRequestBody called with unknown tabId:${tabId}`)
   const {
-    state: { request, original, activeTab },
+    state: {request, original, activeTab},
   } = result
 
   return {
@@ -663,7 +663,7 @@ export const useRequestBody = (tabId: string): HookResult<RequestBodyState, Requ
           activeTab.collectionId,
           activeTab.requestId,
           id,
-          zFormField.parse({ id }),
+          zFormField.parse({id}),
         )
       },
       formatContent: async () => {
@@ -692,7 +692,7 @@ export const useRequestOptions = (tabId: string): HookResult<RequestOptionsState
   const result = useRequestTab(tabId)
   assert(result, `useRequestOptions called with unknown tabId:${tabId}`)
   const {
-    state: { request, original, activeTab },
+    state: {request, original, activeTab},
   } = result
 
   return {

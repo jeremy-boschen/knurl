@@ -1,8 +1,7 @@
-import type { PanelGroupHandle } from "@jeremy-boschen/react-adjustable-panels"
+import type {PanelGroupHandle} from "@jeremy-boschen/react-adjustable-panels"
+import type {StateCreator} from "zustand"
 
-import type { StateCreator } from "zustand"
-
-import type { Application, SidebarApi, SidebarSlice } from "@/types"
+import type {Application, SidebarApi, SidebarSlice} from "@/types"
 
 export const sidebarSliceCreator: StateCreator<
   Application,
@@ -18,8 +17,9 @@ export const sidebarSliceCreator: StateCreator<
 
       const panelGroupApi = get().sidebarState.panelGroupApi
       if (panelGroupApi) {
-        // Use setSizes to set sidebar to collapsedSize (0px) or expanded (250px)
-        collapsed ? panelGroupApi.setSizes(["0px", "auto"]) : panelGroupApi.setSizes(["250px", "auto"])
+        // Use setSizes to set sidebar to collapsedSize (35px) or expanded (275px). Must keep in sync with
+        // app-layout.tsx
+        collapsed ? panelGroupApi.setSizes(["35px", "auto"]) : panelGroupApi.setSizes(["275px", "auto"])
       }
     },
 
