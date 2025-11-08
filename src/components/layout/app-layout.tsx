@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
+import { Panel, PanelGroup } from "@jeremy-boschen/react-adjustable-panels"
+import "@jeremy-boschen/react-adjustable-panels/style.css"
 
 import { getCurrentWindow } from "@tauri-apps/api/window"
 
@@ -42,36 +43,37 @@ export function useTauriWindowSize() {
 
 export default function AppLayout() {
   const {
-    actions: { setPanelApi, collapseSidebar, expandSidebar },
+    state: { isCollapsed },
+    actions: { setPanelGroupApi, collapseSidebar, expandSidebar },
   } = useSidebar()
   const activeTabId = useActiveTabId()
   const windowSize = useTauriWindowSize()
-
-  const collapsedSize = windowSize?.width
-    ? Math.max((50 / windowSize.width) * 100, (36 / windowSize.width) * 100, 4)
-    : 4
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground" data-test-id="app-layout">
       <UtilitySheetHost />
       <div className="flex h-full flex-1 overflow-hidden">
-        <PanelGroup direction="horizontal" className="flex h-full w-full">
+        <PanelGroup
+          ref={setPanelGroupApi}
+          direction="horizontal"
+          className="flex h-full w-full"
+        >
           <Panel
-            ref={setPanelApi}
-            minSize={20}
-            defaultSize={25}
-            collapsedSize={collapsedSize}
+            defaultSize="250px"
+            minSize="200px"
+            collapsedSize="0px"
+            collapsed={isCollapsed}
+            onCollapse={(collapsed) => {
+              if (collapsed) {
+                collapseSidebar()
+              } else {
+                expandSidebar()
+              }
+            }}
             className="overflow-hidden"
-            collapsible
-            onCollapse={collapseSidebar}
-            onExpand={expandSidebar}
           >
             <Sidebar />
           </Panel>
-
-          <PanelResizeHandle>
-            <div className="z-10 flex w-[1px] h-full bg-muted" />
-          </PanelResizeHandle>
 
           <Panel className="overflow-auto">
             <div className="flex h-full flex-col bg-background">

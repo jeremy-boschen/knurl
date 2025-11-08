@@ -1,4 +1,4 @@
-import type { ImperativePanelHandle } from "react-resizable-panels"
+import type { PanelGroupHandle } from "@jeremy-boschen/react-adjustable-panels"
 
 import type { StateCreator } from "zustand"
 
@@ -16,9 +16,10 @@ export const sidebarSliceCreator: StateCreator<
         app.sidebarState.isCollapsed = collapsed
       })
 
-      const panelApi = get().sidebarState.panelApi
-      if (panelApi) {
-        collapsed ? panelApi.collapse() : panelApi.expand()
+      const panelGroupApi = get().sidebarState.panelGroupApi
+      if (panelGroupApi) {
+        // Use setSizes to set sidebar to collapsedSize (0px) or expanded (250px)
+        collapsed ? panelGroupApi.setSizes(["0px", "auto"]) : panelGroupApi.setSizes(["250px", "auto"])
       }
     },
 
@@ -30,9 +31,9 @@ export const sidebarSliceCreator: StateCreator<
       sidebarApi.setCollapsed(false)
     },
 
-    setPanelApi(panel: ImperativePanelHandle | null) {
+    setPanelGroupApi(panelGroup: PanelGroupHandle | null) {
       set((app) => {
-        app.sidebarState.panelApi = panel
+        app.sidebarState.panelGroupApi = panelGroup
       })
     },
   }
@@ -40,7 +41,7 @@ export const sidebarSliceCreator: StateCreator<
   return {
     sidebarState: {
       isCollapsed: true,
-      panelApi: null,
+      panelGroupApi: null,
     },
     sidebarApi,
   }

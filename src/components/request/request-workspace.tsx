@@ -1,6 +1,7 @@
 import type * as React from "react"
 import { useRef, useState } from "react"
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
+import { Panel, PanelGroup, ResizeHandle } from "@jeremy-boschen/react-adjustable-panels"
+import "@jeremy-boschen/react-adjustable-panels/style.css"
 
 import { ChevronDownIcon, LayoutPanelLeftIcon, LayoutPanelTopIcon, SaveIcon, SendIcon, SquareIcon } from "lucide-react"
 
@@ -150,9 +151,9 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
           key={layout}
           direction={panelGroupDirection}
           className={cn("flex h-full w-full", panelGroupFlexDirection)}
-          onLayout={handleResize}
+          onResize={handleResize}
         >
-          <Panel minSize={hasResponse ? (isVerticalLayout ? 5 : 20) : undefined} className="overflow-hidden">
+          <Panel minSize={hasResponse ? (isVerticalLayout ? "5%" : "200px") : undefined} className="overflow-hidden">
             <div className="flex h-full w-full flex-col">
               <div className="w-full shrink-0 bg-muted py-3 px-2">
                 <div className="flex w-full items-center gap-2">
@@ -291,11 +292,11 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
 
           {hasResponse && (
             <>
-              <PanelResizeHandle className={cn("z-10 flex items-center justify-center", panelResizeCursor)}>
+              <ResizeHandle size={8} className={cn("z-10 flex items-center justify-center", panelResizeCursor)}>
                 <div className={cn("bg-muted", resizeHandleLineClass)} />
-              </PanelResizeHandle>
+              </ResizeHandle>
 
-              <Panel className="overflow-auto" minSize={isVerticalLayout ? undefined : 20}>
+              <Panel className="overflow-auto" minSize={isVerticalLayout ? undefined : "200px"}>
                 <ResponseViewer
                   tabId={activeTab.tabId}
                   className={cn(!isVerticalLayout && "border-l border-l-background")}
