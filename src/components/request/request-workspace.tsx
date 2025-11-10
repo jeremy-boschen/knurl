@@ -70,6 +70,9 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
 
   const isDirty = state.isDirty
 
+  // Check if response has actual data (not just an empty partial response)
+  const hasCompleteResponse = Boolean(activeTab.response?.data)
+
   const handleMethodChange = (method: HttpMethod) => {
     requestTabsApi.updateTabRequest(activeTab.tabId, { method })
     requestAnimationFrame(() => urlInputRef.current?.focus())
@@ -111,7 +114,6 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
   const panelGroupDirection = isVerticalLayout ? "vertical" : "horizontal"
   const panelGroupFlexDirection = isVerticalLayout ? "flex-col" : "flex-row"
   const resizeHandleLineClass = isVerticalLayout ? "h-[1px] w-full" : "w-[1px] h-full"
-  const hasResponse = Boolean(activeTab.response)
 
   const handleExport = async (format: "curl" | "wget" | "fetch") => {
     try {
@@ -155,7 +157,7 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
           className={cn("flex h-full w-full", panelGroupFlexDirection)}
           onResize={handleResize}
         >
-          <Panel minSize={hasResponse ? (isVerticalLayout ? "5%" : "200px") : undefined} className="overflow-hidden">
+          <Panel minSize={hasCompleteResponse ? (isVerticalLayout ? "5%" : "200px") : undefined} className="overflow-hidden">
             <div className="flex h-full w-full flex-col">
               <div className="w-full shrink-0 bg-muted py-3 px-2">
                 <div className="flex w-full items-center gap-2">
@@ -292,7 +294,7 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
             </div>
           </Panel>
 
-          {hasResponse && (
+          {hasCompleteResponse && (
             <>
               <ResizeHandle size={8} className={cn("z-10 flex items-center justify-center", panelResizeCursor)}>
                 <div className={cn("bg-transparent", resizeHandleLineClass)} />
