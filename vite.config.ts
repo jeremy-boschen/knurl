@@ -1,20 +1,18 @@
-import { defineConfig } from "vite";
+import {defineConfig} from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "node:path";
 import tailwindcss from '@tailwindcss/vite'
 import checker from 'vite-plugin-checker'
-import { resolve } from "node:path";
-import { visualizer } from "rollup-plugin-visualizer";
-import { consoleForwardPlugin } from "./scripts/vite-console-forward-plugin";
-import { cssVarsExportPlugin } from "./scripts/vite-css-vars-export-plugin";
+import {visualizer} from "rollup-plugin-visualizer";
+import {consoleForwardPlugin} from "./scripts/vite-console-forward-plugin";
+import {cssVarsExportPlugin} from "./scripts/vite-css-vars-export-plugin";
 
 const host = process.env.TAURI_DEV_HOST;
 
 export default defineConfig(({
   worker: {
     format: "es",
-    rollupOptions: {
-    }
+    rollupOptions: {}
   },
   plugins: [
     consoleForwardPlugin({
@@ -39,7 +37,7 @@ export default defineConfig(({
           tags: [
             {
               tag: "script",
-              attrs: { src: "http://localhost:8097" },
+              attrs: {src: "http://localhost:8097"},
               injectTo: "head",
             },
           ],
@@ -53,10 +51,11 @@ export default defineConfig(({
     }),
     tailwindcss(),
     // Type-check TypeScript during dev and build
-    checker({ typescript: true })
+    checker({typescript: true})
   ],
   resolve: {
     alias: {
+      "@jeremy-boschen/react-adjustable-panels": path.resolve(__dirname, '../react-adjustable-panels/dist'),
       "@": path.resolve(__dirname, "./src"),
       // This is needed for recent codemirror styling. No idea why
       '@codemirror/state': path.resolve(__dirname, './node_modules/@codemirror/state/dist/index.cjs'),
@@ -83,10 +82,10 @@ export default defineConfig(({
     host: host || false,
     hmr: host
       ? {
-          protocol: "ws",
-          host,
-          port: 1421,
-        }
+        protocol: "ws",
+        host,
+        port: 1421,
+      }
       : undefined,
     watch: {
       ignored: ["**/src-tauri/**", "**/migrate/**"],

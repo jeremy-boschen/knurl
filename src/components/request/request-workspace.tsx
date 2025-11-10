@@ -1,5 +1,6 @@
 import type * as React from "react"
 import { useRef, useState } from "react"
+
 import { Panel, PanelGroup, ResizeHandle } from "@jeremy-boschen/react-adjustable-panels"
 import "@jeremy-boschen/react-adjustable-panels/style.css"
 
@@ -102,6 +103,7 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
       ...prev,
       [activeTab.tabId]: true,
     }))
+    return undefined
   }
 
   const isVerticalLayout = layout === "vertical"
@@ -293,10 +295,10 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
           {hasResponse && (
             <>
               <ResizeHandle size={8} className={cn("z-10 flex items-center justify-center", panelResizeCursor)}>
-                <div className={cn("bg-muted", resizeHandleLineClass)} />
+                <div className={cn("bg-transparent", resizeHandleLineClass)} />
               </ResizeHandle>
 
-              <Panel className="overflow-auto" minSize={isVerticalLayout ? undefined : "200px"}>
+              <Panel className="overflow-auto" defaultSize="50%" minSize="110px">
                 <ResponseViewer
                   tabId={activeTab.tabId}
                   className={cn(!isVerticalLayout && "border-l border-l-background")}
