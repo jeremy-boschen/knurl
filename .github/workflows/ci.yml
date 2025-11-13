@@ -90,7 +90,7 @@ jobs:
         with:
           workspaces: src-tauri
       - name: Run cargo audit
-        run: cargo install cargo-audit && cargo audit --manifest-path src-tauri/Cargo.toml
+        run: cargo install cargo-audit && cargo audit --file src-tauri/Cargo.lock
 
   build:
     name: Build Check
