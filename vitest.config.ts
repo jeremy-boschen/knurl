@@ -1,6 +1,7 @@
 /// <reference types="@vitest/browser/providers/playwright" />
 import {defineConfig, mergeConfig} from "vitest/config"
 import viteConfig from "./vite.config"
+import {playwright} from "@vitest/browser-playwright";
 
 const coverageEnabled = process.env.VITEST_COVERAGE === "true"
 
@@ -51,7 +52,7 @@ export default mergeConfig(viteConfig, defineConfig({
     },
     browser: {
       enabled: false,
-      provider: "playwright",
+      provider: playwright(),
       instances: [
         {browser: "chromium"},
       ],
