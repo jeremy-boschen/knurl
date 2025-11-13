@@ -1993,16 +1993,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jeremy-boschen/react-adjustable-panels@npm:^0.2.1":
-  version: 0.2.1
-  resolution: "@jeremy-boschen/react-adjustable-panels@npm:0.2.1"
+"@jeremy-boschen/react-adjustable-panels@npm:0.3.2":
+  version: 0.3.2
+  resolution: "@jeremy-boschen/react-adjustable-panels@npm:0.3.2"
   peerDependencies:
     react: ^19.0.0
     react-dom: ^19.0.0
   dependenciesMeta:
     rollup:
       built: false
-  checksum: 10c0/048fcc1f5ef5636f1537ce13149f3d0fb48ffe95ae508f99e91f816d310ec9e5c441a26c90f0c28e94ea3fa2274fba5091998880f5928870df3f2298cfe8583b
+  checksum: 10c0/92b5f632cb7b3ded54500043c75d21e1a38b7c7a29fc1634cddfae60c55edd73b125c683e6439ac4fa286ecf2b9d50d92c2c9cbde9d0db326dd1fc8e7932ef7f
   languageName: node
   linkType: hard
 
@@ -10280,7 +10280,7 @@ __metadata:
     "@dnd-kit/sortable": "npm:^10.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"
     "@icons-pack/react-simple-icons": "npm:^13.8.0"
-    "@jeremy-boschen/react-adjustable-panels": "npm:^0.2.1"
+    "@jeremy-boschen/react-adjustable-panels": "npm:0.3.2"
     "@lezer/highlight": "npm:^1.2.1"
     "@prettier/plugin-xml": "npm:^3.4.2"
     "@radix-ui/react-alert-dialog": "npm:^1.1.15"

@@ -95,7 +95,7 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
     setShowSaveRequestDialog(true)
   }
 
-  const handleSaveNewRequest = (collectionId: string, name: string) => {
+  const handleSaveNewRequest = async (collectionId: string, name: string) => {
     if (request.collectionId !== collectionId) {
       requestTabsApi.saveNewTab(activeTab.tabId, collectionId, name)
     }
@@ -157,7 +157,11 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
           className={cn("flex h-full w-full", panelGroupFlexDirection)}
           onResize={handleResize}
         >
-          <Panel minSize={hasCompleteResponse ? (isVerticalLayout ? "5%" : "200px") : undefined} className="overflow-hidden">
+          <Panel
+            key="request-editor"
+            minSize={hasCompleteResponse ? (isVerticalLayout ? "5%" : "200px") : undefined}
+            className="overflow-hidden"
+          >
             <div className="flex h-full w-full flex-col">
               <div className="w-full shrink-0 bg-muted py-3 px-2">
                 <div className="flex w-full items-center gap-2">
@@ -296,11 +300,15 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
 
           {hasCompleteResponse && (
             <>
-              <ResizeHandle size={8} className={cn("z-10 flex items-center justify-center", panelResizeCursor)}>
+              <ResizeHandle
+                size={8}
+                className={cn("z-50 flex items-center justify-center", panelResizeCursor)}
+                key="resize"
+              >
                 <div className={cn("bg-transparent", resizeHandleLineClass)} />
               </ResizeHandle>
 
-              <Panel className="overflow-auto" defaultSize="50%" minSize="110px">
+              <Panel className="overflow-auto" defaultSize="50%" minSize="110px" key="response-viewer">
                 <ResponseViewer
                   tabId={activeTab.tabId}
                   className={cn(!isVerticalLayout && "border-l border-l-background")}

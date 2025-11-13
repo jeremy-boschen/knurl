@@ -1,5 +1,5 @@
-import { promises as fs } from 'node:fs'
-import { join } from 'node:path'
+import {promises as fs} from 'node:fs'
+import {join} from 'node:path'
 
 const svgPath = join(process.cwd(), 'src', 'assets', 'knurl.svg')
 const componentPath = join(process.cwd(), 'src', 'components', 'icons', 'knurl-icon.tsx')
@@ -36,7 +36,7 @@ svgBody = svgBody.replace(/([a-z])-([a-z])/g, (match, char1, char2) => {
 })
 
 // 3. Add ref and props to the SVG element
-svgBody = svgBody.replace(/<svg([^>]*)>/, '<svg$1 ref={ref} {...props}>')
+svgBody = svgBody.replace(/<svg([^>]*)>/, '<svg$1 ref={ref} {...props}><title>KNURL</title>')
 
 // Generate the component
 const componentCode = `import type { SVGProps } from "react"

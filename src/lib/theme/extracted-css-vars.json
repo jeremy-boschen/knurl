@@ -1,5 +1,5 @@
 {
-  "comment": "This file is auto-generated at build time by vite-css-vars-export-plugin.ts. Last generated on 2025-10-05T18:13:49.942Z",
+  "comment": "This file is auto-generated at build time by vite-css-vars-export-plugin.ts. Last generated on 2025-11-10T23:17:46.163Z",
   "default": {
     "light": {
       "font-size-root": "16px",
@@ -103,7 +103,7 @@
       "info": "var(--color-neutral-900)",
       "warning": "var(--color-yellow-400)",
       "error": "var(--color-red-600)",
-      "spacing": "0.25rem */\n\n  /* HTTP Badge Colors */\n  --http-get: var(--color-emerald-600)",
+      "spacing": "0.25rem */\n\n    /* HTTP Badge Colors */\n    --http-get: var(--color-emerald-600)",
       "http-get-foreground": "var(--color-neutral-50)",
       "http-post": "var(--color-sky-700)",
       "http-post-foreground": "var(--color-neutral-50)",

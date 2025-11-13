@@ -1,212 +1,216 @@
+@import "@jeremy-boschen/react-adjustable-panels/style.css";
 @import "./index.css";
 
 @layer base {
-  html {
-    font-size: 14px;
-  }
+    html {
+        font-size: 14px;
+    }
 
-  @font-face {
-    font-family: "Oxanium";
-    /*noinspection CssUnknownTarget*/
-    src: url("/fonts/Oxanium-Variable.woff2") format("woff2");
-    font-style: normal;
-    font-display: auto;
-  }
+    @font-face {
+        font-family: "Oxanium";
+        /*noinspection CssUnknownTarget*/
+        src: url("/fonts/Oxanium-Variable.woff2") format("woff2");
+        font-style: normal;
+        font-display: auto;
+    }
 
-  /* Cross-browser scrollbar styling */
-  * {
-    scrollbar-color: var(--color-accent) var(--color-background);
-    scrollbar-width: thin;
-  }
+    /* Cross-browser scrollbar styling */
+    * {
+        scrollbar-color: var(--color-accent) var(--color-background);
+        scrollbar-width: thin;
+    }
 
-  *::-webkit-scrollbar-track {
-    background: var(--color-background);
-  }
+    *::-webkit-scrollbar-track {
+        background: var(--color-background);
+    }
 
-  *::-webkit-scrollbar-thumb {
-    background-color: var(--color-accent);
-    border-radius: 6px;
-    border: 3px solid var(--color-background);
-  }
+    *::-webkit-scrollbar-thumb {
+        background-color: var(--color-accent);
+        border-radius: 6px;
+        border: 3px solid var(--color-background);
+    }
 
-  ::-ms-reveal {
-    display: none;
-  }
+    ::-ms-reveal {
+        display: none;
+    }
 }
 
 :root {
-  --info: var(--color-neutral-900);
-  --warning: var(--color-yellow-400);
-  --error: var(--color-red-600);
+    --info: var(--color-neutral-900);
+    --warning: var(--color-yellow-400);
+    --error: var(--color-red-600);
 
-  /* Density System - Normal (default) uses existing --spacing: 0.25rem */
+    /* Density System - Normal (default) uses existing --spacing: 0.25rem */
 
-  /* HTTP Badge Colors */
-  --http-get: var(--color-emerald-600);
-  --http-get-foreground: var(--color-neutral-50);
+    /* HTTP Badge Colors */
+    --http-get: var(--color-emerald-600);
+    --http-get-foreground: var(--color-neutral-50);
 
-  --http-post: var(--color-sky-700);
-  --http-post-foreground: var(--color-neutral-50);
+    --http-post: var(--color-sky-700);
+    --http-post-foreground: var(--color-neutral-50);
 
-  --http-put: var(--color-amber-300);
-  --http-put-foreground: var(--color-neutral-900);
+    --http-put: var(--color-amber-300);
+    --http-put-foreground: var(--color-neutral-900);
 
-  --http-patch: var(--color-violet-500);
-  --http-patch-foreground: var(--color-neutral-50);
+    --http-patch: var(--color-violet-500);
+    --http-patch-foreground: var(--color-neutral-50);
 
-  --http-delete: var(--color-rose-600);
-  --http-delete-foreground: var(--color-neutral-50);
+    --http-delete: var(--color-rose-600);
+    --http-delete-foreground: var(--color-neutral-50);
 
-  --http-head: var(--color-slate-300);
-  --http-head-foreground: var(--color-neutral-900);
+    --http-head: var(--color-slate-300);
+    --http-head-foreground: var(--color-neutral-900);
 
-  --http-options: var(--color-cyan-700);
-  --http-options-foreground: var(--color-neutral-50);
+    --http-options: var(--color-cyan-700);
+    --http-options-foreground: var(--color-neutral-50);
 
-  --http-trace: var(--color-yellow-300);
-  --http-trace-foreground: var(--color-neutral-900);
+    --http-trace: var(--color-yellow-300);
+    --http-trace-foreground: var(--color-neutral-900);
 
-  /* Logging Colors */
-  --log-info: var(--color-blue-800);
-  --log-info-foreground: var(--color-neutral-100);
-  --log-debug: var(--color-gray-400);
-  --log-debug-foreground: var(--color-neutral-950);
-  --log-error: var(--color-red-800);
-  --log-error-foreground: var(--color-yellow-400);
-  --log-warning: var(--color-yellow-400);
-  --log-warning-foreground: var(--color-red-800);
+    /* Logging Colors */
+    --log-info: var(--color-blue-800);
+    --log-info-foreground: var(--color-neutral-100);
+    --log-debug: var(--color-gray-400);
+    --log-debug-foreground: var(--color-neutral-950);
+    --log-error: var(--color-red-800);
+    --log-error-foreground: var(--color-yellow-400);
+    --log-warning: var(--color-yellow-400);
+    --log-warning-foreground: var(--color-red-800);
 }
 
 .dark {
-  --info: var(--color-neutral-50);
-  --warning: var(--color-yellow-400);
-  --error: var(--color-red-600);
+    --info: var(--color-neutral-50);
+    --warning: var(--color-yellow-400);
+    --error: var(--color-red-600);
 
-  /* Density System - inherits from :root */
+    /* Density System - inherits from :root */
 
-  --http-get: var(--color-green-600);
-  --http-get-foreground: var(--color-neutral-50);
+    --http-get: var(--color-green-600);
+    --http-get-foreground: var(--color-neutral-50);
 
-  --http-post: var(--color-blue-600);
-  --http-post-foreground: var(--color-neutral-50);
+    --http-post: var(--color-blue-600);
+    --http-post-foreground: var(--color-neutral-50);
 
-  --http-put: var(--color-amber-500);
-  --http-put-foreground: var(--color-neutral-950);
+    --http-put: var(--color-amber-500);
+    --http-put-foreground: var(--color-neutral-950);
 
-  --http-patch: var(--color-violet-500);
-  --http-patch-foreground: var(--color-neutral-50);
+    --http-patch: var(--color-violet-500);
+    --http-patch-foreground: var(--color-neutral-50);
 
-  --http-delete: var(--color-rose-500);
-  --http-delete-foreground: var(--color-neutral-50);
+    --http-delete: var(--color-rose-500);
+    --http-delete-foreground: var(--color-neutral-50);
 
-  --http-head: var(--color-slate-500);
-  --http-head-foreground: var(--color-neutral-50);
+    --http-head: var(--color-slate-500);
+    --http-head-foreground: var(--color-neutral-50);
 
-  --http-options: var(--color-cyan-500);
-  --http-options-foreground: var(--color-neutral-50);
+    --http-options: var(--color-cyan-500);
+    --http-options-foreground: var(--color-neutral-50);
 
-  --http-trace: var(--color-yellow-500);
-  --http-trace-foreground: var(--color-neutral-950);
+    --http-trace: var(--color-yellow-500);
+    --http-trace-foreground: var(--color-neutral-950);
 }
 
 @theme {
-  --color-info: var(--info);
-  --color-warning: var(--warning);
-  --color-error: var(--error);
+    --color-info: var(--info);
+    --color-warning: var(--warning);
+    --color-error: var(--error);
 
-  --color-http-get: var(--http-get);
-  --color-http-get-foreground: var(--http-get-foreground);
-  --color-http-post: var(--http-post);
-  --color-http-post-foreground: var(--http-post-foreground);
-  --color-http-put: var(--http-put);
-  --color-http-put-foreground: var(--http-put-foreground);
-  --color-http-patch: var(--http-patch);
-  --color-http-patch-foreground: var(--http-patch-foreground);
-  --color-http-delete: var(--http-delete);
-  --color-http-delete-foreground: var(--http-delete-foreground);
-  --color-http-head: var(--http-head);
-  --color-http-head-foreground: var(--http-head-foreground);
-  --color-http-options: var(--http-options);
-  --color-http-options-foreground: var(--http-options-foreground);
-  --color-http-trace: var(--http-trace);
-  --color-http-trace-foreground: var(--http-trace-foreground);
+    --color-http-get: var(--http-get);
+    --color-http-get-foreground: var(--http-get-foreground);
+    --color-http-post: var(--http-post);
+    --color-http-post-foreground: var(--http-post-foreground);
+    --color-http-put: var(--http-put);
+    --color-http-put-foreground: var(--http-put-foreground);
+    --color-http-patch: var(--http-patch);
+    --color-http-patch-foreground: var(--http-patch-foreground);
+    --color-http-delete: var(--http-delete);
+    --color-http-delete-foreground: var(--http-delete-foreground);
+    --color-http-head: var(--http-head);
+    --color-http-head-foreground: var(--http-head-foreground);
+    --color-http-options: var(--http-options);
+    --color-http-options-foreground: var(--http-options-foreground);
+    --color-http-trace: var(--http-trace);
+    --color-http-trace-foreground: var(--http-trace-foreground);
 
-  --color-log-info: var(--log-info);
-  --color-log-info-foreground: var(--log-info-foreground);
-  --color-log-debug: var(--log-debug);
-  --color-log-debug-foreground: var(--log-debug-foreground);
-  --color-log-error: var(--log-error);
-  --color-log-error-foreground: var(--log-error-foreground);
-  --color-log-warning: var(--log-warning);
-  --color-log-warning-foreground: var(--log-warning-foreground);
+    --color-log-info: var(--log-info);
+    --color-log-info-foreground: var(--log-info-foreground);
+    --color-log-debug: var(--log-debug);
+    --color-log-debug-foreground: var(--log-debug-foreground);
+    --color-log-error: var(--log-error);
+    --color-log-error-foreground: var(--log-error-foreground);
+    --color-log-warning: var(--log-warning);
+    --color-log-warning-foreground: var(--log-warning-foreground);
 }
 
 :root {
-  input {
-    @apply text-sm;
-  }
+    input {
+        @apply text-sm;
+    }
+
+    [data-resize-handle="true"] {
+        --rap-handle-hover-color: --alpha(var(--color-primary) / 50%);
+        --rap-handle-active-color: --alpha(var(--color-primary) / 80%);
+    }
 }
 
 @layer utilities {
-  /* Dropdown menu helpers */
-  .dropdown-trigger {
-    @apply opacity-0 hover:opacity-100 data-[state=open]:opacity-100 data-[state=open]:bg-accent hover:bg-accent;
-  }
+    /* Dropdown menu helpers */
+    .dropdown-trigger {
+        @apply opacity-0 hover:opacity-100 data-[state=open]:opacity-100 data-[state=open]:bg-accent hover:bg-accent;
+    }
 
-  /* A field with unsaved changes */
-  .unsaved-changes {
-    box-shadow: -2px 0 0 0 var(--color-warning);
-  }
+    /* A field with unsaved changes */
+    .unsaved-changes {
+        box-shadow: -2px 0 0 0 var(--color-warning);
+    }
 }
 
 @layer utilities {
-  div[role="tablist"] {
-    /*@apply p-0 rounded-none;*/
-  }
+    div[role="tablist"] {
+        /*@apply p-0 rounded-none;*/
+    }
 
-  button[role="tab"] {
-    /*@apply border-0 rounded-b-none border-b-primary hover:border-b-secondary hover:border-b-1 data-[state=active]:border-b-1 dark:data-[state=active]:border-b-primary;*/
-  }
+    button[role="tab"] {
+        /*@apply border-0 rounded-b-none border-b-primary hover:border-b-secondary hover:border-b-1 data-[state=active]:border-b-1 dark:data-[state=active]:border-b-primary;*/
+    }
 
-  button:not[role="tab"] {
-    /*@apply hover:brightness-110 hover:ring hover:ring-primary;*/
-  }
+    button:not[role="tab"] {
+        /*@apply hover:brightness-110 hover:ring hover:ring-primary;*/
+    }
 
-  .grow-icon {
-    @apply hover:scale-110;
-  }
-
-  div[role="separator"][data-resize-handle-state="drag"] * {
-    @apply bg-primary/50;
-  }
+    .grow-icon {
+        @apply hover:scale-110;
+    }
 }
 
 /* element selectors */
 @layer utilities {
-  button {
-    cursor: pointer;
-  }
-  input[type] {
-    @apply placeholder:text-muted-foreground/50;
-  }
+    button {
+        cursor: pointer;
+    }
+
+    input[type] {
+        @apply placeholder:text-muted-foreground/50;
+    }
 }
+
 /* Smooth right→left depletion */
 @keyframes countdown-width {
-  from {
-    background-size: 100% 4px;
-    background-position: right bottom;
-  }
-  to {
-    background-size: 0% 4px;
-    background-position: right bottom;
-  }
+    from {
+        background-size: 100% 4px;
+        background-position: right bottom;
+    }
+    to {
+        background-size: 0% 4px;
+        background-position: right bottom;
+    }
 }
 
 /* Tailwind v4: define a tiny utility for the animation */
 @layer utilities {
-  animate-countdown {
-    animation: countdown var(--countdown) linear forwards;
-  }
+    animate-countdown {
+        animation: countdown var(--countdown) linear forwards;
+    }
 }
 
 /*!* Used by knurl/DialogContent when dragging is enabled *!*/
