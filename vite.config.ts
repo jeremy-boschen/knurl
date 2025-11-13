@@ -93,8 +93,13 @@ export default defineConfig(({
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
   build: {
     target: "es2022",
-    minify: false,
-    sourcemap: true,
+    minify: "terser",
+    sourcemap: process.env.NODE_ENV === 'production' ? false : true,
+    terserOptions: {
+      compress: {
+        drop_console: process.env.NODE_ENV === 'production',
+      },
+    },
     // Roll back prior chunk optimizations: use Vite defaults
     // Remove manualChunks and special splitting; keep only input entry.
     rollupOptions: {

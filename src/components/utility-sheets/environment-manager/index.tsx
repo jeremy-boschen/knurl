@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 
 import { InfoIcon, LoaderIcon, SettingsIcon } from "lucide-react"
+import { toast } from "sonner"
 
 import DeleteDialog from "@/components/shared/delete-dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -80,7 +81,7 @@ export default function EnvironmentManager({ collectionId, selectedEnvironmentId
         const api = getEnvironmentsApi()
         const newEnv = api.createEnvironment(collection.id, `${environment.name} Copy`)
         if (!newEnv) {
-          // TODO: Handle error with a toast
+          toast.error("Failed to duplicate environment")
           return
         }
 

@@ -1,0 +1,53 @@
+version: 2
+updates:
+  # NPM dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "newty"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps):"
+      prefix-minor: "chore(deps):"
+      prefix-major: "chore(deps):"
+    allow:
+      - dependency-type: "all"
+
+  # Cargo/Rust dependencies
+  - package-ecosystem: "cargo"
+    directory: "src-tauri"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:30"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "newty"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps):"
+      prefix-minor: "chore(deps):"
+      prefix-major: "chore(deps):"
+    allow:
+      - dependency-type: "all"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    reviewers:
+      - "newty"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore(ci):"

@@ -5,7 +5,6 @@ export const WebSocketEngine: RequestEngine = {
   async execute(context: RequestContext): Promise<ResponseState> {
     // This is a placeholder. In a real implementation, we would
     // establish a WebSocket connection here.
-    console.log("WebSocket engine executed for URL:", context.request.url)
 
     const wsResponseData: WebSocketResponseData = zWebSocketResponseData.parse({
       status: "Connected",
