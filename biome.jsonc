@@ -41,6 +41,9 @@
       "includes": ["**/*.css"],
       "linter": {
         "enabled": false
+      },
+      "formatter": {
+        "enabled": false
       }
     }
   ],
