@@ -94,8 +94,8 @@ export default defineConfig(({
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
   build: {
     target: "es2022",
-    minify: !process.env.TAURI_ENV_DEBUG ? 'esbuild' : false,
-    sourcemap: !!process.env.TAURI_ENV_DEBUG,
+    minify: false,
+    sourcemap: true,
     // Roll back prior chunk optimizations: use Vite defaults
     // Remove manualChunks and special splitting; keep only input entry.
     rollupOptions: {

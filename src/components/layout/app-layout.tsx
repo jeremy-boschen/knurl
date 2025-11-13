@@ -1,3 +1,4 @@
+import {useCallback} from "react"
 import {Panel, PanelGroup, ResizeHandle} from "@jeremy-boschen/react-adjustable-panels"
 
 import RequestWorkspace from "@/components/request/request-workspace"
@@ -22,11 +23,13 @@ export default function AppLayout() {
     }
   }
 
+  const handlePanelGroupRef = useCallback(setPanelGroupApi, [setPanelGroupApi])
+
   return (
     <div className="flex h-screen flex-col bg-background text-foreground" data-test-id="app-layout">
       <UtilitySheetHost/>
       <div className="flex h-full flex-1 overflow-hidden">
-        <PanelGroup ref={setPanelGroupApi} direction="horizontal" className="flex h-full w-full">
+        <PanelGroup ref={handlePanelGroupRef} direction="horizontal" className="flex h-full w-full">
           <Panel
             key="sidebar"
             defaultSize="275px"

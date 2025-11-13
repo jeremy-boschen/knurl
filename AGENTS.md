@@ -21,7 +21,7 @@ Frontend sources live in `src/`; backend commands, storage, and platform integra
 
 Additional structure context:
 
-- `src-tauri/src/http_client/` libcurl-powered HTTP execution.
+- `src-tauri/src/http_client/` Hyper + Rustls HTTP execution.
 - `src-tauri/src/app_data/` cloudless storage with AES-GCM encryption.
 - `src/test/setup.ts` configures testing, including `mockIPC` for Tauri.
 
