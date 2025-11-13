@@ -55,7 +55,6 @@ export default defineConfig(({
   ],
   resolve: {
     alias: {
-      "@jeremy-boschen/react-adjustable-panels": path.resolve(__dirname, '../react-adjustable-panels/dist'),
       "@": path.resolve(__dirname, "./src"),
       // This is needed for recent codemirror styling. No idea why
       '@codemirror/state': path.resolve(__dirname, './node_modules/@codemirror/state/dist/index.cjs'),
