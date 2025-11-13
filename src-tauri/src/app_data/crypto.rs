@@ -174,15 +174,15 @@ pub fn get_or_create_key(_app: &AppHandle, _key_name: &str) -> Result<[u8; 32], 
 
 /// Encrypts plaintext using AES-256-GCM, returning a base64-encoded blob (nonce + ciphertext).
 pub fn encrypt(plain_text: &str, key_bytes: &[u8]) -> Result<String, AppError> {
-    let key = Key::<Aes256Gcm>::from(key_bytes);
-    let cipher = Aes256Gcm::new(key);
+    let key = Key::<Aes256Gcm>::from_slice(key_bytes).clone();
+    let cipher = Aes256Gcm::new(&key);
 
     let mut nonce_bytes = [0u8; 12]; // 96-bit nonce
     rand::rng().fill_bytes(&mut nonce_bytes);
-    let nonce = Nonce::from(nonce_bytes);
+    let nonce = Nonce::from_slice(&nonce_bytes).clone();
 
     let ciphertext = cipher
-        .encrypt(nonce, plain_text.as_bytes())
+        .encrypt(&nonce, plain_text.as_bytes())
         .map_err(|e: aes_gcm::Error| app_error!(ErrorKind::EncryptionFailed, e.to_string()))?;
 
     let mut combined = nonce_bytes.to_vec();
@@ -202,13 +202,13 @@ pub fn decrypt(encoded: &str, key_bytes: &[u8]) -> Result<String, AppError> {
     }
 
     let (nonce_bytes, ciphertext) = combined.split_at(12);
-    let nonce = Nonce::from(<&[u8; 12]>::try_from(nonce_bytes).unwrap());
+    let nonce = Nonce::from_slice(nonce_bytes).clone();
 
-    let key = Key::<Aes256Gcm>::from(key_bytes);
-    let cipher = Aes256Gcm::new(key);
+    let key = Key::<Aes256Gcm>::from_slice(key_bytes).clone();
+    let cipher = Aes256Gcm::new(&key);
 
     let decrypted = cipher
-        .decrypt(nonce, ciphertext)
+        .decrypt(&nonce, ciphertext)
         .map_err(|e: aes_gcm::Error| app_error!(ErrorKind::DecryptionFailed, e.to_string()))?;
 
     let utf8 = String::from_utf8(decrypted).map_err(|e: std::string::FromUtf8Error| {
