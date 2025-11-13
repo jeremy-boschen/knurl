@@ -2,7 +2,7 @@ import type { RequestContext, RequestEngine } from "@/request/pipeline"
 import { type ResponseState, type WebSocketResponseData, zResponseState, zWebSocketResponseData } from "@/types"
 
 export const WebSocketEngine: RequestEngine = {
-  async execute(context: RequestContext): Promise<ResponseState> {
+  async execute(_context: RequestContext): Promise<ResponseState> {
     // This is a placeholder. In a real implementation, we would
     // establish a WebSocket connection here.
 
