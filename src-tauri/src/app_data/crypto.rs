@@ -174,12 +174,12 @@ pub fn get_or_create_key(_app: &AppHandle, _key_name: &str) -> Result<[u8; 32], 
 
 /// Encrypts plaintext using AES-256-GCM, returning a base64-encoded blob (nonce + ciphertext).
 pub fn encrypt(plain_text: &str, key_bytes: &[u8]) -> Result<String, AppError> {
-    let key = Key::<Aes256Gcm>::from_slice(key_bytes);
+    let key = Key::<Aes256Gcm>::from(key_bytes);
     let cipher = Aes256Gcm::new(key);
 
     let mut nonce_bytes = [0u8; 12]; // 96-bit nonce
     rand::rng().fill_bytes(&mut nonce_bytes);
-    let nonce = Nonce::from_slice(&nonce_bytes);
+    let nonce = Nonce::from(nonce_bytes);
 
     let ciphertext = cipher
         .encrypt(nonce, plain_text.as_bytes())
@@ -202,9 +202,9 @@ pub fn decrypt(encoded: &str, key_bytes: &[u8]) -> Result<String, AppError> {
     }
 
     let (nonce_bytes, ciphertext) = combined.split_at(12);
-    let nonce = Nonce::from_slice(nonce_bytes);
+    let nonce = Nonce::from(<&[u8; 12]>::try_from(nonce_bytes).unwrap());
 
-    let key = Key::<Aes256Gcm>::from_slice(key_bytes);
+    let key = Key::<Aes256Gcm>::from(key_bytes);
     let cipher = Aes256Gcm::new(key);
 
     let decrypted = cipher
