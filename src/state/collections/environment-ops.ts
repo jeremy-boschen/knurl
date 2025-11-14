@@ -13,7 +13,7 @@ import type { StateCreator } from "zustand"
 import { assert, generateUniqueId } from "@/lib/utils"
 import { zParse } from "@/state/utils"
 import { type Application, type Environment, type EnvironmentVariable, zEnvironmentVariable } from "@/types"
-import { touch, getLoadedCollection, existsInIndex, createEnvironment } from "./core"
+import { createEnvironment, existsInIndex, getLoadedCollection, touch } from "./core"
 
 /**
  * Creates environment operation handlers

@@ -12,7 +12,7 @@ import { mergeWith } from "es-toolkit"
 import { current } from "immer"
 import type { StateCreator } from "zustand"
 
-import { assert, generateUniqueId, isNotEmpty, nonNull } from "@/lib/utils"
+import { assert, generateUniqueId, isNotEmpty } from "@/lib/utils"
 import {
   applyBodyPatchUpdates,
   countCollectionRequests,
@@ -42,7 +42,7 @@ import {
 } from "@/types"
 import type { Some } from "@/types/common"
 import type { AuthConfig } from "@/types/request"
-import { touch, getLoadedCollection, assertCollectionLoaded } from "./core"
+import { assertCollectionLoaded, getLoadedCollection, touch } from "./core"
 
 /**
  * Creates request CRUD and patch management operation handlers
@@ -62,7 +62,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
       const collectionsApi = get().collectionsApi
       assert(collectionsApi, "collectionsApi must be initialized")
 
-      const collection = getLoadedCollection(get, collectionId)
+      getLoadedCollection(get, collectionId)
       const folderId = request.folderId ?? RootCollectionFolderId
 
       const newRequest = zParse(zRequestState, {
@@ -140,7 +140,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
 
     updateRequest(collectionId: string, requestId: string, update: Partial<RequestState>): void {
       assertCollectionLoaded(collectionId)
-      const collection = getLoadedCollection(get, collectionId)
+      getLoadedCollection(get, collectionId)
 
       set((app) => {
         const draftCollection = app.collectionsState.cache[collectionId]
@@ -166,8 +166,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
 
     duplicateRequest(collectionId: string, requestId: string): void {
       assertCollectionLoaded(collectionId)
-      const collection = getLoadedCollection(get, collectionId)
-      const { request: original } = findRequestInCollection(collection, requestId)
+      const { request: original } = findRequestInCollection(getLoadedCollection(get, collectionId), requestId)
 
       const duplicate = zParse(zRequestState, {
         ...current(original),
@@ -192,7 +191,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
 
     moveRequestToFolder(collectionId: string, requestId: string, targetFolderId: string, position?: number): void {
       assertCollectionLoaded(collectionId)
-      const collection = getLoadedCollection(get, collectionId)
+      getLoadedCollection(get, collectionId)
 
       set((app) => {
         const draftCollection = app.collectionsState.cache[collectionId]
@@ -213,16 +212,19 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
 
       set((app) => {
         const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
-        ensureParamPatch(request, request.patch!, "queryParams")
+        const patch = ensureRequestPatch(request)
+        ensureParamPatch(request, patch, "queryParams")
         if (update) {
           // Always merge against the base param to get a canonical form
           const baseParam = request.queryParams?.[id] ?? {}
-          request.patch!.queryParams![id] = { ...baseParam, ...update, id }
+          // biome-ignore lint/style/noNonNullAssertion: ensureParamPatch guarantees queryParams exists
+          patch.queryParams![id] = { ...baseParam, ...update, id }
         } else {
-          delete request.patch!.queryParams![id]
+          // biome-ignore lint/style/noNonNullAssertion: ensureParamPatch guarantees queryParams exists
+          delete patch.queryParams![id]
         }
-        pruneParamPatchIfEqual(request, request.patch!, "queryParams")
-        if (!isNotEmpty(request.patch)) {
+        pruneParamPatchIfEqual(request, patch, "queryParams")
+        if (!isNotEmpty(patch)) {
           request.patch = {}
         }
       })
@@ -238,16 +240,19 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
 
       set((app) => {
         const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
-        ensureParamPatch(request, request.patch!, "pathParams")
+        const patch = ensureRequestPatch(request)
+        ensureParamPatch(request, patch, "pathParams")
         if (update) {
           // Always merge against the base param to get a canonical form
           const baseParam = request.pathParams?.[id] ?? {}
-          request.patch!.pathParams![id] = { ...baseParam, ...update, id }
+          // biome-ignore lint/style/noNonNullAssertion: ensureParamPatch guarantees pathParams exists
+          patch.pathParams![id] = { ...baseParam, ...update, id }
         } else {
-          delete request.patch!.pathParams![id]
+          // biome-ignore lint/style/noNonNullAssertion: ensureParamPatch guarantees pathParams exists
+          delete patch.pathParams![id]
         }
-        pruneParamPatchIfEqual(request, request.patch!, "pathParams")
-        if (!isNotEmpty(request.patch)) {
+        pruneParamPatchIfEqual(request, patch, "pathParams")
+        if (!isNotEmpty(patch)) {
           request.patch = {}
         }
       })
@@ -263,16 +268,19 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
 
       set((app) => {
         const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
-        ensureParamPatch(request, request.patch!, "headers")
+        const patch = ensureRequestPatch(request)
+        ensureParamPatch(request, patch, "headers")
         if (update) {
           // Always merge against the base header to get a canonical form
           const baseHeader = request.headers?.[id] ?? {}
-          request.patch!.headers![id] = { ...baseHeader, ...update, id }
+          // biome-ignore lint/style/noNonNullAssertion: ensureParamPatch guarantees headers exists
+          patch.headers![id] = { ...baseHeader, ...update, id }
         } else {
-          delete request.patch!.headers![id]
+          // biome-ignore lint/style/noNonNullAssertion: ensureParamPatch guarantees headers exists
+          delete patch.headers![id]
         }
-        pruneParamPatchIfEqual(request, request.patch!, "headers")
-        if (!isNotEmpty(request.patch)) {
+        pruneParamPatchIfEqual(request, patch, "headers")
+        if (!isNotEmpty(patch)) {
           request.patch = {}
         }
       })
@@ -288,16 +296,19 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
 
       set((app) => {
         const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
-        ensureParamPatch(request, request.patch!, "cookieParams")
+        const patch = ensureRequestPatch(request)
+        ensureParamPatch(request, patch, "cookieParams")
         if (update) {
           // Always merge against the base param to get a canonical form
           const baseParam = request.cookieParams?.[id] ?? {}
-          request.patch!.cookieParams![id] = { ...baseParam, ...update, id }
+          // biome-ignore lint/style/noNonNullAssertion: ensureParamPatch guarantees cookieParams exists
+          patch.cookieParams![id] = { ...baseParam, ...update, id }
         } else {
-          delete request.patch!.cookieParams![id]
+          // biome-ignore lint/style/noNonNullAssertion: ensureParamPatch guarantees cookieParams exists
+          delete patch.cookieParams![id]
         }
-        pruneParamPatchIfEqual(request, request.patch!, "cookieParams")
-        if (!isNotEmpty(request.patch)) {
+        pruneParamPatchIfEqual(request, patch, "cookieParams")
+        if (!isNotEmpty(patch)) {
           request.patch = {}
         }
       })
@@ -347,9 +358,9 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
 
       set((app) => {
         const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
-        ensureRequestPatch(request)
-        request.patch!.authentication = authentication
-        pruneObjectPatchIfEqual(request, request.patch!, "authentication")
+        const patch = ensureRequestPatch(request)
+        patch.authentication = authentication
+        pruneObjectPatchIfEqual(request, patch, "authentication")
       })
     },
 

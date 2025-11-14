@@ -12,24 +12,23 @@
 
 import type { StateCreator } from "zustand"
 
-import type { StorageProvider } from "@/types/middleware/storage-manager"
-import type { Application, CollectionsApi, CollectionsSlice, CollectionsState } from "@/types"
-import type { RequestState } from "@/types"
-import { CollectionFileName, CollectionIndexFileName, CollectionIndexStorage, CollectionStorage } from "./core"
-import { createIndexOps } from "./index-ops"
-import { createCollectionOps } from "./collection-ops"
-import { createRequestOps } from "./request-ops"
-import { createFolderOps } from "./folder-ops"
-import { createEnvironmentOps } from "./environment-ops"
 import {
   buildRequestIndexEntry,
   countCollectionRequests,
   findRequestInCollection,
   insertRequestIntoFolder,
 } from "@/state/collections-lib"
+import type { Application, CollectionsApi, CollectionsSlice, CollectionsState, RequestState } from "@/types"
+import type { StorageProvider } from "@/types/middleware/storage-manager"
+import { createCollectionOps } from "./collection-ops"
+import { CollectionFileName, CollectionIndexFileName, CollectionIndexStorage, CollectionStorage } from "./core"
+import { createEnvironmentOps } from "./environment-ops"
+import { createFolderOps } from "./folder-ops"
+import { createIndexOps } from "./index-ops"
+import { createRequestOps } from "./request-ops"
 
 export { sanitizeCollection } from "@/state/collections-lib"
-export { ScratchCollectionId, isScratchCollection } from "./core"
+export { isScratchCollection, ScratchCollectionId } from "./core"
 
 export const createCollectionsSlice: StateCreator<
   Application,

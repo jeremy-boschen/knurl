@@ -8,9 +8,18 @@
  * - Shared helpers
  */
 
-import { generateUniqueId } from "@/lib/utils"
 import type { StateCreator } from "zustand"
 
+import { isAppError } from "@/bindings/knurl"
+import { assert, generateUniqueId } from "@/lib/utils"
+import {
+  buildEnvironmentState,
+  countCollectionRequests,
+  createFolderNode,
+  normalizeCollection,
+  RootCollectionFolderId,
+} from "@/state/collections-lib"
+import { createStorage, type MigrateContext } from "@/state/middleware/storage"
 import type {
   Application,
   Collection,
@@ -20,18 +29,8 @@ import type {
   CollectionsState,
   Environment,
 } from "@/types"
-import {
-  RootCollectionFolderId,
-  countCollectionRequests,
-  createFolderNode,
-  normalizeCollection,
-  buildEnvironmentState,
-} from "@/state/collections-lib"
-import { createStorage, type MigrateContext } from "@/state/middleware/storage"
-import type { StorageProvider } from "@/types/middleware/storage-manager"
 import { zCollection, zCollectionsIndex } from "@/types"
-import { isAppError } from "@/bindings/knurl"
-import { assert } from "@/lib/utils"
+import type { StorageProvider } from "@/types/middleware/storage-manager"
 
 // Constants
 export const ScratchCollectionId = "scratch"

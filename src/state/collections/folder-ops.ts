@@ -20,7 +20,7 @@ import {
   reorderChildFolders,
 } from "@/state/collections-lib"
 import type { Application, CollectionFolderNode } from "@/types"
-import { touch, getLoadedCollection, assertCollectionLoaded } from "./core"
+import { assertCollectionLoaded, getLoadedCollection, touch } from "./core"
 
 /**
  * Creates folder operation handlers

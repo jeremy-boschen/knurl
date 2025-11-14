@@ -24,17 +24,17 @@ import {
 import type { Application, Collection, CollectionCache, ExportedCollection } from "@/types"
 import { RootCollectionFolderId } from "@/types"
 import {
+  assertCollectionLoaded,
   CollectionFileName,
   CollectionStorage,
-  ScratchCollectionId,
-  touch,
+  existsInIndex,
   getLoadedCollection,
   internalAddCollection,
   loadScratchCollection,
-  existsInIndex,
-  assertCollectionLoaded,
-  removeCollectionFromLoadTracking,
   markCollectionLoaded,
+  removeCollectionFromLoadTracking,
+  ScratchCollectionId,
+  touch,
 } from "./core"
 
 /**
