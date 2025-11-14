@@ -76,14 +76,18 @@ const logMissingCollectionLoad = (collectionId: string) => {
   })
 }
 
-const markCollectionLoaded = (collectionId: string) => {
-  loadedCollections.add(collectionId)
-  captureCollectionLoadTrace(collectionId)
-}
-
 export const clearLoadedCollectionsForTesting = () => {
   loadedCollections.clear()
   collectionLoadTraces?.clear()
+}
+
+export const removeCollectionFromLoadTracking = (collectionId: string) => {
+  loadedCollections.delete(collectionId)
+}
+
+export const markCollectionLoaded = (collectionId: string) => {
+  loadedCollections.add(collectionId)
+  captureCollectionLoadTrace(collectionId)
 }
 
 export const assertCollectionLoaded = (collectionId: string) => {
