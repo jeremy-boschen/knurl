@@ -124,7 +124,7 @@ export function createFolderOps(set: ReturnType<StateCreator<Application>>, get:
 
     moveFolder(collectionId: string, folderId: string, targetParentId: string | null, position?: number): void {
       assertCollectionLoaded(collectionId)
-      const collection = getLoadedCollection(get, collectionId)
+      getLoadedCollection(get, collectionId)
 
       set((app) => {
         const draftCollection = app.collectionsState.cache[collectionId]

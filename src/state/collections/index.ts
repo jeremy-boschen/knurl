@@ -14,18 +14,19 @@ import type { StateCreator } from "zustand"
 
 import type { StorageProvider } from "@/types/middleware/storage-manager"
 import type { Application, CollectionsApi, CollectionsSlice, CollectionsState } from "@/types"
-import {
-  CollectionFileName,
-  CollectionIndexFileName,
-  CollectionIndexStorage,
-  CollectionStorage,
-  setupCollectionStorage,
-} from "./core"
+import type { RequestState } from "@/types"
+import { CollectionFileName, CollectionIndexFileName, CollectionIndexStorage, CollectionStorage } from "./core"
 import { createIndexOps } from "./index-ops"
 import { createCollectionOps } from "./collection-ops"
 import { createRequestOps } from "./request-ops"
 import { createFolderOps } from "./folder-ops"
 import { createEnvironmentOps } from "./environment-ops"
+import {
+  buildRequestIndexEntry,
+  countCollectionRequests,
+  findRequestInCollection,
+  insertRequestIntoFolder,
+} from "@/state/collections-lib"
 
 export { sanitizeCollection } from "@/state/collections-lib"
 export { ScratchCollectionId, isScratchCollection } from "./core"
@@ -139,18 +140,50 @@ export const saveScratchRequest = (
   }
 
   // Move from source to target collection
-  const request = app.collectionsApi.getRequest(sourceCollectionId, requestId)
+  const sourceCollection = app.collectionsState.cache[sourceCollectionId]
+  const targetCollection = app.collectionsState.cache[targetCollectionId]
 
-  // Remove from source collection first
-  app.collectionsApi.deleteRequest(sourceCollectionId, requestId)
+  if (!sourceCollection || !targetCollection) {
+    return requestId
+  }
 
-  // Create duplicate in destination collection
-  const newRequest = app.collectionsApi.createRequest(targetCollectionId, {
+  const request = sourceCollection.requests[requestId]
+  if (!request) {
+    return requestId
+  }
+
+  // Remove from source collection directly (in-state)
+  const { folder: sourceFolder } = findRequestInCollection(sourceCollection, requestId)
+  if (sourceFolder) {
+    sourceFolder.requestIds = sourceFolder.requestIds.filter((id) => id !== requestId)
+  }
+  delete sourceCollection.requests[requestId]
+  delete sourceCollection.requestIndex[requestId]
+
+  // Update source collection index count
+  const sourceIndex = app.collectionsState.index.find((e) => e.id === sourceCollectionId)
+  if (sourceIndex) {
+    sourceIndex.count = countCollectionRequests(sourceCollection)
+  }
+
+  // Create duplicate in destination collection (keeping the same ID)
+  const newRequest = {
     ...request,
+    id: requestId,
     collectionId: targetCollectionId,
     patch: {},
     name,
-  })
+  } as RequestState
+
+  targetCollection.requests[newRequest.id] = newRequest
+  insertRequestIntoFolder(targetCollection, newRequest.folderId, newRequest)
+  buildRequestIndexEntry(targetCollection, newRequest.id)
+
+  // Update target collection index count
+  const targetIndex = app.collectionsState.index.find((e) => e.id === targetCollectionId)
+  if (targetIndex) {
+    targetIndex.count = countCollectionRequests(targetCollection)
+  }
 
   return newRequest.id
 }

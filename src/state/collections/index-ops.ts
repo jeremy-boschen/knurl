@@ -8,7 +8,7 @@
 
 import type { StateCreator } from "zustand"
 
-import { type Application, type CollectionsIndexEntry } from "@/types"
+import type { Application, CollectionsIndexEntry } from "@/types"
 import { CollectionIndexFileName, CollectionIndexStorage } from "./core"
 
 /**
