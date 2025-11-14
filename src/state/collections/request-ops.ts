@@ -195,11 +195,15 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
         ensureParamPatch(request, request.patch!, "queryParams")
         if (update) {
-          request.patch!.queryParams![id] = { ...request.patch!.queryParams![id], ...update, id }
+          const baseParam = request.queryParams?.[id] ?? {}
+          request.patch!.queryParams![id] = { ...baseParam, ...request.patch!.queryParams![id], ...update, id }
         } else {
           delete request.patch!.queryParams![id]
         }
         pruneParamPatchIfEqual(request, request.patch!, "queryParams")
+        if (!isNotEmpty(request.patch)) {
+          request.patch = {}
+        }
       })
     },
 
@@ -215,11 +219,15 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
         ensureParamPatch(request, request.patch!, "pathParams")
         if (update) {
-          request.patch!.pathParams![id] = { ...request.patch!.pathParams![id], ...update, id }
+          const baseParam = request.pathParams?.[id] ?? {}
+          request.patch!.pathParams![id] = { ...baseParam, ...request.patch!.pathParams![id], ...update, id }
         } else {
           delete request.patch!.pathParams![id]
         }
         pruneParamPatchIfEqual(request, request.patch!, "pathParams")
+        if (!isNotEmpty(request.patch)) {
+          request.patch = {}
+        }
       })
     },
 
@@ -235,11 +243,15 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
         ensureParamPatch(request, request.patch!, "headers")
         if (update) {
-          request.patch!.headers![id] = { ...request.patch!.headers![id], ...update, id }
+          const baseHeader = request.headers?.[id] ?? {}
+          request.patch!.headers![id] = { ...baseHeader, ...request.patch!.headers![id], ...update, id }
         } else {
           delete request.patch!.headers![id]
         }
         pruneParamPatchIfEqual(request, request.patch!, "headers")
+        if (!isNotEmpty(request.patch)) {
+          request.patch = {}
+        }
       })
     },
 
@@ -255,11 +267,15 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
         ensureParamPatch(request, request.patch!, "cookieParams")
         if (update) {
-          request.patch!.cookieParams![id] = { ...request.patch!.cookieParams![id], ...update, id }
+          const baseParam = request.cookieParams?.[id] ?? {}
+          request.patch!.cookieParams![id] = { ...baseParam, ...request.patch!.cookieParams![id], ...update, id }
         } else {
           delete request.patch!.cookieParams![id]
         }
         pruneParamPatchIfEqual(request, request.patch!, "cookieParams")
+        if (!isNotEmpty(request.patch)) {
+          request.patch = {}
+        }
       })
     },
 

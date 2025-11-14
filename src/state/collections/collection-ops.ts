@@ -21,12 +21,7 @@ import {
   prepareMergePlan,
   sanitizeCollection,
 } from "@/state/collections-lib"
-import type {
-  Application,
-  Collection,
-  CollectionCache,
-  ExportedCollection,
-} from "@/types"
+import type { Application, Collection, CollectionCache, ExportedCollection } from "@/types"
 import { RootCollectionFolderId } from "@/types"
 import {
   CollectionFileName,
