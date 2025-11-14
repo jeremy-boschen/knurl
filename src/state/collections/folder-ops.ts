@@ -30,7 +30,9 @@ export function createFolderOps(set: ReturnType<StateCreator<Application>>, get:
     createFolder(collectionId: string, parentId: string | null, name: string): CollectionFolderNode {
       assertCollectionLoaded(collectionId)
       const collection = getLoadedCollection(get, collectionId)
-      const parent = parentId ? getFolderOrThrow(collection, parentId) : null
+      if (parentId) {
+        getFolderOrThrow(collection, parentId)
+      }
 
       const folder = createFolderNode(generateUniqueId(), name, parentId)
 
@@ -48,7 +50,7 @@ export function createFolderOps(set: ReturnType<StateCreator<Application>>, get:
     renameFolder(collectionId: string, folderId: string, name: string): void {
       assertCollectionLoaded(collectionId)
       const collection = getLoadedCollection(get, collectionId)
-      const folder = getFolderOrThrow(collection, folderId)
+      getFolderOrThrow(collection, folderId)
 
       set((app) => {
         const draftCollection = app.collectionsState.cache[collectionId]
@@ -63,7 +65,7 @@ export function createFolderOps(set: ReturnType<StateCreator<Application>>, get:
     deleteFolder(collectionId: string, folderId: string): void {
       assertCollectionLoaded(collectionId)
       const collection = getLoadedCollection(get, collectionId)
-      const folder = getFolderOrThrow(collection, folderId)
+      getFolderOrThrow(collection, folderId)
 
       let requestIds: string[] = []
       set((app) => {
@@ -72,12 +74,16 @@ export function createFolderOps(set: ReturnType<StateCreator<Application>>, get:
         const coll = touch(draftCollection)
 
         // Get requests to delete from the draft collection (must be inside Immer context)
-        requestIds = deleteFolderCascade(coll, folderId)
+        const cascadeResult = deleteFolderCascade(coll, folderId)
+        requestIds = cascadeResult.removedRequestIds
 
         // Remove folder and all nested folders
         const toRemove = [folderId]
         while (toRemove.length > 0) {
-          const current = toRemove.pop()!
+          const current = toRemove.pop()
+          if (!current) {
+            break
+          }
           const f = coll.folders[current]
           if (f) {
             toRemove.push(...f.childFolderIds)

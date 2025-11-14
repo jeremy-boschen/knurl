@@ -102,34 +102,54 @@ export const createCollectionsSlice: StateCreator<
 
 export const saveScratchRequest = (
   app: Application,
-  tabId: string,
-  collectionId: string,
-  requestId: string,
-  moveToCollection: string | undefined,
+  options: {
+    id: string
+    collectionId: string
+    name: string
+  },
 ) => {
-  if (!moveToCollection) {
-    // Save in-place; no moving
-    app.collectionsApi.commitRequestPatch(collectionId, requestId)
+  const { id: requestId, collectionId: targetCollectionId, name } = options
+
+  // Find the current collection of this request by searching all loaded collections
+  let sourceCollectionId: string | undefined
+
+  // First check open tabs
+  const openTab = Object.values(app.requestTabsState.openTabs).find((tab) => tab.requestId === requestId)
+  if (openTab) {
+    sourceCollectionId = openTab.collectionId
+  } else {
+    // Search loaded collections' requestIndex
+    for (const collectionId in app.collectionsState.cache) {
+      const collection = app.collectionsState.cache[collectionId]
+      if (collection.requestIndex[requestId]) {
+        sourceCollectionId = collectionId
+        break
+      }
+    }
+  }
+
+  if (!sourceCollectionId) {
     return requestId
   }
 
-  // Move from scratch to destination collection
-  const request = app.collectionsApi.getRequest(collectionId, requestId)
+  if (sourceCollectionId === targetCollectionId) {
+    // Save in-place; no moving
+    app.collectionsApi.commitRequestPatch(targetCollectionId, requestId)
+    return requestId
+  }
+
+  // Move from source to target collection
+  const request = app.collectionsApi.getRequest(sourceCollectionId, requestId)
+
+  // Remove from source collection first
+  app.collectionsApi.deleteRequest(sourceCollectionId, requestId)
 
   // Create duplicate in destination collection
-  const newRequest = app.collectionsApi.createRequest(moveToCollection, {
+  const newRequest = app.collectionsApi.createRequest(targetCollectionId, {
     ...request,
-    collectionId: moveToCollection,
+    collectionId: targetCollectionId,
     patch: {},
-  })
-
-  // Remove from scratch collection
-  app.collectionsApi.deleteRequest(collectionId, requestId)
-
-  // Update the tab to point to the new request
-  app.requestTabsApi.updateTab(tabId, {
-    collectionId: moveToCollection,
-    requestId: newRequest.id,
+    name,
   })
 
   return newRequest.id

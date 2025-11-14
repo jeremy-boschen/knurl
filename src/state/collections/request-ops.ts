@@ -107,13 +107,20 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const draftCollection = app.collectionsState.cache[collectionId]
         assert(draftCollection, `Collection ${collectionId} missing from cache during request delete`)
 
-        const { request, parentFolder } = findRequestInCollection(draftCollection, requestId)
-        assert(request, `deleteRequest called with unknown requestId:${requestId}`)
-        assert(parentFolder, `deleteRequest: parentFolder not found for requestId:${requestId}`)
-
         const coll = touch(draftCollection)
+        const { request, folder } = findRequestInCollection(coll, requestId)
+        assert(request, `deleteRequest called with unknown requestId:${requestId}`)
+        assert(folder, `deleteRequest: folder not found for requestId:${requestId}`)
+
+        // Find and remove from folder's requestIds
+        const currentFolder = coll.folders[request.folderId]
+        if (currentFolder) {
+          currentFolder.requestIds = currentFolder.requestIds.filter((id) => id !== requestId)
+        }
+
+        // Remove from collections
         delete coll.requests[requestId]
-        removeRequestFromFolder(coll, request.folderId, requestId)
+        delete coll.requestIndex[requestId]
 
         const index = app.collectionsState.index.find((e) => e.id === collectionId)
         if (index) {
@@ -138,7 +145,20 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
       set((app) => {
         const draftCollection = app.collectionsState.cache[collectionId]
         assert(draftCollection, `Collection ${collectionId} missing from cache during request update`)
-        const { request } = findRequestInCollection(touch(draftCollection), requestId)
+        const coll = touch(draftCollection)
+        const { request } = findRequestInCollection(coll, requestId)
+
+        // Handle folder movement
+        const oldFolderId = request.folderId
+        const newFolderId = update.folderId
+
+        if (newFolderId && newFolderId !== oldFolderId) {
+          // Remove from old folder
+          removeRequestFromFolder(coll, requestId)
+          // Insert into new folder
+          insertRequestIntoFolder(coll, newFolderId, request)
+        }
+
         Object.assign(request, update)
         request.updated += 1
       })
@@ -195,8 +215,9 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
         ensureParamPatch(request, request.patch!, "queryParams")
         if (update) {
+          // Always merge against the base param to get a canonical form
           const baseParam = request.queryParams?.[id] ?? {}
-          request.patch!.queryParams![id] = { ...baseParam, ...request.patch!.queryParams![id], ...update, id }
+          request.patch!.queryParams![id] = { ...baseParam, ...update, id }
         } else {
           delete request.patch!.queryParams![id]
         }
@@ -219,8 +240,9 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
         ensureParamPatch(request, request.patch!, "pathParams")
         if (update) {
+          // Always merge against the base param to get a canonical form
           const baseParam = request.pathParams?.[id] ?? {}
-          request.patch!.pathParams![id] = { ...baseParam, ...request.patch!.pathParams![id], ...update, id }
+          request.patch!.pathParams![id] = { ...baseParam, ...update, id }
         } else {
           delete request.patch!.pathParams![id]
         }
@@ -243,8 +265,9 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
         ensureParamPatch(request, request.patch!, "headers")
         if (update) {
+          // Always merge against the base header to get a canonical form
           const baseHeader = request.headers?.[id] ?? {}
-          request.patch!.headers![id] = { ...baseHeader, ...request.patch!.headers![id], ...update, id }
+          request.patch!.headers![id] = { ...baseHeader, ...update, id }
         } else {
           delete request.patch!.headers![id]
         }
@@ -267,8 +290,9 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
         ensureParamPatch(request, request.patch!, "cookieParams")
         if (update) {
+          // Always merge against the base param to get a canonical form
           const baseParam = request.cookieParams?.[id] ?? {}
-          request.patch!.cookieParams![id] = { ...baseParam, ...request.patch!.cookieParams![id], ...update, id }
+          request.patch!.cookieParams![id] = { ...baseParam, ...update, id }
         } else {
           delete request.patch!.cookieParams![id]
         }
