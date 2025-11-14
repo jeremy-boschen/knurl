@@ -17,7 +17,6 @@ import {
   countCollectionRequests,
   createFolderNode,
   normalizeCollection,
-  RootCollectionFolderId,
 } from "@/state/collections-lib"
 import { createStorage, type MigrateContext } from "@/state/middleware/storage"
 import type {
@@ -30,6 +29,7 @@ import type {
   Environment,
 } from "@/types"
 import { zCollection, zCollectionsIndex } from "@/types"
+import { RootCollectionFolderId } from "@/types/collections/collection"
 import type { StorageProvider } from "@/types/middleware/storage-manager"
 
 // Constants
