@@ -1,7 +1,23 @@
 import type { Some } from "@/types/common"
 import type { EnvironmentsApi } from "@/types/environments"
-import type { AuthConfig, ClientOptionsData, FormField, RequestBodyData, RequestCookieParam, RequestHeader, RequestPathParam, RequestQueryParam, RequestState } from "@/types/request"
-import type { Collection, CollectionCache, CollectionFolderNode, CollectionsIndexEntry, ExportedCollection } from "./collection"
+import type {
+  AuthConfig,
+  ClientOptionsData,
+  FormField,
+  RequestBodyData,
+  RequestCookieParam,
+  RequestHeader,
+  RequestPathParam,
+  RequestQueryParam,
+  RequestState,
+} from "@/types/request"
+import type {
+  Collection,
+  CollectionCache,
+  CollectionFolderNode,
+  CollectionsIndexEntry,
+  ExportedCollection,
+} from "./collection"
 
 export interface CollectionsIndexApi {
   /**

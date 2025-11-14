@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it } from "vitest"
 import { RootCollectionFolderId } from "@/types"
 import { useApplication } from "@/state/application"
+import { clearLoadedCollectionsForTesting } from "@/state/collections/core"
 
 /**
  * Native format roundtrip tests: export → import → verify identical
@@ -8,6 +9,9 @@ import { useApplication } from "@/state/application"
  */
 
 describe("Native format roundtrip", () => {
+  beforeEach(() => {
+    clearLoadedCollectionsForTesting()
+  })
   describe("simple requests", () => {
     it("roundtrips a basic GET request", () => {
       const { collectionsApi } = useApplication.getState()
