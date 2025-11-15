@@ -10,6 +10,7 @@ import { cssVarsExportPlugin } from './scripts/vite-css-vars-export-plugin'
 const host = process.env.TAURI_DEV_HOST
 
 export default defineConfig({
+  mode: 'e2e',
   define: {
     'import.meta.env.MODE': JSON.stringify('e2e'),
   },
@@ -98,13 +99,7 @@ export default defineConfig({
     port: 1420,
     strictPort: true,
     host: host || false,
-    hmr: host
-      ? {
-          protocol: 'ws',
-          host,
-          port: 1421,
-        }
-      : undefined,
+    hmr: false,
     watch: {
       ignored: ['**/src-tauri/**', '**/migrate/**', '**/coverage/**', '**/.nyc_output/**'],
     },
