@@ -43,13 +43,9 @@ const rawCliArgs = process.argv.slice(2)
 const isCoverageMode = process.env.VITEST_COVERAGE === "true"
 const coverageArgs = isCoverageMode ? ["--coverage.reporter=json", "--coverage.reporter=lcov"] : []
 
-// Allow max workers to be controlled via environment variable
-const maxWorkersArg = process.env.VITEST_MAX_WORKERS ? ["--max-workers", process.env.VITEST_MAX_WORKERS] : []
-
 const args = [
   vitestBin,
   "run",
-  ...maxWorkersArg,
   ...coverageArgs,
   ...rawCliArgs,
   ...testFiles,
