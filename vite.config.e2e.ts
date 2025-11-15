@@ -10,6 +10,9 @@ import { cssVarsExportPlugin } from './scripts/vite-css-vars-export-plugin'
 const host = process.env.TAURI_DEV_HOST
 
 export default defineConfig({
+  define: {
+    'import.meta.env.MODE': JSON.stringify('e2e'),
+  },
   worker: {
     format: 'es',
     rollupOptions: {}
