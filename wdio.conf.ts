@@ -378,6 +378,11 @@ export const config = {
 
   afterTest: async function (test) {
     // Collect coverage from browser (always enabled)
+    // Skip if coverage collection is disabled
+    if (envFlag(process.env.KNURL_SKIP_COVERAGE)) {
+      return;
+    }
+
     try {
       const coverage = await browser.execute(() => {
         return (window as any).__coverage__;
@@ -403,19 +408,26 @@ export const config = {
 
   after: async function () {
     // Merge and generate coverage reports once after all tests complete
+    // Skip if coverage generation is disabled
+    if (envFlag(process.env.KNURL_SKIP_COVERAGE)) {
+      return;
+    }
+
     try {
       const { execSync } = await import('child_process')
       const coverageDir = path.join(process.cwd(), '.nyc_output')
 
       if (existsSync(coverageDir)) {
         console.log('\n[coverage] Merging E2E coverage data...')
-        execSync('nyc merge .nyc_output coverage/e2e-coverage.json', {
+        // Use --temp-dir to avoid creating extra directories
+        execSync('nyc merge .nyc_output coverage/e2e-coverage.json --temp-dir=.nyc_output', {
           cwd: process.cwd(),
           stdio: 'pipe',
         })
 
         console.log('[coverage] Generating E2E coverage report...')
-        execSync('nyc report --reporter=html --reporter=json --reporter=lcov --temp-dir=.nyc_output --report-dir=coverage/e2e', {
+        // Only generate HTML report (much faster than all reporters)
+        execSync('nyc report --reporter=html --reporter=json --temp-dir=.nyc_output --report-dir=coverage/e2e', {
           cwd: process.cwd(),
           stdio: 'pipe',
         })
