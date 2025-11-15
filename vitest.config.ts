@@ -21,7 +21,7 @@ export default mergeConfig(viteConfig, defineConfig({
     coverage: {
       enabled: coverageEnabled,
       provider: "v8",
-      reporter: ["text", "html", "json"],
+      reporter: coverageEnabled ? ["html", "json"] : [],
       reportsDirectory: "coverage",
       // Only consider coverage for source files under src/
       all: false,
@@ -47,8 +47,9 @@ export default mergeConfig(viteConfig, defineConfig({
       statements: 70,
     },
     poolOptions: {
-      forks: {
-        execArgv: ["--max-old-space-size=4096"],
+      threads: {
+        maxThreads: maxWorkers,
+        minThreads: 1,
       },
     },
     browser: {
