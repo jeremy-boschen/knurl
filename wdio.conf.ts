@@ -370,7 +370,6 @@ export const config = {
           `coverage-${Date.now()}-${Math.random().toString(36).slice(2, 9)}.json`
         )
         writeFileSync(coverageFile, JSON.stringify(coverage, null, 2))
-        console.log(`[coverage] Wrote coverage data to ${path.relative(process.cwd(), coverageFile)}`)
       }
     } catch (error) {
       // Silently ignore coverage collection errors; tests should not fail due to coverage
@@ -379,26 +378,25 @@ export const config = {
   },
 
   after: async function () {
-    // Always merge and generate coverage reports
+    // Merge and generate coverage reports once after all tests complete
     try {
       const { execSync } = await import('child_process')
       const coverageDir = path.join(process.cwd(), '.nyc_output')
 
       if (existsSync(coverageDir)) {
-        console.log('[coverage] Merging E2E coverage data...')
+        console.log('\n[coverage] Merging E2E coverage data...')
         execSync('nyc merge .nyc_output coverage/e2e-coverage.json', {
           cwd: process.cwd(),
-          stdio: 'inherit',
+          stdio: 'pipe',
         })
 
         console.log('[coverage] Generating E2E coverage report...')
-        execSync('nyc report --reporter=html --reporter=text --reporter=lcov --temp-dir=.nyc_output --report-dir=coverage/e2e', {
+        execSync('nyc report --reporter=html --reporter=json --reporter=lcov --temp-dir=.nyc_output --report-dir=coverage/e2e', {
           cwd: process.cwd(),
-          stdio: 'inherit',
+          stdio: 'pipe',
         })
 
         console.log('[coverage] ✓ E2E coverage report generated in coverage/e2e/')
-        console.log('[coverage] Run "yarn coverage:merge" to combine with unit test coverage')
       }
     } catch (error) {
       console.warn(`[coverage] Failed to generate coverage report: ${error instanceof Error ? error.message : String(error)}`)
