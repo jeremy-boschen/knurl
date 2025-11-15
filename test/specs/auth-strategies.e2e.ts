@@ -1,13 +1,11 @@
 import { expect } from "@wdio/globals"
 
-import { ensureBridgeReady, callBridge } from "../support/e2e-bridge"
 import { waitForRequestEditor } from "../support/request"
 import { clickByTestId, ensureWorkspaceReady, openNewRequestViaUI, resetOverlays, setInputText, getElementByTestId } from "../support/ui"
 
 describe("Authentication Strategies", () => {
   before(async () => {
     await ensureWorkspaceReady()
-    await ensureBridgeReady()
     await resetOverlays()
   })
 
