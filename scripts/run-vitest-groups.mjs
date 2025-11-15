@@ -57,7 +57,7 @@ const forwardCliArgs = []
 
 // Auto-detect optimal defaults based on CPU count
 const defaultMaxWorkers = Math.max(1, Math.floor(cpuCount * 0.75)) // Use 75% of CPUs to avoid system overload
-const defaultChunkSize = Math.max(1, Math.floor(testFiles.length / cpuCount)) // Distribute files evenly
+const defaultChunkSize = defaultMaxWorkers // Use maxWorkers as chunk size to keep all workers busy
 
 const envMaxWorkers = parseNonNegativeInt(process.env.VITEST_MAX_WORKERS, "VITEST_MAX_WORKERS")
 let maxWorkers = envMaxWorkers ?? defaultMaxWorkers
