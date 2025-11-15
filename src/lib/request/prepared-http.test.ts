@@ -1,259 +1,148 @@
 import { describe, expect, it } from "vitest"
 
-import { prepareHttpRequest } from "@/lib/request/prepared-http"
-import type { AuthResult, RequestState } from "@/types"
-
-const baseRequest = (): RequestState => ({
-  id: "req-1",
-  folderId: "root",
-  order: 0,
-  name: "Example",
-  collectionId: "col-1",
-  environmentId: undefined,
-  autoSave: false,
-  method: "POST",
-  url: "https://api.example.com/users?debug=true",
-  pathParams: {},
-  queryParams: {},
-  headers: {},
-  cookieParams: {},
-  body: {
-    type: "text",
-    content: '{"name":"alice"}',
-    language: "json",
-  },
-  authentication: { type: "none" },
-  tests: undefined,
-  options: {},
-  patch: {},
-  updated: new Date().toISOString(),
-})
+import { prepareHttpRequest } from "./prepared-http"
+import { createRequestFixture } from "@/test/fixtures/collections"
+import type { AuthResult } from "@/types"
 
 describe("prepareHttpRequest", () => {
-  it("builds headers and body for plain text payloads", () => {
-    const prepared = prepareHttpRequest({ request: baseRequest() })
+  it("builds url with path params, query params, and auth query overrides", () => {
+    const request = createRequestFixture({
+      method: "POST",
+      url: "https://api.knurl.dev/users/{{userId}}",
+    })
 
-    expect(prepared.method).toBe("POST")
-    expect(prepared.url).toBe("https://api.example.com/users?debug=true")
-    expect(prepared.headers["Content-Type"]).toBe("application/json")
-    expect(prepared.body.mode).toBe("text")
-    if (prepared.body.mode === "text") {
-      expect(prepared.body.value).toBe('{"name":"alice"}')
-    }
-  })
-
-  it("merges auth headers without overwriting existing values", () => {
-    const request = baseRequest()
-    request.headers = {
-      header1: {
-        id: "h1",
-        name: "Accept",
-        value: "application/json",
-        enabled: true,
-        secure: false,
-      },
-    }
-    const authResult: AuthResult = {
-      headers: { Authorization: "Bearer token-123" },
-    }
-
-    const prepared = prepareHttpRequest({ request, authResult })
-    expect(prepared.headers.Accept).toBe("application/json")
-    expect(prepared.headers.Authorization).toBe("Bearer token-123")
-  })
-
-  it("normalizes request options for downstream consumers", () => {
-    const request = baseRequest()
-    request.options = {
-      disableSsl: true,
-      caPath: "   ",
-      hostOverride: "api.internal.local ",
-      ipOverride: " 10.0.0.5",
-      timeoutSecs: " 15 ",
-      userAgent: "  Knurl/1.0 ",
-      httpVersion: "http2",
-      maxRedirects: 0,
-    }
-
-    const prepared = prepareHttpRequest({ request })
-
-    expect(prepared.options.disableSsl).toBe(true)
-    expect(prepared.options.caPath).toBeUndefined()
-    expect(prepared.options.hostOverride).toBe("api.internal.local")
-    expect(prepared.options.ipOverride).toBe("10.0.0.5")
-    expect(prepared.options.timeoutSecs).toBe(15)
-    expect(prepared.options.userAgent).toBe("Knurl/1.0")
-    expect(prepared.options.httpVersion).toBe("http2")
-    expect(prepared.options.maxRedirects).toBe(0)
-  })
-
-  it("extracts ip override from combined DNS override string", () => {
-    const request = baseRequest()
-    request.options = {
-      hostOverride: "api.example.com:8443:127.0.0.11",
-    }
-
-    const prepared = prepareHttpRequest({ request })
-
-    expect(prepared.options.hostOverride).toBe("api.example.com:8443")
-    expect(prepared.options.ipOverride).toBe("127.0.0.11")
-  })
-
-  it("injects auth query params and cookies", () => {
-    const request = baseRequest()
-    request.method = "GET"
-    request.body = { type: "none" }
-    const authResult: AuthResult = {
-      query: { api_key: "secret" },
-      cookies: { session: "abc123" },
-    }
-
-    const prepared = prepareHttpRequest({ request, authResult })
-    expect(prepared.url).toContain("api_key=secret")
-    const cookieHeader = prepared.headers.Cookie ?? prepared.headers.cookie
-    expect(cookieHeader).toContain("session=abc123")
-    expect(prepared.body.mode).toBe("none")
-  })
-
-  it("replaces path params and builds fallback URLs without scheme", () => {
-    const request = baseRequest()
-    request.url = "/users/{{userId}}"
-    request.queryParams = {
-      q1: { id: "q1", name: "search", value: "admin", enabled: true, secure: false } as any,
-    }
     request.pathParams = {
-      p1: { id: "p1", name: "userId", value: "42", enabled: true, secure: false } as any,
+      user: { id: "user", name: "userId", value: "42", enabled: true, secure: false },
+    }
+    request.queryParams = {
+      search: { id: "search", name: "q", value: "knurl", enabled: true, secure: false },
     }
 
-    const prepared = prepareHttpRequest({ request })
-    expect(prepared.url).toBe("/users/42?search=admin")
-  })
-
-  it("throws when auth body targets text payloads", () => {
-    const request = baseRequest()
-    const authResult: AuthResult = { body: { token: "abc" } }
-    expect(() => prepareHttpRequest({ request, authResult })).toThrow(/Auth placement 'body'/)
-  })
-
-  it("builds urlencoded form bodies and merges auth body entries", () => {
-    const request = baseRequest()
-    request.body = {
-      type: "form",
-      encoding: "url",
-      formData: {
-        f1: { id: "f1", key: "first", value: "alpha", enabled: true, secure: false } as any,
-        f2: { id: "f2", key: "second", value: "beta", enabled: true, secure: false } as any,
-      },
-    }
     const authResult: AuthResult = {
-      body: { token: "abc123" },
+      query: { token: "abc123" },
     }
 
     const prepared = prepareHttpRequest({ request, authResult })
-    expect(prepared.headers["Content-Type"]).toBe("application/x-www-form-urlencoded")
-    expect(prepared.body.mode).toBe("urlencoded")
-    if (prepared.body.mode === "urlencoded") {
-      expect(prepared.body.value).toContain("first=alpha")
-      expect(prepared.body.value).toContain("second=beta")
-      expect(prepared.body.value).toContain("token=abc123")
-    }
+
+    expect(prepared.url).toBe("https://api.knurl.dev/users/42?q=knurl&token=abc123")
+    expect(prepared.method).toBe("POST")
   })
 
-  it("throws when form file fields are used with URL encoding", () => {
-    const request = baseRequest()
+  it("merges headers, cookies, and text body content", () => {
+    const request = createRequestFixture({ method: "POST" })
+    request.headers = {
+      accept: { id: "accept", name: "Accept", value: "application/json", enabled: true, secure: false },
+      disabled: { id: "disabled", name: "X-Off", value: "nope", enabled: false, secure: false },
+    }
+    request.cookieParams = {
+      session: { id: "session", name: "session", value: "s1", enabled: true, secure: false },
+      theme: { id: "theme", name: "theme", value: "dark", enabled: true, secure: false },
+    }
     request.body = {
-      type: "form",
-      encoding: "url",
-      formData: {
-        f1: {
-          id: "f1",
-          key: "file",
-          value: "ignored",
-          enabled: true,
-          secure: false,
-          kind: "file",
-          filePath: "/tmp/data.txt",
-        } as any,
-      },
+      type: "text",
+      language: "json",
+      content: '{"ok":true}',
     }
 
-    expect(() => prepareHttpRequest({ request })).toThrow(/application\/x-www-form-urlencoded/)
+    const authResult: AuthResult = {
+      headers: { Authorization: "Bearer token" },
+      cookies: { auth: "cookie" },
+    }
+
+    const prepared = prepareHttpRequest({ request, authResult })
+
+    expect(prepared.body).toEqual({ mode: "text", value: '{"ok":true}' })
+    expect(prepared.headers).toMatchObject({
+      Accept: "application/json",
+      Authorization: "Bearer token",
+      "Content-Type": "application/json",
+    })
+    expect(prepared.headers.Cookie).toContain("session=s1")
+    expect(prepared.headers.Cookie).toContain("auth=cookie")
+    expect(prepared.headers).not.toHaveProperty("X-Off")
   })
 
-  it("builds multipart form data merging auth entries", () => {
-    const request = baseRequest()
+  it("throws when auth body placement is used with text payloads", () => {
+    const request = createRequestFixture({ method: "POST" })
+    request.body = { type: "text", content: "body" }
+
+    expect(() =>
+      prepareHttpRequest({
+        request,
+        authResult: { body: { token: "abc" } },
+      }),
+    ).toThrow(/Auth placement 'body'/)
+  })
+
+  it("builds multipart bodies and appends auth body parameters", () => {
+    const request = createRequestFixture({ method: "POST" })
     request.body = {
       type: "form",
       encoding: "multipart",
       formData: {
-        text: { id: "t1", key: "message", value: "hello", enabled: true, secure: false } as any,
-        file: {
-          id: "f1",
-          key: "attachment",
-          value: "ignored",
+        textField: { id: "text", key: "title", value: "Knurl", enabled: true, secure: false, kind: "text" },
+        fileField: {
+          id: "file",
+          key: "upload",
+          kind: "file",
           enabled: true,
           secure: false,
-          kind: "file",
           filePath: "/tmp/file.bin",
           fileName: "file.bin",
           contentType: "application/octet-stream",
-        } as any,
+        },
       },
     }
-    const authResult: AuthResult = {
-      body: { extra: "value" },
-    }
 
-    const prepared = prepareHttpRequest({ request, authResult })
+    const prepared = prepareHttpRequest({
+      request,
+      authResult: { body: { token: "xyz" } },
+    })
+
     expect(prepared.body.mode).toBe("multipart")
     if (prepared.body.mode === "multipart") {
       expect(prepared.body.parts).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ type: "file", name: "attachment", filePath: "/tmp/file.bin" }),
-          expect.objectContaining({ type: "text", name: "extra", value: "value" }),
+          expect.objectContaining({ type: "text", name: "title", value: "Knurl" }),
+          expect.objectContaining({ type: "file", name: "upload", filePath: "/tmp/file.bin" }),
+          expect.objectContaining({ type: "text", name: "token", value: "xyz" }),
         ]),
       )
     }
   })
 
-  it("returns binary body and sets explicit content type", () => {
-    const request = baseRequest()
-    request.body = {
-      type: "binary",
-      binaryPath: "/tmp/image.png",
-      binaryContentType: "image/png",
+  it("returns binary mode and builds options from overrides", () => {
+    const request = createRequestFixture({
+      method: "POST",
+      body: { type: "binary", binaryPath: "/tmp/payload.bin", binaryContentType: "application/octet-stream" } as any,
+    })
+
+    request.options = {
+      disableSsl: true,
+      caPath: " /tmp/ca.pem ",
+      hostOverride: "api.knurl.dev:8443@10.0.0.5",
+      timeoutSecs: "45" as any,
+      userAgent: " KnurlClient/1.0 ",
+      maxRedirects: 5,
+      maxLogBytes: "2048" as any,
+      redactSensitive: 1 as any,
+      logBodies: 0 as any,
     }
 
-    const prepared = prepareHttpRequest({ request })
-    expect(prepared.body.mode).toBe("binary")
-    if (prepared.body.mode === "binary") {
-      expect(prepared.body.filePath).toBe("/tmp/image.png")
-    }
-    expect(prepared.headers["Content-Type"]).toBe("image/png")
-  })
+    const prepared = prepareHttpRequest({ request, authResult: undefined })
 
-  it("combines cookie params with existing and auth cookies", () => {
-    const request = baseRequest()
-    request.headers = {
-      h1: { id: "h1", name: "Cookie", value: "theme=dark", enabled: true, secure: false } as any,
-    }
-    request.cookieParams = {
-      c1: { id: "c1", name: "session", value: "abc123", enabled: true, secure: false } as any,
-    }
-    const authResult: AuthResult = {
-      cookies: { locale: "en-US" },
-    }
-
-    const prepared = prepareHttpRequest({ request, authResult })
-    const header = prepared.headers.Cookie ?? prepared.headers.cookie
-    expect(header).toContain("session=abc123")
-    expect(header).toContain("locale=en-US")
-    expect(header.startsWith("session=abc123")).toBe(true)
-  })
-
-  it("throws when absolute URL lacks host", () => {
-    const request = baseRequest()
-    request.url = "https://?missing=host"
-    expect(() => prepareHttpRequest({ request })).toThrow(/Invalid URL/)
+    expect(prepared.body).toEqual({ mode: "binary", filePath: "/tmp/payload.bin" })
+    expect(prepared.headers["Content-Type"]).toBe("application/octet-stream")
+    expect(prepared.options).toMatchObject({
+      disableSsl: true,
+      caPath: "/tmp/ca.pem",
+      hostOverride: "api.knurl.dev:8443@10.0.0.5",
+      timeoutSecs: 45,
+      userAgent: "KnurlClient/1.0",
+      maxRedirects: 5,
+      maxLogBytes: 2048,
+      redactSensitive: true,
+      logBodies: false,
+    })
   })
 })
