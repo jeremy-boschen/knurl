@@ -4,6 +4,7 @@ import viteConfig from "./vite.config"
 import {playwright} from "@vitest/browser-playwright";
 
 const coverageEnabled = process.env.VITEST_COVERAGE === "true"
+const maxWorkers = process.env.VITEST_MAX_WORKERS ? parseInt(process.env.VITEST_MAX_WORKERS, 10) : 10
 
 export default mergeConfig(viteConfig, defineConfig({
   test: {
@@ -14,7 +15,7 @@ export default mergeConfig(viteConfig, defineConfig({
     setupFiles: ["src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
     threads: {
-      maxThreads: 10,
+      maxThreads: maxWorkers,
       minThreads: 1,
     },
     coverage: {
