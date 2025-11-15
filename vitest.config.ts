@@ -8,7 +8,7 @@ const maxWorkers = process.env.VITEST_MAX_WORKERS ? parseInt(process.env.VITEST_
 
 export default mergeConfig(viteConfig, defineConfig({
   test: {
-    pool: "forks",
+    pool: "threads",
     fileParallelism: false,
     environment: "jsdom",
     globals: true,
