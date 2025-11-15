@@ -5,12 +5,28 @@ REPORT_FILE="e2e-test-report.txt"
 TIMESTAMP=$(date '+%Y-%m-%d_%H-%M-%S')
 REPORT_PATH="${REPORT_FILE%.txt}_${TIMESTAMP}.txt"
 
-echo "Running E2E tests and generating report..."
-echo "Report will be saved to: $REPORT_PATH"
-echo ""
+# Check if we should re-run tests
+RUN_TESTS=true
+if [ -f "coverage/e2e-coverage.json" ] && [ -d "coverage/e2e" ]; then
+  echo "Coverage outputs already exist."
+  read -p "Re-run tests? (y/n) [n]: " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    RUN_TESTS=false
+    echo "Using existing coverage outputs..."
+  fi
+fi
 
-# Run tests and capture all output
-wdio run ./wdio.conf.ts 2>&1 | tee "$REPORT_PATH"
+if [ "$RUN_TESTS" = true ]; then
+  echo "Running E2E tests and generating report..."
+  echo "Report will be saved to: $REPORT_PATH"
+  echo ""
+
+  # Run tests and capture all output
+  wdio run ./wdio.conf.ts 2>&1 | tee "$REPORT_PATH"
+else
+  echo "Skipping test execution."
+fi
 
 echo ""
 echo "============================================"
