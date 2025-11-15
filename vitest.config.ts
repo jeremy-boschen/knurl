@@ -14,10 +14,6 @@ export default mergeConfig(viteConfig, defineConfig({
     globals: true,
     setupFiles: ["src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
-    threads: {
-      maxThreads: maxWorkers,
-      minThreads: 1,
-    },
     coverage: {
       enabled: coverageEnabled,
       provider: "v8",
