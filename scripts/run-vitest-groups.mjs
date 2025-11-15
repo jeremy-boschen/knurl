@@ -153,13 +153,21 @@ for (let i = 0; i < selected.length; i += chunkSize) {
 if (isCoverageMode) {
   console.log("[vitest-groups] generating final coverage report...")
   const { execSync } = await import("child_process")
-  try {
-    execSync("nyc report --reporter=html --reporter=text --temp-dir=coverage/.nyc_output", {
-      cwd: projectRoot,
-      stdio: "inherit",
-    })
-  } catch (error) {
-    console.error("[vitest-groups] failed to generate coverage report:", error.message)
-    // Don't exit with error - coverage report generation shouldn't fail the test suite
+  const { existsSync } = await import("fs")
+
+  // Check if coverage data exists
+  const nycOutputDir = join(projectRoot, ".nyc_output")
+  if (existsSync(nycOutputDir)) {
+    try {
+      execSync("nyc report --reporter=html --reporter=text --temp-dir=.nyc_output", {
+        cwd: projectRoot,
+        stdio: "inherit",
+      })
+    } catch (error) {
+      console.error("[vitest-groups] failed to generate coverage report:", error.message)
+      // Don't exit with error - coverage report generation shouldn't fail the test suite
+    }
+  } else {
+    console.warn("[vitest-groups] No coverage data found in .nyc_output (tests may not have run)")
   }
 }
