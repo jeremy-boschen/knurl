@@ -5,7 +5,6 @@ import {playwright} from "@vitest/browser-playwright";
 
 const coverageEnabled = process.env.VITEST_COVERAGE === "true"
 const maxWorkers = process.env.VITEST_MAX_WORKERS ? parseInt(process.env.VITEST_MAX_WORKERS, 10) : 16
-console.log(`[vitest-config] maxWorkers=${maxWorkers} (env=${process.env.VITEST_MAX_WORKERS || "unset"})`)
 
 export default mergeConfig(viteConfig, defineConfig({
   test: {
