@@ -229,17 +229,25 @@ yarn coverage:merge
 ## Performance & Parallelization
 
 ### Unit Tests (Vitest)
-By default, unit tests run with `maxWorkers: 1` (sequential). You can parallelize them:
+Unit tests run in **chunks** (groups of test files). Each chunk runs with internal parallelization. To achieve actual parallelism:
 
 ```bash
-# Run with 4 parallel workers (uses more CPU, faster)
-VITEST_MAX_WORKERS=4 yarn coverage:generate
+# Default: runs sequentially (1 test file at a time, 1 worker)
+VITEST_MAX_WORKERS=1 VITEST_CHUNK_SIZE=1 yarn coverage:generate
 
-# Recommended: use your CPU core count
-# 4-core CPU: VITEST_MAX_WORKERS=4
-# 8-core CPU: VITEST_MAX_WORKERS=8
-# 16-core CPU: VITEST_MAX_WORKERS=16
+# Better: run 10 test files together with 4 parallel workers per chunk
+VITEST_CHUNK_SIZE=10 VITEST_MAX_WORKERS=4 yarn coverage:generate
+
+# Recommended for faster runs (8-core CPU)
+VITEST_CHUNK_SIZE=20 VITEST_MAX_WORKERS=8 yarn coverage:generate
+
+# Maximum parallelization (16-core CPU)
+VITEST_CHUNK_SIZE=50 VITEST_MAX_WORKERS=16 yarn coverage:generate
 ```
+
+**Key Settings:**
+- `VITEST_CHUNK_SIZE`: Number of test files per chunk (default: 1, increase for parallelization)
+- `VITEST_MAX_WORKERS`: Parallel workers within each chunk (default: 1, increase to use multiple cores)
 
 ### E2E Tests (WebDriver.io + Tauri)
 E2E tests **cannot be parallelized** due to Tauri limitations:
@@ -251,10 +259,10 @@ E2E tests are sequential and cannot be made parallel without significant archite
 
 ## Best Practices
 
-1. **Run unit tests with parallelization**
+1. **Run unit tests with proper parallelization**
    ```bash
-   # Significantly faster on multi-core CPUs
-   VITEST_MAX_WORKERS=4 yarn coverage:generate
+   # Significantly faster on multi-core CPUs (must use both settings!)
+   VITEST_CHUNK_SIZE=20 VITEST_MAX_WORKERS=8 yarn coverage:generate
    ```
 
 2. **Run E2E tests sequentially (only option)**
