@@ -92,13 +92,22 @@ yarn coverage:generate && yarn test:e2e && yarn coverage:merge && yarn coverage:
 ## Performance Tips
 
 ### Unit Tests (Parallelizable)
-```bash
-# Run unit tests in parallel (uses more CPU, reduces time)
-VITEST_MAX_WORKERS=4 yarn coverage:generate
+Unit tests run in chunks, and each chunk uses multiple workers internally. To get actual parallelization:
 
-# Adjust based on your CPU cores (use your core count)
-VITEST_MAX_WORKERS=8 yarn coverage:generate
+```bash
+# Run with larger chunks so multiple files run together with parallelization
+VITEST_CHUNK_SIZE=10 VITEST_MAX_WORKERS=4 yarn coverage:generate
+
+# Recommended for faster runs:
+VITEST_CHUNK_SIZE=20 VITEST_MAX_WORKERS=8 yarn coverage:generate
+
+# Or create an alias for your machine:
+# VITEST_CHUNK_SIZE=20 VITEST_MAX_WORKERS=16 yarn coverage:generate  # 16-core machine
 ```
+
+**Why both settings?**
+- `VITEST_CHUNK_SIZE`: How many test files run together (default: 1, meaning sequential)
+- `VITEST_MAX_WORKERS`: How many tests run in parallel within a chunk (default: 1)
 
 ### E2E Tests (Sequential Only)
 - E2E tests run sequentially (`maxInstances: 1`) due to Tauri limitations
