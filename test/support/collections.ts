@@ -31,13 +31,39 @@ export async function waitForCollectionIdByName(name: string, timeout = 15000): 
   let resolved: string | null = null
   await browser.waitUntil(
     async () => {
-      const snapshot = await callBridge("getWorkspaceSnapshot")
-      const entry = snapshot.collectionsIndex.find((item) => item.name === name)
-      if (entry) {
-        resolved = entry.id
-        return true
+      try {
+        // Get collection ID directly from app state without needing the bridge
+        const id = await browser.execute((targetName: string) => {
+          try {
+            // Access the Zustand store dynamically
+            const modules = (window as any).__vite_ssr_modules__
+            if (!modules) return null
+
+            // Find the useApplication store in the loaded modules
+            const appModule = Object.values(modules).find((mod: any) => {
+              return mod && mod.useApplication && typeof mod.useApplication === 'function'
+            }) as any
+
+            if (!appModule?.useApplication) return null
+
+            const state = appModule.useApplication.getState()
+            const entry = state.collectionsState?.index?.find(
+              (item: { name: string }) => item.name === targetName
+            )
+            return entry?.id ?? null
+          } catch {
+            return null
+          }
+        }, name)
+
+        if (id) {
+          resolved = id
+          return true
+        }
+        return false
+      } catch {
+        return false
       }
-      return false
     },
     {
       timeout,

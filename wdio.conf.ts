@@ -364,6 +364,15 @@ export const config = {
       },
     );
 
+    // Make config directory available to tests
+    const configDir = configDirsByCapability.get(process.pid);
+    if (configDir) {
+      await browser.execute((dir: string) => {
+        const globalWindow = window as any;
+        globalWindow.__KNURL_E2E_CONFIG_DIR__ = dir;
+      }, configDir);
+    }
+
     await browser.pause(2000);
   },
 
