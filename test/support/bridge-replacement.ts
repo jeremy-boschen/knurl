@@ -166,6 +166,104 @@ export async function getAuthCacheEntryFromState(requestId: string): Promise<any
 }
 
 /**
+ * Get all collections from app state
+ */
+export async function getAllCollectionsFromState(): Promise<any[]> {
+  return await browser.execute(() => {
+    try {
+      const modules = (window as any).__vite_ssr_modules__
+      if (!modules) return []
+
+      const appModule = Object.values(modules).find((mod: any) => {
+        return mod && mod.useApplication && typeof mod.useApplication === 'function'
+      }) as any
+
+      if (!appModule?.useApplication) return []
+
+      const state = appModule.useApplication.getState()
+      return state.collectionsState?.index ?? []
+    } catch {
+      return []
+    }
+  })
+}
+
+/**
+ * Update collection via app state
+ */
+export async function updateCollectionViaState(params: { id: string; name?: string; [key: string]: any }): Promise<any> {
+  await browser.executeAsync(async (params: any, done: () => void) => {
+    try {
+      const modules = (window as any).__vite_ssr_modules__
+      if (!modules) {
+        done()
+        return
+      }
+
+      const appModule = Object.values(modules).find((mod: any) => {
+        return mod && mod.useApplication && typeof mod.useApplication === 'function'
+      }) as any
+
+      if (!appModule?.useApplication) {
+        done()
+        return
+      }
+
+      const state = appModule.useApplication.getState()
+      const api = state.collectionsApi?.()
+
+      if (api?.update) {
+        api.update(params.id, params)
+      }
+      done()
+    } catch {
+      done()
+    }
+  }, params)
+
+  // Return the updated collection from disk
+  try {
+    return await readAppDataJson(`collections/${params.id}.json`)
+  } catch {
+    return { id: params.id, ...params }
+  }
+}
+
+/**
+ * Delete collection via app state
+ */
+export async function deleteCollectionViaState(params: { id: string }): Promise<void> {
+  await browser.executeAsync(async (id: string, done: () => void) => {
+    try {
+      const modules = (window as any).__vite_ssr_modules__
+      if (!modules) {
+        done()
+        return
+      }
+
+      const appModule = Object.values(modules).find((mod: any) => {
+        return mod && mod.useApplication && typeof mod.useApplication === 'function'
+      }) as any
+
+      if (!appModule?.useApplication) {
+        done()
+        return
+      }
+
+      const state = appModule.useApplication.getState()
+      const api = state.collectionsApi?.()
+
+      if (api?.remove) {
+        api.remove(id)
+      }
+      done()
+    } catch {
+      done()
+    }
+  }, params.id)
+}
+
+/**
  * Replacement for callBridge that routes to appropriate implementation
  */
 export async function callBridgeReplacement(
@@ -206,6 +304,18 @@ export async function callBridgeReplacement(
     case 'getAuthCacheEntry':
     case 'get_auth_cache_entry':
       return await getAuthCacheEntryFromState(args[0])
+
+    case 'get_all_collections':
+    case 'getAllCollections':
+      return await getAllCollectionsFromState()
+
+    case 'update_collection':
+    case 'updateCollection':
+      return await updateCollectionViaState(args[0])
+
+    case 'delete_collection':
+    case 'deleteCollection':
+      return await deleteCollectionViaState(args[0])
 
     default:
       throw new Error(`Bridge replacement not implemented for method: ${method}`)

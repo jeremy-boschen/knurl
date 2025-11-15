@@ -1,12 +1,11 @@
 import { expect } from "@wdio/globals"
 
 import { ensureWorkspaceReady, clickByTestId, setInputText } from "../support/ui"
-import { callBridge, ensureBridgeReady } from "../support/e2e-bridge"
+import { callBridgeReplacement } from "../support/bridge-replacement"
 
 describe("Collection Storage & Data Persistence", () => {
   before(async () => {
     await ensureWorkspaceReady()
-    await ensureBridgeReady()
   })
 
   it("persists collection data after creation", async () => {
@@ -19,7 +18,7 @@ describe("Collection Storage & Data Persistence", () => {
     })
 
     // Create a new collection via bridge
-    const createdCollection = await callBridge("create_collection", {
+    const createdCollection = await callBridgeReplacement("create_collection", {
       name: collectionName,
     })
 
@@ -48,10 +47,10 @@ describe("Collection Storage & Data Persistence", () => {
     }
 
     // Create collection
-    const created = await callBridge("create_collection", testData)
+    const created = await callBridgeReplacement("create_collection", testData)
 
     // Retrieve the collection
-    const retrieved = await callBridge("get_collection", {
+    const retrieved = await callBridgeReplacement("get_collection", {
       id: created.id,
     })
 
@@ -64,12 +63,12 @@ describe("Collection Storage & Data Persistence", () => {
     const collectionName = `Integrity Test ${Date.now()}`
 
     // Create collection
-    const collection = await callBridge("create_collection", {
+    const collection = await callBridgeReplacement("create_collection", {
       name: collectionName,
     })
 
     // Update the collection
-    const updated = await callBridge("update_collection", {
+    const updated = await callBridgeReplacement("update_collection", {
       id: collection.id,
       name: `${collectionName} Updated`,
     })
@@ -77,7 +76,7 @@ describe("Collection Storage & Data Persistence", () => {
     expect(updated.name).toContain("Updated")
 
     // Retrieve and verify
-    const retrieved = await callBridge("get_collection", {
+    const retrieved = await callBridgeReplacement("get_collection", {
       id: collection.id,
     })
 
@@ -86,12 +85,12 @@ describe("Collection Storage & Data Persistence", () => {
 
   it("handles sensitive data in collections", async () => {
     // Create collection with a request that has auth
-    const collection = await callBridge("create_collection", {
+    const collection = await callBridgeReplacement("create_collection", {
       name: `Sensitive Test ${Date.now()}`,
     })
 
     // Verify collection exists and data persists
-    const retrieved = await callBridge("get_collection", {
+    const retrieved = await callBridgeReplacement("get_collection", {
       id: collection.id,
     })
 
@@ -100,7 +99,7 @@ describe("Collection Storage & Data Persistence", () => {
   })
 
   it("prevents data loss on rapid successive updates", async () => {
-    const collection = await callBridge("create_collection", {
+    const collection = await callBridgeReplacement("create_collection", {
       name: `Rapid Update Test ${Date.now()}`,
     })
 
@@ -108,7 +107,7 @@ describe("Collection Storage & Data Persistence", () => {
     const updates = []
     for (let i = 0; i < 3; i++) {
       updates.push(
-        callBridge("update_collection", {
+        callBridgeReplacement("update_collection", {
           id: collection.id,
           name: `Rapid Update ${i}`,
         }),
@@ -118,7 +117,7 @@ describe("Collection Storage & Data Persistence", () => {
     await Promise.all(updates)
 
     // Verify final state
-    const final = await callBridge("get_collection", {
+    const final = await callBridgeReplacement("get_collection", {
       id: collection.id,
     })
 
@@ -130,12 +129,12 @@ describe("Collection Storage & Data Persistence", () => {
     const testName = `List Test ${Date.now()}`
 
     // Create multiple collections
-    const col1 = await callBridge("create_collection", { name: `${testName} 1` })
-    const col2 = await callBridge("create_collection", { name: `${testName} 2` })
-    const col3 = await callBridge("create_collection", { name: `${testName} 3` })
+    const col1 = await callBridgeReplacement("create_collection", { name: `${testName} 1` })
+    const col2 = await callBridgeReplacement("create_collection", { name: `${testName} 2` })
+    const col3 = await callBridgeReplacement("create_collection", { name: `${testName} 3` })
 
     // Get all collections
-    const allCollections = await callBridge("get_all_collections", {})
+    const allCollections = await callBridgeReplacement("get_all_collections", {})
 
     expect(allCollections).toBeDefined()
     expect(Array.isArray(allCollections)).toBe(true)
@@ -154,7 +153,7 @@ describe("Collection Storage & Data Persistence", () => {
     const createPromises = []
     for (let i = 0; i < 3; i++) {
       createPromises.push(
-        callBridge("create_collection", {
+        callBridgeReplacement("create_collection", {
           name: `Concurrent ${baseTime} ${i}`,
         }),
       )
@@ -169,7 +168,7 @@ describe("Collection Storage & Data Persistence", () => {
     })
 
     // Verify all were created
-    const allCollections = await callBridge("get_all_collections", {})
+    const allCollections = await callBridgeReplacement("get_all_collections", {})
     const concurrentNames = allCollections
       .map((c: any) => c.name)
       .filter((name: string) => name.includes(`Concurrent ${baseTime}`))
