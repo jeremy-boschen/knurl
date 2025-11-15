@@ -264,6 +264,24 @@ export async function deleteCollectionViaState(params: { id: string }): Promise<
 }
 
 /**
+ * Invoke auth via Tauri backend
+ */
+export async function invokeAuthViaTauri(authConfig: any, requestId?: string): Promise<any> {
+  return await browser.executeAsync(async (config: any, reqId: string | undefined, done: (result: any) => void) => {
+    try {
+      const { invoke } = await (window as any).__TAURI__.core
+      const result = await invoke('get_authentication_result', {
+        config,
+        parentRequestId: reqId
+      })
+      done({ ok: true, result })
+    } catch (error: any) {
+      done({ ok: false, error: error.message || String(error) })
+    }
+  }, authConfig, requestId)
+}
+
+/**
  * Replacement for callBridge that routes to appropriate implementation
  */
 export async function callBridgeReplacement(
@@ -316,6 +334,10 @@ export async function callBridgeReplacement(
     case 'delete_collection':
     case 'deleteCollection':
       return await deleteCollectionViaState(args[0])
+
+    case 'invoke_auth':
+    case 'invokeAuth':
+      return await invokeAuthViaTauri(args[0], args[1])
 
     default:
       throw new Error(`Bridge replacement not implemented for method: ${method}`)

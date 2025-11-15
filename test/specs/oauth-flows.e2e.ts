@@ -1,5 +1,3 @@
-import { ensureBridgeReady } from "../support/e2e-bridge"
-
 const issuer = process.env.KNURL_E2E_OAUTH_ISSUER ?? "";
 const redirectUri = process.env.KNURL_E2E_OAUTH_REDIRECT_URI ?? "http://127.0.0.1:1420/oauth/callback";
 const clientId = process.env.KNURL_E2E_OAUTH_CLIENT_ID ?? "test-client";
@@ -7,7 +5,6 @@ const clientSecret = process.env.KNURL_E2E_OAUTH_CLIENT_SECRET ?? "test-secret";
 const publicClientId = process.env.KNURL_E2E_OAUTH_PUBLIC_CLIENT_ID ?? "public-device-client";
 
 async function invokeAuth(config: Record<string, unknown>) {
-  await ensureBridgeReady();
 
   const outcome = await browser.executeAsync((cfg, done) => {
     const bridge = (window as unknown as { __KNURL_E2E__?: { invokeAuth?: Function } }).__KNURL_E2E__;
@@ -32,7 +29,6 @@ async function invokeAuth(config: Record<string, unknown>) {
 
 describe("OAuth flows", () => {
   before(async () => {
-    await ensureBridgeReady();
     await expect(issuer).not.toBe("");
   });
 
