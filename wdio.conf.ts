@@ -1,5 +1,5 @@
 import * as path from 'node:path';
-import {existsSync, mkdtempSync} from 'node:fs';
+import {existsSync, mkdtempSync, mkdirSync, writeFileSync} from 'node:fs';
 import {homedir, tmpdir} from 'node:os';
 import {spawn, spawnSync} from 'child_process';
 import {fileURLToPath} from 'url';
@@ -214,7 +214,8 @@ export const config = {
       VITE_E2E_STUB_OAUTH: '0',
     };
 
-    viteProcess = spawn('yarn', ['dev', '--host', '127.0.0.1', '--port', '1420', '--mode', 'e2e'], {
+    // Always use E2E Vite config with Istanbul instrumentation for coverage collection
+    viteProcess = spawn('yarn', ['dev', '--config', 'vite.config.e2e.ts', '--host', '127.0.0.1', '--port', '1420', '--mode', 'e2e'], {
       cwd: process.cwd(),
       shell: true,
       env: viteEnv,
@@ -349,6 +350,59 @@ export const config = {
     );
 
     await browser.pause(2000);
+  },
+
+  afterTest: async function (test) {
+    // Collect coverage from browser (always enabled)
+    try {
+      const coverage = await browser.execute(() => {
+        return (window as any).__coverage__;
+      });
+
+      if (coverage) {
+        const coverageDir = path.join(process.cwd(), '.nyc_output')
+        if (!existsSync(coverageDir)) {
+          mkdirSync(coverageDir, { recursive: true })
+        }
+
+        const coverageFile = path.join(
+          coverageDir,
+          `coverage-${Date.now()}-${Math.random().toString(36).slice(2, 9)}.json`
+        )
+        writeFileSync(coverageFile, JSON.stringify(coverage, null, 2))
+        console.log(`[coverage] Wrote coverage data to ${path.relative(process.cwd(), coverageFile)}`)
+      }
+    } catch (error) {
+      // Silently ignore coverage collection errors; tests should not fail due to coverage
+      console.warn(`[coverage] Failed to collect coverage: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  },
+
+  after: async function () {
+    // Always merge and generate coverage reports
+    try {
+      const { execSync } = await import('child_process')
+      const coverageDir = path.join(process.cwd(), '.nyc_output')
+
+      if (existsSync(coverageDir)) {
+        console.log('[coverage] Merging E2E coverage data...')
+        execSync('nyc merge .nyc_output coverage/e2e-coverage.json', {
+          cwd: process.cwd(),
+          stdio: 'inherit',
+        })
+
+        console.log('[coverage] Generating E2E coverage report...')
+        execSync('nyc report --reporter=html --reporter=text --reporter=lcov --temp-dir=.nyc_output --report-dir=coverage/e2e', {
+          cwd: process.cwd(),
+          stdio: 'inherit',
+        })
+
+        console.log('[coverage] ✓ E2E coverage report generated in coverage/e2e/')
+        console.log('[coverage] Run "yarn coverage:merge" to combine with unit test coverage')
+      }
+    } catch (error) {
+      console.warn(`[coverage] Failed to generate coverage report: ${error instanceof Error ? error.message : String(error)}`)
+    }
   },
 };
 

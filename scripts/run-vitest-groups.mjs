@@ -115,8 +115,15 @@ console.log(
   }, chunkSize=${chunkSize}, maxWorkers=${maxWorkers})`,
 )
 
+// When collecting coverage, we need to disable inline coverage reporting per chunk
+// and only generate the final report after all chunks complete
+const isCoverageMode = process.env.VITEST_COVERAGE === "true"
+const coverageArgs = isCoverageMode ? ["--coverage.reporter=json", "--coverage.reporter=lcov"] : []
+
 for (let i = 0; i < selected.length; i += chunkSize) {
   const chunk = selected.slice(i, i + chunkSize)
+
+  // In coverage mode, disable text/html reporters per chunk to avoid duplicate output
   const args = [
     vitestBin,
     "run",
@@ -124,6 +131,7 @@ for (let i = 0; i < selected.length; i += chunkSize) {
     "threads",
     "--max-workers",
     String(maxWorkers),
+    ...coverageArgs,
     ...forwardCliArgs,
     ...chunk,
   ]
@@ -138,5 +146,20 @@ for (let i = 0; i < selected.length; i += chunkSize) {
   })
   if (result.status !== 0) {
     process.exit(result.status ?? 1)
+  }
+}
+
+// After all chunks complete, generate final coverage report if in coverage mode
+if (isCoverageMode) {
+  console.log("[vitest-groups] generating final coverage report...")
+  const { execSync } = await import("child_process")
+  try {
+    execSync("nyc report --reporter=html --reporter=text --temp-dir=coverage/.nyc_output", {
+      cwd: projectRoot,
+      stdio: "inherit",
+    })
+  } catch (error) {
+    console.error("[vitest-groups] failed to generate coverage report:", error.message)
+    // Don't exit with error - coverage report generation shouldn't fail the test suite
   }
 }

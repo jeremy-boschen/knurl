@@ -1089,3 +1089,185 @@ describe("collections and requests ordering", () => {
     })
   })
 })
+
+// ------- Environment operations -------
+describe("environment management", () => {
+  it("createEnvironment adds a new environment to a collection", () => {
+    const { collectionsApi } = useApplication.getState()
+    const col = collectionsApi.addCollection("EnvTest")
+    collectionsApi.getCollection(col.id)
+
+    const env = collectionsApi.createEnvironment(col.id, "Dev", "Development environment")
+    expect(env.name).toBe("Dev")
+    expect(env.description).toBe("Development environment")
+
+    const updated = useApplication.getState().collectionsState.cache[col.id]!
+    expect(updated.environments?.[env.id]).toBeTruthy()
+    expect(updated.environments?.[env.id]?.name).toBe("Dev")
+  })
+
+  it("createEnvironment creates environment without description", () => {
+    const { collectionsApi } = useApplication.getState()
+    const col = collectionsApi.addCollection("EnvTest2")
+    collectionsApi.getCollection(col.id)
+
+    const env = collectionsApi.createEnvironment(col.id, "Prod")
+    expect(env.name).toBe("Prod")
+    // Description defaults to empty string when not provided
+    expect(env.description).toBe("")
+  })
+
+  it("updateEnvironment modifies environment properties", () => {
+    const { collectionsApi } = useApplication.getState()
+    const col = collectionsApi.addCollection("EnvTest3")
+    collectionsApi.getCollection(col.id)
+    const env = collectionsApi.createEnvironment(col.id, "Stage", "Staging")
+
+    collectionsApi.updateEnvironment(col.id, env.id, { name: "Staging Renamed", description: "Updated description" })
+
+    const updated = useApplication.getState().collectionsState.cache[col.id]!.environments?.[env.id]!
+    expect(updated.name).toBe("Staging Renamed")
+    expect(updated.description).toBe("Updated description")
+  })
+
+  it("deleteEnvironment removes an environment from the collection", () => {
+    const { collectionsApi } = useApplication.getState()
+    const col = collectionsApi.addCollection("EnvTest4")
+    collectionsApi.getCollection(col.id)
+    const env = collectionsApi.createEnvironment(col.id, "Temp")
+
+    const before = Object.keys(useApplication.getState().collectionsState.cache[col.id]!.environments || {}).length
+    collectionsApi.deleteEnvironment(col.id, env.id)
+    const after = Object.keys(useApplication.getState().collectionsState.cache[col.id]!.environments || {}).length
+
+    expect(after).toBe(before - 1)
+  })
+
+  it("setActiveEnvironment marks an environment as active", () => {
+    const { collectionsApi } = useApplication.getState()
+    const col = collectionsApi.addCollection("EnvTest5")
+    collectionsApi.getCollection(col.id)
+    const env = collectionsApi.createEnvironment(col.id, "Active")
+
+    collectionsApi.setActiveEnvironment(col.id, env.id)
+    const updated = useApplication.getState().collectionsState.cache[col.id]!
+    expect(updated.activeEnvironmentId).toBe(env.id)
+  })
+
+  it("setActiveEnvironment can clear the active environment with undefined", () => {
+    const { collectionsApi } = useApplication.getState()
+    const col = collectionsApi.addCollection("EnvTest6")
+    collectionsApi.getCollection(col.id)
+    const env = collectionsApi.createEnvironment(col.id, "Temp")
+
+    collectionsApi.setActiveEnvironment(col.id, env.id)
+    collectionsApi.setActiveEnvironment(col.id, undefined)
+
+    const updated = useApplication.getState().collectionsState.cache[col.id]!
+    expect(updated.activeEnvironmentId).toBeUndefined()
+  })
+
+  it("addEnvironmentVariable adds a variable to an environment", () => {
+    const { collectionsApi } = useApplication.getState()
+    const col = collectionsApi.addCollection("EnvTest7")
+    collectionsApi.getCollection(col.id)
+    const env = collectionsApi.createEnvironment(col.id, "Vars")
+
+    const variable = collectionsApi.addEnvironmentVariable(col.id, env.id, {
+      name: "API_KEY",
+      value: "secret123",
+      secure: true,
+    })
+
+    expect(variable.name).toBe("API_KEY")
+    expect(variable.value).toBe("secret123")
+    expect(variable.secure).toBe(true)
+
+    const updated = useApplication.getState().collectionsState.cache[col.id]!.environments?.[env.id]!
+    expect(updated.variables[variable.id]).toBeTruthy()
+  })
+
+  it("addEnvironmentVariable creates variable with defaults", () => {
+    const { collectionsApi } = useApplication.getState()
+    const col = collectionsApi.addCollection("EnvTest8")
+    collectionsApi.getCollection(col.id)
+    const env = collectionsApi.createEnvironment(col.id, "DefaultVars")
+
+    const variable = collectionsApi.addEnvironmentVariable(col.id, env.id, { name: "PLAIN" })
+
+    expect(variable.name).toBe("PLAIN")
+    expect(variable.value).toBe("")
+    expect(variable.secure).toBe(false)
+  })
+
+  it("updateEnvironmentVariable modifies a variable", () => {
+    const { collectionsApi } = useApplication.getState()
+    const col = collectionsApi.addCollection("EnvTest9")
+    collectionsApi.getCollection(col.id)
+    const env = collectionsApi.createEnvironment(col.id, "VarUpdate")
+    const variable = collectionsApi.addEnvironmentVariable(col.id, env.id, { name: "DB_PASS", value: "old" })
+
+    collectionsApi.updateEnvironmentVariable(col.id, env.id, variable.id, { value: "new123", secure: true })
+
+    const updated = useApplication.getState().collectionsState.cache[col.id]!.environments?.[env.id]!.variables[variable.id]!
+    expect(updated.value).toBe("new123")
+    expect(updated.secure).toBe(true)
+    expect(updated.name).toBe("DB_PASS") // Name unchanged
+  })
+
+  it("deleteEnvironmentVariable removes a variable from an environment", () => {
+    const { collectionsApi } = useApplication.getState()
+    const col = collectionsApi.addCollection("EnvTest10")
+    collectionsApi.getCollection(col.id)
+    const env = collectionsApi.createEnvironment(col.id, "VarDelete")
+    const variable = collectionsApi.addEnvironmentVariable(col.id, env.id, { name: "TEMP_VAR" })
+
+    const before = Object.keys(useApplication.getState().collectionsState.cache[col.id]!.environments?.[env.id]!.variables || {}).length
+    collectionsApi.deleteEnvironmentVariable(col.id, env.id, variable.id)
+    const after = Object.keys(useApplication.getState().collectionsState.cache[col.id]!.environments?.[env.id]!.variables || {}).length
+
+    expect(after).toBe(before - 1)
+  })
+
+  it("environment operations with multiple variables", () => {
+    const { collectionsApi } = useApplication.getState()
+    const col = collectionsApi.addCollection("EnvTest11")
+    collectionsApi.getCollection(col.id)
+    const env = collectionsApi.createEnvironment(col.id, "Multi")
+
+    const var1 = collectionsApi.addEnvironmentVariable(col.id, env.id, { name: "VAR1", value: "val1" })
+    const var2 = collectionsApi.addEnvironmentVariable(col.id, env.id, { name: "VAR2", value: "val2" })
+    const var3 = collectionsApi.addEnvironmentVariable(col.id, env.id, { name: "VAR3", value: "val3" })
+
+    let cached = useApplication.getState().collectionsState.cache[col.id]!.environments?.[env.id]!
+    expect(Object.keys(cached.variables).length).toBe(3)
+
+    collectionsApi.updateEnvironmentVariable(col.id, env.id, var2.id, { value: "updated" })
+    cached = useApplication.getState().collectionsState.cache[col.id]!.environments?.[env.id]!
+    expect(cached.variables[var2.id].value).toBe("updated")
+
+    collectionsApi.deleteEnvironmentVariable(col.id, env.id, var1.id)
+    cached = useApplication.getState().collectionsState.cache[col.id]!.environments?.[env.id]!
+    expect(Object.keys(cached.variables).length).toBe(2)
+    expect(cached.variables[var1.id]).toBeUndefined()
+  })
+
+  it("multiple environments in a collection are independent", () => {
+    const { collectionsApi } = useApplication.getState()
+    const col = collectionsApi.addCollection("EnvTest12")
+    collectionsApi.getCollection(col.id)
+
+    const envDev = collectionsApi.createEnvironment(col.id, "Dev")
+    const envProd = collectionsApi.createEnvironment(col.id, "Prod")
+
+    collectionsApi.addEnvironmentVariable(col.id, envDev.id, { name: "ENDPOINT", value: "http://localhost" })
+    collectionsApi.addEnvironmentVariable(col.id, envProd.id, { name: "ENDPOINT", value: "https://api.prod.com" })
+
+    const cached = useApplication.getState().collectionsState.cache[col.id]!
+    const devVar = Object.values(cached.environments?.[envDev.id]!.variables || {})[0]
+    const prodVar = Object.values(cached.environments?.[envProd.id]!.variables || {})[0]
+
+    expect(devVar.value).toBe("http://localhost")
+    expect(prodVar.value).toBe("https://api.prod.com")
+  })
+})
