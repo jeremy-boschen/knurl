@@ -102,6 +102,8 @@ describe("Collections Management UX", () => {
     await cleanupCollections([idA, idB])
     await resetOverlays()
   })
+
+  console.log("✅ Collections Management UX tests completed")
 })
 
 async function resolveOrderedCollectionIds(): Promise<string[]> {

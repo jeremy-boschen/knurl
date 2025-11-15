@@ -114,6 +114,8 @@ describe("OAuth UI flows", () => {
 
     await closeTab(tabKey)
   })
+
+  console.log("✅ OAuth UI flows tests completed")
 })
 
 async function startOAuthRequest(): Promise<{ tabKey: string; requestId: string }> {

@@ -283,4 +283,6 @@ describe("Response Viewer Analysis", () => {
       expect(true).toBe(true)
     }
   })
+
+  console.log("✅ Response Viewer Analysis tests completed")
 })

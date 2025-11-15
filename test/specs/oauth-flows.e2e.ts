@@ -92,4 +92,6 @@ describe("OAuth flows", () => {
     await expect(header).toBeDefined();
     await expect(header).toContain("Bearer ");
   });
+
+  console.log("✅ OAuth flows tests completed");
 });

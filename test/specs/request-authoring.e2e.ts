@@ -113,6 +113,8 @@ describe("Request Authoring Smoke", () => {
     await waitForRequestByName(state.collectionId, state.savedRequestName)
     await ensureRequestAbsentFromScratch(state.savedRequestName)
   })
+
+  console.log("✅ Request Authoring Smoke tests completed")
 })
 
 describe("Request Authoring Advanced", () => {
@@ -406,6 +408,8 @@ describe("Request Authoring Advanced", () => {
 
     expect(finalUrl).toBe(url1)
   })
+
+  console.log("✅ Request Authoring Advanced tests completed")
 })
 
 async function selectMethod(method: string): Promise<void> {
