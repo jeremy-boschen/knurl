@@ -97,6 +97,8 @@ describe("Environment Manager Smoke", () => {
     await clickByTestId("collection-tree:collection-row:menu-button:scratch").catch(() => {})
     await resetCollectionsState()
   })
+
+  console.log("✅ Environment Manager Smoke tests completed")
 })
 
 async function getTabSnapshot(tabKey: string) {

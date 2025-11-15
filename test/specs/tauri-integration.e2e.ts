@@ -319,4 +319,6 @@ describe("Tauri Backend Integration & Desktop Features", () => {
       expect(reloaded.name).toBe("Updated Name")
     })
   })
+
+  console.log("✅ Tauri Backend Integration & Desktop Features tests completed")
 })

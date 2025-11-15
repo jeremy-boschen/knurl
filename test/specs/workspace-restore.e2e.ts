@@ -121,6 +121,8 @@ describe("Workspace Restore UX", () => {
 
     await expect(restoredTabElement).toHaveAttribute("data-state", "active")
   })
+
+  console.log("✅ Workspace Restore UX tests completed")
 })
 
 function findTab(tabs: WorkspaceTab[], requestId: string): WorkspaceTab | undefined {

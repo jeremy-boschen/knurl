@@ -301,4 +301,6 @@ describe("Authentication Strategies", () => {
       expect(sendButton).toBeDefined()
     })
   })
+
+  console.log("✅ Authentication Strategies tests completed")
 })

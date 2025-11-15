@@ -297,4 +297,6 @@ describe('Collection Merge Workflow', () => {
       console.log('apply_merge not yet implemented in bridge-replacement - skipping test')
     }
   })
+
+  console.log("✅ Collection Merge Workflow tests completed")
 })

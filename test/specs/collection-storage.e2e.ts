@@ -175,4 +175,6 @@ describe("Collection Storage & Data Persistence", () => {
 
     expect(concurrentNames.length).toBe(3)
   })
+
+  console.log("✅ Collection Storage & Data Persistence tests completed")
 })

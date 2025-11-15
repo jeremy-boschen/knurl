@@ -180,4 +180,6 @@ describe("Collection Encryption & At-Rest Storage", () => {
     expect(reloaded.requests).toBeDefined()
     expect(reloaded.encryption?.algorithm).toBe("aes-gcm")
   })
+
+  console.log("✅ Collection Encryption & At-Rest Storage tests completed")
 })

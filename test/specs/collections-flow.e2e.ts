@@ -330,4 +330,6 @@ async function ensureRequestRemovedFromScratch(requestId: string, timeout = 1000
       timeoutMsg: `Request ${requestId} still appears under scratch collection`,
     },
   )
+
+  console.log("✅ Collection And Request Flow tests completed")
 }

@@ -180,4 +180,6 @@ describe("Large Collections Performance", () => {
       expect(updatedCollections.length).toBe(initialCount - 1)
     }
   })
+
+  console.log("✅ Large Collections Performance tests completed")
 })

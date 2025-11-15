@@ -92,6 +92,8 @@ describe("Scratch Collection UX", () => {
     await ensureScratchVisible()
     await resetOverlays()
   })
+
+  console.log("✅ Scratch Collection UX tests completed")
 })
 
 async function resetScratchCollection(): Promise<void> {

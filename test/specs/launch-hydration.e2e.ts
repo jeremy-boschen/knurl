@@ -90,6 +90,8 @@ describe("Launch Hydration UX", () => {
     await resetOverlays()
     await resetCollectionsState()
   })
+
+  console.log("✅ Launch Hydration UX tests completed")
 })
 
 function findTab(snapshot: WorkspaceSnapshot, requestId: string) {
