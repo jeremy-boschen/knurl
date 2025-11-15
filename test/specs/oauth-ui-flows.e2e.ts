@@ -1,6 +1,6 @@
 import { expect } from "@wdio/globals"
 
-import { callBridge, ensureBridgeReady } from "../support/e2e-bridge"
+import { callBridgeReplacement } from "../support/bridge-replacement"
 import { waitForActiveRequestTab, waitForRequestEditor } from "../support/request"
 import {
   clickByTestId,
@@ -26,7 +26,6 @@ describe("OAuth UI flows", () => {
   before(async () => {
     await ensureAppReady()
     await ensureWorkspaceReady()
-    await ensureBridgeReady()
     await expect(issuer).not.toBe("")
   })
 
@@ -51,7 +50,7 @@ describe("OAuth UI flows", () => {
     const token = await fetchOAuthToken()
     expect(token).toMatch(/^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/)
 
-    const authResult = await callBridge("getAuthCacheEntry", requestId)
+    const authResult = await callBridgeReplacement("getAuthCacheEntry", requestId)
     expect(authResult?.headers?.Authorization ?? authResult?.headers?.authorization).toContain("Bearer ")
 
     await closeTab(tabKey)
@@ -80,7 +79,7 @@ describe("OAuth UI flows", () => {
     const token = await fetchOAuthToken()
     expect(token.length).toBeGreaterThan(20)
 
-    const authResult = await callBridge("getAuthCacheEntry", requestId)
+    const authResult = await callBridgeReplacement("getAuthCacheEntry", requestId)
     expect(authResult?.headers?.Authorization ?? authResult?.headers?.authorization).toContain("Bearer ")
     expect(authResult?.expiresAt).toBeGreaterThan(Math.floor(Date.now() / 1000))
 
@@ -110,7 +109,7 @@ describe("OAuth UI flows", () => {
     const token = await fetchOAuthToken()
     expect(token.length).toBeGreaterThan(10)
 
-    const authResult = await callBridge("getAuthCacheEntry", requestId)
+    const authResult = await callBridgeReplacement("getAuthCacheEntry", requestId)
     expect(authResult?.headers?.Authorization ?? authResult?.headers?.authorization).toContain("Bearer ")
 
     await closeTab(tabKey)
@@ -125,7 +124,7 @@ async function startOAuthRequest(): Promise<{ tabKey: string; requestId: string 
   const tabKey = await waitForActiveRequestTab()
   await waitForRequestEditor()
 
-  const snapshot = await callBridge("getWorkspaceSnapshot")
+  const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
   const tabEntry = snapshot.openTabs.find((tab) => tab.tabKey === tabKey)
   const baseRequestId = tabEntry?.requestId
   if (!baseRequestId) {

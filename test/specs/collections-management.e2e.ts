@@ -1,6 +1,6 @@
 import { expect } from "@wdio/globals"
 
-import { callBridge, ensureBridgeReady } from "../support/e2e-bridge"
+import { callBridgeReplacement } from "../support/bridge-replacement"
 import {
   clickByTestId,
   ensureWorkspaceReady,
@@ -19,7 +19,6 @@ const SCRATCH_COLLECTION_ID = "scratch"
 describe("Collections Management UX", () => {
   before(async () => {
     await ensureWorkspaceReady()
-    await ensureBridgeReady()
     await resetCollectionsState()
     await browser.pause(500) // Ensure collections are persisted
     await ensureWorkspaceReady()
@@ -56,7 +55,7 @@ describe("Collections Management UX", () => {
       },
     )
 
-    const snapshotAfterRename = await callBridge("getWorkspaceSnapshot")
+    const snapshotAfterRename = await callBridgeReplacement("getWorkspaceSnapshot")
     console.log("collections-management after rename", snapshotAfterRename.collectionsIndex)
     // Give the UI some time to update after the rename
     await browser.pause(500)
@@ -67,12 +66,11 @@ describe("Collections Management UX", () => {
       timeoutMsg: `Collection ${idB} did not reflect renamed title`,
     })
 
-    await callBridge("flushStorage")
-    const snapshotBeforeReload = await callBridge("getWorkspaceSnapshot")
+    await callBridgeReplacement("flushStorage")
+    const snapshotBeforeReload = await callBridgeReplacement("getWorkspaceSnapshot")
     console.log("collections-management before reload", snapshotBeforeReload.collectionsIndex)
     await browser.execute(() => window.location.reload())
     await ensureWorkspaceReady()
-    await ensureBridgeReady()
 
     await browser.waitUntil(async () => await isCollectionNamedInTree(idB, newName), {
       timeout: 10000,
@@ -97,7 +95,7 @@ describe("Collections Management UX", () => {
     const remaining = await resolveOrderedCollectionIds()
     expect(remaining).toEqual([idA, idB])
 
-    const snapshot = await callBridge("getWorkspaceSnapshot")
+    const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
     const remainingEntries = snapshot.collectionsIndex.filter((entry) => entry.id !== SCRATCH_COLLECTION_ID)
     expect(remainingEntries).toHaveLength(2)
 
@@ -107,7 +105,7 @@ describe("Collections Management UX", () => {
 })
 
 async function resolveOrderedCollectionIds(): Promise<string[]> {
-  const snapshot = await callBridge("getWorkspaceSnapshot")
+  const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
   return snapshot.collectionsIndex
     .filter((entry) => entry.id !== SCRATCH_COLLECTION_ID)
     .map((entry) => entry.id as string)
@@ -147,7 +145,7 @@ async function isCollectionNamedInTree(collectionId: string, expectedName: strin
   }
 
   // Fall back to checking the snapshot
-  const snapshot = await callBridge("getWorkspaceSnapshot")
+  const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
   const snapshotMatch = snapshot.collectionsIndex.some((entry) => entry.id === collectionId && entry.name === expectedName)
   console.log(`Snapshot check for ${collectionId}: found=${snapshotMatch}`)
   if (snapshotMatch) {
@@ -164,6 +162,6 @@ async function getCollectionNameFromTree(collectionId: string): Promise<string |
 }
 
 async function isCollectionPresent(collectionId: string): Promise<boolean> {
-  const snapshot = await callBridge("getWorkspaceSnapshot")
+  const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
   return snapshot.collectionsIndex.some((entry) => entry.id === collectionId)
 }

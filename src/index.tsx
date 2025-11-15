@@ -18,11 +18,6 @@ enablePatches()
 // This can be awaited as it doesn't block other module imports in the same way.
 await attachConsole()
 
-if (import.meta.env.MODE === "e2e") {
-  const { installE2EBridge } = await import("@/test/e2e-bridge")
-  installE2EBridge()
-}
-
 const logMethods = ["log", "debug", "info", "warn", "error"] as const
 type LogMethodName = (typeof logMethods)[number]
 

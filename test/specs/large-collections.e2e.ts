@@ -1,12 +1,11 @@
 import { expect } from "@wdio/globals"
 
 import { ensureWorkspaceReady, clickByTestId } from "../support/ui"
-import { callBridge, ensureBridgeReady } from "../support/e2e-bridge"
+import { callBridgeReplacement } from "../support/bridge-replacement"
 
 describe("Large Collections Performance", () => {
   before(async () => {
     await ensureWorkspaceReady()
-    await ensureBridgeReady()
   })
 
   it("displays sidebar with 50+ collections without lag", async () => {
@@ -15,7 +14,7 @@ describe("Large Collections Performance", () => {
     const collectionsToCreate = 50
 
     for (let i = 0; i < collectionsToCreate; i++) {
-      await callBridge("create_collection", {
+      await callBridgeReplacement("create_collection", {
         name: `Perf Test Collection ${i}`,
       })
     }
@@ -23,7 +22,7 @@ describe("Large Collections Performance", () => {
     const creationTime = Date.now() - startTime
 
     // Get all collections to verify they were created
-    const allCollections = await callBridge("get_all_collections", {})
+    const allCollections = await callBridgeReplacement("get_all_collections", {})
     expect(allCollections.length).toBeGreaterThanOrEqual(collectionsToCreate)
 
     // Verify sidebar still renders without freezing
@@ -51,7 +50,7 @@ describe("Large Collections Performance", () => {
 
   it("filters large collection list efficiently", async () => {
     // Create a search/filter test collection
-    const searchableCollection = await callBridge("create_collection", {
+    const searchableCollection = await callBridgeReplacement("create_collection", {
       name: `Unique Searchable Collection ${Date.now()}`,
     })
 
@@ -70,7 +69,7 @@ describe("Large Collections Performance", () => {
 
   it("opens a collection from large list without delay", async () => {
     // Get a collection from the list
-    const collections = await callBridge("get_all_collections", {})
+    const collections = await callBridgeReplacement("get_all_collections", {})
     expect(collections.length).toBeGreaterThan(0)
 
     const targetCollection = collections[0]
@@ -90,7 +89,7 @@ describe("Large Collections Performance", () => {
 
   it("expands collection folder hierarchy without lag", async () => {
     // Create collection with nested requests
-    const collection = await callBridge("create_collection", {
+    const collection = await callBridgeReplacement("create_collection", {
       name: `Hierarchy Test ${Date.now()}`,
     })
 
@@ -113,14 +112,14 @@ describe("Large Collections Performance", () => {
   })
 
   it("renames collection in large list", async () => {
-    const collections = await callBridge("get_all_collections", {})
+    const collections = await callBridgeReplacement("get_all_collections", {})
     const targetCollection = collections[collections.length - 1]
 
     if (targetCollection) {
       const newName = `Renamed ${Date.now()}`
 
       const startTime = Date.now()
-      const renamed = await callBridge("update_collection", {
+      const renamed = await callBridgeReplacement("update_collection", {
         id: targetCollection.id,
         name: newName,
       })
@@ -140,7 +139,7 @@ describe("Large Collections Performance", () => {
     // Perform concurrent operations
     for (let i = 0; i < operationCount; i++) {
       operations.push(
-        callBridge("create_collection", {
+        callBridgeReplacement("create_collection", {
           name: `Concurrent Perf ${Date.now()} ${i}`,
         }),
       )
@@ -159,7 +158,7 @@ describe("Large Collections Performance", () => {
   })
 
   it("handles collection deletion from large list", async () => {
-    const collections = await callBridge("get_all_collections", {})
+    const collections = await callBridgeReplacement("get_all_collections", {})
     const initialCount = collections.length
 
     // Delete a collection
@@ -167,7 +166,7 @@ describe("Large Collections Performance", () => {
       const targetCollection = collections[0]
       const deleteStartTime = Date.now()
 
-      await callBridge("delete_collection", {
+      await callBridgeReplacement("delete_collection", {
         id: targetCollection.id,
       })
 
@@ -177,7 +176,7 @@ describe("Large Collections Performance", () => {
       expect(deleteTime).toBeLessThan(2000)
 
       // Verify count decreased
-      const updatedCollections = await callBridge("get_all_collections", {})
+      const updatedCollections = await callBridgeReplacement("get_all_collections", {})
       expect(updatedCollections.length).toBe(initialCount - 1)
     }
   })

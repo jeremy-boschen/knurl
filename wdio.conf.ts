@@ -215,7 +215,19 @@ export const config = {
     };
 
     // Always use E2E Vite config with Istanbul instrumentation for coverage collection
-    viteProcess = spawn('yarn', ['dev', '--config', 'vite.config.e2e.ts', '--host', '127.0.0.1', '--port', '1420', '--mode', 'e2e'], {
+    // First generate the knurl icon (from the dev script)
+    const iconGeneration = spawnSync('node', ['scripts/generate-knurl-icon.mjs'], {
+      cwd: process.cwd(),
+      shell: true,
+      stdio: 'ignore',
+    });
+
+    if (iconGeneration.status !== 0) {
+      throw new Error('Failed to generate knurl icon');
+    }
+
+    // Then start vite with the E2E config directly
+    viteProcess = spawn('vite', ['--config', 'vite.config.e2e.ts', '--host', '127.0.0.1', '--port', '1420', '--mode', 'e2e'], {
       cwd: process.cwd(),
       shell: true,
       env: viteEnv,
@@ -244,7 +256,7 @@ export const config = {
 
     await waitForDevServer('http://127.0.0.1:1420');
 
-    // Start tauri-driver once for all workers (only once in onPrepare, not repeated in beforeSession)
+    // Start tauri-driver once for all workers (only once in onPrepare)
     const tauriDriverBinary = path.join(cargoHome, 'bin', process.platform === 'win32' ? 'tauri-driver.exe' : 'tauri-driver');
     if (!existsSync(tauriDriverBinary)) {
       throw new Error(`tauri-driver not found at ${tauriDriverBinary}. Install via "cargo install tauri-driver".`);
@@ -265,8 +277,47 @@ export const config = {
       );
     }
 
-    // tauri-driver is now started per-session in beforeSession hook
-    console.log('[tauri-driver] Per-session tauri-driver isolation enabled');
+    // Spawn a single tauri-driver instance for all test workers
+    const tauriDriverArgs = [];
+    if (nativeDriverPath) {
+      tauriDriverArgs.push('--native-driver', nativeDriverPath);
+    }
+
+    const driverEnv = buildEnvWithKeyringDefaults();
+    tauriDriver = spawn(tauriDriverBinary, tauriDriverArgs, {
+      stdio: ['ignore', 'pipe', 'pipe'],  // Capture stdout/stderr to see startup messages
+      env: driverEnv,
+    });
+
+    let driverStarted = false;
+
+    tauriDriver.stdout?.on('data', (data) => {
+      console.log(`[tauri-driver stdout] ${data}`);
+    });
+
+    tauriDriver.stderr?.on('data', (data) => {
+      console.log(`[tauri-driver stderr] ${data}`);
+      // Check if the driver is listening
+      if (data.toString().includes('listening') || data.toString().includes('listening')) {
+        driverStarted = true;
+      }
+    });
+
+    tauriDriver.on('error', (error) => {
+      console.error('[tauri-driver] Failed to start:', error);
+      process.exit(1);
+    });
+
+    tauriDriver.on('exit', (code) => {
+      if (!exit) {
+        console.error('[tauri-driver] exited with code:', code);
+        process.exit(1);
+      }
+    });
+
+    // Wait for tauri-driver to be ready and fully initialized
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    console.log('[tauri-driver] Started successfully');
   },
 
   // Create a unique config directory for each session to prevent test pollution
@@ -290,48 +341,12 @@ export const config = {
       }
     }
 
-    // Start a fresh tauri-driver for this session to prevent session accumulation
-    const tauriDriverBinary = path.join(cargoHome, 'bin', 'tauri-driver');
-    const tauriDriverArgs = [];
-    if (nativeDriverPath) {
-      tauriDriverArgs.push('--native-driver', nativeDriverPath);
-    }
-
-    const driverEnv = buildEnvWithKeyringDefaults();
-    const sessionDriver = spawn(tauriDriverBinary, tauriDriverArgs, {
-      stdio: [null, process.stdout, process.stderr],
-      env: driverEnv,
-    });
-
-    sessionDriver.on('error', (error) => {
-      console.error(`[tauri-driver] Session error: ${error}`);
-    });
-
-    sessionDriver.on('exit', (code) => {
-      if (!exit && code !== 0) {
-        console.warn(`[tauri-driver] Session exited with code: ${code}`);
-      }
-    });
-
-    tauriDriversByCapability.set(process.pid, sessionDriver);
-    console.log(`[tauri-driver] Started session driver for PID ${process.pid}`);
-
-    // Wait for driver to be ready
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // tauri-driver is now shared across all sessions and started in onPrepare
   },
 
-  // clean up the per-session tauri-driver process
+  // afterSession cleanup is no longer needed as tauri-driver is shared across sessions
   afterSession: () => {
-    const sessionDriver = tauriDriversByCapability.get(process.pid);
-    if (sessionDriver) {
-      console.log(`[tauri-driver] Killing session driver for PID ${process.pid}`);
-      try {
-        sessionDriver.kill('SIGTERM');
-        tauriDriversByCapability.delete(process.pid);
-      } catch (error) {
-        console.warn(`[tauri-driver] Failed to kill session driver: ${error}`);
-      }
-    }
+    // tauri-driver cleanup is now handled in onShutdown
   },
 
   before: async () => {
@@ -348,6 +363,15 @@ export const config = {
         timeoutMsg: 'Application did not reach startup state 2 within 60s',
       },
     );
+
+    // Make config directory available to tests
+    const configDir = configDirsByCapability.get(process.pid);
+    if (configDir) {
+      await browser.execute((dir: string) => {
+        const globalWindow = window as any;
+        globalWindow.__KNURL_E2E_CONFIG_DIR__ = dir;
+      }, configDir);
+    }
 
     await browser.pause(2000);
   },

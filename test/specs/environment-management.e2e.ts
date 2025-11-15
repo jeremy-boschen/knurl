@@ -1,6 +1,6 @@
 import { expect } from "@wdio/globals"
 
-import { callBridge, ensureBridgeReady } from "../support/e2e-bridge"
+import { callBridgeReplacement } from "../support/bridge-replacement"
 import { createCollection } from "../support/collections"
 import { waitForRequestEditor } from "../support/request"
 import { clickByTestId, ensureWorkspaceReady, getElementByTestId, openNewRequestViaUI, resetOverlays, setInputText } from "../support/ui"
@@ -21,7 +21,6 @@ describe("Environment Manager Smoke", () => {
 
   before(async () => {
     await ensureWorkspaceReady()
-    await ensureBridgeReady()
     await resetCollectionsState()
     await ensureWorkspaceReady()
     await resetOverlays()
@@ -101,6 +100,6 @@ describe("Environment Manager Smoke", () => {
 })
 
 async function getTabSnapshot(tabKey: string) {
-  const snapshot = await callBridge("getWorkspaceSnapshot")
+  const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
   return snapshot.openTabs.find((tab) => tab.tabKey === tabKey) ?? null
 }
