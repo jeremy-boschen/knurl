@@ -13,7 +13,7 @@
  */
 
 import { createCollection } from "./collections"
-import { readAppDataJson, readAppDataFile, appDataFileExists } from "./filesystem"
+import { readAppDataJson, readAppDataFile, appDataFileExists, writeAppDataFile, deleteAppDataFile } from "./filesystem"
 
 /**
  * Create a collection and return its data
@@ -127,6 +127,45 @@ export async function flushStorageViaApp(): Promise<void> {
 }
 
 /**
+ * Get app data directory path from Tauri
+ */
+export async function getAppDataDirFromTauri(): Promise<string> {
+  return await browser.executeAsync(async (done: (result: string) => void) => {
+    try {
+      // Access Tauri API to get app data directory
+      const { appDataDir } = await (window as any).__TAURI__.path
+      const dir = await appDataDir()
+      done(dir)
+    } catch (error) {
+      done('')
+    }
+  })
+}
+
+/**
+ * Get auth cache entry for a request
+ */
+export async function getAuthCacheEntryFromState(requestId: string): Promise<any> {
+  return await browser.execute((reqId: string) => {
+    try {
+      const modules = (window as any).__vite_ssr_modules__
+      if (!modules) return undefined
+
+      const appModule = Object.values(modules).find((mod: any) => {
+        return mod && mod.useApplication && typeof mod.useApplication === 'function'
+      }) as any
+
+      if (!appModule?.useApplication) return undefined
+
+      const state = appModule.useApplication.getState()
+      return state.credentialsState?.cache?.[reqId]
+    } catch {
+      return undefined
+    }
+  }, requestId)
+}
+
+/**
  * Replacement for callBridge that routes to appropriate implementation
  */
 export async function callBridgeReplacement(
@@ -151,6 +190,22 @@ export async function callBridgeReplacement(
     case 'flushStorage':
     case 'flush_storage':
       return await flushStorageViaApp()
+
+    case 'getAppDataDir':
+    case 'get_app_data_dir':
+      return await getAppDataDirFromTauri()
+
+    case 'saveAppData':
+    case 'save_app_data':
+      return await writeAppDataFile(args[0], args[1])
+
+    case 'deleteAppData':
+    case 'delete_app_data':
+      return await deleteAppDataFile(args[0])
+
+    case 'getAuthCacheEntry':
+    case 'get_auth_cache_entry':
+      return await getAuthCacheEntryFromState(args[0])
 
     default:
       throw new Error(`Bridge replacement not implemented for method: ${method}`)

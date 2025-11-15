@@ -1,6 +1,6 @@
 import { expect } from "@wdio/globals"
 
-import { callBridge, ensureBridgeReady, type WorkspaceSnapshot } from "../support/e2e-bridge"
+import { callBridgeReplacement } from "../support/bridge-replacement"
 import { waitForActiveRequestTab, waitForRequestEditor } from "../support/request"
 import { createCollection } from "../support/collections"
 import {
@@ -14,6 +14,7 @@ import {
   setInputText,
 } from "../support/ui"
 
+type WorkspaceSnapshot = Awaited<ReturnType<typeof callBridgeReplacement>>
 type WorkspaceTab = WorkspaceSnapshot["openTabs"][number]
 type PersistedWorkspaceState = {
   collectionId: string
@@ -27,7 +28,6 @@ let appDataDir: string | null = null
 describe("Workspace Restore UX", () => {
   before(async () => {
     await ensureWorkspaceReady()
-    await ensureBridgeReady()
     await resetWorkspaceTabs()
   })
 
@@ -46,7 +46,7 @@ describe("Workspace Restore UX", () => {
 
     await openNewRequestTab()
     const tabKey = await waitForActiveRequestTab()
-    const initialSnapshot = await callBridge("getWorkspaceSnapshot")
+    const initialSnapshot = await callBridgeReplacement("getWorkspaceSnapshot")
     const initialTab = initialSnapshot.openTabs.find((tab) => tab.tabKey === tabKey)
     expect(initialTab?.collectionId).toBe(scratchCollectionId)
     const baseRequestId = initialTab?.requestId
@@ -59,7 +59,7 @@ describe("Workspace Restore UX", () => {
     await saveActiveRequest(requestName, collectionId, tabKey)
 
     // Get the request ID from the snapshot after saving
-    let snapshot = await callBridge("getWorkspaceSnapshot")
+    let snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
     const activeTab = snapshot.openTabs.find((tab) => tab.tabKey === tabKey)
     if (!activeTab) {
       throw new Error("Active tab not found after save")
@@ -72,13 +72,12 @@ describe("Workspace Restore UX", () => {
       tabKey,
     }
 
-    appDataDir = await callBridge("getAppDataDir")
+    appDataDir = await callBridgeReplacement("getAppDataDir")
 
     await closeApplicationWindow()
 
     await browser.reloadSession()
     await ensureAppReady()
-    await ensureBridgeReady()
     await ensureWorkspaceReady()
   })
 
@@ -90,11 +89,10 @@ describe("Workspace Restore UX", () => {
     const { collectionId, requestId } = persistedState
 
     await ensureAppReady()
-    await ensureBridgeReady()
     await ensureWorkspaceReady()
 
     if (appDataDir) {
-      const currentAppDataDir = await callBridge("getAppDataDir")
+      const currentAppDataDir = await callBridgeReplacement("getAppDataDir")
       expect(currentAppDataDir).toBe(appDataDir)
     }
 
@@ -144,7 +142,7 @@ async function resetWorkspaceTabs(): Promise<void> {
   })
   await browser.keys(["Escape"])
   await browser.pause(100)
-  await callBridge("flushStorage")
+  await callBridgeReplacement("flushStorage")
 }
 
 async function openNewRequestTab(): Promise<void> {
@@ -160,7 +158,7 @@ async function saveActiveRequest(requestName: string, collectionId: string, tabK
     timeout: 5000,
     timeoutMsg: "Save button did not become enabled",
   })
-  const snapshot = await callBridge("getWorkspaceSnapshot")
+  const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
   console.log("Collections index", snapshot.collectionsIndex)
   const openTab = snapshot.openTabs.find((tab) => tab.tabKey === tabKey)
   console.log("Save debug", openTab)
@@ -188,7 +186,7 @@ async function saveActiveRequest(requestName: string, collectionId: string, tabK
 
   if (!dialogAppeared) {
     console.log("Save dialog skipped; assuming auto-save path")
-    const postSnapshot = await callBridge("getWorkspaceSnapshot")
+    const postSnapshot = await callBridgeReplacement("getWorkspaceSnapshot")
     console.log("Tabs after auto-save", postSnapshot.openTabs)
     return
   }
@@ -246,7 +244,7 @@ async function waitForSnapshotWithTab(requestId: string, timeout = 30000): Promi
   let snapshot: WorkspaceSnapshot | undefined
   await browser.waitUntil(
     async () => {
-      snapshot = await callBridge("getWorkspaceSnapshot")
+      snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
       return snapshot.openTabs.some((tab) => tab.requestId === requestId)
     },
     {
@@ -261,7 +259,7 @@ async function waitForSnapshotWithTab(requestId: string, timeout = 30000): Promi
 async function waitForOpenState(collectionId: string, requestId: string, timeout = 15000): Promise<void> {
   await browser.waitUntil(
     async () => {
-      const snapshot = await callBridge("getWorkspaceSnapshot")
+      const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
       const tab = findTab(snapshot.openTabs, requestId)
       const indexEntry = snapshot.collectionsIndex.find((entry) => entry.id === collectionId)
       return tab?.collectionId === collectionId && indexEntry?.opened.includes(requestId)

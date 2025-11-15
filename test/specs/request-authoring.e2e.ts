@@ -1,6 +1,6 @@
 import { expect } from "@wdio/globals"
 
-import { callBridge, ensureBridgeReady } from "../support/e2e-bridge"
+import { callBridgeReplacement } from "../support/bridge-replacement"
 import { createCollection } from "../support/collections"
 import { waitForRequestEditor } from "../support/request"
 import {
@@ -30,7 +30,6 @@ describe("Request Authoring Smoke", () => {
 
   before(async () => {
     await ensureWorkspaceReady()
-    await ensureBridgeReady()
     await resetOverlays()
 
     state.tabKey = await openNewRequestViaUI()
@@ -131,7 +130,6 @@ describe("Request Authoring Advanced", () => {
 
   before(async () => {
     await ensureWorkspaceReady()
-    await ensureBridgeReady()
     await resetOverlays()
 
     const stamp = Date.now()
@@ -449,7 +447,7 @@ async function selectCollection(collectionId: string): Promise<void> {
 }
 
 async function getTabSnapshot(tabKey: string) {
-  const snapshot = await callBridge("getWorkspaceSnapshot")
+  const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
   return snapshot.openTabs.find((tab) => tab.tabKey === tabKey) ?? null
 }
 

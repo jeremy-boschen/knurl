@@ -114,3 +114,40 @@ export async function readAppDataBinary(relativePath: string): Promise<Buffer> {
     throw error
   }
 }
+
+/**
+ * Write data to a file in the app data directory
+ * @param relativePath Path relative to the app data directory
+ * @param data Data to write (string or object to be JSON stringified)
+ */
+export async function writeAppDataFile(relativePath: string, data: any): Promise<void> {
+  const configDir = await getAppDataDir()
+  const filePath = path.join(configDir, relativePath)
+  const dirPath = path.dirname(filePath)
+
+  // Ensure directory exists
+  await fs.mkdir(dirPath, { recursive: true })
+
+  // Write data (stringify if it's an object)
+  const content = typeof data === 'string' ? data : JSON.stringify(data, null, 2)
+  await fs.writeFile(filePath, content, 'utf-8')
+}
+
+/**
+ * Delete a file from the app data directory
+ * @param relativePath Path relative to the app data directory
+ */
+export async function deleteAppDataFile(relativePath: string): Promise<void> {
+  const configDir = await getAppDataDir()
+  const filePath = path.join(configDir, relativePath)
+
+  try {
+    await fs.unlink(filePath)
+  } catch (error) {
+    if ((error as any).code === "ENOENT") {
+      // File doesn't exist - that's okay
+      return
+    }
+    throw error
+  }
+}

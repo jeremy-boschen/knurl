@@ -1,9 +1,11 @@
 import { expect } from "@wdio/globals"
 
-import { callBridge, ensureBridgeReady, type WorkspaceSnapshot } from "../support/e2e-bridge"
+import { callBridgeReplacement } from "../support/bridge-replacement"
 import { ensureWorkspaceReady, getElementByTestId, openNewRequestViaUI, resetOverlays } from "../support/ui"
 import { waitForRequestEditor } from "../support/request"
 import { resetCollectionsState, seedCollectionWithOpenRequest } from "../support/state"
+
+type WorkspaceSnapshot = Awaited<ReturnType<typeof callBridgeReplacement>>
 
 const INDEX_FILE = "collections/.index.json"
 const BAD_COLLECTION_FILE = "collections/bad.json"
@@ -11,7 +13,6 @@ const BAD_COLLECTION_FILE = "collections/bad.json"
 describe("Launch Hydration UX", () => {
   before(async () => {
     await ensureWorkspaceReady()
-    await ensureBridgeReady()
     await resetCollectionsState()
   })
 
@@ -30,9 +31,9 @@ describe("Launch Hydration UX", () => {
     const seedIndexHasCollection = seed.index.some((entry) => entry?.id === seed.collectionId)
     expect(seedIndexHasCollection).toBe(true)
 
-    await callBridge("flushStorage")
+    await callBridgeReplacement("flushStorage")
 
-    await callBridge("saveAppData", INDEX_FILE, {
+    await callBridgeReplacement("saveAppData", INDEX_FILE, {
       header: {
         version: 2,
         updated: new Date().toISOString(),
@@ -40,7 +41,7 @@ describe("Launch Hydration UX", () => {
       content: seed.index,
     })
 
-    const persistedIndex = await callBridge("loadAppData", INDEX_FILE)
+    const persistedIndex = await callBridgeReplacement("loadAppData", INDEX_FILE)
     expect(persistedIndex).toBeDefined()
     expect(Array.isArray(persistedIndex?.content)).toBe(true)
     const indexHasSeed = (persistedIndex?.content as Array<{ id?: string }> | undefined)?.some(
@@ -50,9 +51,8 @@ describe("Launch Hydration UX", () => {
 
     await browser.execute(() => window.location.reload())
     await ensureWorkspaceReady()
-    await ensureBridgeReady()
 
-    const snapshot = await callBridge("getWorkspaceSnapshot")
+    const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
     const collectionEntry = snapshot.collectionsIndex.find((entry) => entry.id === seed.collectionId)
     expect(collectionEntry).toBeDefined()
     const restoredTab = findTab(snapshot, seed.requestId)
@@ -71,14 +71,13 @@ describe("Launch Hydration UX", () => {
   })
 
   it("recovers gracefully from malformed persisted data", async () => {
-    await callBridge("saveAppData", INDEX_FILE, { bogus: true })
-    await callBridge("saveAppData", BAD_COLLECTION_FILE, { invalid: true })
+    await callBridgeReplacement("saveAppData", INDEX_FILE, { bogus: true })
+    await callBridgeReplacement("saveAppData", BAD_COLLECTION_FILE, { invalid: true })
 
     await browser.execute(() => window.location.reload())
     await ensureWorkspaceReady()
-    await ensureBridgeReady()
 
-    const snapshot = await callBridge("getWorkspaceSnapshot")
+    const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
     const malformedEntry = snapshot.collectionsIndex.find((entry) => entry.id === "bad")
     expect(malformedEntry).toBeUndefined()
 
@@ -86,8 +85,8 @@ describe("Launch Hydration UX", () => {
     await waitForRequestEditor()
     expect(tabKey).not.toBeNull()
 
-    await callBridge("deleteAppData", INDEX_FILE).catch(() => {})
-    await callBridge("deleteAppData", BAD_COLLECTION_FILE).catch(() => {})
+    await callBridgeReplacement("deleteAppData", INDEX_FILE).catch(() => {})
+    await callBridgeReplacement("deleteAppData", BAD_COLLECTION_FILE).catch(() => {})
     await resetOverlays()
     await resetCollectionsState()
   })

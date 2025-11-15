@@ -1,6 +1,6 @@
 import { expect } from "@wdio/globals"
 
-import { callBridge, ensureBridgeReady } from "../support/e2e-bridge"
+import { callBridgeReplacement } from "../support/bridge-replacement"
 import { waitForRequestEditor } from "../support/request"
 import {
   clickByTestId,
@@ -21,7 +21,6 @@ describe("Scratch Collection UX", () => {
 
   before(async () => {
     await ensureWorkspaceReady()
-    await ensureBridgeReady()
     await resetScratchCollection()
     const seeded = await seedScratchRequest()
     state.firstRequestId = seeded.requestId
@@ -46,19 +45,18 @@ describe("Scratch Collection UX", () => {
       throw new Error("Scratch seed did not run before persistence check")
     }
 
-    const snapshotBefore = await callBridge("getWorkspaceSnapshot")
+    const snapshotBefore = await callBridgeReplacement("getWorkspaceSnapshot")
     const activeTabBefore = snapshotBefore.openTabs.find((tab) => tab.requestId === state.firstRequestId)
     expect(activeTabBefore).toBeDefined()
     expect(activeTabBefore?.collectionId).toBe(SCRATCH_COLLECTION_ID)
 
-    await callBridge("flushStorage")
+    await callBridgeReplacement("flushStorage")
 
     await browser.execute(() => window.location.reload())
     await ensureWorkspaceReady()
-    await ensureBridgeReady()
     await ensureScratchVisible()
 
-    const snapshotAfter = await callBridge("getWorkspaceSnapshot")
+    const snapshotAfter = await callBridgeReplacement("getWorkspaceSnapshot")
     const restoredTab = snapshotAfter.openTabs.find((tab) => tab.requestId === state.firstRequestId)
     expect(restoredTab).toBeDefined()
     expect(restoredTab?.collectionId).toBe(SCRATCH_COLLECTION_ID)
@@ -88,7 +86,7 @@ describe("Scratch Collection UX", () => {
 
     const newTabKey = await openNewRequestViaUI()
     await waitForRequestEditor()
-    const postClearSnapshot = await callBridge("getWorkspaceSnapshot")
+    const postClearSnapshot = await callBridgeReplacement("getWorkspaceSnapshot")
     const newTab = postClearSnapshot.openTabs.find((tab) => tab.tabKey === newTabKey)
     expect(newTab?.collectionId).toBe(SCRATCH_COLLECTION_ID)
     await ensureScratchVisible()
@@ -111,7 +109,7 @@ async function resetScratchCollection(): Promise<void> {
         done()
       }
     })
-    await callBridge("flushStorage")
+    await callBridgeReplacement("flushStorage")
   } catch (error) {
     console.warn("resetScratchCollection encountered error (may be expected):", error)
     // Continue anyway - the scratch collection will be created as needed
@@ -122,7 +120,7 @@ async function seedScratchRequest(): Promise<{ requestId: string; tabKey: string
   const tabKey = await openNewRequestViaUI()
   await waitForRequestEditor()
 
-  const snapshot = await callBridge("getWorkspaceSnapshot")
+  const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
   const activeTab = snapshot.openTabs.find((tab) => tab.tabKey === tabKey)
   if (!activeTab) {
     throw new Error(`Seed scratch tab ${tabKey} not found`)
