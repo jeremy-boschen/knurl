@@ -103,7 +103,7 @@ export default defineConfig({
         }
       : undefined,
     watch: {
-      ignored: ['**/src-tauri/**', '**/migrate/**'],
+      ignored: ['**/src-tauri/**', '**/migrate/**', '**/coverage/**', '**/.nyc_output/**'],
     },
   },
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
