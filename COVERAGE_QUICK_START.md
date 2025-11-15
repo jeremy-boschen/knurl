@@ -89,10 +89,26 @@ yarn coverage:generate && yarn test:e2e && yarn coverage:merge && yarn coverage:
 - ❌ **Type definitions:** .d.ts and type-only files
 - ❌ **Generated code:** Keep excluded
 
+## Performance Tips
+
+### Unit Tests (Parallelizable)
+```bash
+# Run unit tests in parallel (uses more CPU, reduces time)
+VITEST_MAX_WORKERS=4 yarn coverage:generate
+
+# Adjust based on your CPU cores (use your core count)
+VITEST_MAX_WORKERS=8 yarn coverage:generate
+```
+
+### E2E Tests (Sequential Only)
+- E2E tests run sequentially (`maxInstances: 1`) due to Tauri limitations
+- Can't run multiple desktop app instances in parallel
+- No configuration option to change this
+
 ## Next steps
 
-1. Run `yarn coverage:e2e:all` to generate full coverage
-2. Open `coverage/index.html` to view the report
-3. Check `yarn coverage:check` to see if thresholds are met
-4. Adjust thresholds in `.nycrc` if needed
-5. Add to CI/CD pipeline for automatic coverage tracking
+1. Run `yarn coverage:generate` to generate unit test coverage
+2. Run `yarn test:e2e` to run E2E tests with automatic coverage
+3. Run `yarn coverage:merge` to combine reports
+4. Open `coverage/index.html` to view the report
+5. Use `VITEST_MAX_WORKERS=<n>` to speed up unit tests if needed

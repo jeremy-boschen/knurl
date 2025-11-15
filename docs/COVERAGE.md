@@ -226,18 +226,47 @@ yarn coverage:merge
 - **Overhead:** Browser-side instrumentation
 - **Workaround:** Only enable when needed (`E2E_COVERAGE=1`)
 
+## Performance & Parallelization
+
+### Unit Tests (Vitest)
+By default, unit tests run with `maxWorkers: 1` (sequential). You can parallelize them:
+
+```bash
+# Run with 4 parallel workers (uses more CPU, faster)
+VITEST_MAX_WORKERS=4 yarn coverage:generate
+
+# Recommended: use your CPU core count
+# 4-core CPU: VITEST_MAX_WORKERS=4
+# 8-core CPU: VITEST_MAX_WORKERS=8
+# 16-core CPU: VITEST_MAX_WORKERS=16
+```
+
+### E2E Tests (WebDriver.io + Tauri)
+E2E tests **cannot be parallelized** due to Tauri limitations:
+- Only one instance of a desktop app can run at a time
+- Multiple browser instances can't connect to the same app instance
+- `maxInstances: 1` in `wdio.conf.ts` is a hard requirement
+
+E2E tests are sequential and cannot be made parallel without significant architectural changes.
+
 ## Best Practices
 
-1. **Run coverage regularly**
+1. **Run unit tests with parallelization**
    ```bash
-   # Before committing
-   yarn coverage:generate
+   # Significantly faster on multi-core CPUs
+   VITEST_MAX_WORKERS=4 yarn coverage:generate
    ```
 
-2. **Check thresholds in CI**
+2. **Run E2E tests sequentially (only option)**
+   ```bash
+   # No parallelization possible
+   yarn test:e2e
+   ```
+
+3. **Check thresholds in CI**
    ```bash
    # In CI pipeline
-   yarn coverage:e2e:all && yarn coverage:check
+   yarn coverage:generate && yarn test:e2e && yarn coverage:merge && yarn coverage:check
    ```
 
 3. **Combine unit + E2E for full picture**
