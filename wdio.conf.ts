@@ -13,6 +13,7 @@ let viteProcess;
 let mockEndpointProcess;
 let exit = false;
 let configDirOverride;
+let coverageReportGenerated = false;
 const cargoHome = resolveCargoHome();
 const nativeDriverPath = resolveNativeDriverPath();
 const configDirsByCapability: Map<number, string> = new Map();
@@ -408,25 +409,33 @@ export const config = {
 
   after: async function () {
     // Merge and generate coverage reports once after all tests complete
+    // This hook may be called multiple times with parallel workers, so we use a guard
+    if (coverageReportGenerated) {
+      return;
+    }
+
     // Skip if coverage generation is disabled
     if (envFlag(process.env.KNURL_SKIP_COVERAGE)) {
       return;
     }
+
+    // Mark as generated to prevent duplicate execution
+    coverageReportGenerated = true;
 
     try {
       const { execSync } = await import('child_process')
       const coverageDir = path.join(process.cwd(), '.nyc_output')
 
       if (existsSync(coverageDir)) {
-        console.log('\n[coverage] Merging E2E coverage data...')
-        // Use --temp-dir to avoid creating extra directories
+        console.log('\n[coverage] Merging E2E coverage data from individual test runs...')
+        // Merge all individual coverage files into a single coverage.json
         execSync('nyc merge .nyc_output coverage/e2e-coverage.json --temp-dir=.nyc_output', {
           cwd: process.cwd(),
           stdio: 'pipe',
         })
 
         console.log('[coverage] Generating E2E coverage report...')
-        // Only generate HTML report (much faster than all reporters)
+        // Generate reports from the merged coverage data
         execSync('nyc report --reporter=html --reporter=json --temp-dir=.nyc_output --report-dir=coverage/e2e', {
           cwd: process.cwd(),
           stdio: 'pipe',
