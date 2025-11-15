@@ -55,6 +55,7 @@ migrate
 .cache/
 msedgedriver.exe
 coverage
+.nyc_output
 
 # AI
 .claude
