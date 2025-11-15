@@ -2,9 +2,13 @@
 import { readdirSync, statSync } from "node:fs"
 import { join, extname } from "node:path"
 import { spawnSync } from "node:child_process"
+import { cpus } from "node:os"
 
 const projectRoot = process.cwd()
 const vitestBin = join(projectRoot, "node_modules", "vitest", "vitest.mjs")
+
+// Auto-detect CPU count for smart defaults
+const cpuCount = cpus().length
 
 function collectTests(dir) {
   const entries = readdirSync(dir)
@@ -50,8 +54,13 @@ function parseNonNegativeInt(raw, label) {
 
 const rawCliArgs = process.argv.slice(2)
 const forwardCliArgs = []
+
+// Auto-detect optimal defaults based on CPU count
+const defaultMaxWorkers = Math.max(1, Math.floor(cpuCount * 0.75)) // Use 75% of CPUs to avoid system overload
+const defaultChunkSize = Math.max(1, Math.floor(testFiles.length / cpuCount)) // Distribute files evenly
+
 const envMaxWorkers = parseNonNegativeInt(process.env.VITEST_MAX_WORKERS, "VITEST_MAX_WORKERS")
-let maxWorkers = envMaxWorkers ?? 1
+let maxWorkers = envMaxWorkers ?? defaultMaxWorkers
 
 for (let i = 0; i < rawCliArgs.length; i += 1) {
   const arg = rawCliArgs[i]
@@ -103,16 +112,21 @@ if (selected.length === 0) {
   process.exit(0)
 }
 
-const chunkSize = parseNonNegativeInt(process.env.VITEST_CHUNK_SIZE, "VITEST_CHUNK_SIZE") ?? 1
+const envChunkSize = parseNonNegativeInt(process.env.VITEST_CHUNK_SIZE, "VITEST_CHUNK_SIZE")
+let chunkSize = envChunkSize ?? defaultChunkSize
 if (chunkSize === 0) {
   console.warn("Chunk size of 0 results in no tests being executed. Set VITEST_CHUNK_SIZE >= 1.")
   process.exit(0)
 }
 
+const usingDefaultWorkers = envMaxWorkers === undefined
+const usingDefaultChunkSize = envChunkSize === undefined
+const defaultsNote = usingDefaultWorkers || usingDefaultChunkSize ? " (auto-detected from CPU count: " + cpuCount + ")" : ""
+
 console.log(
   `[vitest-groups] selected ${selected.length}/${testFiles.length} tests (offset=${offset}, limit=${
     limitValue ?? "all"
-  }, chunkSize=${chunkSize}, maxWorkers=${maxWorkers})`,
+  }, chunkSize=${chunkSize}${usingDefaultChunkSize ? " (auto)" : ""}, maxWorkers=${maxWorkers}${usingDefaultWorkers ? " (auto)" : ""})${defaultsNote}`,
 )
 
 // When collecting coverage, we need to disable inline coverage reporting per chunk

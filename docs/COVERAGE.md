@@ -229,25 +229,32 @@ yarn coverage:merge
 ## Performance & Parallelization
 
 ### Unit Tests (Vitest)
-Unit tests run in **chunks** (groups of test files). Each chunk runs with internal parallelization. To achieve actual parallelism:
+Unit tests now **automatically optimize** for your machine's CPU count:
 
 ```bash
-# Default: runs sequentially (1 test file at a time, 1 worker)
-VITEST_MAX_WORKERS=1 VITEST_CHUNK_SIZE=1 yarn coverage:generate
+# Just run it - automatic optimization happens!
+yarn coverage:generate
 
-# Better: run 10 test files together with 4 parallel workers per chunk
-VITEST_CHUNK_SIZE=10 VITEST_MAX_WORKERS=4 yarn coverage:generate
-
-# Recommended for faster runs (8-core CPU)
-VITEST_CHUNK_SIZE=20 VITEST_MAX_WORKERS=8 yarn coverage:generate
-
-# Maximum parallelization (16-core CPU)
-VITEST_CHUNK_SIZE=50 VITEST_MAX_WORKERS=16 yarn coverage:generate
+# Output will show auto-detected values:
+# [vitest-groups] ... chunkSize=6 (auto), maxWorkers=6 (auto) (auto-detected from CPU count: 8)
 ```
 
-**Key Settings:**
-- `VITEST_CHUNK_SIZE`: Number of test files per chunk (default: 1, increase for parallelization)
-- `VITEST_MAX_WORKERS`: Parallel workers within each chunk (default: 1, increase to use multiple cores)
+**Auto-detection:**
+- Detects CPU count at runtime
+- Sets `VITEST_MAX_WORKERS` to 75% of CPUs (avoids system overload)
+- Distributes test files evenly across chunks
+
+**Override if needed:**
+```bash
+# Use specific worker count
+VITEST_MAX_WORKERS=4 yarn coverage:generate
+
+# Use specific chunk size
+VITEST_CHUNK_SIZE=20 yarn coverage:generate
+
+# Use both
+VITEST_CHUNK_SIZE=20 VITEST_MAX_WORKERS=8 yarn coverage:generate
+```
 
 ### E2E Tests (WebDriver.io + Tauri)
 E2E tests **cannot be parallelized** due to Tauri limitations:
@@ -259,10 +266,10 @@ E2E tests are sequential and cannot be made parallel without significant archite
 
 ## Best Practices
 
-1. **Run unit tests with proper parallelization**
+1. **Run unit tests normally - they auto-optimize**
    ```bash
-   # Significantly faster on multi-core CPUs (must use both settings!)
-   VITEST_CHUNK_SIZE=20 VITEST_MAX_WORKERS=8 yarn coverage:generate
+   # Automatic: detects CPU count and optimizes parallelization
+   yarn coverage:generate
    ```
 
 2. **Run E2E tests sequentially (only option)**
