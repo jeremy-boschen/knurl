@@ -23,15 +23,19 @@ describe('Collection Import from OpenAPI', () => {
   }
 
   before(async () => {
+    console.log(`[TEST] ${new Date().toISOString()} Before hook: ensuring workspace ready`)
     await ensureWorkspaceReady()
+    console.log(`[TEST] ${new Date().toISOString()} Workspace ready`)
 
     // Read the OpenAPI fixture file for reference
     // The test runs from project root, so path is relative to that
     const fixturePath = './test/fixtures/sample-api.openapi.json'
+    console.log(`[TEST] ${new Date().toISOString()} Reading fixture from ${fixturePath}`)
     if (!fs.existsSync(fixturePath)) {
       throw new Error(`Fixture file not found: ${fixturePath}`)
     }
     state.fileContent = fs.readFileSync(fixturePath, 'utf-8')
+    console.log(`[TEST] ${new Date().toISOString()} Fixture loaded, ${state.fileContent.length} bytes`)
   })
 
   it('expands sidebar if needed', async () => {
