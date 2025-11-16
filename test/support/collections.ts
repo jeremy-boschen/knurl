@@ -28,6 +28,8 @@ export async function createCollection(name: string): Promise<string> {
 }
 
 export async function waitForCollectionIdByName(name: string, timeout = 15000): Promise<string> {
+  const startTime = new Date().toISOString()
+  console.log(`[TEST] ${startTime} waitForCollectionIdByName: starting for "${name}"`)
   let resolved: string | null = null
   await browser.waitUntil(
     async () => {
@@ -58,6 +60,7 @@ export async function waitForCollectionIdByName(name: string, timeout = 15000): 
 
         if (id) {
           resolved = id
+          console.log(`[TEST] ${new Date().toISOString()} waitForCollectionIdByName: resolved to ${id}`)
           return true
         }
         return false
@@ -67,7 +70,7 @@ export async function waitForCollectionIdByName(name: string, timeout = 15000): 
     },
     {
       timeout,
-      interval: 200,
+      interval: 50,
       timeoutMsg: `Collection ${name} not found in index`,
     },
   )
