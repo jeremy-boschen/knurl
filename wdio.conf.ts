@@ -112,12 +112,19 @@ export const config = {
       },
     },
   ],
-  reporters: ['spec', ['json', { outputDir: './test-results', outputFileFormat: (opts) => `results-${opts.cid}.json` }]],
+  reporters: [
+    ['spec', { symbols: { success: '✓', pending: '○', fail: '✕' }, realtimeReporting: false }],
+    ['json', { outputDir: './test-results', outputFileFormat: (opts) => `results-${opts.cid}.json` }],
+  ],
   framework: 'mocha',
   baseUrl: 'http://localhost:1420',
   mochaOpts: {
     ui: 'bdd',
     timeout: 60000,
+    reporter: 'spec',
+    reporterOptions: {
+      enableTimeouts: true,
+    },
   },
 
   // ensure the rust project is built since we expect this binary to exist for the webdriver sessions
