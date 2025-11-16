@@ -13,8 +13,8 @@ describe("Large Payload Handling", () => {
   })
 
   it("handles large JSON response gracefully", async () => {
-    // Use httpbin to get a large JSON response
-    await setInputText("request-workspace:url-input", "http://httpbin.org/json")
+    // Use mock server JSON endpoint
+    await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/json")
 
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
@@ -33,9 +33,9 @@ describe("Large Payload Handling", () => {
     expect(await formattedView.isDisplayed()).toBe(true)
   })
 
-  it("displays raw response for binary data instead of attempting parse", async () => {
-    // Request binary data endpoint
-    await setInputText("request-workspace:url-input", "http://httpbin.org/image/png")
+  it("displays response for various content types", async () => {
+    // Request HTML content type
+    await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/html")
 
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
@@ -49,14 +49,14 @@ describe("Large Payload Handling", () => {
       },
     )
 
-    // Verify raw view is used for binary (not crashing or trying to parse JSON)
+    // Verify response panel displays
     const responsePanel = await $('[data-test-id="response-panel"]')
     expect(await responsePanel.isDisplayed()).toBe(true)
   })
 
   it("shows response size information", async () => {
-    // Request with headers that include content-length
-    await setInputText("request-workspace:url-input", "http://httpbin.org/bytes/10000")
+    // Request mock endpoint with metadata
+    await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/response-headers")
 
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
@@ -76,8 +76,8 @@ describe("Large Payload Handling", () => {
     expect(metadataText).toBeDefined()
   })
 
-  it("displays response status and headers for large payloads", async () => {
-    await setInputText("request-workspace:url-input", "http://httpbin.org/gzip")
+  it("displays response status and headers for payloads", async () => {
+    await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/xml")
 
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
@@ -97,7 +97,7 @@ describe("Large Payload Handling", () => {
   })
 
   it("allows switching between raw and formatted views", async () => {
-    await setInputText("request-workspace:url-input", "http://httpbin.org/json")
+    await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/json")
 
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
@@ -135,7 +135,7 @@ describe("Large Payload Handling", () => {
   })
 
   it("maintains request/response metadata after navigation", async () => {
-    await setInputText("request-workspace:url-input", "http://httpbin.org/delay/2")
+    await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/delay/1")
 
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(

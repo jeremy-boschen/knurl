@@ -74,8 +74,8 @@ describe("Request Execution Error Handling", () => {
   })
 
   it("displays error with status code and message", async () => {
-    // Use httpbin for intentional error responses
-    await setInputText("request-workspace:url-input", "http://httpbin.org/status/500")
+    // Use mock server for intentional error responses
+    await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/status/500")
 
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
