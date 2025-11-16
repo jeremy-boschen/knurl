@@ -1,6 +1,5 @@
 import { expect } from "@wdio/globals"
 
-import { callBridgeReplacement, type WorkspaceSnapshot } from "../support/bridge-replacement"
 import { waitForRequestEditor } from "../support/request"
 import { clickVisibleNewCollectionButton, waitForCollectionIdByName } from "../support/collections"
 import {
@@ -15,8 +14,12 @@ import {
 
 const SCRATCH_COLLECTION_ID = "scratch"
 
-type WorkspaceSnapshotType = Awaited<ReturnType<typeof callBridgeReplacement>>
-type OpenTabSnapshot = WorkspaceSnapshotType["openTabs"][number]
+// Type for tab info retrieved from DOM
+interface OpenTabSnapshot {
+  tabKey: string
+  requestId: string
+  collectionId: string
+}
 
 describe("Collection And Request Flow", () => {
   const state = {
@@ -141,14 +144,10 @@ describe("Collection And Request Flow", () => {
     await clickByTestId(`request-tab:${activeTabKey}`)
     await waitForRequestEditor()
 
-    const snapshotBefore = await callBridgeReplacement("getWorkspaceSnapshot")
-    const tabEntry = findTab(snapshotBefore.openTabs, activeTabKey)
-
-    // Ensure tab exists
-    if (!tabEntry) {
-      throw new Error(`Tab ${activeTabKey} not found in open tabs. Available: ${snapshotBefore.openTabs.map((t) => t.tabKey).join(", ")}`)
-    }
-    expect(tabEntry.collectionId).toBe(SCRATCH_COLLECTION_ID)
+    // Verify tab is in scratch collection before saving
+    const tabElement = await $(`[data-test-id="tab:${activeTabKey}"]`)
+    const collectionIdBefore = await tabElement.getAttribute("data-collection-id")
+    expect(collectionIdBefore).toBe(SCRATCH_COLLECTION_ID)
 
     const uniqueUrl = `https://example.com/api/${Date.now()}`
     await setInputText("request-workspace:url-input", uniqueUrl)
@@ -172,11 +171,14 @@ describe("Collection And Request Flow", () => {
     await waitForRequestPlacement(state.collectionId, activeRequestId)
     await ensureRequestRemovedFromScratch(activeRequestId)
 
+    // Verify tab moved to target collection
     await browser.waitUntil(
       async () => {
-        const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
-        const tab = findTab(snapshot.openTabs, activeTabKey)
-        return tab?.collectionId === state.collectionId
+        const tab = await $(`[data-test-id="tab:${activeTabKey}"]`)
+        const exists = await tab.isDisplayed().catch(() => false)
+        if (!exists) return false
+        const collectionId = await tab.getAttribute("data-collection-id")
+        return collectionId === state.collectionId
       },
       {
         timeout: 5000,
@@ -187,11 +189,22 @@ describe("Collection And Request Flow", () => {
   })
 })
 
+/**
+ * Pure E2E test - no bridge dependency
+ * Gets open request IDs from DOM
+ */
 async function getOpenRequestIds(): Promise<Set<string>> {
-  const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
-  return new Set(snapshot.openTabs.map((tab) => tab.requestId))
+  const ids = await browser.execute(() => {
+    const tabs = Array.from(document.querySelectorAll('[data-test-id^="tab:"]'))
+    return tabs.map((tab) => tab.getAttribute("data-request-id")).filter(Boolean) as string[]
+  })
+  return new Set(ids)
 }
 
+/**
+ * Pure E2E test - no bridge dependency
+ * Waits for new request in specific collection
+ */
 async function waitForNewCollectionRequest(
   collectionId: string,
   knownRequestIds: Set<string>,
@@ -200,12 +213,21 @@ async function waitForNewCollectionRequest(
   let result: { requestId: string; tabKey: string } | null = null
   await browser.waitUntil(
     async () => {
-      const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
-      const candidate = snapshot.openTabs.find(
-        (tab) => tab.collectionId === collectionId && !knownRequestIds.has(tab.requestId),
-      )
+      const candidate = await browser.execute((targetCollectionId: string, knownIds: string[]) => {
+        const tabs = Array.from(document.querySelectorAll('[data-test-id^="tab:"]'))
+        for (const tab of tabs) {
+          const collId = tab.getAttribute("data-collection-id")
+          const reqId = tab.getAttribute("data-request-id")
+          const tabKey = tab.getAttribute("data-test-id")?.split(":")[1]
+          if (collId === targetCollectionId && reqId && !knownIds.includes(reqId) && tabKey) {
+            return { requestId: reqId, tabKey }
+          }
+        }
+        return null
+      }, collectionId, Array.from(knownRequestIds))
+
       if (candidate) {
-        result = { requestId: candidate.requestId, tabKey: candidate.tabKey }
+        result = candidate
         return true
       }
       return false
@@ -223,6 +245,10 @@ async function waitForNewCollectionRequest(
   return result
 }
 
+/**
+ * Pure E2E test - no bridge dependency
+ * Waits for new scratch request
+ */
 async function waitForNewScratchRequest(
   knownRequestIds: Set<string>,
   timeout = 15000,
@@ -230,12 +256,21 @@ async function waitForNewScratchRequest(
   let result: { requestId: string; tabKey: string } | null = null
   await browser.waitUntil(
     async () => {
-      const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
-      const candidate = snapshot.openTabs.find(
-        (tab) => tab.collectionId === SCRATCH_COLLECTION_ID && !knownRequestIds.has(tab.requestId),
-      )
+      const candidate = await browser.execute((scratchId: string, knownIds: string[]) => {
+        const tabs = Array.from(document.querySelectorAll('[data-test-id^="tab:"]'))
+        for (const tab of tabs) {
+          const collId = tab.getAttribute("data-collection-id")
+          const reqId = tab.getAttribute("data-request-id")
+          const tabKey = tab.getAttribute("data-test-id")?.split(":")[1]
+          if (collId === scratchId && reqId && !knownIds.includes(reqId) && tabKey) {
+            return { requestId: reqId, tabKey }
+          }
+        }
+        return null
+      }, SCRATCH_COLLECTION_ID, Array.from(knownRequestIds))
+
       if (candidate) {
-        result = { requestId: candidate.requestId, tabKey: candidate.tabKey }
+        result = candidate
         return true
       }
       return false
@@ -253,15 +288,23 @@ async function waitForNewScratchRequest(
   return result
 }
 
+/**
+ * Pure E2E test - no bridge dependency
+ * Gets tab snapshot from DOM
+ */
 async function waitForTabSnapshot(tabKey: string, timeout = 10000): Promise<OpenTabSnapshot | undefined> {
   let resolved: OpenTabSnapshot | undefined
   await browser.waitUntil(
     async () => {
-      const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
-      const tab = findTab(snapshot.openTabs, tabKey)
-      if (tab) {
-        resolved = tab
-        return true
+      const tab = await $(`[data-test-id="tab:${tabKey}"]`)
+      const exists = await tab.isDisplayed().catch(() => false)
+      if (exists) {
+        const requestId = await tab.getAttribute("data-request-id")
+        const collectionId = await tab.getAttribute("data-collection-id")
+        if (requestId && collectionId) {
+          resolved = { tabKey, requestId, collectionId }
+          return true
+        }
       }
       return false
     },
@@ -272,24 +315,6 @@ async function waitForTabSnapshot(tabKey: string, timeout = 10000): Promise<Open
     },
   )
   return resolved
-}
-
-function findTab(openTabs: OpenTabSnapshot[], tabKey: string): OpenTabSnapshot | undefined {
-  return openTabs.find((tab) => tab.tabKey === tabKey)
-}
-
-async function waitForOpenTabsCount(expected: number, timeout = 5000): Promise<void> {
-  await browser.waitUntil(
-    async () => {
-      const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
-      return snapshot.openTabs.length === expected
-    },
-    {
-      timeout,
-      interval: 200,
-      timeoutMsg: `Open tab count did not reach ${expected}`,
-    },
-  )
 }
 
 async function waitForRequestPlacement(collectionId: string, requestId: string, timeout = 10000): Promise<void> {

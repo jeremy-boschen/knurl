@@ -1,6 +1,5 @@
 import { expect } from "@wdio/globals"
 
-import { callBridgeReplacement } from "../support/bridge-replacement"
 import { createCollection } from "../support/collections"
 import { waitForRequestEditor } from "../support/request"
 import {
@@ -450,9 +449,23 @@ async function selectCollection(collectionId: string): Promise<void> {
   await option.click()
 }
 
+/**
+ * Pure E2E test - no bridge dependency
+ * Gets tab information from DOM instead of internal state
+ */
 async function getTabSnapshot(tabKey: string) {
-  const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
-  return snapshot.openTabs.find((tab) => tab.tabKey === tabKey) ?? null
+  const tabElement = await $(`[data-test-id="tab:${tabKey}"]`)
+  const exists = await tabElement.isDisplayed().catch(() => false)
+
+  if (!exists) {
+    return null
+  }
+
+  return {
+    tabKey,
+    requestId: await tabElement.getAttribute("data-request-id"),
+    collectionId: await tabElement.getAttribute("data-collection-id"),
+  }
 }
 
 async function waitForTabCollection(tabKey: string, collectionId: string, timeout = 10000): Promise<void> {

@@ -1,6 +1,5 @@
 import { expect } from "@wdio/globals"
 
-import { callBridgeReplacement } from "../support/bridge-replacement"
 import {
   clickByTestId,
   ensureWorkspaceReady,
@@ -55,8 +54,6 @@ describe("Collections Management UX", () => {
       },
     )
 
-    const snapshotAfterRename = await callBridgeReplacement("getWorkspaceSnapshot")
-    console.log("collections-management after rename", snapshotAfterRename.collectionsIndex)
     // Give the UI some time to update after the rename
     await browser.pause(500)
 
@@ -66,9 +63,8 @@ describe("Collections Management UX", () => {
       timeoutMsg: `Collection ${idB} did not reflect renamed title`,
     })
 
-    await callBridgeReplacement("flushStorage")
-    const snapshotBeforeReload = await callBridgeReplacement("getWorkspaceSnapshot")
-    console.log("collections-management before reload", snapshotBeforeReload.collectionsIndex)
+    // Wait for persistence instead of flushing via bridge
+    await browser.pause(500)
     await browser.execute(() => window.location.reload())
     await ensureWorkspaceReady()
 
@@ -94,10 +90,7 @@ describe("Collections Management UX", () => {
 
     const remaining = await resolveOrderedCollectionIds()
     expect(remaining).toEqual([idA, idB])
-
-    const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
-    const remainingEntries = snapshot.collectionsIndex.filter((entry) => entry.id !== SCRATCH_COLLECTION_ID)
-    expect(remainingEntries).toHaveLength(2)
+    expect(remaining).toHaveLength(2)
 
     await cleanupCollections([idA, idB])
     await resetOverlays()
@@ -106,11 +99,19 @@ describe("Collections Management UX", () => {
   console.log("✅ Collections Management UX tests completed")
 })
 
+/**
+ * Pure E2E test - no bridge dependency
+ * Gets ordered collection IDs from DOM instead of internal state
+ */
 async function resolveOrderedCollectionIds(): Promise<string[]> {
-  const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
-  return snapshot.collectionsIndex
-    .filter((entry) => entry.id !== SCRATCH_COLLECTION_ID)
-    .map((entry) => entry.id as string)
+  return await browser.execute((scratchId: string) => {
+    const rows = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]')
+    )
+    return rows
+      .map((row) => row.getAttribute("data-test-id")?.split(":").pop())
+      .filter((id): id is string => !!id && id !== scratchId)
+  }, SCRATCH_COLLECTION_ID)
 }
 
 async function cleanupCollections(ids: string[]): Promise<void> {
@@ -132,28 +133,18 @@ async function cleanupCollections(ids: string[]): Promise<void> {
   }
 }
 
+/**
+ * Pure E2E test - no bridge dependency
+ * Checks DOM for collection name
+ */
 async function isCollectionNamedInTree(collectionId: string, expectedName: string): Promise<boolean> {
-  // Check the DOM first
-  const domExists = await browser.execute((id: string, name: string) => {
+  return await browser.execute((id: string, name: string) => {
     const row = document.querySelector<HTMLElement>(`[data-test-id="collection-tree:collection-row:${id}"]`)
     if (!row) return false
     const text = row.textContent?.trim() || ""
     console.log(`DOM check for ${id}: "${text}" contains "${name}": ${text.includes(name)}`)
     return text.includes(name)
   }, collectionId, expectedName)
-
-  if (domExists) {
-    return true
-  }
-
-  // Fall back to checking the snapshot
-  const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
-  const snapshotMatch = snapshot.collectionsIndex.some((entry) => entry.id === collectionId && entry.name === expectedName)
-  console.log(`Snapshot check for ${collectionId}: found=${snapshotMatch}`)
-  if (snapshotMatch) {
-    console.log(`Collection ${collectionId} found in snapshot with name: ${expectedName}`)
-  }
-  return snapshotMatch
 }
 
 async function getCollectionNameFromTree(collectionId: string): Promise<string | null> {
@@ -163,7 +154,12 @@ async function getCollectionNameFromTree(collectionId: string): Promise<string |
   }, collectionId)
 }
 
+/**
+ * Pure E2E test - no bridge dependency
+ * Checks DOM for collection presence
+ */
 async function isCollectionPresent(collectionId: string): Promise<boolean> {
-  const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
-  return snapshot.collectionsIndex.some((entry) => entry.id === collectionId)
+  return await browser.execute((id: string) => {
+    return !!document.querySelector(`[data-test-id="collection-tree:collection-row:${id}"]`)
+  }, collectionId)
 }

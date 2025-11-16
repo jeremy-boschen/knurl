@@ -1,6 +1,5 @@
 import { expect } from "@wdio/globals"
 
-import { callBridgeReplacement } from "../support/bridge-replacement"
 import { waitForRequestEditor } from "../support/request"
 import {
   clickByTestId,
@@ -45,21 +44,23 @@ describe("Scratch Collection UX", () => {
       throw new Error("Scratch seed did not run before persistence check")
     }
 
-    const snapshotBefore = await callBridgeReplacement("getWorkspaceSnapshot")
-    const activeTabBefore = snapshotBefore.openTabs.find((tab) => tab.requestId === state.firstRequestId)
-    expect(activeTabBefore).toBeDefined()
-    expect(activeTabBefore?.collectionId).toBe(SCRATCH_COLLECTION_ID)
+    // Verify tab exists before reload
+    const tabBefore = await $(`[data-test-id="tab:${state.firstTabKey}"]`)
+    expect(await tabBefore.isDisplayed()).toBe(true)
+    const collectionIdBefore = await tabBefore.getAttribute("data-collection-id")
+    expect(collectionIdBefore).toBe(SCRATCH_COLLECTION_ID)
 
-    await callBridgeReplacement("flushStorage")
-
+    // Wait a bit for storage to persist, then reload
+    await browser.pause(500)
     await browser.execute(() => window.location.reload())
     await ensureWorkspaceReady()
     await ensureScratchVisible()
 
-    const snapshotAfter = await callBridgeReplacement("getWorkspaceSnapshot")
-    const restoredTab = snapshotAfter.openTabs.find((tab) => tab.requestId === state.firstRequestId)
-    expect(restoredTab).toBeDefined()
-    expect(restoredTab?.collectionId).toBe(SCRATCH_COLLECTION_ID)
+    // Verify tab restored after reload
+    const tabAfter = await $(`[data-test-id="tab:${state.firstTabKey}"]`)
+    expect(await tabAfter.isDisplayed()).toBe(true)
+    const collectionIdAfter = await tabAfter.getAttribute("data-collection-id")
+    expect(collectionIdAfter).toBe(SCRATCH_COLLECTION_ID)
   })
 
   it("clears scratch data without removing the collection shell", async () => {
@@ -86,9 +87,11 @@ describe("Scratch Collection UX", () => {
 
     const newTabKey = await openNewRequestViaUI()
     await waitForRequestEditor()
-    const postClearSnapshot = await callBridgeReplacement("getWorkspaceSnapshot")
-    const newTab = postClearSnapshot.openTabs.find((tab) => tab.tabKey === newTabKey)
-    expect(newTab?.collectionId).toBe(SCRATCH_COLLECTION_ID)
+    // Verify new tab is also in scratch collection
+    const newTab = await $(`[data-test-id="tab:${newTabKey}"]`)
+    expect(await newTab.isDisplayed()).toBe(true)
+    const newTabCollectionId = await newTab.getAttribute("data-collection-id")
+    expect(newTabCollectionId).toBe(SCRATCH_COLLECTION_ID)
     await ensureScratchVisible()
     await resetOverlays()
   })
@@ -111,26 +114,36 @@ async function resetScratchCollection(): Promise<void> {
         done()
       }
     })
-    await callBridgeReplacement("flushStorage")
+    // Wait for storage to persist instead of flushing via bridge
+    await browser.pause(500)
   } catch (error) {
     console.warn("resetScratchCollection encountered error (may be expected):", error)
     // Continue anyway - the scratch collection will be created as needed
   }
 }
 
+/**
+ * Pure E2E test - no bridge dependency
+ * Seeds a scratch request and retrieves its ID from DOM
+ */
 async function seedScratchRequest(): Promise<{ requestId: string; tabKey: string }> {
   const tabKey = await openNewRequestViaUI()
   await waitForRequestEditor()
 
-  const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
-  const activeTab = snapshot.openTabs.find((tab) => tab.tabKey === tabKey)
-  if (!activeTab) {
+  // Retrieve tab info from DOM instead of internal state
+  const tabElement = await $(`[data-test-id="tab:${tabKey}"]`)
+  const exists = await tabElement.isDisplayed().catch(() => false)
+  if (!exists) {
     throw new Error(`Seed scratch tab ${tabKey} not found`)
   }
-  if (activeTab.collectionId !== SCRATCH_COLLECTION_ID) {
+
+  const collectionId = await tabElement.getAttribute("data-collection-id")
+  if (collectionId !== SCRATCH_COLLECTION_ID) {
     throw new Error(`Seed tab ${tabKey} not attached to scratch collection`)
   }
-  return { requestId: activeTab.requestId, tabKey }
+
+  const requestId = await tabElement.getAttribute("data-request-id") || ""
+  return { requestId, tabKey }
 }
 
 async function ensureScratchVisible(timeout = 15000): Promise<void> {
