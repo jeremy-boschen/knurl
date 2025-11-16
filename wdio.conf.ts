@@ -119,9 +119,16 @@ export const config = {
 
   // ensure the rust project is built since we expect this binary to exist for the webdriver sessions
   onPrepare: async () => {
+    // Kill any existing processes on critical ports
     killProcessesOnPort(1420);
     killProcessesOnPort(4444);
+    killProcessesOnPort(4445); // WebKitWebDriver port
     killProcessesOnPort(MOCK_ENDPOINT_PORT);
+    // Kill lingering processes from previous runs
+    killProcessesByPattern('vite');
+    killProcessesByPattern('esbuild');
+    killProcessesByPattern('tauri-driver');
+    killProcessesByPattern('WebKitWebDriver');
     killProcessesByPattern(path.join('src-tauri', 'target', 'debug', 'knurl'));
 
     // Start mock endpoint server (OAuth, GitHub API, and other test endpoints)
@@ -407,13 +414,57 @@ export const config = {
     // Coverage merge and report generation is now handled by a separate post-test process
     // See scripts/aggregate-e2e-coverage.mjs
   },
+
+  onComplete: async () => {
+    // Explicit cleanup when all tests are complete
+    closeProcesses();
+
+    // Clean up ports and lingering processes
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      killProcessesOnPort(1420);
+      killProcessesOnPort(4444);
+      killProcessesOnPort(4445); // WebKitWebDriver
+      killProcessesOnPort(MOCK_ENDPOINT_PORT);
+      killProcessesByPattern('vite');
+      killProcessesByPattern('esbuild');
+      killProcessesByPattern('tauri-driver');
+      killProcessesByPattern('WebKitWebDriver');
+      killProcessesByPattern('knurl');
+    } catch (error) {
+      // Ignore errors during cleanup - processes may already be dead
+      console.log('[cleanup] Completed with expected process-already-dead errors');
+    }
+  },
 };
 
 function closeProcesses() {
   exit = true;
-  tauriDriver?.kill();
-  viteProcess?.kill();
-  mockEndpointProcess?.kill();
+
+  // Kill processes with SIGKILL (-9) for immediate termination
+  if (tauriDriver && !tauriDriver.killed) {
+    try {
+      process.kill(-tauriDriver.pid, 'SIGKILL');
+    } catch (e) {
+      // Process already dead
+    }
+  }
+
+  if (viteProcess && !viteProcess.killed) {
+    try {
+      process.kill(-viteProcess.pid, 'SIGKILL');
+    } catch (e) {
+      // Process already dead
+    }
+  }
+
+  if (mockEndpointProcess && !mockEndpointProcess.killed) {
+    try {
+      process.kill(-mockEndpointProcess.pid, 'SIGKILL');
+    } catch (e) {
+      // Process already dead
+    }
+  }
 }
 
 function buildEnvWithKeyringDefaults(): NodeJS.ProcessEnv {
