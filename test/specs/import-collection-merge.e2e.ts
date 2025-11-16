@@ -35,20 +35,28 @@ describe('Collection Import from OpenAPI', () => {
   })
 
   it('expands sidebar if needed', async () => {
+    console.log(`[TEST] ${new Date().toISOString()} Starting sidebar expansion check`)
     // First, try to expand the sidebar if it's collapsed
     const expandButton = await getElementByTestId('sidebar:expand-button').catch(() => null)
+    console.log(`[TEST] ${new Date().toISOString()} Expand button found: ${!!expandButton}`)
     if (expandButton) {
       await expandButton.click()
+      console.log(`[TEST] ${new Date().toISOString()} Expand button clicked`)
       await browser.pause(300)
+      console.log(`[TEST] ${new Date().toISOString()} Pause complete`)
     }
   })
 
   it('opens import dialog from sidebar button', async () => {
+    console.log(`[TEST] ${new Date().toISOString()} Starting import dialog open`)
     // Click the import button from sidebar
     const importButton = await getElementByTestId('sidebar:import-collection-button')
+    console.log(`[TEST] ${new Date().toISOString()} Import button found`)
     await expect(importButton).toBeTruthy()
     await importButton.click()
+    console.log(`[TEST] ${new Date().toISOString()} Import button clicked`)
     await browser.pause(500)
+    console.log(`[TEST] ${new Date().toISOString()} Dialog pause complete`)
   })
 
   it('pastes OpenAPI content from clipboard and imports', async () => {
