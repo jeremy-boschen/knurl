@@ -84,17 +84,24 @@ ensure Immer-based immutable updates in Zustand slices. Never modify generated S
 
 ## Testing Expectations
 
-Vitest with React Testing Library drives frontend testing; setup lives in `src/test/setup.ts` and mocks Tauri IPC via
-`mockIPC`. Target high coverage on request builder flows, state slices, and bindings; keep tests colocated. Rust code
-uses inline `#[cfg(test)]` modules for units and `src-tauri/tests/` for integration; avoid hitting real network or OS
-services. Coverage goal: 70%+ frontend lines, 90%+ on deterministic Rust helpers.
+### Unit Tests (Vitest + React Testing Library)
+Setup lives in `src/test/setup.ts` and mocks Tauri IPC via `mockIPC`. Mock all external dependencies—filesystem, network, Tauri commands. Test business logic, state mutations, component behavior in isolation. Target 70%+ coverage on frontend lines, 90%+ on deterministic Rust helpers.
 
 Test file naming and co-location:
-
 - For every source file `foo.ts(x)`, all unit tests must live in a single sibling file named `foo.test.ts(x)`.
-- Do not split tests across multiple files per target. For example, all tests for `src/bindings/knurl.ts` must live in
-  `src/bindings/knurl.test.ts` (not `knurl.*.contracts.test.ts`, etc.).
+- Do not split tests across multiple files per target.
 - Co-locate tests next to their target source under `src/`.
+
+### E2E Tests (WebDriver.io)
+**Golden rule:** Only test user-visible behavior via UI interactions. Do NOT access internal state, filesystem, or Tauri commands.
+
+Strict E2E discipline:
+- **Create state** exclusively through UI actions (clicks, form input, navigation). If you can't create a state via the UI, it's not E2E—use unit tests.
+- **Verify outcomes** only by checking what the UI displays (text, element visibility, form values). Never read filesystem, app state, or call Tauri commands.
+- **No plumbing.** Do not access `__vite_ssr_modules__`, call `browser.execute()` to inspect state, or invoke Tauri commands. If behavior can't be verified via the UI, it belongs in a unit test.
+- Use only the shared UI helpers from `test/support/ui.ts`; extend that library instead of hand-rolling selectors.
+
+Rust code uses inline `#[cfg(test)]` modules for units and `src-tauri/tests/` for integration; avoid hitting real network or OS services.
 
 ## Git & PR Practice
 
