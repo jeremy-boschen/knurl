@@ -28,6 +28,8 @@
 - [x] Re-run `yarn vitest run src/components/layout/app-header.test.tsx src/components/layout/app-layout.test.tsx`.
 - [x] Expand pure utility coverage: `src/lib/collections/folder-options.ts` (nested traversal, root handling) to support tree/breadcrumb consumers.
 - [x] Re-run `yarn vitest run src/lib/collections/folder-options.test.ts`.
+- [x] Add focused suite for `src/components/request/request-workspace.tsx` (active tab render vs. empty, hook wiring for save/close actions) using mocked APIs.
+- [x] Re-run `yarn vitest run src/components/request/request-workspace.test.tsx`.
 
 ## Notes
 - Scope limited to unit tests; leave e2e artifacts untouched.
@@ -41,3 +43,4 @@
 - 2025-11-15: Expanded `src/components/layout/breadcrumbs.test.tsx` (request/folder menus, rename/delete flows) and verified via `yarn vitest run src/components/layout/breadcrumbs.test.tsx`.
 - 2025-11-15: Added `src/components/layout/app-header.test.tsx` + `app-layout.test.tsx` (integration scaffolding) and verified via `yarn vitest run src/components/layout/app-header.test.tsx src/components/layout/app-layout.test.tsx`.
 - 2025-11-15: Added `src/lib/collections/folder-options.test.ts` (root + nested folder traversal) and verified via `yarn vitest run src/lib/collections/folder-options.test.ts`.
+- 2025-11-15: Added `src/components/request/request-workspace.test.tsx` (send/save/cancel flows) and verified via `yarn vitest run src/components/request/request-workspace.test.tsx`.
