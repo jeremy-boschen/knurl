@@ -5639,6 +5639,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@wdio/json-reporter@npm:^9.20.0":
+  version: 9.20.0
+  resolution: "@wdio/json-reporter@npm:9.20.0"
+  dependencies:
+    "@wdio/reporter": "npm:9.20.0"
+    "@wdio/types": "npm:9.20.0"
+    safe-regex2: "npm:^5.0.0"
+  checksum: 10c0/0b0e65ac94f7e4031370925e99038b1622809f556a4b94645481dc5f6ad2cd7bde2a7103ad1a576a2f23d6fb7f6bc5e0a6bff12863272e4c58aa6f1b2c360d43
+  languageName: node
+  linkType: hard
+
 "@wdio/local-runner@npm:^9.20.0":
   version: 9.20.0
   resolution: "@wdio/local-runner@npm:9.20.0"
@@ -10790,6 +10801,7 @@ __metadata:
     "@vitest/ui": "npm:^4.0.8"
     "@wdio/cli": "npm:^9.20.0"
     "@wdio/globals": "npm:^9.17.0"
+    "@wdio/json-reporter": "npm:^9.20.0"
     "@wdio/local-runner": "npm:^9.20.0"
     "@wdio/logger": "npm:^9.18.0"
     "@wdio/mocha-framework": "npm:^9.20.0"

@@ -112,7 +112,7 @@ export const config = {
       },
     },
   ],
-  reporters: ['spec'],
+  reporters: ['spec', ['json', { outputDir: './test-results', outputFileFormat: (opts) => `results-${opts.cid}.json` }]],
   framework: 'mocha',
   baseUrl: 'http://localhost:1420',
   mochaOpts: {
