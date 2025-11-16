@@ -92,16 +92,6 @@ export const config = {
   logLevel: 'error',
   specs: ['./test/specs/**/*.ts', './documentation/e2e/**/*.e2e.ts'],
   exclude: runningDocs ? ['./test/specs/**/*.ts'] : ['./documentation/e2e/**/*.e2e.ts'],
-  suites: {
-    docs: ['./documentation/e2e/**/*.e2e.ts'],
-    collections: ['./test/specs/collections-flow.e2e.ts', './test/specs/collections-management.e2e.ts', './test/specs/large-collections.e2e.ts', './test/specs/collection-storage.e2e.ts', './test/specs/collection-merge.e2e.ts'],
-    workspace: ['./test/specs/workspace-restore.e2e.ts', './test/specs/scratch-collection.e2e.ts'],
-    auth: ['./test/specs/oauth-flows.e2e.ts', './test/specs/oauth-ui-flows.e2e.ts', './test/specs/auth-strategies.e2e.ts'],
-    request: ['./test/specs/request-authoring.e2e.ts', './test/specs/response-analysis.e2e.ts', './test/specs/request-network-errors.e2e.ts', './test/specs/variable-interpolation.e2e.ts', './test/specs/multi-tab-edits.e2e.ts', './test/specs/large-payloads.e2e.ts', './test/specs/request-cancellation.e2e.ts'],
-    ui: ['./test/specs/ui-library.e2e.ts'],
-    launch: ['./test/specs/launch-hydration.e2e.ts', './test/specs/app.e2e.ts'],
-    env: ['./test/specs/environment-management.e2e.ts'],
-  },
   maxInstances: 1,
   capabilities: [
     {
