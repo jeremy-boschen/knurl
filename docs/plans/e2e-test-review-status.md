@@ -14,9 +14,9 @@ Format:
 ### Collection Tests
 
 - [ ] `collection-encryption.e2e.ts` - **Needs Integration** - Uses backend file access for verification
-- [ ] `collection-merge.e2e.ts` - **In Review** - Uses analyze_merge bridge method
+- [ ] `collection-merge.e2e.ts` - **Needs Integration** - Uses analyze_merge bridge method
 - [ ] `collection-storage.e2e.ts` - **Needs Integration** - Uses get_collection bridge method to read disk state
-- [ ] `large-collections.e2e.ts` - **In Review** - Uses create_collection bridge method
+- [x] `large-collections.e2e.ts` - **Refactored** - Converted to pure E2E with UI loops
 - [ ] `collections-flow.e2e.ts` - **Not Started**
 - [ ] `collections-management.e2e.ts` - **Not Started**
 
@@ -58,10 +58,10 @@ Format:
 
 **Total Tests:** 24
 **Not Started:** 20
-**In Review:** 2
+**In Review:** 0
 **Needs Refactor:** 0
-**Needs Integration:** 2
+**Needs Integration:** 3
 **Needs Unit:** 0
-**Refactored:** 0
+**Refactored:** 1
 **Deleted:** 0
 
