@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { AlertTriangleIcon, GitMergeIcon, UploadIcon, RotateCcwIcon } from "lucide-react"
+import { readText } from "@tauri-apps/plugin-clipboard-manager"
 
 import { openFile } from "@/bindings/knurl"
 import { CodeEditor } from "@/components/editor/code-editor"
@@ -131,7 +132,7 @@ export default function ImportCollectionSheet() {
   const handlePasteFromClipboard = async () => {
     try {
       setStatus(null)
-      const text = await navigator.clipboard.readText()
+      const text = await readText()
       setImportData(text)
     } catch (err) {
       setStatus({ kind: "error", message: (err as Error)?.message ?? "Could not access clipboard." })

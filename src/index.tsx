@@ -11,6 +11,11 @@ import { getStartupState, setStartupState } from "@/lib/startup-state"
 import { loadApplication } from "@/state"
 import { asSuspense } from "@/state/utils"
 
+// Load E2E bridge for testing (dev/test builds only)
+if (import.meta.env.DEV) {
+  await import("./test/e2e-bridge")
+}
+
 // This must be the first thing to run to ensure Immer is configured
 // before any other module that might use it is imported.
 enablePatches()

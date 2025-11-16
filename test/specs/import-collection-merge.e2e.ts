@@ -1,11 +1,15 @@
 /**
  * E2E Test: Collection Import from OpenAPI
  *
- * Tests that importing a collection from an OpenAPI spec works end-to-end:
- * 1. Expand the sidebar
- * 2. Click import button to open import sheet
- * 3. Load OpenAPI content into the editor
- * 4. Verify collection is created with requests
+ * Tests the collection import UI and functionality.
+ *
+ * LIMITATION: WebDriver sandboxing prevents clipboard access and Tauri API access.
+ * Therefore, this test validates the import UI is accessible and properly structured,
+ * but cannot test the full clipboard paste flow. Paste functionality must be tested manually.
+ *
+ * What this test validates:
+ * - Import dialog opens from sidebar
+ * - Import sheet UI is properly rendered
  */
 
 import { expect } from '@wdio/globals'
@@ -15,14 +19,13 @@ import { ensureWorkspaceReady, getElementByTestId } from '../support/ui'
 
 describe('Collection Import from OpenAPI', () => {
   const state = {
-    collectionName: `Test Todo API ${Date.now()}`,
     fileContent: '',
   }
 
   before(async () => {
     await ensureWorkspaceReady()
 
-    // Read the OpenAPI fixture file
+    // Read the OpenAPI fixture file for reference
     // The test runs from project root, so path is relative to that
     const fixturePath = './test/fixtures/sample-api.openapi.json'
     if (!fs.existsSync(fixturePath)) {
@@ -31,66 +34,82 @@ describe('Collection Import from OpenAPI', () => {
     state.fileContent = fs.readFileSync(fixturePath, 'utf-8')
   })
 
-  it('expands sidebar and opens import sheet', async () => {
+  it('expands sidebar if needed', async () => {
     // First, try to expand the sidebar if it's collapsed
     const expandButton = await getElementByTestId('sidebar:expand-button').catch(() => null)
     if (expandButton) {
       await expandButton.click()
       await browser.pause(300)
     }
-
-    // Click the import button from sidebar
-    let importButton = await getElementByTestId('sidebar:import-collection-button').catch(() => null)
-    await expect(importButton).toBeTruthy()
-    if (importButton) {
-      await importButton.click()
-      await browser.pause(500)
-    }
   })
 
-  it('pastes OpenAPI content using paste button', async () => {
-    // Write to system clipboard using a method that works with Tauri
-    await browser.execute((content: string) => {
-      // Create a temporary textarea to copy from
-      const textarea = document.createElement('textarea')
-      textarea.value = content
-      textarea.style.position = 'fixed'
-      textarea.style.opacity = '0'
-      document.body.appendChild(textarea)
-      textarea.select()
+  it('opens import dialog from sidebar button', async () => {
+    // Click the import button from sidebar
+    const importButton = await getElementByTestId('sidebar:import-collection-button')
+    await expect(importButton).toBeTruthy()
+    await importButton.click()
+    await browser.pause(500)
+  })
 
-      // Use execCommand to copy to clipboard (old API but more compatible)
+  it('pastes OpenAPI content from clipboard and imports', async () => {
+    console.log('[TEST] Starting clipboard paste test')
+    const t0 = Date.now()
+
+    // Set clipboard content using the E2E bridge
+    const clipboardSet = await browser.execute(async (content: string) => {
       try {
-        const successful = document.execCommand('copy')
-        if (!successful) {
-          console.warn('Copy command was unsuccessful')
+        const bridge = (window as any).__E2E_BRIDGE__
+        if (!bridge || !bridge.writeClipboard) {
+          console.error('[TEST] E2E bridge not available')
+          return false
         }
-      } catch (err) {
-        console.warn('Could not copy to clipboard:', err)
-      }
 
-      document.body.removeChild(textarea)
+        await bridge.writeClipboard(content)
+        console.log('[TEST] Clipboard content set via E2E bridge')
+        return true
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err)
+        console.error('[TEST] Failed to set clipboard:', errorMsg)
+        return false
+      }
     }, state.fileContent)
 
-    // Click the paste button - this should now work since we wrote to system clipboard
+    console.log(`[TEST] Clipboard set: ${clipboardSet} (+${Date.now() - t0}ms)`)
+    await expect(clipboardSet).toBe(true)
+
+    // Click the paste button
     const pasteButton = await getElementByTestId('import-source:paste-button')
+    await expect(pasteButton).toBeTruthy()
+    console.log(`[TEST] Paste button found (+${Date.now() - t0}ms)`)
+
     await pasteButton.click()
-    await browser.pause(1000) // Wait for content to be pasted and parsed
+    console.log(`[TEST] Paste button clicked (+${Date.now() - t0}ms)`)
 
-    // Verify content was loaded by checking if the preview shows requests
-    const previewTab = await getElementByTestId('import-collection:tab-preview').catch(() => null)
-    if (previewTab) {
-      await previewTab.click()
-      await browser.pause(300)
+    // Wait for the import to parse and preview to render
+    await browser.waitUntil(
+      async () => {
+        return await browser.execute(() => {
+          // Check if the preview step loaded (indicates successful parse)
+          const previewCheckbox = document.querySelector('[data-test-id="import-preview:requests-master-checkbox"]')
+          return !!previewCheckbox
+        })
+      },
+      { timeout: 10000 },
+    )
+    console.log(`[TEST] Import preview loaded (+${Date.now() - t0}ms)`)
 
-      // Check if any request rows appear in the preview
-      const requestCheckboxes = await browser.$$('[data-test-id^="import-preview:request-checkbox:"]')
-      console.log(`Found ${requestCheckboxes.length} requests in preview`)
-    }
+    // Verify the import preview is showing
+    const previewLoaded = await browser.execute(() => {
+      const previewCheckbox = document.querySelector('[data-test-id="import-preview:requests-master-checkbox"]')
+      return !!previewCheckbox
+    })
+
+    console.log(`[TEST] Preview loaded: ${previewLoaded} (+${Date.now() - t0}ms)`)
+    await expect(previewLoaded).toBe(true)
   })
 
-  it('verifies app is responsive after import', async () => {
-    // Verify the app is still responsive
+  it('verifies app is responsive', async () => {
+    // Verify the app is still responsive after opening import dialog
     const title = await browser.getTitle()
     await expect(title).toMatch(/KNURL|Knurl/)
   })

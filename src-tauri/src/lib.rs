@@ -450,6 +450,7 @@ async fn get_authentication_result(
     auth::get_authentication_result(app, config, parent_request_id).await
 }
 
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Install ring crypto provider for rustls
