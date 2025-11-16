@@ -494,26 +494,16 @@ function resolveNativeDriverPath(): string | null {
     return override;
   }
 
-  let candidate: string | null = null;
-
-  if (process.platform === 'win32') {
-    candidate = locateExecutable('msedgedriver.exe');
-  } else if (process.platform === 'darwin') {
-    candidate = locateExecutable('WebKitWebDriver');
-  } else {
-    // Linux: try chromedriver first, then WebKitWebDriver
-    candidate = locateExecutable('chromedriver');
-    if (!candidate) {
-      candidate = locateExecutable('WebKitWebDriver');
-    }
-  }
+  const candidate =
+    process.platform === 'win32'
+      ? locateExecutable('msedgedriver.exe')
+      : locateExecutable('WebKitWebDriver');
 
   if (candidate) {
     return candidate;
   }
 
-  // Fallback paths
-  if (process.platform === 'darwin') {
+  if (process.platform !== 'win32') {
     const fallback = '/usr/bin/WebKitWebDriver';
     if (existsSync(fallback)) {
       return fallback;
