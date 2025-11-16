@@ -14,6 +14,15 @@ const DEFAULT_WAIT_CONFIG = {
 }
 
 /**
+ * Log timestamp for test step timing analysis
+ * Usage: await logTestTime("Step description")
+ */
+export async function logTestTime(step: string): Promise<void> {
+  const timestamp = new Date().toISOString()
+  console.log(`[TEST-TIME] ${timestamp} ${step}`)
+}
+
+/**
  * Wait for the app to be fully loaded and interactive
  */
 async function waitForAppReady(timeout = DEFAULT_TIMEOUT): Promise<void> {
