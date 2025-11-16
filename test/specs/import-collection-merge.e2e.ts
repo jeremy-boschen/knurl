@@ -46,8 +46,6 @@ describe('Collection Import from OpenAPI', () => {
     if (expandButton) {
       await expandButton.click()
       console.log(`[TEST] ${new Date().toISOString()} Expand button clicked`)
-      await browser.pause(300)
-      console.log(`[TEST] ${new Date().toISOString()} Pause complete`)
     }
   })
 
@@ -59,8 +57,6 @@ describe('Collection Import from OpenAPI', () => {
     await expect(importButton).toBeTruthy()
     await importButton.click()
     console.log(`[TEST] ${new Date().toISOString()} Import button clicked`)
-    await browser.pause(500)
-    console.log(`[TEST] ${new Date().toISOString()} Dialog pause complete`)
   })
 
   it('pastes OpenAPI content from clipboard and imports', async () => {
@@ -105,7 +101,7 @@ describe('Collection Import from OpenAPI', () => {
           return !!previewCheckbox
         })
       },
-      { timeout: 10000 },
+      { timeout: 10000, interval: 50 },
     )
     console.log(`[TEST] ${new Date().toISOString()} Import preview loaded`)
 

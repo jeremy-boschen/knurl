@@ -27,9 +27,37 @@ export const e2eBridge = {
   async readClipboard(): Promise<string> {
     return await readText()
   },
+
+  /**
+   * Prepare app for test reset by disabling auto-save and clearing transient state
+   * This should be called before a page reload to ensure a clean slate
+   */
+  async prepareForReset(): Promise<void> {
+    if (typeof window === "undefined") {
+      return
+    }
+
+    // Access the Zustand store directly to disable auto-save
+    try {
+      const { useApplication } = await import("@/state")
+      // Disable auto-save by setting interval to 0
+      useApplication.getState().settingsState.requests.autoSave = 0
+    } catch (err) {
+      console.warn("[E2E-BRIDGE] Failed to disable auto-save:", err)
+    }
+  },
 }
 
 // Expose to window for E2E tests
 if (typeof window !== "undefined") {
   ;(window as any).__E2E_BRIDGE__ = e2eBridge
+
+  // Add global keyboard handler for manual readiness checking during tests
+  // Press 'M' to log a manual readiness marker with timestamp
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "m" || event.key === "M") {
+      const timestamp = new Date().toISOString()
+      console.log(`[E2E-MANUAL] ${timestamp} UI appears ready (manually marked)`)
+    }
+  })
 }

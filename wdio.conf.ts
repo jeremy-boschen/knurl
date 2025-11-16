@@ -331,6 +331,18 @@ export const config = {
     const configDir = mkdtempSync(path.join(tmpdir(), 'knurl-e2e-config-'));
     configDirsByCapability.set(process.pid, configDir);
 
+    // Copy test settings fixture to disable auto-save during tests
+    try {
+      const { copyFileSync } = await import('fs');
+      const fixtureSettingsPath = path.join(__dirname, 'test', 'fixtures', 'settings.json');
+      const configSettingsPath = path.join(configDir, 'settings.json');
+      if (existsSync(fixtureSettingsPath)) {
+        copyFileSync(fixtureSettingsPath, configSettingsPath);
+      }
+    } catch (error) {
+      console.warn('[beforeSession] Failed to copy settings fixture:', error);
+    }
+
     // Set the config dir in the capability's tauri options
     if (capabilities && typeof capabilities === 'object' && 'tauri:options' in capabilities) {
       const tauriOptions = capabilities['tauri:options'];

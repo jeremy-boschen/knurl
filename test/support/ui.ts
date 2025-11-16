@@ -4,6 +4,16 @@ const DEFAULT_TIMEOUT = 15000
 const ESCAPE_KEY = "Escape"
 
 /**
+ * Default timing configuration for waitFor operations:
+ * - initialDelay: time to wait before starting to poll (allows UI to render)
+ * - pollingInterval: how frequently to check once polling starts (tight but not excessive)
+ */
+const DEFAULT_WAIT_CONFIG = {
+  initialDelay: 0,
+  pollingInterval: 50,
+}
+
+/**
  * Wait for the app to be fully loaded and interactive
  */
 async function waitForAppReady(timeout = DEFAULT_TIMEOUT): Promise<void> {
@@ -48,10 +58,21 @@ async function withFallbackClick(element: WebdriverIO.Element): Promise<void> {
   }, element)
 }
 
-export async function getElementByTestId(testId: string, timeout = DEFAULT_TIMEOUT): Promise<WebdriverIO.Element> {
+export async function getElementByTestId(
+  testId: string,
+  timeout = DEFAULT_TIMEOUT,
+  options?: { initialDelay?: number; pollingInterval?: number },
+): Promise<WebdriverIO.Element> {
+  const initialDelay = options?.initialDelay ?? DEFAULT_WAIT_CONFIG.initialDelay
+  const pollingInterval = options?.pollingInterval ?? DEFAULT_WAIT_CONFIG.pollingInterval
+
+  if (initialDelay > 0) {
+    await browser.pause(initialDelay)
+  }
+
   const locator = `[data-test-id="${testId}"]`
   const element = await $(locator)
-  await element.waitForExist({ timeout })
+  await element.waitForExist({ timeout, interval: pollingInterval })
   return element
 }
 
@@ -132,14 +153,7 @@ export async function resetOverlays(attempts = 2): Promise<void> {
 export async function ensureWorkspaceReady(): Promise<void> {
   await ensureAppReady()
 
-  const currentPath = await browser.execute(() => window.location.pathname)
-  if (currentPath !== "/") {
-    await navigateTo("/")
-    await ensureAppReady()
-  }
-
-  await resetOverlays()
-
+  // Ensure the UI is fully ready with new request controls available
   await browser.waitUntil(
     async () => {
       const titleButton = await $('[data-test-id="titlebar:new-request-button"]')
@@ -170,6 +184,28 @@ export async function ensureWorkspaceReady(): Promise<void> {
       timeoutMsg: "Workspace UI did not expose new request controls",
     },
   )
+}
+
+export async function resetAppState(): Promise<void> {
+  console.log(`[TEST] ${new Date().toISOString()} Resetting app state via page reload`)
+
+  // Prepare the app for reset (disable auto-save, etc)
+  try {
+    const bridge = await browser.execute(() => (window as any).__E2E_BRIDGE__)
+    if (bridge && typeof bridge === "object") {
+      // Note: we can't actually call the bridge method here because browser.execute returns serialized data
+      // Instead, we'll just reload and the app will start fresh
+    }
+  } catch {
+    // Continue with reset even if bridge prep fails
+  }
+
+  // Reload the page to get a clean slate
+  await browser.keys(["Control", "r"])
+
+  // Wait for the app to be ready again after reload
+  await ensureWorkspaceReady()
+  console.log(`[TEST] ${new Date().toISOString()} App state reset complete`)
 }
 
 export async function setInputText(testId: string, value: string): Promise<void> {

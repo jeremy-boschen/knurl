@@ -1,0 +1,17 @@
+{
+  "appearance": {
+    "fontSize": 13,
+    "autoHighlight": true,
+    "theme": "dark",
+    "themeSource": "default"
+  },
+  "requests": {
+    "autoSave": 0,
+    "timeout": 30,
+    "maxRedirects": 5,
+    "disableSsl": false
+  },
+  "advanced": {
+    "devMode": false
+  }
+}
