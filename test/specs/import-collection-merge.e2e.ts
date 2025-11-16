@@ -52,38 +52,37 @@ describe('Collection Import from OpenAPI', () => {
   })
 
   it('pastes OpenAPI content from clipboard and imports', async () => {
-    console.log('[TEST] Starting clipboard paste test')
-    const t0 = Date.now()
+    console.log(`[TEST] ${new Date().toISOString()} Starting clipboard paste test`)
 
     // Set clipboard content using the E2E bridge
     const clipboardSet = await browser.execute(async (content: string) => {
       try {
         const bridge = (window as any).__E2E_BRIDGE__
         if (!bridge || !bridge.writeClipboard) {
-          console.error('[TEST] E2E bridge not available')
+          console.error(`[TEST] ${new Date().toISOString()} E2E bridge not available`)
           return false
         }
 
         await bridge.writeClipboard(content)
-        console.log('[TEST] Clipboard content set via E2E bridge')
+        console.log(`[TEST] ${new Date().toISOString()} Clipboard content set via E2E bridge`)
         return true
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err)
-        console.error('[TEST] Failed to set clipboard:', errorMsg)
+        console.error(`[TEST] ${new Date().toISOString()} Failed to set clipboard: ${errorMsg}`)
         return false
       }
     }, state.fileContent)
 
-    console.log(`[TEST] Clipboard set: ${clipboardSet} (+${Date.now() - t0}ms)`)
+    console.log(`[TEST] ${new Date().toISOString()} Clipboard set: ${clipboardSet}`)
     await expect(clipboardSet).toBe(true)
 
     // Click the paste button
     const pasteButton = await getElementByTestId('import-source:paste-button')
     await expect(pasteButton).toBeTruthy()
-    console.log(`[TEST] Paste button found (+${Date.now() - t0}ms)`)
+    console.log(`[TEST] ${new Date().toISOString()} Paste button found`)
 
     await pasteButton.click()
-    console.log(`[TEST] Paste button clicked (+${Date.now() - t0}ms)`)
+    console.log(`[TEST] ${new Date().toISOString()} Paste button clicked`)
 
     // Wait for the import to parse and preview to render
     await browser.waitUntil(
@@ -96,7 +95,7 @@ describe('Collection Import from OpenAPI', () => {
       },
       { timeout: 10000 },
     )
-    console.log(`[TEST] Import preview loaded (+${Date.now() - t0}ms)`)
+    console.log(`[TEST] ${new Date().toISOString()} Import preview loaded`)
 
     // Verify the import preview is showing
     const previewLoaded = await browser.execute(() => {
@@ -104,7 +103,7 @@ describe('Collection Import from OpenAPI', () => {
       return !!previewCheckbox
     })
 
-    console.log(`[TEST] Preview loaded: ${previewLoaded} (+${Date.now() - t0}ms)`)
+    console.log(`[TEST] ${new Date().toISOString()} Preview loaded: ${previewLoaded}`)
     await expect(previewLoaded).toBe(true)
   })
 

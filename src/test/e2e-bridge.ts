@@ -8,7 +8,7 @@
  * This is ONLY loaded during E2E tests, never in production.
  */
 
-import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager'
+import { writeText, readText } from "@tauri-apps/plugin-clipboard-manager"
 
 /**
  * E2E bridge functions exposed to the window for test access
@@ -30,6 +30,6 @@ export const e2eBridge = {
 }
 
 // Expose to window for E2E tests
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   ;(window as any).__E2E_BRIDGE__ = e2eBridge
 }
