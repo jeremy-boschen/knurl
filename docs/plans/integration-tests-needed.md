@@ -22,31 +22,45 @@ Tests that require **integration testing** (WebDriver.io + backend access) becau
 - **Status:** Pending approval
 
 ### collection-merge.e2e.ts
-- **Current Test:** Uses `analyze_merge` bridge method
-- **Rationale:** Collection merge analysis computes diff/conflict data. If this is a pure UI mock or display operation, it's E2E. If it requires backend computation that can't be seen in the UI, it's integration.
-- **Suggested Design:** Review what `analyze_merge` actually does. If it's backend-only logic, move to integration. If it's just displaying pre-computed data, move to E2E.
-- **Status:** Pending review
+- **Current Test:** Uses `analyze_merge`, `apply_merge`, `get_collection` bridge methods
+- **Rationale:** Collection merge is a complex feature involving backend computation (conflict detection, diff analysis). Tests create state via backend (`create_collection`, `get_collection`, `apply_merge`) instead of UI.
+- **Classification:** **Should be Integration Test**
+  - Setup: Create collections via UI
+  - Operations: Perform merge via UI (import bundle dialog)
+  - Verification: Read collections from disk via `callBridgeReplacement` to verify merge operations succeeded
+- **Note:** Tests currently all wrapped in try-catch because backend methods don't exist yet. Merge feature itself may still be in design phase.
+- **Status:** Pending design/approval
 
 ### collection-storage.e2e.ts
-- **Current Test:** Uses `get_collection` bridge method to read persisted state
-- **Rationale:** Testing data persistence across operations requires reading from disk to verify the collection structure is correctly saved. This isn't visible via UI alone.
+- **Current Test:** Uses `create_collection`, `get_collection`, `update_collection` bridge methods
+- **Rationale:** Uses backend to create and retrieve collections instead of UI. But fundamental tests ("collection appears in UI after creation") are actually E2E-capable.
+- **Classification:** **MIXED - Needs Split**
+  - **E2E tests:** "persists collection data after creation" - can use UI helpers to create
+  - **Integration tests:** "maintains data integrity across operations" - needs backend verification to ensure on-disk state
 - **Suggested Design:**
-  - Setup: Perform collection operations via UI (create, edit requests, etc.)
-  - Verification: Read collection file from disk, verify structure matches expected state
-  - Verify across operations: modify via UI, read disk, verify changes persisted
+  - E2E: Create collection via UI, verify it appears in sidebar
+  - Integration: Create/modify via UI, read disk to verify persistence
 - **Status:** Pending approval
 
 ### large-collections.e2e.ts
-- **Current Test:** Uses `create_collection` bridge method
-- **Rationale:** Performance behavior (loading large collections) might need backend setup to create consistent test data. But this might be E2E if we can create large collections via UI interactions.
-- **Suggested Design:** Review if large collections can be created via UI. If performance is the focus, this is E2E (measure UI responsiveness). If we need specific backend state that's hard to build via UI, move to integration.
-- **Status:** Pending review
+- **Current Test:** Uses `create_collection`, `get_all_collections` bridge methods
+- **Rationale:** Performance test creating 50 collections via backend shortcut. Performance testing is E2E-worthy (measuring UI responsiveness), but setup should be via UI.
+- **Classification:** **Should be E2E**
+  - This is fundamentally a performance/responsiveness test
+  - Can create large collections via rapid UI interactions (looped clicks)
+  - Verify scrolling, searching, opening collections from large list
+  - Measures time to create collections as metric (acceptable via UI)
+- **Suggested Design:**
+  - Loop: Click new collection button, enter name, save (50x)
+  - Measure: Time to create collections
+  - Verify: Sidebar renders, scrolling works, search filters, collections open quickly
+- **Status:** Pending approval for E2E refactor
 
 ---
 
 ## Approval Status
-- [ ] collection-encryption.e2e.ts - Awaiting approval
-- [ ] collection-merge.e2e.ts - Awaiting review
-- [ ] collection-storage.e2e.ts - Awaiting approval
-- [ ] large-collections.e2e.ts - Awaiting review
+- [ ] collection-encryption.e2e.ts - Awaiting approval (Integration test candidate)
+- [ ] collection-merge.e2e.ts - Awaiting approval (Integration test, depends on merge feature design)
+- [ ] collection-storage.e2e.ts - Awaiting approval (Mix of E2E + Integration)
+- [x] large-collections.e2e.ts - Refactor to pure E2E (use UI loops for setup)
 
