@@ -30,6 +30,12 @@
 - [x] Re-run `yarn vitest run src/lib/collections/folder-options.test.ts`.
 - [x] Add focused suite for `src/components/request/request-workspace.tsx` (active tab render vs. empty, hook wiring for save/close actions) using mocked APIs.
 - [x] Re-run `yarn vitest run src/components/request/request-workspace.test.tsx`.
+- [x] Cover `src/components/response/response-viewer.tsx` (tab rendering, save/export controls, file shortcuts) with mocked hooks + tauri APIs.
+- [x] Re-run `yarn vitest run src/components/response/response-viewer.test.tsx`.
+- [x] Add tests for `src/components/utility-sheets/import-collection/use-import-actions.ts` (filtering, import/overwrite/merge statuses).
+- [x] Add tests for `src/components/utility-sheets/import-collection/use-selection-manager.ts` (selection toggles, select-all logic).
+- [x] Add tests for `src/lib/request/prepared-http.ts` + `src/lib/request/exporters.ts` (URL/header/body prep + exporting formats) with mock auth results.
+- [x] Add tests for `src/components/response/components/logs-list.tsx` (level filtering UI, counts).
 
 ## Notes
 - Scope limited to unit tests; leave e2e artifacts untouched.
@@ -44,3 +50,7 @@
 - 2025-11-15: Added `src/components/layout/app-header.test.tsx` + `app-layout.test.tsx` (integration scaffolding) and verified via `yarn vitest run src/components/layout/app-header.test.tsx src/components/layout/app-layout.test.tsx`.
 - 2025-11-15: Added `src/lib/collections/folder-options.test.ts` (root + nested folder traversal) and verified via `yarn vitest run src/lib/collections/folder-options.test.ts`.
 - 2025-11-15: Added `src/components/request/request-workspace.test.tsx` (send/save/cancel flows) and verified via `yarn vitest run src/components/request/request-workspace.test.tsx`.
+- 2025-11-15: Added `src/components/response/response-viewer.test.tsx` (tabs + save/copy/file actions) and verified via `yarn vitest run src/components/response/response-viewer.test.tsx`.
+- 2025-11-15: Added `src/lib/request/prepared-http.test.ts` + `src/lib/request/exporters.test.ts` (HTTP prep + CLI exports) and verified via `yarn vitest run src/lib/request/prepared-http.test.ts src/lib/request/exporters.test.ts`.
+- 2025-11-15: Added `src/components/utility-sheets/import-collection/use-import-actions.test.ts` & `use-selection-manager.test.ts` (filtering + selection toggles) and verified via `yarn vitest run src/components/utility-sheets/import-collection/use-import-actions.test.ts src/components/utility-sheets/import-collection/use-selection-manager.test.ts`.
+- 2025-11-15: Added `src/components/response/components/logs-list.test.tsx` (level filters + controls) and verified via `yarn vitest run src/components/response/components/logs-list.test.tsx`.

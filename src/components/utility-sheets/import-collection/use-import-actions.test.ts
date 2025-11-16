@@ -103,6 +103,39 @@ describe("useImportActions", () => {
     expect(result.current.status?.message).toContain('Imported "Workspace Copy" with 1 requests and 1 environments.')
   })
 
+  it("retains ancestor folders when nested requests are selected", () => {
+    const parentFolder = createFolderFixture({ id: "folder-parent", parentId: RootCollectionFolderId })
+    const childFolder = createFolderFixture({ id: "folder-child", parentId: parentFolder.id, requestIds: ["req-nested"] })
+    const nestedRequest = createRequestFixture({ id: "req-nested", folderId: childFolder.id })
+
+    const payload = createExportedCollectionFixture({
+      requests: { [nestedRequest.id]: nestedRequest },
+      folders: {
+        [RootCollectionFolderId]: createFolderFixture({ id: RootCollectionFolderId, parentId: null, childFolderIds: [parentFolder.id] }),
+        [parentFolder.id]: { ...parentFolder, childFolderIds: [childFolder.id] },
+        [childFolder.id]: childFolder,
+      },
+    })
+
+    mockCollectionsApi.importCollection.mockReturnValue({
+      name: "Nested",
+      requests: { [nestedRequest.id]: nestedRequest },
+      environments: {},
+    })
+
+    const { result } = renderHook(() => useImportActions(payload, new Set([nestedRequest.id]), new Set()))
+
+    act(() => {
+      result.current.handleImport("Nested")
+    })
+
+    const [filtered] = mockCollectionsApi.importCollection.mock.calls.at(-1) ?? []
+    const folderIds = new Set(Object.keys(filtered.collection?.folders ?? {}))
+    expect(folderIds).toEqual(
+      new Set([RootCollectionFolderId, "folder-parent", "folder-child"]),
+    )
+  })
+
   it("reports an error when trying to import without a collection", () => {
     const { result } = renderHook(() => useImportActions(null, new Set(), new Set()))
 

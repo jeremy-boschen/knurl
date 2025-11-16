@@ -114,4 +114,20 @@ describe("useSelectionManager", () => {
     expect(result.current.reqMasterState).toBe(false)
     expect(result.current.envMasterState).toBe(false)
   })
+
+  it("handles collections without requests or environments", () => {
+    const emptyCollection = createExportedCollectionFixture({ requests: {}, environments: {} })
+    const { result } = renderHook(() => useSelectionManager(emptyCollection))
+
+    expect(result.current.reqMasterState).toBe(false)
+    expect(result.current.envMasterState).toBe(false)
+
+    act(() => {
+      result.current.toggleAllRequests(true)
+      result.current.toggleAllEnvironments(true)
+    })
+
+    expect(result.current.selectedRequests.size).toBe(0)
+    expect(result.current.selectedEnvironments.size).toBe(0)
+  })
 })
