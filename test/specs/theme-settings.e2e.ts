@@ -9,6 +9,17 @@ describe("Theme Settings", () => {
   })
 
   it("switches preset theme in appearance settings", async () => {
+    // Ensure sidebar is expanded
+    const sidebar = await $('[data-test-id="sidebar"]')
+    await sidebar.waitForDisplayed({ timeout: 5000 })
+
+    // Check if sidebar is collapsed, expand if needed
+    const expandButton = await $('[data-test-id="sidebar:expand-button"]')
+    if (await expandButton.isDisplayed()) {
+      await expandButton.click()
+      await browser.pause(300)
+    }
+
     // Open settings
     const settingsButton = await $('[data-test-id="sidebar:settings-button"]')
     await settingsButton.waitForDisplayed({ timeout: 5000 })
