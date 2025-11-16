@@ -1,7 +1,18 @@
+/**
+ * Integration Test: Tests Tauri backend command routing and file system access
+ *
+ * This test verifies Tauri command execution, file I/O operations, and
+ * authentication processing via the backend. These are cross-layer behaviors
+ * that require direct backend access through bridge-replacement for verification,
+ * as the implementation details are not exposed through the normal UI.
+ *
+ * See CLAUDE.md for integration test approval criteria.
+ */
+
 import { expect } from "@wdio/globals"
 
-import { callBridgeReplacement } from "../support/bridge-replacement"
-import { ensureWorkspaceReady } from "../support/ui"
+import { callBridgeReplacement } from "../../support/bridge-replacement"
+import { ensureWorkspaceReady } from "../../support/ui"
 
 describe("Tauri Backend Integration & Desktop Features", () => {
   before(async () => {

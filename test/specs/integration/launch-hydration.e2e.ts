@@ -1,9 +1,21 @@
+/**
+ * Integration Test: Tests state persistence and reload recovery
+ *
+ * This test verifies cross-layer behavior: that collections are correctly
+ * persisted to disk and restored when the application starts. This requires
+ * backend verification via file I/O and Tauri app data access, which is not
+ * exposed through the normal UI. Therefore, bridge-replacement access is
+ * justified for state verification.
+ *
+ * See CLAUDE.md for integration test approval criteria.
+ */
+
 import { expect } from "@wdio/globals"
 
-import { callBridgeReplacement } from "../support/bridge-replacement"
-import { ensureWorkspaceReady, getElementByTestId, openNewRequestViaUI, resetOverlays } from "../support/ui"
-import { waitForRequestEditor } from "../support/request"
-import { resetCollectionsState, seedCollectionWithOpenRequest } from "../support/state"
+import { callBridgeReplacement } from "../../support/bridge-replacement"
+import { ensureWorkspaceReady, getElementByTestId, openNewRequestViaUI, resetOverlays } from "../../support/ui"
+import { waitForRequestEditor } from "../../support/request"
+import { resetCollectionsState, seedCollectionWithOpenRequest } from "../../support/state"
 
 type WorkspaceSnapshot = Awaited<ReturnType<typeof callBridgeReplacement>>
 

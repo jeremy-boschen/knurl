@@ -1,8 +1,20 @@
+/**
+ * Integration Test: Tests workspace state persistence and restoration
+ *
+ * This test verifies cross-layer behavior: that the workspace state (open tabs,
+ * selected environment, etc.) is correctly persisted to disk and restored when
+ * the application restarts. This requires backend verification of file I/O and
+ * Tauri app data, which is not exposed through the normal UI. Therefore,
+ * bridge-replacement access is justified for state verification.
+ *
+ * See CLAUDE.md for integration test approval criteria.
+ */
+
 import { expect } from "@wdio/globals"
 
-import { callBridgeReplacement } from "../support/bridge-replacement"
-import { waitForActiveRequestTab, waitForRequestEditor } from "../support/request"
-import { createCollection } from "../support/collections"
+import { callBridgeReplacement } from "../../support/bridge-replacement"
+import { waitForActiveRequestTab, waitForRequestEditor } from "../../support/request"
+import { createCollection } from "../../support/collections"
 import {
   clickByTestId,
   ensureAppReady,
@@ -12,7 +24,7 @@ import {
   openNewRequestViaUI,
   selectOptionByTestId,
   setInputText,
-} from "../support/ui"
+} from "../../support/ui"
 
 type WorkspaceSnapshot = Awaited<ReturnType<typeof callBridgeReplacement>>
 type WorkspaceTab = WorkspaceSnapshot["openTabs"][number]
