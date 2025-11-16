@@ -96,10 +96,29 @@ Test file naming and co-location:
 **Golden rule:** Only test user-visible behavior via UI interactions. Do NOT access internal state, filesystem, or Tauri commands.
 
 Strict E2E discipline:
-- **Create state** exclusively through UI actions (clicks, form input, navigation). If you can't create a state via the UI, it's not E2E—use unit tests.
+- **Create state** exclusively through UI actions (clicks, form input, navigation). If you can't create a state via the UI, it's not E2E—use unit tests or integration tests.
 - **Verify outcomes** only by checking what the UI displays (text, element visibility, form values). Never read filesystem, app state, or call Tauri commands.
-- **No plumbing.** Do not access `__vite_ssr_modules__`, call `browser.execute()` to inspect state, or invoke Tauri commands. If behavior can't be verified via the UI, it belongs in a unit test.
+- **No plumbing.** Do not access `__vite_ssr_modules__`, call `browser.execute()` to inspect state, or invoke Tauri commands. If behavior can't be verified via the UI, it belongs in a unit test or integration test.
 - Use only the shared UI helpers from `test/support/ui.ts`; extend that library instead of hand-rolling selectors.
+
+### Integration Tests (WebDriver.io + Backend Access)
+**Purpose:** Verify cross-layer behavior that cannot be tested via UI alone. Examples: encryption at rest, file persistence, backend state synchronization, keyring integration.
+
+**Requirements:**
+- **Coordination required.** Do NOT write integration tests without explicit discussion and approval. Poor integration test design is a common source of maintenance burden.
+- **Clear justification.** Document why this behavior cannot be tested via E2E (UI) or unit tests.
+- **Minimal plumbing.** Use `callBridgeReplacement` helpers and filesystem utilities from `test/support/` to access backend state. Access state only for **verification**, not setup.
+- **Setup via UI.** Create test conditions through UI interactions where possible. Use backend access only to verify outcomes that the UI doesn't expose.
+- **Location:** Store in `test/specs/integration/` to distinguish from pure E2E tests.
+
+Example use cases:
+- Verifying encrypted data is properly stored on disk with expected format/keys
+- Testing Tauri backend command behavior with real filesystem
+- Validating state persistence across app restarts
+
+Example non-use-cases:
+- Creating collections via backend to avoid UI interaction complexity (use E2E + UI helpers instead)
+- Checking internal app state that has a UI representation (verify via UI instead)
 
 Rust code uses inline `#[cfg(test)]` modules for units and `src-tauri/tests/` for integration; avoid hitting real network or OS services.
 

@@ -92,7 +92,8 @@ All mutators run synchronously; persistence is transparent.
 
 **Testing:**
 - **Unit tests** (Vitest + React Testing Library): Located in `*.test.ts(x)` files colocated with source. Mock all external dependencies (Tauri IPC, filesystem, network). Focus on business logic, state mutations, and component behavior in isolation. Use `mockIPC` from `src/test/setup.ts`.
-- **E2E tests** (WebDriver.io): Only test user-visible behavior via UI interactions. Create test state **exclusively** through UI actions (clicking, typing, etc.). Verify outcomes **only** what the UI displays. Never access internal app state, filesystem, or Tauri commands. If you can't create or verify via the UI, it's a unit test, not E2E.
+- **E2E tests** (WebDriver.io): Only test user-visible behavior via UI interactions. Create test state **exclusively** through UI actions (clicking, typing, etc.). Verify outcomes **only** what the UI displays. Never access internal app state, filesystem, or Tauri commands. If you can't create or verify via the UI, use a unit or integration test.
+- **Integration tests** (WebDriver.io + backend access): Cross-layer behavior verification (encryption at rest, file persistence, state synchronization). Requires explicit approval. Setup via UI where possible; use backend access only for verification. Store in `test/specs/integration/`.
 - **Rust tests**: Inline `#[cfg(test)]` modules for units; `src-tauri/tests/` for integration. No real network/OS calls.
 
 **Code style:**
