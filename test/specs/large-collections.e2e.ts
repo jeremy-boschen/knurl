@@ -166,6 +166,4 @@ describe("Large Collections Performance", () => {
       expect(deleteTime).toBeLessThan(2000)
     }
   })
-
-  console.log("✅ Large Collections Performance tests completed")
 })

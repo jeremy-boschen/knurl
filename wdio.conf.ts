@@ -86,15 +86,11 @@ function envFlag(value: string | undefined | null): boolean {
 
 const runningDocs = process.argv.join(' ').includes('--suite docs') || process.argv.join(' ').includes('/documentation/e2e/') || process.argv.join(' ').includes('documentation/e2e');
 
-// Handle --spec parameter for individual test execution
-const specMatch = process.argv.find(arg => arg.startsWith('--spec='));
-const specValue = specMatch ? specMatch.replace('--spec=', '') : null;
-
 export const config = {
   host: '127.0.0.1',
   port: 4444,
   logLevel: 'error',
-  specs: specValue ? [specValue] : ['./test/specs/**/*.ts', './documentation/e2e/**/*.e2e.ts'],
+  specs: ['./test/specs/**/*.ts', './documentation/e2e/**/*.e2e.ts'],
   exclude: runningDocs ? ['./test/specs/**/*.ts'] : ['./documentation/e2e/**/*.e2e.ts'],
   maxInstances: 1,
   capabilities: [
