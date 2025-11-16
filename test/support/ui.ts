@@ -403,11 +403,13 @@ export async function selectMenuActionById(
 ): Promise<void> {
   // Click the menu trigger to open it
   await clickByTestId(options.triggerTestId)
-  await browser.pause(200)
+  await browser.pause(300)
 
-  // Click the menu action by its ID - use longer timeout for menu items
+  // Click the menu action by its ID - use extended timeout for menu items
+  // especially on second+ invocations where menu may have animation delays
   const actionElement = await $(`[data-test-id="${actionId}"]`)
-  await actionElement.waitForDisplayed({ timeout: 15000 })
-  await browser.pause(100) // Extra wait to ensure menu item is ready
+  await actionElement.waitForDisplayed({ timeout: 20000 })
+  await browser.pause(150) // Extra wait to ensure menu item is ready
   await withFallbackClick(actionElement)
+  await browser.pause(200) // Wait for menu to close after selection
 }
