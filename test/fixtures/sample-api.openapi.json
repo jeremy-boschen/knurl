@@ -1,0 +1,111 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Sample Todo API",
+    "description": "A simple API for managing todos",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com/v1",
+      "description": "Production server"
+    },
+    {
+      "url": "https://staging.api.example.com/v1",
+      "description": "Staging server"
+    }
+  ],
+  "paths": {
+    "/todos": {
+      "get": {
+        "summary": "List all todos",
+        "operationId": "listTodos",
+        "tags": ["todos"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results",
+            "schema": { "type": "integer", "default": 10 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new todo",
+        "operationId": "createTodo",
+        "tags": ["todos"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Todo created" }
+        }
+      }
+    },
+    "/todos/{id}": {
+      "get": {
+        "summary": "Get todo by ID",
+        "operationId": "getTodoById",
+        "tags": ["todos"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The todo ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Todo found" },
+          "404": { "description": "Todo not found" }
+        }
+      },
+      "put": {
+        "summary": "Update a todo",
+        "operationId": "updateTodo",
+        "tags": ["todos"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Todo updated" }
+        }
+      }
+    }
+  }
+}
