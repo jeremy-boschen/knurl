@@ -1,4 +1,4 @@
-import { callBridge } from "./e2e-bridge"
+import { callBridgeReplacement } from "./bridge-replacement"
 
 type SeedCollectionArgs = {
   collectionName: string
@@ -41,7 +41,7 @@ export async function resetCollectionsState(): Promise<void> {
     throw new Error(result.error ?? "resetCollectionsState failed")
   }
 
-  await callBridge("flushStorage")
+  await callBridgeReplacement("flushStorage")
 }
 
 export async function seedCollectionWithOpenRequest({
