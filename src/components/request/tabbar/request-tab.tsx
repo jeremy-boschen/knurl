@@ -1,4 +1,5 @@
 import type * as React from "react"
+import { useEffect } from "react"
 
 import { XIcon } from "lucide-react"
 
@@ -7,6 +8,7 @@ import { HttpBadge } from "@/components/ui/knurl"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
 import { cn } from "@/lib/utils"
 import { useRequestsTabSummary } from "@/state"
+import { eventBus } from "@/lib/event-emitter"
 
 type RequestTabProps = {
   tabId: string
@@ -17,6 +19,19 @@ type RequestTabProps = {
 
 export default function RequestTab({ tabId, onSelectTab, onCloseTab, onContextMenu }: RequestTabProps) {
   const { isActive, name, method, isDirty, requestId } = useRequestsTabSummary(tabId)
+
+  // Emit event when tab becomes active
+  useEffect(() => {
+    if (isActive && requestId) {
+      eventBus.emit({
+        type: "requestUi",
+        action: "opened",
+        tabId,
+        requestId,
+        timestamp: new Date().toISOString(),
+      })
+    }
+  }, [isActive, requestId, tabId])
 
   return (
     <div
