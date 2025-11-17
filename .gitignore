@@ -66,3 +66,6 @@ coverage
 # Temp files
 tmp
 scripts/__pycache__/
+
+.cdn
+test-results
