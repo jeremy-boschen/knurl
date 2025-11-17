@@ -116,6 +116,15 @@ impl StartupProbe {
     }
 }
 
+/// Generic echo command for testing concurrent WebDriver invocations
+/// This is used to test if @tauri-apps/wdio-driver can handle concurrent Tauri IPC calls
+#[tauri::command(async)]
+async fn echo_command(_app: tauri::AppHandle, message: String) -> Result<String, AppError> {
+    // Simulate minimal async work
+    tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+    Ok(format!("Echo: {}", message))
+}
+
 /// Sends an HTTP request and returns its response with live logging
 #[tauri::command(async)]
 async fn send_http_request(app: tauri::AppHandle, opts: Request) -> Result<ResponseData, AppError> {
@@ -497,6 +506,7 @@ pub fn run() {
         )
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            echo_command,
             send_http_request,
             load_app_data,
             save_app_data,
