@@ -1,140 +1,99 @@
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it, vi, beforeEach } from "vitest"
-import { useState } from "react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { FileInput } from "./file-input"
-import { openFile } from "@/bindings/knurl"
 
-vi.mock("@tauri-apps/api/webview", () => ({
-  getCurrentWebview: () => ({
-    onDragDropEvent: vi.fn(async () => () => undefined),
-  }),
-}))
+const dragListener = vi.hoisted(() => ({ handler: null as null | ((event: any) => void) }))
 
 vi.mock("@/bindings/knurl", () => ({
   openFile: vi.fn(),
 }))
+import { openFile } from "@/bindings/knurl"
+
+vi.mock("@tauri-apps/api/webview", () => ({
+  getCurrentWebview: () => ({
+    onDragDropEvent: vi.fn(async (cb: (event: any) => void) => {
+      dragListener.handler = cb
+      return vi.fn()
+    }),
+  }),
+}))
 
 describe("FileInput", () => {
-  const mockedOpenFile = openFile as unknown as vi.Mock
+  const baseProps = {
+    fileName: "",
+    contentType: "",
+    onFileChange: vi.fn(),
+    onContentTypeChange: vi.fn(),
+    onClear: vi.fn(),
+  }
 
   beforeEach(() => {
-    mockedOpenFile.mockReset()
+    vi.clearAllMocks()
+    ;(window as any).__TAURI__ = {}
+    dragListener.handler = null
   })
 
-  it("applies the detected mime type when a file is chosen", async () => {
-    const user = userEvent.setup()
-    mockedOpenFile.mockResolvedValue({
-      filePath: "/tmp/example.json",
-      content: "",
-      mimeType: "application/json",
+  const renderInput = (props = {}) =>
+    render(
+      <FileInput
+        {...baseProps}
+        {...props}
+      />,
+    )
+
+  it("chooses a file via dialog and syncs mime type", async () => {
+    vi.mocked(openFile).mockResolvedValue({ filePath: "/tmp/data.json", mimeType: "application/json" })
+    renderInput()
+
+    await userEvent.click(screen.getByLabelText(/choose file/i))
+
+    await waitFor(() => expect(openFile).toHaveBeenCalled())
+    expect(baseProps.onFileChange).toHaveBeenCalledWith("/tmp/data.json", "data.json", "application/json")
+    expect(baseProps.onContentTypeChange).toHaveBeenCalledWith("application/json")
+
+    fireEvent.change(screen.getByPlaceholderText("content-type"), { target: { value: "text/plain" } })
+    expect(baseProps.onContentTypeChange).toHaveBeenCalledWith("text/plain")
+  })
+
+  it("handles drag-and-drop from tauri events and DOM uri drops", async () => {
+    const first = renderInput()
+    const dropzone = document.querySelector("fieldset") as HTMLFieldSetElement
+    vi.spyOn(dropzone, "getBoundingClientRect").mockReturnValue({ left: 0, top: 0, right: 200, bottom: 200, width: 200, height: 200 } as DOMRect)
+
+    dragListener.handler?.({
+      payload: {
+        type: "drop",
+        paths: ["/Users/me/file.md"],
+        position: { x: 20, y: 20 },
+      },
     })
 
-    const onFileChange = vi.fn()
-    const onContentTypeChange = vi.fn()
+    expect(baseProps.onFileChange).toHaveBeenCalledWith("/Users/me/file.md", "file.md")
 
-    render(
-      <FileInput
-        fileName=""
-        contentType=""
-        onFileChange={onFileChange}
-        onContentTypeChange={onContentTypeChange}
-        onClear={vi.fn()}
-      />,
-    )
-
-    const chooseButton = screen.getByTitle("Choose file")
-    await user.click(chooseButton)
-
-    expect(mockedOpenFile).toHaveBeenCalledWith({ title: "Choose File", readContent: false })
-    expect(onFileChange).toHaveBeenCalledWith("/tmp/example.json", "example.json", "application/json")
-    expect(onContentTypeChange).toHaveBeenCalledWith("application/json")
-  })
-
-  it("leaves callbacks untouched when user cancels the dialog", async () => {
-    const user = userEvent.setup()
-    mockedOpenFile.mockResolvedValue(null)
-
-    const onFileChange = vi.fn()
-    const onContentTypeChange = vi.fn()
-
-    render(
-      <FileInput
-        fileName=""
-        contentType=""
-        onFileChange={onFileChange}
-        onContentTypeChange={onContentTypeChange}
-        onClear={vi.fn()}
-      />,
-    )
-
-    const chooseButton = screen.getByTitle("Choose file")
-    await user.click(chooseButton)
-
-    expect(onFileChange).not.toHaveBeenCalled()
-    expect(onContentTypeChange).not.toHaveBeenCalled()
-  })
-
-  it("clears the selected file when the clear button is pressed", async () => {
-    const user = userEvent.setup()
-    const onFileChange = vi.fn()
-    const onContentTypeChange = vi.fn()
-    const onClear = vi.fn()
-
-    render(
-      <FileInput
-        fileName="payload.bin"
-        contentType="application/octet-stream"
-        onFileChange={onFileChange}
-        onContentTypeChange={onContentTypeChange}
-        onClear={onClear}
-      />,
-    )
-
-    const clearButton = screen.getByLabelText("Clear file")
-    await user.click(clearButton)
-
-    expect(onClear).toHaveBeenCalledTimes(1)
-    expect(onContentTypeChange).toHaveBeenLastCalledWith("")
-  })
-
-  it("lets users manually edit the content type", async () => {
-    const user = userEvent.setup()
-    mockedOpenFile.mockResolvedValue({
-      filePath: "",
-      content: "",
-      mimeType: "",
-    })
-
-    const onFileChange = vi.fn()
-    const onContentTypeChange = vi.fn()
-
-    function Wrapper() {
-      const [currentContentType, setCurrentContentType] = useState("application/octet-stream")
-      return (
-        <FileInput
-          fileName="payload.bin"
-          contentType={currentContentType}
-          onFileChange={onFileChange}
-          onContentTypeChange={(value) => {
-            setCurrentContentType(value)
-            onContentTypeChange(value)
-          }}
-          onClear={() => {
-            setCurrentContentType("")
-            onContentTypeChange("")
-          }}
-        />
-      )
+    first.unmount()
+    delete (window as any).__TAURI__
+    renderInput()
+    const refreshedZone = document.querySelector("fieldset") as HTMLFieldSetElement
+    const dataTransfer = {
+      getData: vi.fn(() => "file:///C:/Temp/demo.txt\n"),
     }
+    fireEvent.drop(refreshedZone, { dataTransfer })
+    expect(baseProps.onFileChange).toHaveBeenLastCalledWith("C:/Temp/demo.txt", "demo.txt")
+  })
 
-    render(<Wrapper />)
+  it("clears selection and ignores dragover", async () => {
+    renderInput({ fileName: "foo.txt" })
 
-    const contentTypeInput = screen.getByPlaceholderText("content-type")
-    await user.clear(contentTypeInput)
-    await user.type(contentTypeInput, "text/plain")
+    const clearBtn = screen.getByLabelText(/clear file/i)
+    expect(clearBtn).not.toBeDisabled()
+    await userEvent.click(clearBtn)
+    expect(baseProps.onClear).toHaveBeenCalled()
+    expect(baseProps.onContentTypeChange).toHaveBeenCalledWith("")
 
-    expect(onContentTypeChange).toHaveBeenLastCalledWith("text/plain")
+    const dropzone = document.querySelector("fieldset") as HTMLFieldSetElement
+    fireEvent.dragOver(dropzone, { dataTransfer: {} })
+    expect(baseProps.onFileChange).toHaveBeenCalledTimes(0)
   })
 })

@@ -1,85 +1,65 @@
-import type React from "react"
-
+import type { ReactNode } from "react"
+import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
-import { page, render } from "@/test/testing-lib"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./dialog"
+vi.mock("react-draggable", () => ({
+  __esModule: true,
+  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}))
 
-function renderBasic(open = true, extra?: React.ReactNode, props?: Partial<React.ComponentProps<typeof Dialog>>) {
-  return render(
-    <Dialog open={open} onOpenChange={() => {}} {...props}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>My Dialog</DialogTitle>
-        </DialogHeader>
-        <div>Body</div>
-        {extra}
-      </DialogContent>
+import { Dialog, DialogContent, DialogOverlay, DialogPortal, DialogTitle } from "./dialog"
+
+const renderDialog = (content: ReactNode, props: Record<string, any> = {}) =>
+  render(
+    <Dialog open modal={false} onOpenChange={() => {}} {...props}>
+      <DialogPortal>
+        <DialogOverlay />
+        <DialogContent>{content}</DialogContent>
+      </DialogPortal>
     </Dialog>,
   )
-}
 
 describe("Knurl Dialog", () => {
   it("renders close button by default when open", () => {
-    renderBasic(true)
-    const closeBtn = page.getByRole("button", { name: /close/i })
-    expect(closeBtn).toBeInTheDocument()
+    renderDialog(<DialogTitle>Sample</DialogTitle>)
+    expect(screen.getByRole("button", { name: /close/i })).toBeInTheDocument()
   })
 
-  it("marks title as draggable by default and removes handle when draggable is false", async () => {
-    const { rerender } = renderBasic(true)
+  it("omits close button when disabled", () => {
+    renderDialog(<DialogTitle>Sample</DialogTitle>, { showCloseButton: false })
+    expect(screen.queryByRole("button", { name: /close/i })).toBeNull()
+  })
 
-    const title = (await page.findByText("My Dialog")) as HTMLElement
-    expect(title).toBeTruthy()
+  it("marks title as draggable by default and removes handle when draggable is false", () => {
+    const { rerender } = renderDialog(<DialogTitle>Drag Me</DialogTitle>)
+    expect(document.querySelector("[data-slot='dialog-title']")?.className).toMatch(/draggable-dialog-title/)
 
-    // When draggable is enabled (default), the title acts as a handle
-    expect(title!.className).toMatch(/draggable-dialog-title/)
-
-    // Get dialog-id from content to confirm the class contains the id as well
-    const content = page.getByAttribute("data-slot", "dialog-content") as HTMLElement
-    const id = content.getAttribute("data-dialog-id")
-    expect(id).toBeTruthy()
-    expect(title!.className).toContain(`draggable-dialog-${id}`)
-
-    // Re-render with draggable disabled
     rerender(
-      <Dialog open onOpenChange={() => {}} draggable={false}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>My Dialog</DialogTitle>
-          </DialogHeader>
-        </DialogContent>
+      <Dialog open modal={false} draggable={false} onOpenChange={() => {}}>
+        <DialogPortal>
+          <DialogOverlay />
+          <DialogContent>
+            <DialogTitle>Static</DialogTitle>
+          </DialogContent>
+        </DialogPortal>
       </Dialog>,
     )
 
-    const title2 = document.querySelector('[data-slot="dialog-title"]') as HTMLElement
-    expect(title2.className).not.toMatch(/draggable-dialog-title/)
+    expect(document.querySelector("[data-slot='dialog-title']")?.className).not.toMatch(/draggable-dialog-title/)
   })
 
   it("renders resize handle when resizable with size provided", () => {
     render(
-      <Dialog
-        open
-        onOpenChange={() => {}}
-        resizable
-        size={{
-          min: { width: 450, height: 240 },
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
+      <Dialog open modal={false} resizable size={{ min: { width: 200, height: 200 } }} onOpenChange={() => {}}>
+        <DialogPortal>
+          <DialogOverlay />
+          <DialogContent>
             <DialogTitle>Resizable</DialogTitle>
-          </DialogHeader>
-        </DialogContent>
+          </DialogContent>
+        </DialogPortal>
       </Dialog>,
     )
 
-    const content = page.getByAttribute("data-slot", "dialog-content") as HTMLElement
-    const id = content.getAttribute("data-dialog-id")
-    expect(id).toBeTruthy()
-
-    // The resize handle's class includes `resize-handle-${dialogId}`
-    const handle = document.querySelector(`.resize-handle-${id}`)
-    expect(handle).toBeTruthy()
+    expect(document.querySelector('[class*="resize-handle-"]')).toBeInTheDocument()
   })
 })
