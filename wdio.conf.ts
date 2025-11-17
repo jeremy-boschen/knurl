@@ -194,10 +194,13 @@ export const config = {
     const env = {
       ...process.env,
       CARGO_INCREMENTAL: process.env.CARGO_INCREMENTAL ?? '1',
-      RUSTFLAGS: [process.env.RUSTFLAGS, '-C opt-level=0', '-C debuginfo=1'].filter(Boolean).join(' ').trim(),
+      // Enable LLVM coverage instrumentation for E2E tests
+      RUSTFLAGS: [process.env.RUSTFLAGS, '-C opt-level=0', '-C debuginfo=1', '-C instrument-coverage'].filter(Boolean).join(' ').trim(),
+      LLVM_PROFILE_FILE: path.join(process.cwd(), '.nyc_output', 'rust-coverage-%p-%m.profraw'),
     };
 
-    const buildResult = spawnSync('cargo', ['build', '--manifest-path', manifestPath, '--profile', 'dev'], {
+    // Build release profile with LLVM coverage instrumentation for E2E tests
+    const buildResult = spawnSync('cargo', ['build', '--manifest-path', manifestPath, '--profile', 'release'], {
       stdio: 'inherit',
       shell: true,
       env,
