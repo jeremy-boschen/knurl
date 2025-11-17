@@ -19,9 +19,9 @@ describe("Event System", () => {
 
       // Verify event data
       expect(tab.tabId).toBeDefined()
-      expect(tab.tabId).toMatch(/^[a-f0-9-]+$/) // UUID format
+      expect(tab.tabId).toMatch(/^[A-Za-z0-9]+$/) // Random alphanumeric ID (12 chars)
       expect(tab.requestId).toBeDefined()
-      expect(tab.requestId).toMatch(/^[a-f0-9-]+$/) // UUID format
+      expect(tab.requestId).toMatch(/^[A-Za-z0-9-]+$/) // UUID format
       expect(tab.collectionId).toBeDefined()
     })
 
