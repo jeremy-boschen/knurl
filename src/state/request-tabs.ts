@@ -162,12 +162,12 @@ export const requestTabsSliceCreator: StateCreator<
 
       // Emit event after tab is created
       eventBus.emit({
-        type: 'requestUi',
-        action: 'opened',
+        type: "requestUi",
+        action: "opened",
         tabId: newTab.tabId,
         requestId: newTab.requestId,
         collectionId: newTab.collectionId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       })
 
       updateMergedRequest(newTab.tabId)
