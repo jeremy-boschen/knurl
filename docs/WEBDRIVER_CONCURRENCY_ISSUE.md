@@ -2,14 +2,16 @@
 
 **Status:** Root cause confirmed. Tauri WebDriver driver has concurrency limitation.
 
+**Reproducible test:** `test/specs/tauri-driver-concurrency-repro.e2e.ts`
+
 ## The Issue (Blunt Version)
 
 **This is NOT OS-level socket exhaustion.**
 
 Tauri's native WebDriver driver (`@tauri-apps/wdio-driver`) is not thread-safe for concurrent command handling. When you send multiple WebDriver commands in parallel to a single session via `Promise.all()`, the driver's session handler fails:
-- Closes sockets
+- Process terminates (no error message, just "Killed")
+- Or returns `UND_ERR_SOCKET` errors
 - Stops responding to requests
-- WebdriverIO surfaces this as `UND_ERR_SOCKET` errors
 - Session becomes permanently unresponsive
 
 **Safe rule:** Only 1 in-flight WebDriver command per Tauri session. Serialize all commands using sequential `await`.
@@ -81,24 +83,19 @@ This works reliably at scale (26+ sequential commands tested successfully).
 If you want to report this upstream, provide:
 
 ### 1. Minimal Reproducible Test
-File: `test/specs/collections-core.e2e.ts` (available in git history, branch: wsl/main)
+File: `test/specs/tauri-driver-concurrency-repro.e2e.ts`
 
-Specific test: `Collection Storage & Data Persistence > survives concurrent collection operations`
-
-Or create new spec with just:
-```javascript
-it("triggers concurrent command bug", async () => {
-  const promises = []
-  for (let i = 0; i < 3; i++) {
-    promises.push(
-      browser.executeAsync(async (done) => {
-        done({ index: i })
-      })
-    )
-  }
-  await Promise.all(promises)  // Will fail with UND_ERR_SOCKET
-})
+Run with:
+```bash
+RUST_LOG=trace RUST_BACKTRACE=1 yarn test:e2e --spec test/specs/tauri-driver-concurrency-repro.e2e.ts
 ```
+
+The test:
+- Baseline test (single sequential operation) - PASSES ✅
+- Concurrent test (3 parallel `callBridgeReplacement()` calls via `Promise.all()`) - Kills process ❌
+- Recovery test (attempts operation after concurrent failure) - Usually doesn't execute (process already killed)
+
+This is the **actual failing test** from the codebase (originally `Collection Storage & Data Persistence > survives concurrent collection operations`), now extracted into standalone reproducible form.
 
 ### 2. Verbose Logging
 
