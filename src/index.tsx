@@ -56,21 +56,10 @@ function Root() {
 }
 
 // biome-ignore lint/style/noNonNullAssertion: Cannot be null
-const root = createRoot(document.getElementById("root")!)
-
-// Disable StrictMode for E2E tests to avoid component remounting
-const useStrictMode = !window.__KNURL_DISABLE_STRICT_MODE
-
-const app = useStrictMode ? (
+createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Suspense fallback={<div />}>
       <Root />
     </Suspense>
-  </React.StrictMode>
-) : (
-  <Suspense fallback={<div />}>
-    <Root />
-  </Suspense>
+  </React.StrictMode>,
 )
-
-root.render(app)

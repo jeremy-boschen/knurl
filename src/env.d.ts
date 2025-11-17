@@ -13,7 +13,6 @@ interface ImportMeta {
 interface Window {
   __KNURL_DISABLE_EVENTS?: boolean
   __KNURL_ENABLE_EVENT_HISTORY?: boolean
-  __KNURL_DISABLE_STRICT_MODE?: boolean
   __KNURL_E2E_CONFIG_DIR__?: string
   __KNURL_STARTUP_STATE__?: number
   __knurlEventBus?: {
