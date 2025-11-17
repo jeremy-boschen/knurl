@@ -6,7 +6,7 @@ use crate::app_data::{crypto, loader};
 use crate::errors::error::UserCancelled;
 use crate::errors::{AppError, ErrorKind};
 use crate::http_client::auth::{self, AuthConfig, AuthResult, OidcDiscovery};
-use base64::{engine::general_purpose, Engine as _};
+use base64::{Engine as _, engine::general_purpose};
 use chrono::Local;
 use http_client::{
     engine::{HttpEngine, TauriLogEmitter},
@@ -22,9 +22,9 @@ use std::panic::Location;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use std::{fs, io, path::PathBuf};
-use tauri::path::BaseDirectory;
 #[cfg(desktop)]
 use tauri::PhysicalSize;
+use tauri::path::BaseDirectory;
 use tauri::{Manager, Size};
 use tauri_plugin_cli::CliExt;
 use tauri_plugin_dialog::DialogExt;
@@ -69,7 +69,7 @@ impl StartupProbe {
     }
 
     fn open_log_file() -> std::io::Result<Mutex<std::fs::File>> {
-        use std::fs::{create_dir_all, OpenOptions};
+        use std::fs::{OpenOptions, create_dir_all};
         use std::io::Write;
 
         let base_dir = std::env::temp_dir().join("knurl-startup");
