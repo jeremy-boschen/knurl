@@ -1,5 +1,5 @@
 import type * as React from "react"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 
 import { XIcon } from "lucide-react"
 
@@ -19,10 +19,20 @@ type RequestTabProps = {
 
 export default function RequestTab({ tabId, onSelectTab, onCloseTab, onContextMenu }: RequestTabProps) {
   const { isActive, name, method, isDirty, requestId } = useRequestsTabSummary(tabId)
+  const hasEmittedRef = useRef(false)
 
   // Emit requestUi:opened event after tab renders
+  // Use ref to prevent double-firing in React.StrictMode (dev builds)
   useEffect(() => {
-    if (isActive && requestId) {
+    // Reset the flag if conditions are no longer met
+    if (!isActive || !requestId) {
+      hasEmittedRef.current = false
+      return
+    }
+
+    // Emit event only once per activation
+    if (!hasEmittedRef.current) {
+      hasEmittedRef.current = true
       emitEvent({
         type: "requestUi",
         action: "opened",
