@@ -5,6 +5,7 @@ import type { StateCreator, StoreApi } from "zustand"
 import type { AppError } from "@/bindings/knurl"
 import { cancelHttpRequest, deleteFile, getAuthenticationResult } from "@/bindings/knurl"
 import { assert, isNotEmpty, nonNull } from "@/lib"
+import { eventBus } from "@/lib/event-emitter"
 import { resolveRequestVariables } from "@/lib/environments"
 import { generateUniqueId } from "@/lib/utils"
 import {
@@ -157,6 +158,16 @@ export const requestTabsSliceCreator: StateCreator<
         }
 
         recomputeOrderedTabs(app.requestTabsState)
+      })
+
+      // Emit event after tab is created
+      eventBus.emit({
+        type: 'requestUi',
+        action: 'opened',
+        tabId: newTab.tabId,
+        requestId: newTab.requestId,
+        collectionId: newTab.collectionId,
+        timestamp: new Date().toISOString()
       })
 
       updateMergedRequest(newTab.tabId)

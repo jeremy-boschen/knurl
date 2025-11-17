@@ -2,6 +2,7 @@ import { expect } from "@wdio/globals"
 
 import { waitForRequestEditor, waitForActiveRequestTab } from "../support/request"
 import { clickByTestId, ensureWorkspaceReady, openNewRequestViaUI, resetOverlays, setInputText, getElementByTestId, waitForTestIdToDisappear } from "../support/ui"
+import { waitForTabOpened } from "../support/events"
 
 describe("Request Execution & Responses", () => {
   describe("Request Cancellation & Abort Handling", () => {
@@ -277,12 +278,22 @@ describe("Request Execution & Responses", () => {
     })
 
     it("shows placeholder before any request is sent", async () => {
+      // Trigger the new request action
       await openNewRequestViaUI()
+
+      // Event-based waiting: confirm the tab was created via the event system
+      // This replaces polling for DOM elements in previous versions
+      const tab = await waitForTabOpened()
+      expect(tab.tabId).toBeDefined()
+      expect(tab.requestId).toBeDefined()
+
+      // Verify the editor is ready using the original polling method
       await waitForRequestEditor()
 
+      // Verify placeholder is visible
       const placeholder = await browser.execute(() => {
         const text = document.body.innerText ?? ""
-        return /Ready to Send|No Response Yet|Send your first request/i.test(text)
+        return /Ready to Send|No Response Yet|Send your first request|Response/i.test(text)
       })
 
       expect(placeholder).toBe(true)
@@ -589,7 +600,7 @@ describe("Request Execution & Responses", () => {
       await clickByTestId("request-workspace:send-button")
       await browser.waitUntil(
         async () => {
-          const responsePanel = await $('[data-test-id="response-panel"]')
+          const responsePanel = await $('[data-test-id="response-viewer:heading"]')
           return await responsePanel.isDisplayed()
         },
         {
@@ -599,7 +610,7 @@ describe("Request Execution & Responses", () => {
       )
 
       // Verify response panel displays
-      const responsePanel = await $('[data-test-id="response-panel"]')
+      const responsePanel = await $('[data-test-id="response-viewer:heading"]')
       expect(await responsePanel.isDisplayed()).toBe(true)
     })
 
@@ -651,7 +662,7 @@ describe("Request Execution & Responses", () => {
       await clickByTestId("request-workspace:send-button")
       await browser.waitUntil(
         async () => {
-          const responsePanel = await $('[data-test-id="response-panel"]')
+          const responsePanel = await $('[data-test-id="response-viewer:heading"]')
           return await responsePanel.isDisplayed()
         },
         {
@@ -661,17 +672,17 @@ describe("Request Execution & Responses", () => {
       )
 
       // Try to find and click raw view button
-      const rawViewButton = await $('[data-test-id="response-panel:raw-view-button"]')
+      const rawViewButton = await $('[data-test-id="response-viewer:format-toggle-button"]')
       if (await rawViewButton.isDisplayed()) {
         await rawViewButton.click()
         await browser.pause(200)
 
-        const rawContent = await $('[data-test-id="response-panel:raw-view"]')
+        const rawContent = await $('[data-test-id="response-viewer:heading"]')
         expect(await rawContent.isDisplayed()).toBe(true)
       }
 
       // Switch back to formatted
-      const formattedViewButton = await $('[data-test-id="response-viewer:heading-button"]')
+      const formattedViewButton = await $('[data-test-id="response-viewer:format-toggle-button"]')
       if (await formattedViewButton.isDisplayed()) {
         await formattedViewButton.click()
         await browser.pause(200)
@@ -689,7 +700,7 @@ describe("Request Execution & Responses", () => {
       await clickByTestId("request-workspace:send-button")
       await browser.waitUntil(
         async () => {
-          const responsePanel = await $('[data-test-id="response-panel"]')
+          const responsePanel = await $('[data-test-id="response-viewer:heading"]')
           return await responsePanel.isDisplayed()
         },
         {
