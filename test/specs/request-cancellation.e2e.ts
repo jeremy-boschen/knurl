@@ -25,7 +25,7 @@ describe('Request Cancellation & Abort Handling', () => {
     await browser.pause(1000)
 
     // Look for a cancel button (typically appears while request is pending)
-    const cancelButton = await $('[data-test-id="response-panel:cancel-button"]')
+    const cancelButton = await $('[data-test-id="response-viewer:cancel-button"]')
 
     if (await cancelButton.isDisplayed()) {
       const startTime = Date.now()
@@ -38,7 +38,7 @@ describe('Request Cancellation & Abort Handling', () => {
       // After cancellation, the response panel should indicate abort/cancellation
       await browser.waitUntil(
         async () => {
-          const statusElement = await $('[data-test-id="response-panel:status-code"]')
+          const statusElement = await $('[data-test-id="response-viewer:heading"]')
           return !(await statusElement.isDisplayed())
         },
         {
@@ -78,7 +78,7 @@ describe('Request Cancellation & Abort Handling', () => {
 
     // Wait a moment then cancel
     await browser.pause(500)
-    const cancelButton = await $('[data-test-id="response-panel:cancel-button"]')
+    const cancelButton = await $('[data-test-id="response-viewer:cancel-button"]')
     if (await cancelButton.isDisplayed()) {
       await cancelButton.click()
       await browser.pause(500)
@@ -101,7 +101,7 @@ describe('Request Cancellation & Abort Handling', () => {
 
     // Wait briefly and try to cancel if button appears
     await browser.pause(300)
-    const cancelButton = await $('[data-test-id="response-panel:cancel-button"]')
+    const cancelButton = await $('[data-test-id="response-viewer:cancel-button"]')
     if (await cancelButton.isDisplayed()) {
       await cancelButton.click()
       // Wait for cancellation to complete
@@ -135,7 +135,7 @@ describe('Request Cancellation & Abort Handling', () => {
 
     // Wait briefly then cancel
     await browser.pause(1000)
-    const cancelButton = await $('[data-test-id="response-panel:cancel-button"]')
+    const cancelButton = await $('[data-test-id="response-viewer:cancel-button"]')
     if (await cancelButton.isDisplayed()) {
       await cancelButton.click()
     }

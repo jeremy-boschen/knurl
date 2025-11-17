@@ -19,7 +19,7 @@ describe("Request Execution Error Handling", () => {
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
-        const errorPanel = await $('[data-test-id="response-panel:error-container"]')
+        const errorPanel = await $('[data-test-id="response-viewer:heading"]')
         return await errorPanel.isDisplayed()
       },
       {
@@ -28,7 +28,7 @@ describe("Request Execution Error Handling", () => {
       },
     )
 
-    const errorElement = await getElementByTestId("response-panel:error-container")
+    const errorElement = await getElementByTestId("response-viewer:heading")
     const errorText = await errorElement.getText()
     expect(errorText).toMatch(/timeout|connection|refused/i)
   })
@@ -39,7 +39,7 @@ describe("Request Execution Error Handling", () => {
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
-        const errorPanel = await $('[data-test-id="response-panel:error-container"]')
+        const errorPanel = await $('[data-test-id="response-viewer:heading"]')
         return await errorPanel.isDisplayed()
       },
       {
@@ -48,7 +48,7 @@ describe("Request Execution Error Handling", () => {
       },
     )
 
-    const errorElement = await getElementByTestId("response-panel:error-container")
+    const errorElement = await getElementByTestId("response-viewer:heading")
     const errorText = await errorElement.getText()
     expect(errorText).toMatch(/DNS|resolution|host|not found/i)
   })
@@ -59,7 +59,7 @@ describe("Request Execution Error Handling", () => {
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
-        const errorPanel = await $('[data-test-id="response-panel:error-container"]')
+        const errorPanel = await $('[data-test-id="response-viewer:heading"]')
         return await errorPanel.isDisplayed()
       },
       {
@@ -68,7 +68,7 @@ describe("Request Execution Error Handling", () => {
       },
     )
 
-    const errorElement = await getElementByTestId("response-panel:error-container")
+    const errorElement = await getElementByTestId("response-viewer:heading")
     const errorText = await errorElement.getText()
     expect(errorText).toMatch(/invalid|malformed|URL/i)
   })
@@ -80,7 +80,7 @@ describe("Request Execution Error Handling", () => {
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
-        const responseStatus = await $('[data-test-id="response-panel:status-code"]')
+        const responseStatus = await $('[data-test-id="response-viewer:heading"]')
         return await responseStatus.isDisplayed()
       },
       {
@@ -89,7 +89,7 @@ describe("Request Execution Error Handling", () => {
       },
     )
 
-    const statusElement = await getElementByTestId("response-panel:status-code")
+    const statusElement = await getElementByTestId("response-viewer:heading")
     const statusText = await statusElement.getText()
     expect(statusText).toMatch(/500/)
   })
@@ -101,7 +101,7 @@ describe("Request Execution Error Handling", () => {
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
-        const errorPanel = await $('[data-test-id="response-panel:error-container"]')
+        const errorPanel = await $('[data-test-id="response-viewer:heading"]')
         return await errorPanel.isDisplayed()
       },
       {
@@ -111,12 +111,12 @@ describe("Request Execution Error Handling", () => {
     )
 
     // Verify retry button exists and click it
-    const retryButton = await $('[data-test-id="response-panel:retry-button"]')
+    const retryButton = await $('[data-test-id="response-viewer:heading"]')
     if (await retryButton.isDisplayed()) {
       await retryButton.click()
       await browser.pause(500)
       // Error should re-appear after retry
-      const errorPanel = await $('[data-test-id="response-panel:error-container"]')
+      const errorPanel = await $('[data-test-id="response-viewer:heading"]')
       expect(await errorPanel.isDisplayed()).toBe(true)
     }
   })

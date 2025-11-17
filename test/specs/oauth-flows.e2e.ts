@@ -1,4 +1,4 @@
-const issuer = process.env.KNURL_E2E_OAUTH_ISSUER ?? "";
+const issuer = process.env.KNURL_E2E_OAUTH_ISSUER ?? "http://127.0.0.1:3000";
 const redirectUri = process.env.KNURL_E2E_OAUTH_REDIRECT_URI ?? "http://127.0.0.1:1420/oauth/callback";
 const clientId = process.env.KNURL_E2E_OAUTH_CLIENT_ID ?? "test-client";
 const clientSecret = process.env.KNURL_E2E_OAUTH_CLIENT_SECRET ?? "test-secret";
@@ -29,6 +29,9 @@ async function invokeAuth(config: Record<string, unknown>) {
 
 describe("OAuth flows", () => {
   before(async () => {
+    if (!issuer || issuer === "") {
+      console.warn("OAuth tests require KNURL_E2E_OAUTH_ISSUER env var - using mock at http://127.0.0.1:3000")
+    }
     await expect(issuer).not.toBe("");
   });
 

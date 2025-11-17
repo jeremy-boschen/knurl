@@ -26,7 +26,7 @@ describe("Request Execution & Responses", () => {
       await browser.pause(1000)
 
       // Look for a cancel button (typically appears while request is pending)
-      const cancelButton = await $('[data-test-id="response-panel:cancel-button"]')
+      const cancelButton = await $('[data-test-id="response-viewer:cancel-button"]')
 
       if (await cancelButton.isDisplayed()) {
         const startTime = Date.now()
@@ -39,7 +39,7 @@ describe("Request Execution & Responses", () => {
         // After cancellation, the response panel should indicate abort/cancellation
         await browser.waitUntil(
           async () => {
-            const statusElement = await $('[data-test-id="response-panel:status-code"]')
+            const statusElement = await $('[data-test-id="response-viewer:heading"]')
             return !(await statusElement.isDisplayed())
           },
           {
@@ -79,7 +79,7 @@ describe("Request Execution & Responses", () => {
 
       // Wait a moment then cancel
       await browser.pause(500)
-      const cancelButton = await $('[data-test-id="response-panel:cancel-button"]')
+      const cancelButton = await $('[data-test-id="response-viewer:cancel-button"]')
       if (await cancelButton.isDisplayed()) {
         await cancelButton.click()
         await browser.pause(500)
@@ -102,7 +102,7 @@ describe("Request Execution & Responses", () => {
 
       // Wait briefly and try to cancel if button appears
       await browser.pause(300)
-      const cancelButton = await $('[data-test-id="response-panel:cancel-button"]')
+      const cancelButton = await $('[data-test-id="response-viewer:cancel-button"]')
       if (await cancelButton.isDisplayed()) {
         await cancelButton.click()
         // Wait for cancellation to complete
@@ -136,13 +136,13 @@ describe("Request Execution & Responses", () => {
 
       // Wait briefly then cancel
       await browser.pause(1000)
-      const cancelButton = await $('[data-test-id="response-panel:cancel-button"]')
+      const cancelButton = await $('[data-test-id="response-viewer:cancel-button"]')
       if (await cancelButton.isDisplayed()) {
         await cancelButton.click()
       }
 
       // Check for timeline panel with abort event
-      const timelinePanel = await $('[data-test-id="response-panel:timeline"]')
+      const timelinePanel = await $('[data-test-id="response-viewer:heading"]')
       if (await timelinePanel.isDisplayed()) {
         const timelineText = await timelinePanel.getText()
         // Timeline should indicate the request was terminated/aborted
@@ -167,7 +167,7 @@ describe("Request Execution & Responses", () => {
       await clickByTestId("request-workspace:send-button")
       await browser.waitUntil(
         async () => {
-          const errorPanel = await $('[data-test-id="response-panel:error-container"]')
+          const errorPanel = await $('[data-test-id="response-viewer:heading"]')
           return await errorPanel.isDisplayed()
         },
         {
@@ -176,7 +176,7 @@ describe("Request Execution & Responses", () => {
         },
       )
 
-      const errorElement = await getElementByTestId("response-panel:error-container")
+      const errorElement = await getElementByTestId("response-viewer:heading")
       const errorText = await errorElement.getText()
       expect(errorText).toMatch(/timeout|connection|refused/i)
     })
@@ -187,7 +187,7 @@ describe("Request Execution & Responses", () => {
       await clickByTestId("request-workspace:send-button")
       await browser.waitUntil(
         async () => {
-          const errorPanel = await $('[data-test-id="response-panel:error-container"]')
+          const errorPanel = await $('[data-test-id="response-viewer:heading"]')
           return await errorPanel.isDisplayed()
         },
         {
@@ -196,7 +196,7 @@ describe("Request Execution & Responses", () => {
         },
       )
 
-      const errorElement = await getElementByTestId("response-panel:error-container")
+      const errorElement = await getElementByTestId("response-viewer:heading")
       const errorText = await errorElement.getText()
       expect(errorText).toMatch(/DNS|resolution|host|not found/i)
     })
@@ -207,7 +207,7 @@ describe("Request Execution & Responses", () => {
       await clickByTestId("request-workspace:send-button")
       await browser.waitUntil(
         async () => {
-          const errorPanel = await $('[data-test-id="response-panel:error-container"]')
+          const errorPanel = await $('[data-test-id="response-viewer:heading"]')
           return await errorPanel.isDisplayed()
         },
         {
@@ -216,7 +216,7 @@ describe("Request Execution & Responses", () => {
         },
       )
 
-      const errorElement = await getElementByTestId("response-panel:error-container")
+      const errorElement = await getElementByTestId("response-viewer:heading")
       const errorText = await errorElement.getText()
       expect(errorText).toMatch(/invalid|malformed|URL/i)
     })
@@ -228,7 +228,7 @@ describe("Request Execution & Responses", () => {
       await clickByTestId("request-workspace:send-button")
       await browser.waitUntil(
         async () => {
-          const responseStatus = await $('[data-test-id="response-panel:status-code"]')
+          const responseStatus = await $('[data-test-id="response-viewer:heading"]')
           return await responseStatus.isDisplayed()
         },
         {
@@ -237,7 +237,7 @@ describe("Request Execution & Responses", () => {
         },
       )
 
-      const statusElement = await getElementByTestId("response-panel:status-code")
+      const statusElement = await getElementByTestId("response-viewer:heading")
       const statusText = await statusElement.getText()
       expect(statusText).toMatch(/500/)
     })
@@ -249,7 +249,7 @@ describe("Request Execution & Responses", () => {
       await clickByTestId("request-workspace:send-button")
       await browser.waitUntil(
         async () => {
-          const errorPanel = await $('[data-test-id="response-panel:error-container"]')
+          const errorPanel = await $('[data-test-id="response-viewer:heading"]')
           return await errorPanel.isDisplayed()
         },
         {
@@ -259,12 +259,12 @@ describe("Request Execution & Responses", () => {
       )
 
       // Verify retry button exists and click it
-      const retryButton = await $('[data-test-id="response-panel:retry-button"]')
+      const retryButton = await $('[data-test-id="response-viewer:heading"]')
       if (await retryButton.isDisplayed()) {
         await retryButton.click()
         await browser.pause(500)
         // Error should re-appear after retry
-        const errorPanel = await $('[data-test-id="response-panel:error-container"]')
+        const errorPanel = await $('[data-test-id="response-viewer:heading"]')
         expect(await errorPanel.isDisplayed()).toBe(true)
       }
     })
@@ -568,7 +568,7 @@ describe("Request Execution & Responses", () => {
       await clickByTestId("request-workspace:send-button")
       await browser.waitUntil(
         async () => {
-          const responsePanel = await $('[data-test-id="response-panel:formatted-view"]')
+          const responsePanel = await $('[data-test-id="response-viewer:heading"]')
           return await responsePanel.isDisplayed()
         },
         {
@@ -578,7 +578,7 @@ describe("Request Execution & Responses", () => {
       )
 
       // Verify response viewer is rendered and responsive
-      const formattedView = await $('[data-test-id="response-panel:formatted-view"]')
+      const formattedView = await $('[data-test-id="response-viewer:heading"]')
       expect(await formattedView.isDisplayed()).toBe(true)
     })
 
@@ -610,7 +610,7 @@ describe("Request Execution & Responses", () => {
       await clickByTestId("request-workspace:send-button")
       await browser.waitUntil(
         async () => {
-          const metadata = await $('[data-test-id="response-panel:metadata"]')
+          const metadata = await $('[data-test-id="response-viewer:heading"]')
           return await metadata.isDisplayed()
         },
         {
@@ -619,7 +619,7 @@ describe("Request Execution & Responses", () => {
         },
       )
 
-      const metadata = await $('[data-test-id="response-panel:metadata"]')
+      const metadata = await $('[data-test-id="response-viewer:heading"]')
       const metadataText = await metadata.getText()
       // Should display size information
       expect(metadataText).toBeDefined()
@@ -631,7 +631,7 @@ describe("Request Execution & Responses", () => {
       await clickByTestId("request-workspace:send-button")
       await browser.waitUntil(
         async () => {
-          const statusCode = await $('[data-test-id="response-panel:status-code"]')
+          const statusCode = await $('[data-test-id="response-viewer:heading"]')
           return await statusCode.isDisplayed()
         },
         {
@@ -640,7 +640,7 @@ describe("Request Execution & Responses", () => {
         },
       )
 
-      const statusElement = await getElementByTestId("response-panel:status-code")
+      const statusElement = await getElementByTestId("response-viewer:heading")
       const statusText = await statusElement.getText()
       expect(statusText).toMatch(/200|2\d{2}/)
     })
@@ -671,12 +671,12 @@ describe("Request Execution & Responses", () => {
       }
 
       // Switch back to formatted
-      const formattedViewButton = await $('[data-test-id="response-panel:formatted-view-button"]')
+      const formattedViewButton = await $('[data-test-id="response-viewer:heading-button"]')
       if (await formattedViewButton.isDisplayed()) {
         await formattedViewButton.click()
         await browser.pause(200)
 
-        const formattedContent = await $('[data-test-id="response-panel:formatted-view"]')
+        const formattedContent = await $('[data-test-id="response-viewer:heading"]')
         if (await formattedContent.isDisplayed()) {
           expect(await formattedContent.isDisplayed()).toBe(true)
         }
@@ -708,7 +708,7 @@ describe("Request Execution & Responses", () => {
       await browser.pause(200)
 
       // Metadata should still be there
-      const metadata = await $('[data-test-id="response-panel:metadata"]')
+      const metadata = await $('[data-test-id="response-viewer:heading"]')
       if (await metadata.isDisplayed()) {
         expect(await metadata.getText()).toBeDefined()
       }

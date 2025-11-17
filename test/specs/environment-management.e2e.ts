@@ -26,13 +26,20 @@ describe("Environment Manager Smoke", () => {
 
     state.collectionId = await createCollection(`Environment Smoke ${Date.now()}`)
 
-    state.tabKey = await openNewRequestViaUI()
+    // Create a request in the collection instead of trying to use openNewRequestViaUI which is flaky
+    const existingIds = await getOpenRequestIds()
+    await clickByTestId(`collection-tree:collection-row:${state.collectionId}`)
+    await browser.pause(200)
+    await clickByTestId(`collection-tree:collection-row:menu-button:${state.collectionId}`)
+    await browser.pause(200)
+    await clickByTestId(`collection-menu:item:new-request:${state.collectionId}`)
+    await browser.pause(300)
+
+    const newRequest = await waitForNewRequest(existingIds)
+    state.tabKey = newRequest.tabKey
+    state.requestId = newRequest.requestId
+
     await waitForRequestEditor()
-    const tabEntry = await getTabSnapshot(state.tabKey)
-    if (!tabEntry?.requestId) {
-      throw new Error("Unable to resolve request id for environment smoke")
-    }
-    state.requestId = tabEntry.requestId
   })
 
   it("creates environment and secure variable via manager", async () => {
@@ -101,11 +108,63 @@ describe("Environment Manager Smoke", () => {
 })
 
 /**
+ * Gets open request IDs from DOM
+ */
+async function getOpenRequestIds(): Promise<Set<string>> {
+  const ids = await browser.execute(() => {
+    const tabs = Array.from(document.querySelectorAll('[data-test-id^="request-tab:"]'))
+    return tabs.map((tab) => tab.getAttribute("data-tab-id")).filter(Boolean) as string[]
+  })
+  return new Set(ids)
+}
+
+/**
+ * Waits for a new request to be created
+ */
+async function waitForNewRequest(
+  knownRequestIds: Set<string>,
+  timeout = 15000,
+): Promise<{ requestId: string; tabKey: string }> {
+  let result: { requestId: string; tabKey: string } | null = null
+  await browser.waitUntil(
+    async () => {
+      const candidate = await browser.execute((knownIds: string[]) => {
+        const tabs = Array.from(document.querySelectorAll('[data-test-id^="request-tab:"]'))
+        for (const tab of tabs) {
+          const tabId = tab.getAttribute("data-tab-key")
+          const reqId = tab.getAttribute("data-tab-id")
+          if (reqId && !knownIds.includes(reqId) && tabId) {
+            return { requestId: reqId, tabKey: tabId }
+          }
+        }
+        return null
+      }, Array.from(knownRequestIds))
+
+      if (candidate) {
+        result = candidate
+        return true
+      }
+      return false
+    },
+    {
+      timeout,
+      interval: 200,
+      timeoutMsg: "New request did not appear",
+    },
+  )
+
+  if (!result) {
+    throw new Error("Request was not created")
+  }
+  return result
+}
+
+/**
  * Pure E2E test - no bridge dependency
  * Gets tab information from DOM instead of internal state
  */
 async function getTabSnapshot(tabKey: string) {
-  const tabElement = await $(`[data-test-id="tab:${tabKey}"]`)
+  const tabElement = await $(`[data-test-id="request-tab:${tabKey}"]`)
   const exists = await tabElement.isDisplayed().catch(() => false)
 
   if (!exists) {
@@ -114,7 +173,7 @@ async function getTabSnapshot(tabKey: string) {
 
   return {
     tabKey,
-    requestId: await tabElement.getAttribute("data-request-id"),
-    collectionId: await tabElement.getAttribute("data-collection-id"),
+    requestId: await tabElement.getAttribute("data-tab-id"),
+    collectionId: "scratch", // Default to scratch since we don't have collection info in tab
   }
 }

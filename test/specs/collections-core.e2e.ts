@@ -338,9 +338,11 @@ async function resolveOrderedCollectionIds(): Promise<string[]> {
     const rows = Array.from(
       document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]')
     )
-    return rows
+    const ids = rows
       .map((row) => row.getAttribute("data-test-id")?.split(":").pop())
       .filter((id): id is string => !!id && id !== scratchId)
+    // Deduplicate in case of rendering artifacts
+    return Array.from(new Set(ids))
   }, SCRATCH_COLLECTION_ID)
 }
 

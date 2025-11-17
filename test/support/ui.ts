@@ -87,8 +87,20 @@ export async function getElementByTestId(
 
 async function getActiveRequestTabKey(): Promise<string | null> {
   return await browser.execute(() => {
+    // Try to find the active tab with data-state="active"
     const active = document.querySelector<HTMLElement>('[data-test-id^="request-tab:"][data-state="active"]')
-    return active?.getAttribute("data-tab-key") ?? null
+    if (active) {
+      return active.getAttribute("data-tab-key") ?? null
+    }
+
+    // Fallback: get the last request tab (most recently opened)
+    const tabs = Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="request-tab:"]'))
+    if (tabs.length > 0) {
+      const lastTab = tabs[tabs.length - 1]!
+      return lastTab.getAttribute("data-tab-key") ?? null
+    }
+
+    return null
   })
 }
 
