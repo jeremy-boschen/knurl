@@ -1,5 +1,5 @@
 import type * as React from "react"
-import { useEffect } from "react"
+import { useLayoutEffect } from "react"
 
 import { XIcon } from "lucide-react"
 
@@ -20,8 +20,10 @@ type RequestTabProps = {
 export default function RequestTab({ tabId, onSelectTab, onCloseTab, onContextMenu }: RequestTabProps) {
   const { isActive, name, method, isDirty, requestId } = useRequestsTabSummary(tabId)
 
-  // Emit event when tab becomes active
-  useEffect(() => {
+  // Emit event when tab becomes active via useLayoutEffect
+  // This ensures the event is fired before the browser paints,
+  // making it reliably available for E2E tests without race conditions
+  useLayoutEffect(() => {
     if (isActive && requestId) {
       eventBus.emit({
         type: "requestUi",
