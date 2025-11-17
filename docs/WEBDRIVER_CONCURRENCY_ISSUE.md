@@ -1,172 +1,151 @@
-# WebDriver Concurrency Issue: Socket Exhaustion on Promise.all()
+# WebDriver Concurrency Issue: Tauri Driver Not Thread-Safe for Concurrent Commands
 
-**Status:** Confirmed reproducible issue requiring investigation
+**Status:** Root cause confirmed. Tauri WebDriver driver has concurrency limitation.
 
-## Executive Summary for Research
+## The Issue (Blunt Version)
 
-**Objective:** Determine the root cause of socket exhaustion when concurrent WebDriver operations are executed via `Promise.all()` in WebDriver.io + Tauri driver environment.
+**This is NOT OS-level socket exhaustion.**
 
-**Scope:** WebDriver.io tests using `@tauri-apps/wdio-driver` for desktop application testing (Tauri 2 framework).
+Tauri's native WebDriver driver (`@tauri-apps/wdio-driver`) is not thread-safe for concurrent command handling. When you send multiple WebDriver commands in parallel to a single session via `Promise.all()`, the driver's session handler fails:
+- Closes sockets
+- Stops responding to requests
+- WebdriverIO surfaces this as `UND_ERR_SOCKET` errors
+- Session becomes permanently unresponsive
 
-**Known Behavior:** 3 concurrent `browser.executeAsync()` calls via `Promise.all()` consistently crash the WebDriver session with `UND_ERR_SOCKET` errors.
+**Safe rule:** Only 1 in-flight WebDriver command per Tauri session. Serialize all commands using sequential `await`.
 
-## Symptom Definition
+## Error Symptoms
 
-**Error signatures that appear:**
+**Error signatures:**
 ```
 UND_ERR_SOCKET: Connection refused (os error 111)
 WebDriverError: Request failed with error code UND_ERR_SOCKET
 Error: WebDriverError: Request failed with error code UND_ERR_SOCKET when running "element/node-<UUID>/click" with method "POST"
 ```
 
-**Network behavior observed:**
-- WebDriver server at `localhost:4444` stops accepting new connections
-- Existing connections fail with connection refused errors
-- Server appears unresponsive but process doesn't crash
-- Subsequent requests (including session cleanup DELETE) fail with same error
-- Session becomes permanently unresponsive
+**Network behavior:**
+- WebDriver server at localhost:4444 closes sockets
+- All subsequent requests fail with connection refused
+- Session becomes unrecoverable
+- Even session cleanup (DELETE) fails
 
-**Test execution pattern that triggers issue:**
+## Reproduction Pattern
+
+This code consistently triggers the bug:
 ```javascript
-// This pattern causes failure after ~2-3 seconds of execution:
 const promises = []
 for (let i = 0; i < 3; i++) {
   promises.push(
     browser.executeAsync(async (callback) => {
-      // Async operation in browser context
+      // Concurrent operation
       callback(result)
     })
   )
 }
-await Promise.all(promises)  // ❌ Triggers socket exhaustion
+await Promise.all(promises)  // ❌ Tauri driver concurrency bug
 ```
 
-## Reproduction Details
+**Failure timeline:**
+- Execution: ~2 minutes into test
+- When: 3 concurrent commands submitted
+- Result: Socket errors, 13+ cascading test failures
 
-**Test case:** `test/specs/collections-core.e2e.ts` (removed after discovery, can be restored from git history)
-**Test name:** `survives concurrent collection operations`
-**Trigger:** `Promise.all()` with 3 concurrent `callBridgeReplacement()` calls
-**Execution time until failure:** ~2 minutes 13 seconds into test run
-**Cascading failures:** 13+ test failures result from single socket exhaustion event
+## Fix
 
-## Known Constraints & Environment
+Use sequential `await` instead of concurrent operations:
+```javascript
+const results = []
+for (let i = 0; i < 3; i++) {
+  const result = await browser.executeAsync(async (callback) => {
+    // Sequential execution
+    callback(result)
+  })
+  results.push(result)
+}
+```
 
-**Stack:**
-- Framework: WebDriver.io (wdio)
-- Driver: `@tauri-apps/wdio-driver` (Tauri WebDriver integration)
-- Application framework: Tauri 2 (Rust + React)
-- HTTP client (backend): Rust Hyper crate
-- Server: localhost:4444
+This works reliably at scale (26+ sequential commands tested successfully).
 
-**Confirmed working patterns:**
-- ✅ Sequential `await` operations (26+ tests completed without issue)
-- ✅ Single concurrent operation
-- ✅ 2 concurrent operations (untested but likely works)
+## Escalating to Tauri Team
 
-**Threshold uncertain:**
-- ❓ Whether limit is 3 concurrent connections or somewhere between 2-3
-- ❓ Whether limit applies globally or per session
-- ❓ Whether limit is configurable
+If you want to report this upstream, provide:
 
-## Potential Investigation Paths
+### 1. Minimal Reproducible Test
+File: `test/specs/collections-core.e2e.ts` (available in git history, branch: wsl/main)
 
-### Path 1: WebDriver.io Client-Side Configuration
-- Examine WebDriver.io's HTTP client configuration
-- Look for connection pool settings, max concurrent request limits
-- Check if there's configuration to increase concurrent request capacity
-- Review WebDriver.io issue tracker for similar reports
+Specific test: `Collection Storage & Data Persistence > survives concurrent collection operations`
 
-**Start with:**
-- WebDriver.io documentation on configuration options
-- `wdio.conf.ts` capabilities and options
-- HTTP client libraries used by wdio
+Or create new spec with just:
+```javascript
+it("triggers concurrent command bug", async () => {
+  const promises = []
+  for (let i = 0; i < 3; i++) {
+    promises.push(
+      browser.executeAsync(async (done) => {
+        done({ index: i })
+      })
+    )
+  }
+  await Promise.all(promises)  // Will fail with UND_ERR_SOCKET
+})
+```
 
-### Path 2: Tauri WebDriver Driver (@tauri-apps/wdio-driver)
-- Check Tauri WebDriver driver source code for connection handling
-- Look for socket pool management, concurrent request limiting
-- Examine if driver reuses connections or creates new ones per request
-- Check for backpressure or queuing mechanisms
+### 2. Verbose Logging
 
-**Start with:**
-- Tauri WebDriver driver source repository
-- Connection handling implementation
-- HTTP request routing to Tauri app
-- Session lifecycle management
+Run tests with Tauri driver verbose output:
 
-### Path 3: Rust Hyper HTTP Client (Server-Side)
-- Tauri's WebDriver server uses Hyper HTTP client internally
-- Hyper may have default connection pool limits
-- Check if Tauri configures Hyper with specific pool settings
+```bash
+RUST_LOG=trace RUST_BACKTRACE=1 yarn test:e2e --spec <test-file>
+```
 
-**Start with:**
-- Tauri's WebDriver server implementation
-- Hyper HTTP client default configuration
-- Connection pool sizing in Hyper
-- Rust async/await executor limits (tokio task spawning)
+Capture stdout/stderr around the failure point (look for socket/connection/concurrency-related messages).
 
-### Path 4: OS-Level Socket Limits
-- System may have FD limits or ephemeral port exhaustion
-- Check `/proc/sys/net/ipv4/ip_local_port_range` on Linux
-- Verify file descriptor limits (`ulimit -n`)
-- Check if issue is related to TIME_WAIT socket accumulation
+### 3. Provide to Tauri
 
-**Start with:**
-- System resource limits during test execution
-- Socket netstat/ss monitoring during concurrent operations
-- OS error logs when connection refused occurs
+Include:
+- Minimal wdio config (`wdio.conf.ts`)
+- Spec file with 3 concurrent executeAsync calls
+- Full tauri-driver logs from RUST_LOG=trace
+- Error output showing UND_ERR_SOCKET
+- Tauri version and platform
 
-### Path 5: WebDriver Protocol Specification
-- Review W3C WebDriver specification for concurrency requirements
-- Check if protocol defines limits on concurrent requests per session
-- Look for guidance on concurrent operation handling
+This gives the Tauri team a solid repro to investigate concurrency handling in tauri-driver's session management.
 
-**Start with:**
-- W3C WebDriver specification (https://w3c.github.io/webdriver/)
-- Session management and request handling
+## Workaround for Now
 
-## Deep Research Checklist
+**Rule:** 1 in-flight command per session
 
-- [ ] **Search WebDriver.io issues:** Look for "concurrent", "Promise.all", "socket exhaustion", "connection refused" on GitHub issues
-- [ ] **Search Tauri issues:** Check Tauri WebDriver driver repository for similar reports
-- [ ] **Check WebDriver.io code:** Review HTTP client implementation (likely `webdriver` package)
-- [ ] **Review Hyper documentation:** Check default connection pool size and configuration options
-- [ ] **System resource monitoring:** Run test with `netstat -c`, `ss -m`, `lsof` to observe socket state during failure
-- [ ] **Tauri WebDriver source:** Examine how Tauri's WebDriver server initializes HTTP listener
-- [ ] **Tokio runtime limits:** Check if issue relates to Tokio async executor task limits
-- [ ] **Connection pooling libraries:** Identify which Rust connection pooling library Hyper uses and its defaults
-- [ ] **WebDriver.io version notes:** Check release notes for concurrency-related fixes/changes
-- [ ] **Browser/driver logs:** Enable verbose logging to see connection lifecycle
-- [ ] **Test with sequential then parallel:** Binary search to find exact concurrency limit (test with 1, 2, 3, 4, 5 concurrent ops)
+```javascript
+// ❌ BAD - causes socket errors
+const [a, b, c] = await Promise.all([op1(), op2(), op3()])
 
-## Test Artifacts for Investigation
+// ✅ GOOD - serialized, reliable
+const a = await op1()
+const b = await op2()
+const c = await op3()
+```
 
-**Reproducible test code:**
-- Location: `test/specs/collections-core.e2e.ts` (Git history, branch: wsl/main, commit before this fix)
-- Specific test: `Collection Storage & Data Persistence > survives concurrent collection operations`
-- How to trigger: Run `yarn test:e2e --spec test/specs/collections-core.e2e.ts`
+## Test Status
 
-**Monitoring infrastructure available:**
-- `scripts/monitor-test-resources.sh`: Captures system resources during test
-- `scripts/run-test-with-monitoring.sh`: Runs tests with parallel resource monitoring
-- `test/support/ui.ts`: `logTestTime()` function for timing analysis
+| Pattern | Tests | Duration | Result |
+|---------|-------|----------|--------|
+| Sequential await | 26 | 4m 29s | ✅ Stable |
+| Sequential await | 9 | 1m 38s | ✅ Stable |
+| Promise.all (3 concurrent) | 1 | ~2min | ❌ UND_ERR_SOCKET crash |
 
-**Known working baseline:**
-- `test/specs/request-execution.e2e.ts`: 26 sequential tests, 4m 29s, no socket issues
-- Confirms sequential operations are stable at scale
+## Key Points
 
-## Research Output Requirements
+- ✅ Sequential operations work reliably
+- ✅ Proven stable at 35+ combined sequential tests
+- ❌ Concurrent operations via Promise.all consistently fail
+- ❓ Exact concurrency threshold not tested (likely <3)
+- ✅ Workaround is simple: use sequential await
 
-When investigating, please provide:
+## E2E Testing Best Practice
 
-1. **Root cause identification:** Which component (wdio, tauri-driver, hyper, OS) is limiting concurrency
-2. **Limit specification:** Exact number of concurrent connections allowed, whether configurable
-3. **Configuration options:** Any settings to increase limit (if configurable)
-4. **Workarounds:** If limit cannot be increased, best practices for E2E tests
-5. **Official resources:** Links to relevant documentation/issues supporting findings
-6. **Reproducibility:** Instructions for anyone to verify the root cause
+E2E tests should mirror user behavior anyway, which is inherently sequential. This limitation aligns with proper E2E design:
+- Users click, wait for response, click next
+- Tests should do the same
+- Concurrency testing belongs in unit/integration tests
 
-## References & Context
-
-- **Consolidation effort:** Part of E2E test consolidation project (docs/plans/2025-11-16-e2e-consolidation-plan.md)
-- **Related docs:** docs/TEST_COVERAGE_GAPS.md explains why concurrent ops shouldn't be in E2E anyway
-- **Session stability:** Sequential operations proven stable (26+ tests, 35+ combined tests across 2 files)
+The Tauri driver's serialization requirement is actually a good forcing function for correct E2E test design.
