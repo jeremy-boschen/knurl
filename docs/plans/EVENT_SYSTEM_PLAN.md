@@ -28,6 +28,74 @@ This plan introduces a lightweight, fire-and-forget event system that fires when
 
 ---
 
+## Eventing Mechanism: Custom EventBus vs Built-in Browser Events
+
+### Decision: Custom EventBus (In-Memory Pub/Sub)
+
+We use a **custom EventBus** rather than built-in `CustomEvent` + `dispatchEvent()` for the following reasons:
+
+**Browser Events (CustomEvent) - Rejected:**
+- ❌ Requires DOM elements to dispatch from (forces coupling to specific elements)
+- ❌ Event handlers called synchronously (can cause performance issues if listeners do blocking work)
+- ❌ Harder to filter in WebDriver (no easy way to wait for specific action + type combo)
+- ❌ Can be stopped/prevented by `stopPropagation()` or `preventDefault()`
+- ❌ Verbose API: `element.dispatchEvent(new CustomEvent('...'))`
+- ❌ Hard to access from WebDriver without storing in `window` (which is what we do anyway)
+
+**Custom EventBus (In-Memory Pub/Sub) - Chosen:**
+- ✅ Simple, type-safe subscription model: `eventBus.on(eventType, handler)`
+- ✅ Zero coupling to DOM structure
+- ✅ Easier to wait for in WebDriver: `waitForEvent('requestUi', 'tab.created')`
+- ✅ Fire-and-forget pattern (no side effects from handler exceptions)
+- ✅ Event history buffer for debugging (last 100 events)
+- ✅ Exposed to WebDriver via `window.__knurlEventBus` for listening
+- ✅ Lightweight: simple Map-based implementation, no GC pressure
+- ✅ Testable in unit tests without DOM context
+
+**Implementation Pattern:**
+```typescript
+// Emit from React components/state managers
+eventBus.emit({
+  type: 'requestUi',
+  action: 'opened',
+  tabId: 'abc123',
+  timestamp: new Date().toISOString()
+})
+
+// Listen in tests via WebDriver
+const event = await waitForEvent('requestUi', 'opened')
+expect(event.tabId).toBe('abc123')
+
+// WebDriver helper uses browser.executeAsync to bridge the gap
+export async function waitForEvent<T extends KnurlEvent>(
+  type: T['type'],
+  action?: T['action'],
+  timeout = 15000
+): Promise<T> {
+  return await browser.executeAsync(
+    (eventType: string, eventAction: string | undefined, done: (event: any) => void) => {
+      const handler = (event: any) => {
+        if (event.type === eventType && (!eventAction || event.action === eventAction)) {
+          window.__knurlEventBus.off?.(eventType, handler)
+          done(event)
+        }
+      }
+      window.__knurlEventBus?.on?.(eventType, handler)
+    },
+    type,
+    action
+  )
+}
+```
+
+**Notes:**
+- Event bus is global singleton (`window.__knurlEventBus`) in browser context
+- For unit tests, can create independent instances or mock `eventBus` directly
+- In dev/prod, event emission is conditional on a feature flag (disabled by default, enabled during E2E)
+- Zero overhead for regular usage - no listeners = no work done
+
+---
+
 ## Core Event Structure
 
 All events follow a discriminated union pattern with a `type` field that identifies the event class and an `action` field for the specific action:
@@ -349,8 +417,8 @@ type EnvironmentEvent = BaseEvent & {
 2. Create event emitter utility: `src/lib/event-emitter.ts`
 3. Make events accessible to WebDriver via `window.__knurlEventBus` global
 4. Add 3 highest-impact event emissions:
-   - `RequestUiEvent` (tab.created, tab.closed, tab.activated, tab.saved)
-   - `ResponseUiEvent` (opened, closed, updated)
+   - `RequestUiEvent` (opened, closed, params.changed, auth.changed, headers.changed, body.changed)
+   - `ResponseUiEvent` (opened, closed, updated, body.changed, body.formatted, format.toggled)
    - `RequestExecutionEvent` (sent, completed, failed, cancelled)
 
 ### Phase 2: Core Events (Week 2)
