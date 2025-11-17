@@ -1,5 +1,5 @@
 import type * as React from "react"
-import { useLayoutEffect } from "react"
+import { useEffect } from "react"
 
 import { XIcon } from "lucide-react"
 
@@ -8,7 +8,7 @@ import { HttpBadge } from "@/components/ui/knurl"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
 import { cn } from "@/lib/utils"
 import { useRequestsTabSummary } from "@/state"
-import { eventBus } from "@/lib/event-emitter"
+import { emitEvent } from "@/hooks/use-emit-event"
 
 type RequestTabProps = {
   tabId: string
@@ -20,12 +20,10 @@ type RequestTabProps = {
 export default function RequestTab({ tabId, onSelectTab, onCloseTab, onContextMenu }: RequestTabProps) {
   const { isActive, name, method, isDirty, requestId } = useRequestsTabSummary(tabId)
 
-  // Emit event when tab becomes active via useLayoutEffect
-  // This ensures the event is fired before the browser paints,
-  // making it reliably available for E2E tests without race conditions
-  useLayoutEffect(() => {
+  // Emit requestUi:opened event after tab renders
+  useEffect(() => {
     if (isActive && requestId) {
-      eventBus.emit({
+      emitEvent({
         type: "requestUi",
         action: "opened",
         tabId,
