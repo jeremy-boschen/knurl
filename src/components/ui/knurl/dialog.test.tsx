@@ -1,11 +1,28 @@
-import type { ReactNode } from "react"
-import { render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import React, { type ReactNode } from "react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { describe, expect, it, vi } from "vitest"
+
+const dialogContentHandlers = vi.hoisted(() => ({
+  onPointerDownOutside: null as ((event: { preventDefault: () => void }) => void) | null,
+  onInteractOutside: null as ((event: { preventDefault: () => void }) => void) | null,
+}))
 
 vi.mock("react-draggable", () => ({
   __esModule: true,
   default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
+
+vi.mock("@radix-ui/react-dialog", async () => {
+  const actual = await vi.importActual<typeof import("@radix-ui/react-dialog")>("@radix-ui/react-dialog")
+  return {
+    ...actual,
+    Content: React.forwardRef((props: any, ref: any) => {
+      dialogContentHandlers.onPointerDownOutside = props.onPointerDownOutside
+      dialogContentHandlers.onInteractOutside = props.onInteractOutside
+      return <actual.Content {...props} ref={ref} />
+    }),
+  }
+})
 
 import { Dialog, DialogContent, DialogOverlay, DialogPortal, DialogTitle } from "./dialog"
 
@@ -14,7 +31,12 @@ const renderDialog = (content: ReactNode, props: Record<string, any> = {}) =>
     <Dialog open modal={false} onOpenChange={() => {}} {...props}>
       <DialogPortal>
         <DialogOverlay />
-        <DialogContent>{content}</DialogContent>
+        <DialogContent aria-describedby="dialog-description">
+          <p id="dialog-description" className="sr-only">
+            Dialog body
+          </p>
+          {content}
+        </DialogContent>
       </DialogPortal>
     </Dialog>,
   )
@@ -61,5 +83,87 @@ describe("Knurl Dialog", () => {
     )
 
     expect(document.querySelector('[class*="resize-handle-"]')).toBeInTheDocument()
+  })
+
+  it("updates container size when dragging the resize handle", async () => {
+    render(
+      <Dialog
+        open
+        modal={false}
+        resizable
+        size={{ min: { width: 180, height: 150 }, initial: { width: 220, height: 200 } }}
+        onOpenChange={() => {}}
+      >
+        <DialogPortal>
+          <DialogOverlay />
+          <DialogContent>
+            <DialogTitle>Resize</DialogTitle>
+          </DialogContent>
+        </DialogPortal>
+      </Dialog>,
+    )
+
+    const handle = document.querySelector('[class*="resize-handle-"]') as HTMLElement
+    const draggableContainer = document.querySelector("[data-slot='dialog-content']")?.parentElement as HTMLElement
+    expect(draggableContainer.style.width).toBe("220px")
+
+    await act(async () => {
+      fireEvent.mouseDown(handle, { clientX: 200, clientY: 200 })
+    })
+    expect(document.body.style.cursor).toBe("se-resize")
+    expect(document.body.style.userSelect).toBe("none")
+
+    await act(async () => {
+      document.dispatchEvent(new MouseEvent("mousemove", { clientX: 260, clientY: 250 }))
+    })
+    await act(async () => {
+      document.dispatchEvent(new MouseEvent("mouseup", { clientX: 260, clientY: 250 }))
+    })
+
+    await waitFor(() => {
+      expect(draggableContainer.style.width).toBe("280px")
+      expect(draggableContainer.style.height).toBe("250px")
+    })
+    expect(document.body.style.cursor).toBe("")
+    expect(document.body.style.userSelect).toBe("")
+  })
+
+  it("prevents outside interactions while resizing but allows them otherwise", () => {
+    render(
+      <Dialog
+        open
+        modal={false}
+        resizable
+        size={{ min: { width: 150, height: 120 }, initial: { width: 200, height: 180 } }}
+        onOpenChange={() => {}}
+      >
+        <DialogPortal>
+          <DialogOverlay />
+          <DialogContent aria-describedby="dialog-description">
+            <p id="dialog-description" className="sr-only">
+              Dialog content
+            </p>
+            <DialogTitle>Guard</DialogTitle>
+          </DialogContent>
+        </DialogPortal>
+      </Dialog>,
+    )
+
+    const handle = document.querySelector('[class*="resize-handle-"]') as HTMLElement
+
+    act(() => {
+      fireEvent.mouseDown(handle, { clientX: 100, clientY: 100 })
+    })
+    const preventDefault = vi.fn()
+    dialogContentHandlers.onPointerDownOutside?.({ preventDefault } as any)
+    expect(preventDefault).toHaveBeenCalled()
+
+    act(() => {
+      document.dispatchEvent(new MouseEvent("mouseup", { clientX: 120, clientY: 120 }))
+    })
+
+    const preventDefaultIdle = vi.fn()
+    dialogContentHandlers.onPointerDownOutside?.({ preventDefault: preventDefaultIdle } as any)
+    expect(preventDefaultIdle).not.toHaveBeenCalled()
   })
 })

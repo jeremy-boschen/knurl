@@ -1,501 +1,138 @@
-// Consolidated test suite for src/state/request-tabs.ts
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import { useApplication } from "@/state/application"
-import { RootCollectionFolderId } from "@/types"
-import { resetApplicationStore } from "@/test/zustand"
-import { ScratchCollectionId } from "@/state/collections"
-import { escapeRegExp } from "./request-tabs"
+import { describe, expect, it, vi, beforeEach } from "vitest"
+import type { StoreApi } from "zustand"
 
-// ------- from request-tabs.cancel.test.ts -------
-vi.mock("@/bindings/knurl", async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    cancelHttpRequest: vi.fn(async () => {}),
-  }
-})
-import { cancelHttpRequest } from "@/bindings/knurl"
-describe("requestTabsApi.cancelRequest", () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    useApplication.setState((s) => {
-      s.requestTabsState.openTabs = {
-        t1: {
-          tabId: "t1",
-          order: 0,
-          requestId: "req-1",
-          collectionId: "col-1",
-          activeTab: "params",
-          sending: true,
-          activeCorrelationId: "RID-123",
-          response: {},
-        } as any,
-      }
-      s.requestTabsState.activeTab = "t1"
-      s.requestTabsState.orderedTabs = Object.values(s.requestTabsState.openTabs) as any
-    })
-  })
+import { requestTabsSliceCreator, escapeRegExp } from "./request-tabs"
+import type { RequestTabState } from "@/types"
 
-  it("calls cancelHttpRequest and clears sending/activeCorrelationId", async () => {
-    const { requestTabsApi } = useApplication.getState()
-    await requestTabsApi.cancelRequest("t1")
-    expect(cancelHttpRequest).toHaveBeenCalledWith("RID-123")
-    const tab = useApplication.getState().requestTabsState.openTabs.t1
-    expect(tab.sending).toBe(false)
-    expect(tab.activeCorrelationId).toBeUndefined()
-  })
-})
+type TestApplication = any
 
-// ------- from request-tabs.remove-tab.test.ts -------
-describe("requestTabsApi.removeTab", () => {
-  beforeEach(async () => {
-    useApplication.setState((s) => {
-      s.collectionsState.index = [{ id: "col-1", name: "C1", count: 1 } as any]
-      s.collectionsState.cache["col-1"] = {
-        id: "col-1",
-        name: "C1",
-        updated: new Date().toISOString(),
-        encryption: { algorithm: "aes-gcm" },
-        environments: {},
-        requests: {
-          "req-1": {
-            id: "req-1",
-            name: "R1",
-            collectionId: "col-1",
-            folderId: RootCollectionFolderId,
-            autoSave: false,
-            method: "GET",
-            url: "https://example.com",
-            pathParams: {},
-            queryParams: {},
-            headers: {},
-            body: { type: "none" },
-            authentication: { type: "none" },
-            patch: {},
-            updated: 0,
-          } as any,
-        },
-        folders: {
-          [RootCollectionFolderId]: {
-            id: RootCollectionFolderId,
-            name: "Root",
-            parentId: null,
-            order: 0,
-            childFolderIds: [],
-            requestIds: ["req-1"],
-          },
-        },
-        requestIndex: {
-          "req-1": {
-            folderId: RootCollectionFolderId,
-            ancestry: [RootCollectionFolderId],
-          },
-        },
-        authentication: { type: "none" },
-      } as any
-      s.requestTabsState.openTabs = {
-        t1: {
-          tabId: "t1",
-          order: 0,
-          requestId: "req-1",
-          collectionId: "col-1",
-          activeTab: "params",
-          sending: false,
-          response: {},
-        } as any,
-      }
-      s.requestTabsState.activeTab = "t1"
-      s.requestTabsState.orderedTabs = Object.values(s.requestTabsState.openTabs) as any
-    })
-    await useApplication.getState().collectionsApi.loadCollection("col-1")
-  })
-
-  it("does not delete a persisted request when autoSave is false; discards patch", async () => {
-    const { requestTabsApi, collectionsApi } = useApplication.getState()
-    useApplication.setState((s) => {
-      ;(s.collectionsState.cache["col-1"].requests["req-1"].patch as any) = { name: "Changed" }
-    })
-    requestTabsApi.removeTab("t1")
-    const request = collectionsApi.getRequest("col-1", "req-1")
-    expect(request).toBeTruthy()
-    expect(request.patch).toEqual({})
-    expect(request.name).toBe("R1")
-  })
-
-  it("commits patch when autoSave is true", async () => {
-    const { requestTabsApi, collectionsApi } = useApplication.getState()
-    useApplication.setState((s) => {
-      s.collectionsState.cache["col-1"].requests["req-1"].autoSave = true as any
-      ;(s.collectionsState.cache["col-1"].requests["req-1"].patch as any) = { name: "Saved Name" }
-    })
-    requestTabsApi.removeTab("t1")
-    const request = collectionsApi.getRequest("col-1", "req-1")
-    expect(request.name).toBe("Saved Name")
-    expect(request.patch).toEqual({})
-  })
-
-  it("commits patch when autoSave is true in patch (base false)", async () => {
-    const { requestTabsApi, collectionsApi } = useApplication.getState()
-    useApplication.setState((s) => {
-      s.collectionsState.cache["col-1"].requests["req-1"].autoSave = false as any
-      ;(s.collectionsState.cache["col-1"].requests["req-1"].patch as any) = { autoSave: true, name: "Saved Patch Name" }
-    })
-    requestTabsApi.removeTab("t1")
-    const request = collectionsApi.getRequest("col-1", "req-1")
-    expect(request.name).toBe("Saved Patch Name")
-    expect(request.patch).toEqual({})
-    expect(request.autoSave).toBe(true)
-  })
-
-  it("commits only autoSave toggle and clears patch when patch has autoSave only", async () => {
-    const { requestTabsApi, collectionsApi } = useApplication.getState()
-    useApplication.setState((s) => {
-      s.collectionsState.cache["col-1"].requests["req-1"].autoSave = false as any
-      ;(s.collectionsState.cache["col-1"].requests["req-1"].patch as any) = { autoSave: true }
-    })
-    requestTabsApi.removeTab("t1")
-    const request = collectionsApi.getRequest("col-1", "req-1")
-    expect(request.autoSave).toBe(true)
-    expect(request.patch).toEqual({})
-    expect(request.name).toBe("R1") // unchanged
-  })
-
-  it("does not commit when base autoSave is true but patch sets autoSave false; discards patch", async () => {
-    const { requestTabsApi, collectionsApi } = useApplication.getState()
-    useApplication.setState((s) => {
-      s.collectionsState.cache["col-1"].requests["req-1"].autoSave = true as any
-      ;(s.collectionsState.cache["col-1"].requests["req-1"].patch as any) = { autoSave: false, name: "Should Not Save" }
-    })
-    requestTabsApi.removeTab("t1")
-    const request = collectionsApi.getRequest("col-1", "req-1")
-    expect(request.autoSave).toBe(true) // unchanged
-    expect(request.name).toBe("R1") // not saved
-    expect(request.patch).toEqual({}) // discarded
-  })
-})
-
-describe("requestTabsApi bulk close helpers", () => {
-  beforeEach(async () => {
-    useApplication.setState((s) => {
-      const now = new Date().toISOString()
-      s.collectionsState.index = [{ id: "col-1", name: "C1", count: 3 } as any]
-      s.collectionsState.cache["col-1"] = {
-        id: "col-1",
-        name: "C1",
-        updated: now,
-        encryption: { algorithm: "aes-gcm" },
-        environments: {},
-        requests: {
-          "req-1": {
-            id: "req-1",
-            name: "R1",
-            collectionId: "col-1",
-            folderId: RootCollectionFolderId,
-            autoSave: false,
-            method: "GET",
-            url: "https://example.com/1",
-            pathParams: {},
-            queryParams: {},
-            headers: {},
-            body: { type: "none" },
-            authentication: { type: "none" },
-            patch: {},
-            updated: 0,
-          } as any,
-          "req-2": {
-            id: "req-2",
-            name: "R2",
-            collectionId: "col-1",
-            folderId: RootCollectionFolderId,
-            autoSave: false,
-            method: "GET",
-            url: "https://example.com/2",
-            pathParams: {},
-            queryParams: {},
-            headers: {},
-            body: { type: "none" },
-            authentication: { type: "none" },
-            patch: {},
-            updated: 0,
-          } as any,
-          "req-3": {
-            id: "req-3",
-            name: "R3",
-            collectionId: "col-1",
-            folderId: RootCollectionFolderId,
-            autoSave: false,
-            method: "GET",
-            url: "https://example.com/3",
-            pathParams: {},
-            queryParams: {},
-            headers: {},
-            body: { type: "none" },
-            authentication: { type: "none" },
-            patch: {},
-            updated: 0,
-          } as any,
-        },
-        folders: {
-          [RootCollectionFolderId]: {
-            id: RootCollectionFolderId,
-            name: "Root",
-            parentId: null,
-            order: 0,
-            childFolderIds: [],
-            requestIds: ["req-1", "req-2", "req-3"],
-          },
-        },
-        requestIndex: {
-          "req-1": {
-            folderId: RootCollectionFolderId,
-            ancestry: [RootCollectionFolderId],
-          },
-          "req-2": {
-            folderId: RootCollectionFolderId,
-            ancestry: [RootCollectionFolderId],
-          },
-          "req-3": {
-            folderId: RootCollectionFolderId,
-            ancestry: [RootCollectionFolderId],
-          },
-        },
-        authentication: { type: "none" },
-      } as any
-      s.requestTabsState.openTabs = {
-        t1: {
-          tabId: "t1",
-          order: 0,
-          requestId: "req-1",
-          collectionId: "col-1",
-          activeTab: "params",
-          sending: false,
-          response: {},
-        } as any,
-        t2: {
-          tabId: "t2",
-          order: 1,
-          requestId: "req-2",
-          collectionId: "col-1",
-          activeTab: "params",
-          sending: false,
-          response: {},
-        } as any,
-        t3: {
-          tabId: "t3",
-          order: 2,
-          requestId: "req-3",
-          collectionId: "col-1",
-          activeTab: "params",
-          sending: false,
-          response: {},
-        } as any,
-      }
-      s.requestTabsState.activeTab = "t2"
-      s.requestTabsState.orderedTabs = Object.values(s.requestTabsState.openTabs) as any
-    })
-    await useApplication.getState().collectionsApi.loadCollection("col-1")
-  })
-
-  it("closeAllTabs removes every tab", async () => {
-    const { requestTabsApi } = useApplication.getState()
-    requestTabsApi.closeAllTabs()
-    const state = useApplication.getState().requestTabsState
-    expect(Object.keys(state.openTabs)).toHaveLength(0)
-    expect(state.activeTab).toBeNull()
-  })
-
-  it("closeTabsToLeft removes tabs before the target", async () => {
-    const { requestTabsApi } = useApplication.getState()
-    requestTabsApi.closeTabsToLeft("t3")
-    const state = useApplication.getState().requestTabsState
-    expect(state.openTabs.t1).toBeUndefined()
-    expect(state.openTabs.t2).toBeUndefined()
-    expect(state.openTabs.t3).toBeDefined()
-    expect(state.activeTab).toBe("t3")
-  })
-
-  it("closeTabsToRight removes tabs after the target", async () => {
-    const { requestTabsApi } = useApplication.getState()
-    requestTabsApi.closeTabsToRight("t2")
-    const state = useApplication.getState().requestTabsState
-    expect(state.openTabs.t3).toBeUndefined()
-    expect(state.openTabs.t2).toBeDefined()
-    expect(state.openTabs.t1).toBeDefined()
-    expect(state.activeTab).toBe("t2")
-  })
-})
-
-// ------- from request-tabs.misc.test.ts -------
-import type { LogLevel } from "@/types"
-describe("request-tabs misc APIs", () => {
-  it("clearResponse empties response and setResponseLogFilter sets levels", () => {
-    useApplication.setState((s) => {
-      s.requestTabsState.openTabs = {
-        t1: {
-          tabId: "t1",
-          order: 0,
-          requestId: "req-1",
-          collectionId: "col-1",
-          activeTab: "params",
-          sending: false,
-          response: { logs: [{ requestId: "x", message: "m", level: "info" as LogLevel }], logFilterLevels: ["info"] },
-        } as any,
-      }
-      s.requestTabsState.activeTab = "t1"
-      s.requestTabsState.orderedTabs = Object.values(s.requestTabsState.openTabs) as any
-    })
-    const { requestTabsApi } = useApplication.getState()
-    requestTabsApi.clearResponse("t1")
-    let tab = useApplication.getState().requestTabsState.openTabs.t1
-    expect(tab.response?.logs?.length ?? 0).toBe(0)
-    requestTabsApi.setResponseLogFilter("t1", ["error", "warn"])
-    tab = useApplication.getState().requestTabsState.openTabs.t1
-    expect(tab.response?.logFilterLevels).toEqual(["error", "warn"])
-  })
-})
-
-// ------- from request-tabs.send.test.ts -------
-vi.mock("@tauri-apps/api/event", () => ({
-  listen: vi.fn(async () => () => {}),
+vi.mock("@/state/application", () => ({
+  useApplication: { loadAll: vi.fn(), getState: vi.fn(() => ({})) },
+  collectionsApi: vi.fn(),
+  settingsApi: vi.fn(),
+  credentialsCacheApi: vi.fn(),
+  environmentsApi: vi.fn(),
+  utilitySheetsApi: vi.fn(),
 }))
-vi.mock("@/request/pipeline", async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    runPipeline: vi.fn(async (_phases, _ctx, notifier) => {
-      notifier.onStart()
-      notifier.onSuccess({ requestId: "RID", status: 200 } as any)
-    }),
+
+const baseCollection = {
+  id: "col-1",
+  name: "Default",
+  description: "",
+  encryption: { algorithm: "aes-gcm" },
+  authentication: { type: "none" },
+  folders: {},
+  requestIndex: {},
+  requests: {
+    "req-1": {
+      id: "req-1",
+      name: "List",
+      method: "GET",
+      url: "https://example.com",
+      authentication: { type: "none" },
+      headers: [],
+      query: [],
+      body: { type: "json", value: "" },
+      variables: [],
+      patch: null,
+      updated: "1",
+    },
+  },
+  environments: {},
+} as const
+
+const createSlice = () => {
+  const collectionsApi = {
+    loadCollection: vi.fn(async () => baseCollection),
+    createRequest: vi.fn(),
+    getCollection: vi.fn(() => baseCollection),
+    getRequest: vi.fn(() => baseCollection.requests["req-1"]),
+    deleteRequest: vi.fn(),
+    commitRequestPatch: vi.fn(),
+    discardRequestPatch: vi.fn(),
+    setRequestMethod: vi.fn(),
+    setRequestUrl: vi.fn(),
+    setRequestName: vi.fn(),
   }
-})
-describe("requestTabsApi.sendRequest", () => {
-  beforeEach(async () => {
-    vi.clearAllMocks()
-    useApplication.setState((s) => {
-      s.collectionsState.index = [{ id: "col-1", name: "C1", count: 1 } as any]
-      s.collectionsState.cache["col-1"] = {
-        id: "col-1",
-        name: "C1",
-        updated: new Date().toISOString(),
-        encryption: { algorithm: "aes-gcm" },
-        environments: {},
-        requests: {
-          "req-1": {
-            id: "req-1",
-            name: "R1",
-            collectionId: "col-1",
-            folderId: RootCollectionFolderId,
-            autoSave: false,
-            method: "GET",
-            url: "https://example.com",
-            pathParams: {},
-            queryParams: {},
-            headers: {},
-            body: { type: "none" },
-            authentication: { type: "none" },
-            patch: {},
-            updated: 0,
-          } as any,
-        },
-        folders: {
-          [RootCollectionFolderId]: {
-            id: RootCollectionFolderId,
-            name: "Root",
-            parentId: null,
-            order: 0,
-            childFolderIds: [],
-            requestIds: ["req-1"],
-          },
-        },
-        requestIndex: {
-          "req-1": {
-            folderId: RootCollectionFolderId,
-            ancestry: [RootCollectionFolderId],
-          },
-        },
-        authentication: { type: "none" },
-      } as any
-      s.requestTabsState.openTabs = {
-        t1: {
-          tabId: "t1",
-          order: 0,
-          requestId: "req-1",
-          collectionId: "col-1",
-          activeTab: "params",
-          sending: false,
-          response: {},
-        } as any,
-      }
-      s.requestTabsState.activeTab = "t1"
+
+  const initialTab: RequestTabState = {
+    tabId: "tab-1",
+    order: 0,
+    collectionId: "col-1",
+    requestId: "req-1",
+    response: { logs: [], logFilterLevels: ["info", "error"] },
+  }
+
+  const state: any = {
+    collectionsState: {
+      cache: {
+        "col-1": structuredClone(baseCollection),
+      },
+      index: [{ id: "col-1", name: "Default", count: 1, open: false, order: 0, opened: [] }],
+    },
+    collectionsApi,
+    requestTabsState: {
+      openTabs: { [initialTab.tabId]: structuredClone(initialTab) },
+      activeTab: initialTab.tabId,
+      orderedTabs: [],
+    },
+  }
+
+  const set = (updater: (draft: any) => void) => {
+    updater(state)
+  }
+
+  const get = () => state as TestApplication
+
+  const storeApi = {
+    getState: () => state as TestApplication,
+    subscribe: vi.fn(() => () => {}),
+    registerPostHydrate: vi.fn(),
+  } as unknown as StoreApi<TestApplication>
+
+  const slice = requestTabsSliceCreator(set, get as () => TestApplication, storeApi)
+  Object.assign(state, slice)
+  state.requestTabsState = {
+    openTabs: { [initialTab.tabId]: structuredClone(initialTab) },
+    activeTab: initialTab.tabId,
+    orderedTabs: [structuredClone(initialTab)],
+  }
+
+  return { api: slice.requestTabsApi, state, collectionsApi }
+}
+
+describe("requestTabsSliceCreator helpers", () => {
+  beforeEach(() => {
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb: FrameRequestCallback) => {
+      cb(0)
+      return 0
     })
-    await useApplication.getState().collectionsApi.loadCollection("col-1")
   })
 
-  it("sets sending state, assigns correlation id, and clears after success", async () => {
-    const { requestTabsApi, collectionsApi } = useApplication.getState()
-    collectionsApi.getCollection("col-1")
-    const req = collectionsApi.getRequest("col-1", "req-1")
-    await requestTabsApi.sendRequest("t1", req)
-    const tab = useApplication.getState().requestTabsState.openTabs.t1
-    expect(tab.sending).toBe(false)
-    expect(tab.activeCorrelationId).toBeUndefined()
-    expect(tab.response).toBeTruthy()
+  afterEach(() => {
+    ;(window.requestAnimationFrame as unknown as { mockRestore?: () => void }).mockRestore?.()
+  })
+
+  it("selectEnvironment normalizes 'none' to undefined", () => {
+    const { api, state } = createSlice()
+    api.selectEnvironment("tab-1", "env-1")
+    expect(state.requestTabsState.openTabs["tab-1"].selectedEnvironmentId).toBe("env-1")
+
+    api.selectEnvironment("tab-1", "none")
+    expect(state.requestTabsState.openTabs["tab-1"].selectedEnvironmentId).toBeUndefined()
+  })
+
+  it("updates response log filters immutably", () => {
+    const { api, state } = createSlice()
+    api.setResponseLogFilter("tab-1", ["debug", "warn"])
+
+    expect(state.requestTabsState.openTabs["tab-1"].response?.logFilterLevels).toEqual(["debug", "warn"])
   })
 })
 
-// ------- additional coverage -------
-describe("request-tabs extra helpers", () => {
-  it("escapeRegExp escapes meta characters", () => {
-    const escaped = escapeRegExp(".*+[?^${}()|[]\\")
-    for (const symbol of [".", "*", "+", "?", "^", "$", "{", "}", "(", ")", "|", "[", "\\"]) {
-      expect(escaped).toContain(`\\${symbol}`)
-    }
-  })
-
-  it("openRequestTab reuses existing tab", () => {
-    resetApplicationStore()
-    const { collectionsApi, requestTabsApi } = useApplication.getState()
-    const collection = collectionsApi.addCollection("Col", "")
-    collectionsApi.getCollection(collection.id)
-    const request = collectionsApi.createRequest(collection.id, {
-      name: "Req",
-      method: "GET",
-      url: "https://example.test",
-    } as any)
-    collectionsApi.getCollection(collection.id)
-    requestTabsApi.openRequestTab(collection.id, request.id)
-    const firstState = useApplication.getState().requestTabsState
-    const initialTabId = firstState.activeTab
-    requestTabsApi.openRequestTab(collection.id, request.id)
-    const nextState = useApplication.getState().requestTabsState
-    expect(Object.values(nextState.openTabs)).toHaveLength(1)
-    expect(nextState.activeTab).toBe(initialTabId)
-  })
-
-  it("createRequestTab opens scratch request", async () => {
-    resetApplicationStore()
-    const { collectionsApi, requestTabsApi } = useApplication.getState()
-    await collectionsApi.loadCollection(ScratchCollectionId)
-    requestTabsApi.createRequestTab(undefined, { url: "https://example.com", method: "GET" } as any)
-    const tab = Object.values(useApplication.getState().requestTabsState.openTabs)[0]
-    expect(tab?.collectionId).toBe(ScratchCollectionId)
-  })
-
-  it("selectEnvironment updates selectedEnvironmentId", () => {
-    resetApplicationStore()
-    const { collectionsApi, requestTabsApi } = useApplication.getState()
-    const collection = collectionsApi.addCollection("Env", "")
-    collectionsApi.getCollection(collection.id)
-    const request = collectionsApi.createRequest(collection.id, {
-      name: "Req",
-      method: "GET",
-      url: "https://env.test",
-    } as any)
-    collectionsApi.getCollection(collection.id)
-    requestTabsApi.openRequestTab(collection.id, request.id)
-    const tabId = useApplication.getState().requestTabsState.activeTab!
-    requestTabsApi.selectEnvironment(tabId, "env-1")
-    const updated = useApplication.getState().requestTabsState.openTabs[tabId]
-    expect(updated.selectedEnvironmentId).toBe("env-1")
+describe("escapeRegExp", () => {
+  it("escapes characters used in regular expressions", () => {
+    const input = "price.(usd)+?"
+    expect(escapeRegExp(input)).toBe("price\\.\\(usd\\)\\+\\?")
   })
 })

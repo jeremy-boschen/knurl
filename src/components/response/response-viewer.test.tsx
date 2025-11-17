@@ -1,12 +1,15 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 
 const stateMocks = vi.hoisted(() => ({
   useRequestTab: vi.fn(),
 }))
 
 const { useRequestTab } = stateMocks
+const requestTabsApi = {
+  setResponseLogFilter: vi.fn(),
+}
 
 vi.mock("@/state", () => stateMocks)
 
@@ -24,9 +27,30 @@ vi.mock("@/components/editor/code-viewer", () => ({
   CodeViewer: ({ value }: { value: string }) => <pre data-testid="mock-code-viewer">{value}</pre>,
 }))
 
+vi.mock("./components", () => ({
+  CookieList: ({ cookies }: { cookies: Array<Record<string, string>> }) => (
+    <div data-test-id="mock-cookie-list">Cookies:{cookies.length}</div>
+  ),
+  HeadersList: ({ headers }: { headers: Record<string, string> }) => (
+    <div data-test-id="mock-headers-list">Headers:{Object.keys(headers).length}</div>
+  ),
+  LogsList: ({ logs, onSelectedLevelsChange }: { logs: any[]; onSelectedLevelsChange?: (levels: string[]) => void }) => (
+    <div data-test-id="mock-logs-list">
+      Logs:{logs.length}
+      <button
+        type="button"
+        data-test-id="mock-logs-filter-button"
+        onClick={() => onSelectedLevelsChange?.(["error"])}
+      >
+        Narrow
+      </button>
+    </div>
+  ),
+}))
+
 import ResponseViewer from "./response-viewer"
-import { saveFile } from "@/bindings/knurl"
-import { openPath } from "@tauri-apps/plugin-opener"
+import { saveBinary, saveFile } from "@/bindings/knurl"
+import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener"
 
 const baseHttpData = {
   status: 200,
@@ -39,6 +63,8 @@ const baseHttpData = {
 const mockRequestState = {
   url: "https://api.example.com",
 }
+
+const clipboardWriteMock = vi.fn(async () => {})
 
 type RenderOptions = {
   httpData?: Record<string, any>
@@ -67,14 +93,24 @@ const renderViewer = (options: RenderOptions = {}) => {
       activeTab: { response },
       request: mockRequestState,
     },
-    actions: { requestTabsApi: {} },
+    actions: { requestTabsApi },
   })
 
   return render(<ResponseViewer tabId="tab-1" className="" />)
 }
 
+beforeAll(() => {
+  Object.defineProperty(navigator, "clipboard", {
+    value: { writeText: clipboardWriteMock },
+    configurable: true,
+  })
+})
+
 beforeEach(() => {
   vi.clearAllMocks()
+  clipboardWriteMock.mockClear()
+  requestTabsApi.setResponseLogFilter.mockClear()
+  ;(navigator as any).clipboard.writeText = clipboardWriteMock
 })
 
 describe("ResponseViewer", () => {
@@ -95,9 +131,75 @@ describe("ResponseViewer", () => {
   it("renders nothing if response is missing", () => {
     useRequestTab.mockReturnValue({
       state: { activeTab: { response: null }, request: mockRequestState },
-      actions: { requestTabsApi: {} },
+      actions: { requestTabsApi },
     })
     const { container } = render(<ResponseViewer tabId="tab-1" className="" />)
     expect(container).toBeEmptyDOMElement()
+  })
+
+  it("saves binary responses via saveBinary and exposes preview file actions", async () => {
+    const user = userEvent.setup()
+    renderViewer({
+      httpData: {
+        headers: { "content-type": "image/png" },
+        bodyBase64: "ZmFrZS1kYXRh",
+        filePath: "/tmp/image.png",
+      },
+    })
+
+    await user.click(screen.getByRole("button", { name: /save/i }))
+    expect(saveBinary).toHaveBeenCalledWith("ZmFrZS1kYXRh", expect.any(Object))
+
+    await user.click(screen.getByRole("tab", { name: /Preview/i }))
+    const previewPanel = await screen.findByRole("tabpanel", { name: /Preview/i })
+    await user.click(within(previewPanel).getByTitle("Open saved response file"))
+    expect(openPath).toHaveBeenCalledWith("/tmp/image.png")
+    await user.click(within(previewPanel).getByTitle("Reveal in file manager"))
+    expect(revealItemInDir).toHaveBeenCalledWith("/tmp/image.png")
+  })
+
+  it("copies response text or base64 via the copy button", async () => {
+    const user = userEvent.setup()
+
+    renderViewer({
+      httpData: {
+        headers: { "content-type": "image/png" },
+        bodyBase64: "YmFzZTY0LWJvZHk=",
+      },
+    })
+
+    const bodyPanel = await screen.findByRole("tabpanel", { name: /Body/i })
+    await user.click(within(bodyPanel).getByRole("button", { name: /^Copy$/i }))
+    await waitFor(() => {
+      expect(clipboardWriteMock).toHaveBeenCalledWith("YmFzZTY0LWJvZHk=")
+    })
+  })
+
+  it("renders cookies, headers, and logs tabs and forwards log filter updates", async () => {
+    const user = userEvent.setup()
+    renderViewer({
+      httpData: {
+        ...baseHttpData,
+        cookies: [{ name: "sid", value: "1" }],
+      },
+      responseOverrides: {
+        logs: [{ timestamp: Date.now(), level: "info", message: "ok" }],
+        logFilterLevels: ["info"],
+      },
+    })
+
+    await user.click(screen.getByRole("tab", { name: /Headers/i }))
+    const headersPanel = await screen.findByRole("tabpanel", { name: /Headers/i })
+    expect(within(headersPanel).getByText(/Headers:1/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole("tab", { name: /Cookies/i }))
+    const cookiesPanel = await screen.findByRole("tabpanel", { name: /Cookies/i })
+    expect(within(cookiesPanel).getByText(/Cookies:1/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole("tab", { name: /Logs/i }))
+    const logsPanel = await screen.findByRole("tabpanel", { name: /Logs/i })
+    expect(within(logsPanel).getByText(/Logs:1/)).toBeInTheDocument()
+    await user.click(within(logsPanel).getByRole("button", { name: /narrow/i }))
+    expect(requestTabsApi.setResponseLogFilter).toHaveBeenCalledWith("tab-1", ["error"])
   })
 })

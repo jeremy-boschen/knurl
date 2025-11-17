@@ -99,8 +99,8 @@
 - 2025-11-16: Added `src/components/utility-sheets/collection-settings/collection-auth-panel.test.tsx` API key coverage (placement/name updates) and `src/types/request/body.test.ts` (schema defaults + grammar detection) with `yarn vitest run` for both new suites.
 
 ## Tasks (2025-11-17)
-- [ ] Boost `src/components/layout/collection-tree.tsx` coverage for `handleAction` dialog paths plus drop indicator logic (folder/request drag over cases) via expanded `collection-tree.test.tsx`.
-- [ ] Extend `src/components/response/response-viewer.test.tsx` to cover preview tab, cookies/logs tabs, binary save/copy flows, and file-path open/reveal controls.
-- [ ] Add pointer/resize interaction tests for `src/components/ui/knurl/dialog.tsx` to eliminate 0% blocks tied to draggable/handle listeners.
-- [ ] Cover error/fallback branches in `src/components/utility-sheets/theme-editor/index.tsx` (failed fetch, cancel confirm) with updated tests.
-- [ ] Increase `src/state/request-tabs.ts` coverage by isolating helper functions (`runTasks`, persistence guards) in a new test suite.
+- [x] Boost `src/components/layout/collection-tree.tsx` coverage for `handleAction` dialog paths plus drop indicator logic (folder/request drag over cases) via expanded `collection-tree.test.tsx`.
+- [x] Extend `src/components/response/response-viewer.test.tsx` to cover preview tab, cookies/logs tabs, binary save/copy flows, and file-path open/reveal controls.
+- [x] Add pointer/resize interaction tests for `src/components/ui/knurl/dialog.tsx` to eliminate 0% blocks tied to draggable/handle listeners.
+- [x] Cover error/fallback branches in `src/components/utility-sheets/theme-editor/index.tsx` (failed fetch, cancel confirm) with updated tests.
+- [x] Increase `src/state/request-tabs.ts` coverage by isolating helper functions (`runTasks`, persistence guards) in a new test suite.

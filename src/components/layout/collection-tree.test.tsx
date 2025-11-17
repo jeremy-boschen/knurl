@@ -1,5 +1,6 @@
 import React from "react"
-import { render } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi, beforeEach } from "vitest"
 
 import type { DragEndEvent } from "@dnd-kit/core"
@@ -11,6 +12,11 @@ const dndHandlers: {
   onDragEnd?: (event: any) => void
   onDragCancel?: () => void
 } = {}
+
+const mockRenameDialog = vi.fn()
+const mockDeleteDialog = vi.fn()
+const collectionMenuHandlers: Record<string, (payload: any) => void> = {}
+const folderMenuHandlers: Record<string, (payload: any) => void> = {}
 
 vi.mock("@dnd-kit/core", async () => {
   const actual = await vi.importActual<typeof import("@dnd-kit/core")>("@dnd-kit/core")
@@ -26,6 +32,50 @@ vi.mock("@dnd-kit/core", async () => {
   }
 })
 
+vi.mock("@/components/ui/knurl/rename-dialog", () => ({
+  __esModule: true,
+  default: (props: any) => {
+    mockRenameDialog(props)
+    return (
+      <div data-test-id="mock-rename-dialog">
+        <span>{props.title}</span>
+        <span>{props.description}</span>
+      </div>
+    )
+  },
+}))
+
+vi.mock("@/components/shared/delete-dialog", () => ({
+  __esModule: true,
+  default: (props: any) => {
+    mockDeleteDialog(props)
+    return (
+      <div data-test-id="mock-delete-dialog">
+        <span>{props.title}</span>
+        <span>{props.description}</span>
+      </div>
+    )
+  },
+}))
+
+vi.mock("@/components/ui/knurl/collection-menu", () => ({
+  CollectionMenuContent: ({ onAction, collection }: any) => {
+    collectionMenuHandlers[collection.id] = onAction
+    return <div data-test-id={`mock-collection-menu:${collection.id}`} />
+  },
+}))
+
+vi.mock("@/components/ui/knurl/folder-menu", () => ({
+  FolderMenuContent: ({ onAction, collectionId, folder }: any) => {
+    folderMenuHandlers[folder.id] = onAction
+    return <div data-test-id={`mock-folder-menu:${folder.id}`} />
+  },
+}))
+
+vi.mock("@/components/ui/knurl/request-menu", () => ({
+  RequestMenuContent: () => <div data-test-id="mock-request-menu" />,
+}))
+
 const stateMocks = vi.hoisted(() => {
   const mockCollectionsApi = {
     reorderCollections: vi.fn(),
@@ -33,11 +83,24 @@ const stateMocks = vi.hoisted(() => {
     moveRequestToFolder: vi.fn(),
     deleteFolder: vi.fn(),
     createFolder: vi.fn(),
+    loadCollection: vi.fn(async () => {}),
+    duplicateRequest: vi.fn(),
+    getRequest: vi.fn(),
+    updateCollection: vi.fn(),
+    updateRequest: vi.fn(),
+    renameFolder: vi.fn(),
+    deleteRequest: vi.fn(),
+    removeCollection: vi.fn(),
+    clearScratchCollection: vi.fn(),
   }
 
   const mockRequestTabsApi = {
     getOpenTab: vi.fn(),
     removeTab: vi.fn(),
+    loadTab: vi.fn(),
+    openRequestTab: vi.fn(),
+    createRequestTab: vi.fn(),
+    setResponseLogFilter: vi.fn(),
   }
 
   const mockUtilitySheetsApi = {
@@ -160,6 +223,10 @@ import { CollectionTree } from "./collection-tree"
 describe("CollectionTree", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockRenameDialog.mockClear()
+    mockDeleteDialog.mockClear()
+    Object.keys(collectionMenuHandlers).forEach((key) => delete collectionMenuHandlers[key])
+    Object.keys(folderMenuHandlers).forEach((key) => delete folderMenuHandlers[key])
   })
 
   it("renders and captures DnD handlers", () => {
@@ -212,5 +279,199 @@ describe("CollectionTree", () => {
     } as DragEndEvent)
 
     expect(stateMocks.mockCollectionsApi.moveRequestToFolder).toHaveBeenCalledWith("col-1", "req-1", "folder-2")
+  })
+
+  it("derives action payloads from dataset when clicking a collection row", async () => {
+    const user = userEvent.setup()
+    render(<CollectionTree searchTerm="" />)
+    await user.click(screen.getByRole("treeitem", { name: /Alpha/ }))
+
+    expect(stateMocks.mockCollectionsApi.loadCollection).toHaveBeenCalledWith("col-1")
+    expect(await screen.findByText("Folder One")).toBeInTheDocument()
+  })
+
+  const triggerCollectionAction = async (collectionId: string, payload: any) => {
+    await waitFor(() => expect(collectionMenuHandlers[collectionId]).toBeDefined())
+    await act(async () => {
+      collectionMenuHandlers[collectionId]?.(payload)
+    })
+  }
+
+  const triggerFolderAction = async (folderId: string, payload: any) => {
+    await waitFor(() => expect(folderMenuHandlers[folderId]).toBeDefined())
+    await act(async () => {
+      folderMenuHandlers[folderId]?.(payload)
+    })
+  }
+
+  it("opens rename dialog when collection rename action is triggered", async () => {
+    render(<CollectionTree searchTerm="" />)
+
+    await triggerCollectionAction("col-1", {
+      actionId: "rename",
+      kind: "collection",
+      collectionId: "col-1",
+      name: "Alpha",
+    })
+
+    expect(mockRenameDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Rename Collection",
+        name: "Alpha",
+      }),
+    )
+  })
+
+  it("opens folder-create dialog when creating a new folder", async () => {
+    render(<CollectionTree searchTerm="" />)
+
+    await triggerCollectionAction("col-1", {
+      actionId: "new-folder",
+      kind: "collection",
+      collectionId: "col-1",
+    })
+
+    expect(mockRenameDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        submitLabel: "Create",
+        title: "Create Folder",
+      }),
+    )
+  })
+
+  it("shows delete confirmation when invoking clear scratch action", async () => {
+    render(<CollectionTree searchTerm="" />)
+
+    await triggerCollectionAction("col-1", {
+      actionId: "clear-scratch",
+      kind: "collection",
+      collectionId: "col-1",
+      name: "Alpha",
+    })
+
+    expect(mockDeleteDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Clear All Requests",
+      }),
+    )
+  })
+
+  it("opens folder delete dialog via folder menu action", async () => {
+    const user = userEvent.setup()
+    render(<CollectionTree searchTerm="" />)
+
+    await user.click(screen.getByRole("treeitem", { name: /Alpha/ }))
+    await triggerFolderAction("folder-1", {
+      actionId: "folder:delete",
+      kind: "folder",
+      collectionId: "col-1",
+      name: "Folder One",
+      folderId: "folder-1",
+    })
+
+    expect(mockDeleteDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Delete Folder",
+        context: expect.objectContaining({ folderId: "folder-1" }),
+      }),
+    )
+  })
+
+  const triggerRequestDragOver = (overId: string, pointerY: number, overHeight = 90) => {
+    dndHandlers.onDragOver?.({
+      active: {
+        id: "req-1",
+        data: {
+          current: {
+            type: "request-item",
+            collectionId: "col-1",
+            requestId: "req-1",
+            folderId: "folder-1",
+            siblings: ["req-1"],
+          },
+        },
+        rect: {
+          current: {
+            translated: {
+              top: pointerY,
+              height: 10,
+            },
+          },
+        },
+      },
+      over: {
+        id: overId,
+        data: {
+          current: {
+            type: "collection",
+          },
+        },
+        rect: {
+          top: 0,
+          height: overHeight,
+        },
+      },
+    })
+  }
+
+  it("shows middle drop indicator when dragging a request over a collection", async () => {
+    render(<CollectionTree searchTerm="" />)
+    await act(async () => {
+      triggerRequestDragOver("col-2", 45)
+    })
+    const row = screen.getByRole("treeitem", { name: /Beta/ })
+    expect(row.className).toContain("bg-primary/10")
+  })
+
+  it("shows top indicator when pointer is near top of target row", async () => {
+    render(<CollectionTree searchTerm="" />)
+    await act(async () => {
+      dndHandlers.onDragOver?.({
+        active: {
+          id: "col-1",
+          data: { current: { type: "collection" } },
+          rect: { current: { translated: { top: 0, height: 10 } } },
+        },
+        over: {
+          id: "col-2",
+          data: { current: { type: "collection" } },
+          rect: { top: 0, height: 90 },
+        },
+      })
+    })
+    const row = screen.getByRole("treeitem", { name: /Beta/ })
+    const wrapper = row.closest(".mb-2") as HTMLElement | null
+    const indicators = Array.from(wrapper?.querySelectorAll("div") ?? [])
+    const topIndicator = indicators.find((node) => {
+      const cls = node.getAttribute("class") ?? ""
+      return cls.includes("top-0") && cls.includes("bg-primary")
+    })
+    expect(topIndicator).toBeTruthy()
+  })
+
+  it("shows bottom indicator when pointer is near the bottom of target row", async () => {
+    render(<CollectionTree searchTerm="" />)
+    await act(async () => {
+      dndHandlers.onDragOver?.({
+        active: {
+          id: "col-1",
+          data: { current: { type: "collection" } },
+          rect: { current: { translated: { top: 400, height: 10 } } },
+        },
+        over: {
+          id: "col-2",
+          data: { current: { type: "collection" } },
+          rect: { top: 0, height: 90 },
+        },
+      })
+    })
+    const row = screen.getByRole("treeitem", { name: /Beta/ })
+    const wrapper = row.closest(".mb-2") as HTMLElement | null
+    const indicators = Array.from(wrapper?.querySelectorAll("div") ?? [])
+    const bottomIndicator = indicators.find((node) => {
+      const cls = node.getAttribute("class") ?? ""
+      return cls.includes("bottom-0") && cls.includes("bg-primary")
+    })
+    expect(bottomIndicator).toBeTruthy()
   })
 })
