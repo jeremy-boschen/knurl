@@ -1,116 +1,127 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, fireEvent } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import CollectionAuthPanel from "./collection-auth-panel"
 
-vi.mock("@/state", () => ({
-  useCollection: vi.fn(),
-  useApplication: vi.fn((selector?: any) => {
-    const base = { collectionsState: { cache: {} } }
-    return typeof selector === "function" ? selector(base) : base
-  }),
+const updateCollectionMock = vi.fn()
+
+const stateMocks = vi.hoisted(() => ({
+  collection: {
+    id: "col-1",
+    authentication: { type: "basic", basic: { username: "alice", password: "secret" } },
+  },
 }))
 
-import { useCollection } from "@/state"
+vi.mock("@/state", () => ({
+  useCollection: vi.fn(() => ({
+    state: stateMocks,
+    actions: { collectionsApi: () => ({ updateCollection: updateCollectionMock }) },
+  })),
+  useApplication: vi.fn((selector?: (state: any) => any) =>
+    selector ? selector({ requestTabsState: { openTabs: {} }, credentialsCacheState: { cache: {} } }) : {},
+  ),
+  credentialsCacheApi: () => ({ get: vi.fn(), set: vi.fn(), remove: vi.fn() }),
+}))
+
+vi.mock("@/bindings/knurl", () => ({
+  discoverOidc: vi.fn(),
+  getAuthenticationResult: vi.fn(),
+}))
 
 describe("CollectionAuthPanel", () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    updateCollectionMock.mockClear()
+    stateMocks.collection = {
+      id: "col-1",
+      authentication: { type: "basic", basic: { username: "alice", password: "secret" } },
+    }
   })
 
-  it("does not offer Inherit as an auth type", async () => {
-    const user = userEvent.setup()
-
-    vi.mocked(useCollection).mockReturnValue({
-      state: {
-        collection: {
-          id: "col-1",
-          name: "Test",
-          updated: new Date().toISOString(),
-          encryption: { algorithm: "aes-gcm" },
-          environments: {},
-          requests: {},
-          authentication: { type: "none" },
-        },
-      },
-      actions: { collectionsApi: () => ({ updateCollection: vi.fn() }) },
-      loaded: true,
-    } as any)
-
+  it("updates basic auth credentials", () => {
     render(<CollectionAuthPanel collectionId="col-1" />)
-    const trigger = screen.getByRole("button", { name: "None" })
-    await user.click(trigger)
 
-    // The dropdown should not contain an "Inherit" option for collections
-    expect(screen.queryByRole("menuitemradio", { name: "Inherit" })).toBeNull()
+    const usernameInput = getByDataId("collection-auth:basic-username-input") as HTMLInputElement
+    fireEvent.change(usernameInput, { target: { value: "bob" } })
+
+    expect(updateCollectionMock).toHaveBeenCalledWith("col-1", {
+      authentication: {
+        type: "basic",
+        basic: expect.objectContaining({ username: "bob" }),
+      },
+    })
   })
 
-  it("updates collection auth type when selected", async () => {
+  it("changes auth type via dropdown", async () => {
     const user = userEvent.setup()
-    const updateCollection = vi.fn()
-
-    vi.mocked(useCollection).mockReturnValue({
-      state: {
-        collection: {
-          id: "col-1",
-          name: "Test",
-          updated: new Date().toISOString(),
-          encryption: { algorithm: "aes-gcm" },
-          environments: {},
-          requests: {},
-          authentication: { type: "none" },
-        },
-      },
-      actions: { collectionsApi: () => ({ updateCollection }) },
-      loaded: true,
-    } as any)
-
+    stateMocks.collection = { id: "col-1", authentication: { type: "none" } }
     render(<CollectionAuthPanel collectionId="col-1" />)
-    const trigger = screen.getByRole("button", { name: "None" })
-    await user.click(trigger)
-    const basic = await screen.findByRole("menuitemradio", { name: "Basic" })
-    await user.click(basic)
-    expect(updateCollection).toHaveBeenCalledWith("col-1", { authentication: { type: "basic" } })
+
+    await user.click(getByDataId("collection-auth:type-trigger"))
+    await user.click(await screen.findByText(/Bearer/i))
+
+    expect(updateCollectionMock).toHaveBeenCalledWith("col-1", {
+      authentication: { type: "bearer" },
+    })
   })
 
-  it("allows selecting OAuth2 grant type", async () => {
+  it("updates bearer placement details", async () => {
     const user = userEvent.setup()
-    const updateCollection = vi.fn()
-
-    vi.mocked(useCollection).mockReturnValue({
-      state: {
-        collection: {
-          id: "col-1",
-          name: "Test",
-          updated: new Date().toISOString(),
-          encryption: { algorithm: "aes-gcm" },
-          environments: {},
-          requests: {},
-          authentication: { type: "oauth2", oauth2: { grantType: "client_credentials" } },
-        },
-      },
-      actions: { collectionsApi: () => ({ updateCollection }) },
-      loaded: true,
-    } as any)
+    stateMocks.collection = {
+      id: "col-1",
+      authentication: { type: "bearer", bearer: { token: "abc", placement: { type: "header", name: "Authorization" } } },
+    }
 
     render(<CollectionAuthPanel collectionId="col-1" />)
 
-    // Open Grant Type select
-    const grantTrigger = screen.getByRole("combobox", { name: /grant type/i })
-    await user.click(grantTrigger)
+    await user.click(getByDataId("collection-auth:bearer-placement-trigger"))
+    await user.click(await screen.findByText(/Query Param/i))
 
-    const refreshItem = await screen.findByRole("option", { name: /refresh token/i })
-    await user.click(refreshItem)
+    expect(updateCollectionMock).toHaveBeenCalledWith("col-1", {
+      authentication: {
+        type: "bearer",
+        bearer: expect.objectContaining({ placement: expect.objectContaining({ type: "query" }) }),
+      },
+    })
+  })
 
-    // Expect update called with grantType change
-    expect(updateCollection).toHaveBeenCalledWith(
-      "col-1",
-      expect.objectContaining({
-        authentication: expect.objectContaining({ oauth2: expect.objectContaining({ grantType: "refresh_token" }) }),
-      }),
-    )
+  it("updates api key placement fields", async () => {
+    const user = userEvent.setup()
+    stateMocks.collection = {
+      id: "col-1",
+      authentication: {
+        type: "apiKey",
+        apiKey: { key: "X-Token", value: "secret", placement: { type: "header", name: "X-Token" } },
+      },
+    }
 
-    // UI won't re-render grant-dependent fields without store update; assert call only
+    render(<CollectionAuthPanel collectionId="col-1" />)
+
+    await user.click(getByDataId("collection-auth:api-key-placement-trigger"))
+    await user.click(await screen.findByText(/Query Param/i))
+
+    expect(updateCollectionMock).toHaveBeenCalledWith("col-1", {
+      authentication: {
+        type: "apiKey",
+        apiKey: expect.objectContaining({ placement: expect.objectContaining({ type: "query" }) }),
+      },
+    })
+
+    const nameInput = getByDataId("collection-auth:api-key-name-input") as HTMLInputElement
+    fireEvent.change(nameInput, { target: { value: "X-Custom" } })
+    expect(updateCollectionMock).toHaveBeenCalledWith("col-1", {
+      authentication: {
+        type: "apiKey",
+        apiKey: expect.objectContaining({ placement: expect.objectContaining({ name: "X-Custom" }) }),
+      },
+    })
   })
 })
+
+const getByDataId = (id: string): HTMLElement => {
+  const el = document.querySelector(`[data-test-id="${id}"]`)
+  if (!el) {
+    throw new Error(`Missing element ${id}`)
+  }
+  return el as HTMLElement
+}

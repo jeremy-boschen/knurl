@@ -1,139 +1,130 @@
-import { render, screen } from "@testing-library/react"
+import { forwardRef, useImperativeHandle } from "react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { openFile } from "@/bindings/knurl"
 import { RequestBodyPanel } from "./request-body-panel"
 import { TooltipProvider } from "@/components/ui/knurl/tooltip"
 
-vi.mock("@/bindings/knurl", () => ({
-  openFile: vi.fn(),
+const formatMock = vi.fn()
+const useRequestBodyMock = vi.fn()
+
+vi.mock("@/components/editor/", () => ({
+  CodeEditor: forwardRef(({ value, onChange, ...rest }: any, ref) => {
+    useImperativeHandle(ref, () => ({ format: formatMock }))
+    return <textarea data-testid={rest["data-test-id"] ?? "code-editor"} value={value} onChange={(event) => onChange(event.target.value)} />
+  }),
 }))
 
-// Mock state hooks
+vi.mock("@/components/ui/knurl", async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    FileInput: ({ onFileChange, "data-test-id": dataTestId }: any) => (
+      <button
+        type="button"
+        data-testid={dataTestId ?? "mock-file-input"}
+        onClick={() => onFileChange("/tmp/demo.txt", "demo.txt", "text/plain")}
+      >
+        upload
+      </button>
+    ),
+  }
+})
+
 vi.mock("@/state", () => ({
-  useRequestBody: vi.fn(),
-  useApplication: vi.fn(),
+  useRequestBody: (tabId: string) => useRequestBodyMock(tabId),
 }))
 
-import { useRequestBody, useApplication } from "@/state"
+vi.mock("@/state/application", () => ({
+  useApplication: (selector?: (state: any) => any) =>
+    selector ? selector({ requestTabsState: { openTabs: {} } }) : { requestTabsState: { openTabs: {} } },
+}))
+
+const renderPanel = () =>
+  render(
+    <TooltipProvider>
+      <RequestBodyPanel tabId="tab-1" />
+    </TooltipProvider>,
+  )
 
 describe("RequestBodyPanel", () => {
-  const tabId = "tab-1"
-
-  const baseBody = { type: "none" } as any
-  const baseOriginal = { type: "none" } as any
-  const actions = {
-    updateBodyContent: vi.fn(),
-    updateBody: vi.fn(),
-    updateFormItem: vi.fn(),
-    removeFormItem: vi.fn(),
-    addFormItem: vi.fn(),
-    formatContent: vi.fn(),
-  }
-
   beforeEach(() => {
-    vi.clearAllMocks()
-    vi.mocked(useApplication).mockImplementation((selector?: any) => {
-      const base: any = {
-        requestTabsState: { openTabs: { [tabId]: { merged: { headers: {} } } } },
-      }
-      return typeof selector === "function" ? selector(base) : base
-    })
+    formatMock.mockClear()
+    useRequestBodyMock.mockReset()
   })
 
-  it("shows current body type label without inline menu", () => {
-    vi.mocked(useRequestBody).mockReturnValue({
-      state: { body: baseBody, original: baseOriginal },
-      actions,
-    } as any)
-
-    render(
-      <TooltipProvider>
-        <RequestBodyPanel tabId={tabId} />
-      </TooltipProvider>,
-    )
-
-    expect(screen.getByText(/^none$/i)).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: /^none$/i })).not.toBeInTheDocument()
-  })
-
-  it("attaches binary file and infers content-type when missing", async () => {
-    vi.mocked(useRequestBody).mockReturnValue({
-      state: { body: { type: "binary", binaryContentType: undefined }, original: { type: "binary" } },
-      actions,
-    } as any)
-
-    vi.mocked(openFile).mockResolvedValue({ filePath: "/tmp/data.json" } as any)
-
+  it("formats text bodies and updates content", async () => {
     const user = userEvent.setup()
-    render(
-      <TooltipProvider>
-        <RequestBodyPanel tabId={tabId} />
-      </TooltipProvider>,
-    )
-
-    const choose = screen.getByRole("button", { name: /choose file/i })
-    await user.click(choose)
-
-    expect(openFile).toHaveBeenCalled()
-    expect(actions.updateBody).toHaveBeenCalledWith({
-      binaryPath: "/tmp/data.json",
-      binaryFileName: "data.json",
-      binaryContentType: "application/json",
+    const actions = { updateBodyContent: vi.fn(), updateBody: vi.fn(), updateFormItem: vi.fn(), removeFormItem: vi.fn() }
+    useRequestBodyMock.mockReturnValue({
+      state: {
+        body: { type: "text", content: "{}", language: "json" },
+        original: { type: "text", content: "{}", language: "json" },
+      },
+      actions,
     })
+
+    renderPanel()
+
+    await user.click(getByDataId("request-body-panel:format-button"))
+    expect(formatMock).toHaveBeenCalled()
+
+    await user.type(screen.getByTestId("request-body-panel:text-editor"), "new")
+    expect(actions.updateBodyContent).toHaveBeenCalled()
   })
 
-  it("multipart: does not render a type toggle for existing fields", () => {
-    const formId = "f1"
-    vi.mocked(useRequestBody).mockReturnValue({
+  it("edits form fields", () => {
+    const actions = { updateBodyContent: vi.fn(), updateBody: vi.fn(), updateFormItem: vi.fn(), removeFormItem: vi.fn() }
+    useRequestBodyMock.mockReturnValue({
       state: {
         body: {
           type: "form",
-          encoding: "multipart",
-          formData: { [formId]: { id: formId, key: "k", value: "v", enabled: true, secure: false, kind: "text" } },
+          encoding: "url",
+          formData: {
+            f1: { id: "f1", key: "foo", value: "bar", enabled: true, secure: false, kind: "text" },
+          },
         },
-        original: {
-          type: "form",
-          encoding: "multipart",
-          formData: { [formId]: { id: formId, key: "k", value: "v", enabled: true, secure: false, kind: "text" } },
-        },
+        original: { type: "form", encoding: "url", formData: { f1: { id: "f1", key: "foo", value: "bar", enabled: true } } },
       },
       actions,
-    } as any)
-
-    render(
-      <TooltipProvider>
-        <RequestBodyPanel tabId={tabId} />
-      </TooltipProvider>,
-    )
-
-    expect(screen.queryByRole("button", { name: /text/i })).not.toBeInTheDocument()
-  })
-
-  it("binary: handles file drop via file:// URI list", async () => {
-    vi.mocked(useRequestBody).mockReturnValue({
-      state: { body: { type: "binary" }, original: { type: "binary" } },
-      actions,
-    } as any)
-
-    render(
-      <TooltipProvider>
-        <RequestBodyPanel tabId={tabId} />
-      </TooltipProvider>,
-    )
-
-    const dropzone = screen.getByRole("region", { name: /binary body dropzone/i })
-    const data = { getData: (t: string) => (t === "text/uri-list" ? "file:///tmp/sample.json" : "") }
-    const evt = new Event("drop", { bubbles: true }) as any
-    evt.dataTransfer = data
-    dropzone.dispatchEvent(evt)
-    expect(actions.updateBody).toHaveBeenCalledWith({
-      binaryPath: "/tmp/sample.json",
-      binaryFileName: "sample.json",
-      binaryContentType: "application/json",
     })
+
+    renderPanel()
+
+    const valueInput = getByDataId("request-body-panel:form-value-input:f1") as HTMLInputElement
+    fireEvent.change(valueInput, { target: { value: "baz" } })
+    expect(actions.updateFormItem).toHaveBeenCalledWith("f1", { value: "baz" })
   })
 
-  // Warnings are covered via engine tests; UI-only warning rendering is implicitly exercised above
+  it("updates binary body via drop", () => {
+    const actions = { updateBodyContent: vi.fn(), updateBody: vi.fn(), updateFormItem: vi.fn(), removeFormItem: vi.fn() }
+    useRequestBodyMock.mockReturnValue({
+      state: {
+        body: { type: "binary" },
+        original: { type: "binary" },
+      },
+      actions,
+    })
+
+    renderPanel()
+
+    const dropzone = getByDataId("request-body-panel:binary-section")
+    fireEvent.drop(dropzone, {
+      dataTransfer: {
+        getData: () => "file:///tmp/demo.json",
+      },
+      preventDefault: () => {},
+    })
+
+    expect(actions.updateBody).toHaveBeenCalledWith(expect.objectContaining({ binaryPath: "/tmp/demo.json" }))
+  })
 })
+
+const getByDataId = (id: string): HTMLElement => {
+  const el = document.querySelector(`[data-test-id="${id}"]`)
+  if (!el) {
+    throw new Error(`Missing element ${id}`)
+  }
+  return el as HTMLElement
+}

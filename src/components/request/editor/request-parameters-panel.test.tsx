@@ -18,13 +18,15 @@ describe("RequestParametersPanel", () => {
     addQueryParam: vi.fn(),
     updateQueryParam: vi.fn(),
     removeQueryParam: vi.fn(),
+    updateCookieParam: vi.fn(),
+    removeCookieParam: vi.fn(),
   }
 
   beforeEach(() => vi.clearAllMocks())
 
-  const renderWith = (pathParams: any, queryParams: any, original: any) => {
+  const renderWith = (pathParams: any, queryParams: any, original: any, cookieParams: any = {}) => {
     vi.mocked(useRequestParameters).mockReturnValue({
-      state: { pathParams, queryParams, cookieParams: {}, original },
+      state: { pathParams, queryParams, cookieParams, original },
       actions,
     } as any)
     return render(
@@ -57,5 +59,51 @@ describe("RequestParametersPanel", () => {
     const buttons = screen.getAllByRole("button")
     await user.click(buttons[buttons.length - 1])
     expect(actions.removeQueryParam).toHaveBeenCalledWith("q1")
+  })
+
+  it("shows empty states when no params exist", () => {
+    renderWith({}, {}, {}, {})
+    expect(screen.getByText(/No path parameters added yet/i)).toBeInTheDocument()
+    expect(screen.getByText(/No query parameters added yet/i)).toBeInTheDocument()
+    expect(screen.getByText(/No cookies added yet/i)).toBeInTheDocument()
+  })
+
+  it("toggles path params and updates cookies", async () => {
+    const user = userEvent.setup()
+    const pathParam = { id: "p1", name: "id", value: "123", enabled: true, secure: false }
+    const cookieParam = { id: "c1", name: "session", value: "abc", enabled: true, secure: false }
+    renderWith(
+      { [pathParam.id]: pathParam },
+      {},
+      { pathParams: { [pathParam.id]: pathParam }, cookieParams: { [cookieParam.id]: cookieParam } },
+      { [cookieParam.id]: cookieParam },
+    )
+
+    const rows = Array.from(document.querySelectorAll('[data-test-id="field-row"]')) as HTMLElement[]
+    const pathRow = rows[0]
+    const enabledToggle = pathRow.querySelector('[data-test-id="field-row:enabled-checkbox"]') as HTMLElement
+    await user.click(enabledToggle)
+    expect(actions.updatePathParam).toHaveBeenCalledWith("p1", { enabled: false })
+
+    const secureToggle = pathRow.querySelector('[data-test-id="field-row:secure-toggle"]') as HTMLElement
+    await user.click(secureToggle)
+    expect(actions.updatePathParam).toHaveBeenCalledWith("p1", { secure: true })
+
+    const pathValueInput = document.querySelector(
+      '[data-test-id="request-parameters-panel:path-param-value-input:p1"]',
+    ) as HTMLInputElement
+    fireEvent.change(pathValueInput, { target: { value: "999" } })
+    expect(actions.updatePathParam).toHaveBeenCalledWith("p1", { value: "999" })
+
+    const cookieInput = document.querySelector(
+      '[data-test-id="request-parameters-panel:cookie-param-value-input:c1"]',
+    ) as HTMLInputElement
+    fireEvent.change(cookieInput, { target: { value: "token" } })
+    expect(actions.updateCookieParam).toHaveBeenCalledWith("c1", { value: "token" })
+
+    const cookieRow = rows[1]
+    const deleteButton = cookieRow.querySelector('[data-test-id="field-row:delete-button"]') as HTMLElement
+    await user.click(deleteButton)
+    expect(actions.removeCookieParam).toHaveBeenCalledWith("c1")
   })
 })

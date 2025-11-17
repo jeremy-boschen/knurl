@@ -16,6 +16,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -410,6 +411,9 @@ export default function AppearanceSection() {
               vulnerabilities or exfiltrate data.
             </AlertDescription>
           </Alert>
+          <AlertDialogDescription className="text-sm text-muted-foreground">
+            Remote CSS can execute in your renderer. Only continue if you trust the source URL below.
+          </AlertDialogDescription>
           <AlertDialogFooter>
             <AlertDialogCancel data-test-id="appearance:fetch-confirm-cancel">Cancel</AlertDialogCancel>
             <AlertDialogAction
