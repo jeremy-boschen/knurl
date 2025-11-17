@@ -2,55 +2,41 @@
  * Tauri Concurrent Invoke Bug - Generic Reproducible Test
  *
  * This test reproduces a concurrency issue in @tauri-apps/wdio-driver where
- * multiple concurrent Tauri command invocations (window.__TAURI__.invoke) sent
- * via WebDriver's executeAsync() fail with session errors.
+ * multiple concurrent Tauri command invocations sent via WebDriver's executeAsync()
+ * fail with session errors (invalid session id or UND_ERR_SOCKET).
  *
- * Pattern: 3 concurrent window.__TAURI__.invoke() calls via Promise.all()
- * Result: WebDriverError (invalid session id or socket error)
+ * Pattern: 3 concurrent browser.execute() calls that each invoke a Tauri command
+ * Result: WebDriverError (invalid session id)
  *
- * This test is completely generic and works with any Tauri application.
- * It doesn't depend on app-specific UI or business logic.
+ * This test uses the generic "echo_command" which is a simple async command
+ * that can be added to any Tauri application.
  *
- * Expected: Test fails with WebDriver session error
+ * Expected: Test fails with WebDriver session error like "invalid session id"
  */
 
 import { expect } from "@wdio/globals"
+import { callBridgeReplacement } from "../support/bridge-replacement"
+import { ensureWorkspaceReady } from "../support/ui"
 
 describe("Tauri Concurrent Invoke - Generic Reproducible Test", () => {
-  it("handles concurrent window.__TAURI__.invoke calls", async () => {
-    // Create 3 concurrent Tauri IPC invocations
-    // Each calls a simple backend command via window.__TAURI__.invoke()
+  before(async () => {
+    await ensureWorkspaceReady()
+  })
+
+  it("handles concurrent Tauri command invocations", async () => {
+    // Create 3 concurrent Tauri command invocations
+    // Each calls the generic "echo_command" backend function
     const promises = []
 
     for (let i = 0; i < 3; i++) {
       promises.push(
-        browser.executeAsync(
-          async (callback, index) => {
-            try {
-              // Invoke a simple Tauri command concurrently
-              // The "echo_command" is a generic command available on any Tauri app
-              const result = await (window as any).__TAURI__.invoke("echo_command", {
-                message: `Concurrent invoke ${index}`,
-              })
-              callback({
-                success: true,
-                result: result,
-                index: index,
-              })
-            } catch (error) {
-              callback({
-                success: false,
-                error: (error as Error).message,
-                index: index,
-              })
-            }
-          },
-          i,
-        ),
+        callBridgeReplacement("echo_command", {
+          message: `Concurrent invoke ${i}`,
+        }),
       )
     }
 
-    // Send all 3 commands in parallel via WebDriver
+    // Send all 3 commands in parallel
     // This is where the concurrency bug manifests: invalid session id errors
     const results = await Promise.all(promises)
 
@@ -58,8 +44,8 @@ describe("Tauri Concurrent Invoke - Generic Reproducible Test", () => {
     expect(results).toHaveLength(3)
     results.forEach((result: any) => {
       expect(result).toBeDefined()
-      // Each result should indicate whether the command succeeded
-      // (either success or error message is acceptable - we're testing if WebDriver survives)
+      // Each result should contain the echo response
+      expect(result).toContain("Echo:")
     })
   })
 })

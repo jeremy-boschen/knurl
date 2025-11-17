@@ -282,6 +282,22 @@ export async function invokeAuthViaTauri(authConfig: any, requestId?: string): P
 }
 
 /**
+ * Generic Tauri command invoker for testing concurrent operations
+ * Invokes any Tauri command with the given arguments
+ */
+export async function invokeCommandViaTauri(commandName: string, params: any): Promise<any> {
+  return await browser.executeAsync(async (cmd: string, cmdParams: any, done: (result: any) => void) => {
+    try {
+      const { invoke } = await (window as any).__TAURI__.core
+      const result = await invoke(cmd, cmdParams)
+      done(result)
+    } catch (error: any) {
+      throw new Error(`Tauri command '${cmd}' failed: ${error.message || String(error)}`)
+    }
+  }, commandName, params)
+}
+
+/**
  * Replacement for callBridge that routes to appropriate implementation
  */
 export async function callBridgeReplacement(
@@ -338,6 +354,12 @@ export async function callBridgeReplacement(
     case 'invoke_auth':
     case 'invokeAuth':
       return await invokeAuthViaTauri(args[0], args[1])
+
+    case 'echo_command':
+    case 'echoCommand':
+      // Generic command for testing concurrent Tauri invocations
+      // Simply invokes the backend echo command
+      return await invokeCommandViaTauri('echo_command', args[0])
 
     default:
       throw new Error(`Bridge replacement not implemented for method: ${method}`)
