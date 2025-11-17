@@ -28,40 +28,22 @@ export async function createCollection(name: string): Promise<string> {
 }
 
 export async function waitForCollectionIdByName(name: string, timeout = 15000): Promise<string> {
-  const startTime = new Date().toISOString()
-  console.log(`[TEST] ${startTime} waitForCollectionIdByName: starting for "${name}"`)
-  let resolved: string | null = null
+  // Wait for the collection to appear in the sidebar tree (UI-only verification)
+  let collectionRow: WebdriverIO.Element | null = null
+
   await browser.waitUntil(
     async () => {
       try {
-        // Get collection ID directly from app state without needing the bridge
-        const id = await browser.execute((targetName: string) => {
-          try {
-            // Access the Zustand store dynamically
-            const modules = (window as any).__vite_ssr_modules__
-            if (!modules) return null
+        // Look for collection in the sidebar tree by name
+        // Collections appear as clickable items with data-test-id="collection-tree:collection-row:ID"
+        const rows = await $$('[data-test-id^="collection-tree:collection-row:"]')
 
-            // Find the useApplication store in the loaded modules
-            const appModule = Object.values(modules).find((mod: any) => {
-              return mod && mod.useApplication && typeof mod.useApplication === 'function'
-            }) as any
-
-            if (!appModule?.useApplication) return null
-
-            const state = appModule.useApplication.getState()
-            const entry = state.collectionsState?.index?.find(
-              (item: { name: string }) => item.name === targetName
-            )
-            return entry?.id ?? null
-          } catch {
-            return null
+        for (const row of rows) {
+          const text = await row.getText()
+          if (text.includes(name)) {
+            collectionRow = row
+            return true
           }
-        }, name)
-
-        if (id) {
-          resolved = id
-          console.log(`[TEST] ${new Date().toISOString()} waitForCollectionIdByName: resolved to ${id}`)
-          return true
         }
         return false
       } catch {
@@ -70,15 +52,25 @@ export async function waitForCollectionIdByName(name: string, timeout = 15000): 
     },
     {
       timeout,
-      interval: 50,
-      timeoutMsg: `Collection ${name} not found in index`,
+      interval: 50, // Use aggressive polling for faster detection
+      timeoutMsg: `Collection "${name}" not found in sidebar tree`,
     },
   )
 
-  if (!resolved) {
-    throw new Error(`Failed to resolve id for collection ${name}`)
+  if (!collectionRow) {
+    throw new Error(`Failed to find collection "${name}" in sidebar`)
   }
-  return resolved
+
+  // Extract the collection ID from the data-test-id attribute
+  // Format: data-test-id="collection-tree:collection-row:COLLECTION_ID"
+  const testId = await collectionRow.getAttribute('data-test-id')
+  const match = testId?.match(/collection-tree:collection-row:(.+)$/)
+
+  if (!match || !match[1]) {
+    throw new Error(`Could not extract collection ID from test ID: ${testId}`)
+  }
+
+  return match[1]
 }
 
 export async function listCollectionRequestIds(collectionId: string): Promise<string[]> {

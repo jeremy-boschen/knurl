@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**AUTHORITATIVE SOURCE:** When this file conflicts with AGENTS.md, defer to AGENTS.md. AGENTS.md is the canonical ruleset for all AI tools.
+
 ## Project Overview
 
 **Knurl:** Privacy-first desktop HTTP client.
@@ -92,9 +94,13 @@ All mutators run synchronously; persistence is transparent.
 
 **Testing:**
 - **Unit tests** (Vitest + React Testing Library): Located in `*.test.ts(x)` files colocated with source. Mock all external dependencies (Tauri IPC, filesystem, network). Focus on business logic, state mutations, and component behavior in isolation. Use `mockIPC` from `src/test/setup.ts`.
-- **E2E tests** (WebDriver.io): Only test user-visible behavior via UI interactions. Create test state **exclusively** through UI actions (clicking, typing, etc.). Verify outcomes **only** what the UI displays. Never access internal app state, filesystem, or Tauri commands. If you can't create or verify via the UI, use a unit or integration test.
+- **E2E tests** (WebDriver.io):
+  - **Golden rule:** Only test user-visible behavior via UI interactions. Create test state **exclusively** through UI actions (clicking, typing, etc.). Verify outcomes **only** what the UI displays.
+  - **No plumbing:** Never access internal app state, `__vite_ssr_modules__`, call `browser.execute()` to inspect state, filesystem, or invoke Tauri commands. If you can't create or verify via the UI, use a unit or integration test.
+  - **UI helpers only:** Use only shared helpers from `test/support/ui.ts`. Extend that library instead of hand-rolling selectors.
 - **Integration tests** (WebDriver.io + backend access): Cross-layer behavior verification (encryption at rest, file persistence, state synchronization). **Requires explicit approval.** Setup via UI where possible; use backend access only for verification. Store in `test/specs/integration/`. See [Integration Test Criteria](#integration-test-approval-criteria) below.
 - **Rust tests**: Inline `#[cfg(test)]` modules for units; `src-tauri/tests/` for integration. No real network/OS calls.
+- **Network mocking:** Avoid hitting real networks/OS services in all tests; rely on mocks. E2E tests use the mock server at `http://127.0.0.1:3000`. Add endpoints to `scripts/mock-endpoint-server.mjs` if needed, do not call external services like httpbin.org.
 
 **Code style:**
 - Imports: `@/` alias (internal); Biome order: React → packages → local
@@ -102,6 +108,18 @@ All mutators run synchronously; persistence is transparent.
 - Zod: define as `zSomething`; validate at boundaries
 - Rust: no `unwrap()`/`expect()` in production; use `thiserror`
 - Icons: always `*Icon` variants (e.g., `PlusIcon`)
+
+## Communication Style
+
+Be extremely concise. Sacrifice grammar for the sake of brevity. Avoid unnecessary words; prioritize clarity and action.
+
+## Planning Protocol
+
+For multi-step work (3+ steps or non-trivial tasks):
+1. Create or update a dated plan file under `docs/plans/` named `docs/plans/YYYY-MM-DD-<task>-plan.md`
+2. Include a live task checklist with status (pending/in-progress/completed)
+3. Update the plan file immediately when scope or approach changes
+4. This allows work to resume after interruptions with full context preserved
 
 ## Common Tasks
 
@@ -190,6 +208,14 @@ See `test/specs/integration/README.md` for:
 // Can be tested via E2E - create via UI, inspect DOM for name
 // Bridge access not needed
 ```
+
+## Context7 Documentation
+
+When working with dependencies, libraries, or external APIs:
+1. Resolve the relevant Context7 library via `context7__resolve-library-id` before fetching docs
+2. Prefer official docs matching the repo's declared dependencies
+3. Note version mismatches and adjust usage accordingly
+4. Limit Context7 fetches to necessary topic scope to reduce noise
 
 ## Troubleshooting
 

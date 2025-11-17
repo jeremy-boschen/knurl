@@ -6,7 +6,7 @@ use crate::app_data::{crypto, loader};
 use crate::errors::error::UserCancelled;
 use crate::errors::{AppError, ErrorKind};
 use crate::http_client::auth::{self, AuthConfig, AuthResult, OidcDiscovery};
-use base64::{Engine as _, engine::general_purpose};
+use base64::{engine::general_purpose, Engine as _};
 use chrono::Local;
 use http_client::{
     engine::{HttpEngine, TauriLogEmitter},
@@ -22,9 +22,9 @@ use std::panic::Location;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use std::{fs, io, path::PathBuf};
+use tauri::path::BaseDirectory;
 #[cfg(desktop)]
 use tauri::PhysicalSize;
-use tauri::path::BaseDirectory;
 use tauri::{Manager, Size};
 use tauri_plugin_cli::CliExt;
 use tauri_plugin_dialog::DialogExt;
@@ -69,7 +69,7 @@ impl StartupProbe {
     }
 
     fn open_log_file() -> std::io::Result<Mutex<std::fs::File>> {
-        use std::fs::{OpenOptions, create_dir_all};
+        use std::fs::{create_dir_all, OpenOptions};
         use std::io::Write;
 
         let base_dir = std::env::temp_dir().join("knurl-startup");
@@ -114,6 +114,15 @@ impl StartupProbe {
             );
         }
     }
+}
+
+/// Generic echo command for testing concurrent WebDriver invocations
+/// This is used to test if @tauri-apps/wdio-driver can handle concurrent Tauri IPC calls
+#[tauri::command(async)]
+async fn echo_command(_app: tauri::AppHandle, message: String) -> Result<String, AppError> {
+    // Simulate minimal async work
+    tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+    Ok(format!("Echo: {message}"))
 }
 
 /// Sends an HTTP request and returns its response with live logging
@@ -497,6 +506,7 @@ pub fn run() {
         )
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            echo_command,
             send_http_request,
             load_app_data,
             save_app_data,

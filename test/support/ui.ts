@@ -14,6 +14,15 @@ const DEFAULT_WAIT_CONFIG = {
 }
 
 /**
+ * Log timestamp for test step timing analysis
+ * Usage: await logTestTime("Step description")
+ */
+export async function logTestTime(step: string): Promise<void> {
+  const timestamp = new Date().toISOString()
+  console.log(`[TEST-TIME] ${timestamp} ${step}`)
+}
+
+/**
  * Wait for the app to be fully loaded and interactive
  */
 async function waitForAppReady(timeout = DEFAULT_TIMEOUT): Promise<void> {
@@ -78,8 +87,20 @@ export async function getElementByTestId(
 
 async function getActiveRequestTabKey(): Promise<string | null> {
   return await browser.execute(() => {
+    // Try to find the active tab with data-state="active"
     const active = document.querySelector<HTMLElement>('[data-test-id^="request-tab:"][data-state="active"]')
-    return active?.getAttribute("data-tab-key") ?? null
+    if (active) {
+      return active.getAttribute("data-tab-key") ?? null
+    }
+
+    // Fallback: get the last request tab (most recently opened)
+    const tabs = Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="request-tab:"]'))
+    if (tabs.length > 0) {
+      const lastTab = tabs[tabs.length - 1]!
+      return lastTab.getAttribute("data-tab-key") ?? null
+    }
+
+    return null
   })
 }
 
@@ -403,10 +424,13 @@ export async function selectMenuActionById(
 ): Promise<void> {
   // Click the menu trigger to open it
   await clickByTestId(options.triggerTestId)
-  await browser.pause(100)
+  await browser.pause(300)
 
-  // Click the menu action by its ID
+  // Click the menu action by its ID - use extended timeout for menu items
+  // especially on second+ invocations where menu may have animation delays
   const actionElement = await $(`[data-test-id="${actionId}"]`)
-  await actionElement.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
+  await actionElement.waitForDisplayed({ timeout: 20000 })
+  await browser.pause(150) // Extra wait to ensure menu item is ready
   await withFallbackClick(actionElement)
+  await browser.pause(200) // Wait for menu to close after selection
 }
