@@ -4,7 +4,3 @@
 
 [target.x86_64-pc-windows-msvc]
 linker = "rust-lld"
-
-# Enable LLVM code coverage instrumentation for E2E tests via release build
-[profile.release]
-debug = true
