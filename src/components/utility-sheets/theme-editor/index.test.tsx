@@ -100,4 +100,23 @@ describe("ThemeEditorSheet", () => {
     expect(screen.getByTestId("theme-editor:editor")).toHaveValue("/*default-css*/")
     expect(sheetsPopMock).toHaveBeenCalled()
   })
+
+  it("keeps existing theme when contents are unchanged", async () => {
+    settingsState.appearance.customTheme = "body { color: red; }"
+    appendMissingCustomVars.mockReturnValueOnce("body { color: red; }")
+    setup()
+
+    await userEvent.click(screen.getByRole("button", { name: /apply/i }))
+
+    expect(settingsActions.setCustomTheme).not.toHaveBeenCalled()
+    expect(settingsActions.setThemeSource).toHaveBeenCalledWith("custom")
+    expect(sheetsPopMock).toHaveBeenCalled()
+  })
+
+  it("falls back to default CSS when no saved theme exists", () => {
+    settingsState.appearance.customTheme = undefined
+    setup()
+
+    expect(screen.getByTestId("theme-editor:editor")).toHaveValue("/*default-css*/")
+  })
 })
