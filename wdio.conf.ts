@@ -97,7 +97,7 @@ export const config = {
     {
       maxInstances: 1,
       'tauri:options': {
-        application: 'src-tauri/target/release/knurl',
+        application: 'src-tauri/target/debug/knurl',
         args: ['--window-width=1440', '--window-height=900'],
       },
     },
@@ -197,10 +197,11 @@ export const config = {
       RUSTFLAGS: [process.env.RUSTFLAGS, '-C opt-level=0', '-C debuginfo=1'].filter(Boolean).join(' ').trim(),
     };
 
-    // Build release profile for E2E tests
+    // Build debug profile for E2E tests
+    // Note: Using debug profile as release build encounters Tauri macro compilation issue
     // Frontend coverage: via vite.config.e2e.ts Istanbul instrumentation
-    // Rust backend coverage: TODO - enable LLVM instrumentation when macro issue resolved
-    const buildResult = spawnSync('cargo', ['build', '--manifest-path', manifestPath, '--profile', 'release'], {
+    // Rust backend coverage: TODO - enable LLVM instrumentation when Tauri macro issue resolved
+    const buildResult = spawnSync('cargo', ['build', '--manifest-path', manifestPath, '--profile', 'dev'], {
       stdio: 'inherit',
       shell: true,
       env,
