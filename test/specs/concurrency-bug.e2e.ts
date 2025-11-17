@@ -1,49 +1,54 @@
 /**
- * Tauri Driver Concurrency Bug - Generic Minimal Reproducible Test
+ * Tauri Driver Concurrency Bug - Reproducible Test Case
  *
- * This test reproduces a concurrency issue where @tauri-apps/wdio-driver fails
- * when handling multiple concurrent WebDriver commands in a single session.
+ * This test reproduces the concurrency issue where @tauri-apps/wdio-driver fails
+ * when handling multiple concurrent WebDriver bridging calls in a single session.
  *
- * Bug: Multiple concurrent executeAsync() calls via Promise.all() cause
- * WebDriverError: invalid session id or UND_ERR_SOCKET errors.
+ * Pattern: Multiple concurrent calls to callBridgeReplacement() via Promise.all()
+ * cause WebDriverError (UND_ERR_SOCKET or "invalid session id").
  *
- * This test is generic and works with any Tauri app - it doesn't depend on
- * app-specific UI or bridge APIs. It only uses standard WebDriver commands.
+ * The bug is triggered when:
+ * 1. Multiple WebDriver commands are sent in parallel (Promise.all)
+ * 2. Each command makes a bridging call to app backend
+ * 3. The driver's session handler cannot process them concurrently
+ * 4. Session becomes unresponsive with socket errors
  *
- * Expected result: Test fails with session error during concurrent execution
+ * Expected result: Test fails with WebDriver session error
  */
 
 import { expect } from "@wdio/globals"
+import { ensureWorkspaceReady } from "../support/ui"
+import { callBridgeReplacement } from "../support/bridge-replacement"
 
-describe("Tauri Driver Concurrency Bug - Generic Test", () => {
-  it("handles concurrent executeAsync calls", async () => {
-    // Create 3 concurrent executeAsync() calls
-    // These are standard WebDriver commands, not app-specific
+describe("Tauri Driver Concurrency Bug - Reproducible Test", () => {
+  before(async () => {
+    await ensureWorkspaceReady()
+  })
+
+  it("concurrent bridge calls trigger socket errors", async () => {
+    const baseTime = Date.now()
+
+    // Create 3 concurrent callBridgeReplacement() calls
+    // Each makes a WebDriver call to the app's bridge
     const promises = []
 
     for (let i = 0; i < 3; i++) {
       promises.push(
-        browser.executeAsync(async (callback) => {
-          // Simple async operation
-          await new Promise((resolve) => setTimeout(resolve, 10))
-          callback({
-            index: i,
-            timestamp: Date.now(),
-            success: true,
-          })
+        callBridgeReplacement("create_collection", {
+          name: `Concurrent ${baseTime} ${i}`,
         }),
       )
     }
 
     // Send all 3 commands in parallel
-    // This is where the concurrency bug manifests
+    // This is where the concurrency bug manifests: UND_ERR_SOCKET errors
     const results = await Promise.all(promises)
 
-    // If we get here, the bug didn't occur (or was fixed)
+    // If we get here without socket errors, the bug didn't occur (or was fixed)
     expect(results).toHaveLength(3)
-    results.forEach((result: any, i: number) => {
-      expect(result.index).toBe(i)
-      expect(result.success).toBe(true)
+    results.forEach((result: any) => {
+      expect(result.id).toBeDefined()
+      expect(result.name).toBeDefined()
     })
   })
 })
