@@ -97,7 +97,7 @@ export const config = {
     {
       maxInstances: 1,
       'tauri:options': {
-        application: 'src-tauri/target/debug/knurl',
+        application: 'src-tauri/target/release/knurl',
         args: ['--window-width=1440', '--window-height=900'],
       },
     },
@@ -388,6 +388,12 @@ export const config = {
         globalWindow.__KNURL_E2E_CONFIG_DIR__ = dir;
       }, configDir);
     }
+
+    // Enable event history tracking for E2E tests
+    await browser.execute(() => {
+      const globalWindow = window as Record<string, unknown>;
+      globalWindow.__KNURL_ENABLE_EVENT_HISTORY = true;
+    });
 
     await browser.pause(2000);
   },
