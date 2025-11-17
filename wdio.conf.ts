@@ -389,6 +389,12 @@ export const config = {
       }, configDir);
     }
 
+    // Enable event history tracking for E2E tests
+    await browser.execute(() => {
+      const globalWindow = window as Record<string, unknown>;
+      globalWindow.__KNURL_ENABLE_EVENT_HISTORY = true;
+    });
+
     await browser.pause(2000);
   },
 

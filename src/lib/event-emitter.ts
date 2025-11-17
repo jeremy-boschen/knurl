@@ -22,6 +22,18 @@ function isEventsEnabled(): boolean {
   return windowWithFlag.__KNURL_DISABLE_EVENTS !== true
 }
 
+/**
+ * Check if event history tracking is enabled
+ * History is only needed for E2E testing
+ */
+function isHistoryEnabled(): boolean {
+  if (typeof window === "undefined") {
+    return false
+  }
+  const windowWithFlag = window as Record<string, unknown>
+  return windowWithFlag.__KNURL_ENABLE_EVENT_HISTORY === true
+}
+
 interface KnurlEventBusAPI {
   lastEvent: KnurlEvent | null
   events: KnurlEvent[]
@@ -55,8 +67,8 @@ class EventBus {
       }
     })
 
-    // Add to history for E2E testing (only if window exists)
-    if (typeof window !== "undefined") {
+    // Add to history for E2E testing (only if explicitly enabled)
+    if (isHistoryEnabled()) {
       this.eventHistory.push(event)
       if (this.eventHistory.length > this.MAX_HISTORY) {
         this.eventHistory.shift()
