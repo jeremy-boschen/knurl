@@ -46,8 +46,8 @@ class EventBus {
     }
 
     // Fire event to all listeners
-    const handlers = this.listeners.get(event.type) || new Set()
-    handlers.forEach((handler) => {
+    const handlers = this.listeners.get(event.type)
+    handlers?.forEach((handler) => {
       try {
         handler(event)
       } catch (err) {
@@ -55,14 +55,14 @@ class EventBus {
       }
     })
 
-    // Add to history for debugging
-    this.eventHistory.push(event)
-    if (this.eventHistory.length > this.MAX_HISTORY) {
-      this.eventHistory.shift()
-    }
-
-    // Expose to WebDriver via window.__knurlEventBus
+    // Add to history for E2E testing (only if window exists)
     if (typeof window !== "undefined") {
+      this.eventHistory.push(event)
+      if (this.eventHistory.length > this.MAX_HISTORY) {
+        this.eventHistory.shift()
+      }
+
+      // Expose to WebDriver via window.__knurlEventBus
       const windowWithBus = window as Record<string, unknown>
       windowWithBus.__knurlEventBus = this.getAPI()
     }
