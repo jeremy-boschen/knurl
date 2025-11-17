@@ -35,33 +35,42 @@ describe("Tauri Driver Concurrency Bug - Reproduction", () => {
     await logTestTime("[REPRO-BASELINE] Single sequential test passed")
   })
 
-  it("triggers concurrent command bug with Promise.all (should fail with UND_ERR_SOCKET)", async () => {
+  it("triggers concurrent command bug with Promise.all (should fail or timeout)", async () => {
     await logTestTime("[REPRO-BUG] Starting concurrent bug reproduction")
-    console.log("[REPRO-BUG] About to send 3 concurrent executeAsync commands")
+    console.log("[REPRO-BUG] About to send 2 concurrent executeAsync commands")
+    console.log("[REPRO-BUG] Process PID:", process.pid)
 
     const promises = []
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 2; i++) {
       console.log(`[REPRO-BUG] Queueing concurrent command ${i}`)
       promises.push(
         browser.executeAsync(async (callback) => {
-          await new Promise((resolve) => setTimeout(resolve, 50))
-          callback({ success: true, index: i })
+          console.log(`[REPRO-BUG-BROWSER] Command ${i} executing in browser`)
+          callback({ success: true, index: i, timestamp: Date.now() })
         }),
       )
     }
 
-    await logTestTime("[REPRO-BUG] All 3 commands queued, calling Promise.all()")
-    console.log("[REPRO-BUG] Awaiting Promise.all()...")
+    await logTestTime("[REPRO-BUG] All 2 commands queued, calling Promise.all()")
+    console.log("[REPRO-BUG] Awaiting Promise.all() with 30s timeout...")
 
     try {
-      const results = await Promise.all(promises)
+      const racePromise = Promise.race([
+        Promise.all(promises),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("[REPRO-BUG] Promise.all timed out after 30s")), 30000),
+        ),
+      ])
+
+      const results = await racePromise
       console.log("[REPRO-BUG] Promise.all completed without error")
       console.log("[REPRO-BUG] Results:", results)
-      expect(results).toHaveLength(3)
-      expect(results[0].success).toBe(true)
+      expect(results).toHaveLength(2)
     } catch (error) {
-      console.log("[REPRO-BUG] Promise.all threw error:", error)
-      throw error // Re-throw to fail the test, which is expected
+      console.log("[REPRO-BUG] Promise.all error:", error.message)
+      console.log("[REPRO-BUG] Error type:", error.constructor.name)
+      // Expected to fail - either UND_ERR_SOCKET or timeout
+      expect(error.message).toMatch(/UND_ERR_SOCKET|timed out/)
     }
   })
 
@@ -94,27 +103,35 @@ describe("Tauri Driver Concurrency Bug - Reproduction", () => {
  * 1. "demonstrates single sequential executeAsync" - PASSES ✅
  *    Single command executes and returns successfully
  *
- * 2. "triggers concurrent command bug" - FAILS with UND_ERR_SOCKET ❌
- *    Promise.all with 3 concurrent executeAsync calls crashes session
- *    Error: "UND_ERR_SOCKET: Connection refused (os error 111)"
- *    Logs show: "About to send 3 concurrent..." then socket errors
+ * 2. "triggers concurrent command bug" - FAILS or KILLS entire process ❌
+ *    Promise.all with 2+ concurrent executeAsync calls:
+ *    - Either returns UND_ERR_SOCKET error
+ *    - Or kills entire test process with "Killed" message
+ *    - Or times out after 30s (driver unresponsive)
  *
- * 3. "verify session is dead after concurrent failure" - FAILS with UND_ERR_SOCKET ❌
- *    Confirms session is unrecoverable after concurrent failure
- *    Any subsequent command also gets UND_ERR_SOCKET
+ * 3. "verify session is dead after concurrent failure" - Usually doesn't run ❌
+ *    If the concurrent bug doesn't kill the process, session is unrecoverable
+ *    Any subsequent command also gets error
  *
  * ===
  *
+ * Observations:
+ *
+ * The "Killed" output (no error message, just exit) suggests:
+ * - OOM killer terminating the process, OR
+ * - tauri-driver crashing so hard the session can't report it
+ *
  * To capture logs for Tauri team:
  *
- * RUST_LOG=trace RUST_BACKTRACE=1 yarn test:e2e \
+ * RUST_LOG=trace RUST_BACKTRACE=1 timeout 60 yarn test:e2e \
  *   --spec test/specs/tauri-driver-concurrency-repro.e2e.ts 2>&1 | tee repro-logs.txt
  *
  * Look for:
- * - "[REPRO-BUG] About to send 3 concurrent" in stdout
- * - Socket/connection/concurrency errors in stderr or rust logs
- * - "UND_ERR_SOCKET" error message
- * - When tauri-driver stops responding
+ * - "[REPRO-BUG] About to send 2 concurrent" in stdout
+ * - Last log message before "Killed" appears
+ * - Any rust panic/error in logs
+ * - Process memory usage spike
  *
- * This log output is what the Tauri team needs to debug the issue.
+ * This log output is what the Tauri team needs to debug.
+ * The fact that it kills the entire process is itself important data.
  */

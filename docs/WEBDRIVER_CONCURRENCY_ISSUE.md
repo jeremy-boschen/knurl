@@ -16,14 +16,24 @@ Tauri's native WebDriver driver (`@tauri-apps/wdio-driver`) is not thread-safe f
 
 ## Error Symptoms
 
-**Error signatures:**
+**Error signatures (when caught):**
 ```
 UND_ERR_SOCKET: Connection refused (os error 111)
 WebDriverError: Request failed with error code UND_ERR_SOCKET
 Error: WebDriverError: Request failed with error code UND_ERR_SOCKET when running "element/node-<UUID>/click" with method "POST"
 ```
 
-**Network behavior:**
+**Process termination (more likely):**
+```
+Killed
+```
+
+No error message, just "Killed" - suggests:
+- OOM (out of memory) killer terminating the process
+- tauri-driver panicking without reporting error back to client
+- Entire Tauri/WebDriver process crashing
+
+**Network behavior (if caught before crash):**
 - WebDriver server at localhost:4444 closes sockets
 - All subsequent requests fail with connection refused
 - Session becomes unrecoverable
