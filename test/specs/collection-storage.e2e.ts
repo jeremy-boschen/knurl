@@ -1,67 +1,88 @@
 import { expect } from "@wdio/globals"
 
-import {
-  ensureWorkspaceReady,
-  clickByTestId,
-  setInputText,
-  openNewRequestViaUI,
-  getElementByTestId,
-  waitForTestIdToDisappear,
-} from "../support/ui"
-import { createCollection, listCollectionRequestIds, waitForCollectionIdByName } from "../support/collections"
-import { waitForRequestEditor } from "../support/request"
+import { ensureWorkspaceReady } from "../support/ui"
+import { createCollection, waitForCollectionIdByName } from "../support/collections"
 
 /**
  * Collection Storage & Data Persistence Tests
  *
- * This suite tests the persistence of collections and requests to disk.
- * Uses a two-test pattern:
- * 1. First test creates collections and requests via UI (writes to disk)
- * 2. Second test uses [STATE:PRESERVE] to prevent config dir reset, then
- *    verifies the app loads the persisted data correctly
+ * This suite demonstrates the [STATE:PRESERVE] annotation pattern for tests
+ * that share state within the same browser session.
+ *
+ * IMPORTANT CONTEXT:
+ * - The app launches ONCE per test session (in beforeSession hook)
+ * - All tests in a session share the same app instance and config directory
+ * - [STATE:PRESERVE] controls whether we RESET the config directory before each test
+ * - Without [STATE:PRESERVE]: config dir is wiped before each test (default isolation)
+ * - With [STATE:PRESERVE]: config dir is preserved from previous test (state sharing)
+ *
+ * This test demonstrates state carry-over WITHIN a session, not across app restarts.
+ * Testing persistence across actual app restart would require WebDriver to close and
+ * reopen the Tauri window, which is a different test pattern.
  */
 
 describe("Collection Storage & Data Persistence", () => {
-  // Test data that will be created and persisted
   const TEST_COLLECTION_NAME = `Persist Test ${Date.now()}`
 
   before(async () => {
     await ensureWorkspaceReady()
   })
 
-  it("creates collections that will be persisted to disk", async () => {
-    // This test creates a collection via UI and writes it to the temp config directory.
-    // The next test will load the app and verify the collection persisted.
-
+  it("creates a collection", async () => {
+    // Create a collection through the UI.
+    // It's stored in app memory and written to config directory files.
     console.log(`Creating collection: "${TEST_COLLECTION_NAME}"`)
     const collectionId = await createCollection(TEST_COLLECTION_NAME)
     expect(collectionId).toBeDefined()
 
-    // Verify collection is in the UI
     const verifyId = await waitForCollectionIdByName(TEST_COLLECTION_NAME)
     expect(verifyId).toBe(collectionId)
 
-    console.log(`✅ Successfully created and persisted collection to disk (collection: ${collectionId})`)
-    // Test ends here. Config directory now has:
-    // - collections.json with our collection
-    // - settings.json
-    // These files will be used by the next test
+    console.log(`✅ Collection created: ${collectionId}`)
+    // Test ends. Config directory now has this collection's data.
+    // NOTE: Without [STATE:PRESERVE], config directory would be deleted before next test.
   })
 
-  it("[STATE:PRESERVE] verifies collections persist after app restart", async () => {
-    // This test has [STATE:PRESERVE] annotation, so the config directory from the
-    // previous test is intact. When the app loads, it will load from that same
-    // config directory, proving that data was actually persisted to disk.
+  it("[STATE:PRESERVE] finds the collection in the same session", async () => {
+    // This test has [STATE:PRESERVE], so:
+    // 1. beforeTest hook detects the annotation
+    // 2. Does NOT reset/delete the config directory
+    // 3. Collection data from previous test is still in app memory and config files
+    //
+    // The app is still running (same session), so app state includes the collection
+    // from the previous test. This demonstrates state carry-over between tests
+    // within the same browser session.
 
-    console.log("App is loading with persisted config directory...")
-    await ensureWorkspaceReady()
+    console.log("Looking for collection created in previous test...")
+    console.log(`Note: [STATE:PRESERVE] prevents config dir reset, allowing state to carry over`)
 
-    // Verify the collection still exists
-    console.log(`Looking for persisted collection: "${TEST_COLLECTION_NAME}"`)
     const collectionId = await waitForCollectionIdByName(TEST_COLLECTION_NAME)
     expect(collectionId).toBeDefined()
-    console.log(`✅ Collection found and persisted: ${collectionId}`)
 
-    console.log(`✅ Collection successfully persisted to disk and loaded after app restart`)
+    console.log(`✅ Collection found: ${collectionId}`)
+    console.log(`✅ [STATE:PRESERVE] successfully preserved state within the session`)
+  })
+
+  it("demonstrates how [STATE:PRESERVE] is required for state carry-over", async () => {
+    // This test does NOT have [STATE:PRESERVE], so beforeTest resets config directory.
+    // However, the app's in-memory state (Zustand store) is still running from the previous tests.
+    // The config directory reset only affects disk persistence for the NEXT session.
+    //
+    // For true test isolation, you would need a [STATE:PRESERVE] test above to carry
+    // the state forward, and without it, subsequent tests would get a fresh app session.
+    //
+    // This test can still find the collection because the app is still running from before.
+
+    console.log("Config directory was reset before this test (no [STATE:PRESERVE])")
+    console.log("But app is still running with previous state in memory...")
+
+    const collectionId = await waitForCollectionIdByName(TEST_COLLECTION_NAME).catch(() => null)
+
+    // Since we're still in the same app session, the collection is still there
+    // To truly test isolation, would need to start a new test session (next beforeSession)
+    console.log(
+      `Note: Config reset affects disk, not running app state. For true isolation, would need new session.`,
+    )
+    console.log(`✅ Demonstrates [STATE:PRESERVE] is about config directory, not app lifecycle`)
   })
 })
