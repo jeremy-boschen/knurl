@@ -98,14 +98,15 @@ export default function ImportCollectionSheet() {
 
   // --- MEMOS & DERIVED STATE ---
   const formattedImportData = useMemo(() => {
-    if (importData.trim().startsWith("{")) {
+    const normalized = importData ?? ""
+    if (normalized.trim().startsWith("{")) {
       try {
-        return JSON.stringify(JSON.parse(importData), null, 2)
+        return JSON.stringify(JSON.parse(normalized), null, 2)
       } catch (_e) {
         /* return as is */
       }
     }
-    return importData
+    return normalized
   }, [importData])
 
   const canProceed = useMemo(
@@ -122,7 +123,7 @@ export default function ImportCollectionSheet() {
         filters: [{ name: "Collection Files", extensions: ["json", "yaml", "yml"] }],
       })
       if (file?.content) {
-        setImportData(file.content)
+        setImportData(String(file.content))
       }
     } catch (err) {
       setStatus({ kind: "error", message: (err as Error)?.message ?? "Could not read file." })
