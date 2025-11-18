@@ -113,6 +113,22 @@ All mutators run synchronously; persistence is transparent.
 
 Be extremely concise. Sacrifice grammar for the sake of brevity. Avoid unnecessary words; prioritize clarity and action.
 
+## 🚨 CRITICAL: Agent Operating Discipline
+
+**NEVER autonomously expand scope or change what is being tested.**
+
+When given a task:
+1. **Create a TODO of EXACTLY what was asked for** - treat it as the sole test plan
+2. **If you hit a blocker**, you MUST:
+   - Stop immediately
+   - Share the specific blocker
+   - Ask for help/direction
+   - Wait for response
+3. **Do NOT work around blockers** by changing requirements
+4. **Do NOT make unilateral decisions** about what the work should really do
+
+This is non-negotiable. Scope creep and autonomously redefining requirements wastes resources and breaks trust.
+
 ## Planning Protocol
 
 For multi-step work (3+ steps or non-trivial tasks):

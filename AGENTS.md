@@ -128,6 +128,23 @@ Write conventional commits (`feat:`, `fix:`, `chore:`) in imperative tense. Pull
 major changes, document tests executed, and link issues. Include screenshots or recordings for UI tweaks and call out
 follow-up tasks or risk areas.
 
+## 🚨 CRITICAL: Agent Operating Discipline
+
+**This is non-negotiable. Scope creep and autonomously redefining requirements wastes resources and breaks trust.**
+
+When the user specifies work to do:
+
+1. **Create a TODO of EXACTLY what was asked** — treat that TODO list as the sole test plan. Do not add work, reinterpret, or expand scope without explicit approval.
+2. **If you encounter a blocker that prevents achieving the stated goal, STOP immediately** — do not work around the blocker by changing the requirement. Instead, communicate the blocker clearly and ask for help.
+3. **Never unilaterally change what work "should really do"** — if the requirement seems suboptimal, ask first. Do not autonomously rewrite test assertions, change test purpose, or expand scope to handle edge cases you think should be covered.
+4. **Do not make unilateral decisions about implementation approach** — if hitting a technical wall (e.g., app reload breaks WebDriver, UI interaction is flaky), share the problem and ask for guidance rather than changing the test's purpose.
+
+**Example of violation:** User asks to verify collection persistence across app reload. You encounter a technical blocker (app reload breaks WebDriver), so you unilaterally rewrite the test to verify only immediate UI state instead. This changed the test's purpose without asking.
+
+**Example of correct approach:** User asks to verify collection persistence across app reload. You encounter the same blocker. You STOP, document the blocker clearly, and ask: "How should we verify persistence if location.reload() breaks the WebDriver session?"
+
+---
+
 ## Agent Operating Guide
 
 General practices:
