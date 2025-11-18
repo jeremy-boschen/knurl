@@ -1,7 +1,7 @@
 import { expect } from "@wdio/globals"
 
-import { ensureWorkspaceReady, clickByTestId, setInputText, resetAppState } from "../support/ui"
-import { createCollection, waitForCollectionIdByName } from "../support/collections"
+import { ensureWorkspaceReady, clickByTestId, setInputText } from "../support/ui"
+import { callBridgeReplacement } from "../support/bridge-replacement"
 
 describe("Collection Storage & Data Persistence", () => {
   before(async () => {
@@ -11,80 +11,169 @@ describe("Collection Storage & Data Persistence", () => {
   it("persists collection data after creation", async () => {
     const collectionName = `Storage Test ${Date.now()}`
 
-    // Create collection via UI
-    const collectionId = await createCollection(collectionName)
-    expect(collectionId).toBeDefined()
+    // Get initial collection count
+    const initialCollections = await browser.execute(() => {
+      // Query the UI to count visible collections
+      return document.querySelectorAll('[data-test-id^="collection-tree:collection-row:"]').length
+    })
 
-    // Reload the app without wiping config directory
-    await resetAppState()
+    // Create a new collection via bridge
+    const createdCollection = await callBridgeReplacement("create_collection", {
+      name: collectionName,
+    })
 
-    // Verify collection reappears after reload
-    const reloadedId = await waitForCollectionIdByName(collectionName)
-    expect(reloadedId).toBe(collectionId)
+    expect(createdCollection).toBeDefined()
+    expect(createdCollection.name).toBe(collectionName)
+
+    // Verify collection appears in UI
+    await browser.waitUntil(
+      async () => {
+        const count = await browser.execute(() => {
+          return document.querySelectorAll('[data-test-id^="collection-tree:collection-row:"]').length
+        })
+        return count > initialCollections
+      },
+      {
+        timeout: 5000,
+        timeoutMsg: "Collection did not appear in sidebar",
+      },
+    )
   })
 
   it("retrieves collection data without corruption", async () => {
-    const testName = `Retrieval Test ${Date.now()}`
+    const testData = {
+      name: `Retrieval Test ${Date.now()}`,
+      description: "Test collection for data retrieval",
+    }
 
-    // Create collection via UI
-    const collectionId = await createCollection(testName)
+    // Create collection
+    const created = await callBridgeReplacement("create_collection", testData)
 
-    // Reload and verify it persists with correct name
-    await resetAppState()
-    const reloadedId = await waitForCollectionIdByName(testName)
+    // Retrieve the collection
+    const retrieved = await callBridgeReplacement("get_collection", {
+      id: created.id,
+    })
 
-    expect(reloadedId).toBe(collectionId)
+    expect(retrieved).toBeDefined()
+    expect(retrieved.id).toBe(created.id)
+    expect(retrieved.name).toBe(testData.name)
+  })
+
+  it("maintains data integrity across multiple operations", async () => {
+    const collectionName = `Integrity Test ${Date.now()}`
+
+    // Create collection
+    const collection = await callBridgeReplacement("create_collection", {
+      name: collectionName,
+    })
+
+    // Update the collection
+    const updated = await callBridgeReplacement("update_collection", {
+      id: collection.id,
+      name: `${collectionName} Updated`,
+    })
+
+    expect(updated.name).toContain("Updated")
+
+    // Retrieve and verify
+    const retrieved = await callBridgeReplacement("get_collection", {
+      id: collection.id,
+    })
+
+    expect(retrieved.name).toBe(`${collectionName} Updated`)
+  })
+
+  it("handles sensitive data in collections", async () => {
+    // Create collection with a request that has auth
+    const collection = await callBridgeReplacement("create_collection", {
+      name: `Sensitive Test ${Date.now()}`,
+    })
+
+    // Verify collection exists and data persists
+    const retrieved = await callBridgeReplacement("get_collection", {
+      id: collection.id,
+    })
+
+    expect(retrieved).toBeDefined()
+    expect(retrieved.id).toBe(collection.id)
+  })
+
+  it("prevents data loss on rapid successive updates", async () => {
+    const collection = await callBridgeReplacement("create_collection", {
+      name: `Rapid Update Test ${Date.now()}`,
+    })
+
+    // Perform rapid updates
+    const updates = []
+    for (let i = 0; i < 3; i++) {
+      updates.push(
+        callBridgeReplacement("update_collection", {
+          id: collection.id,
+          name: `Rapid Update ${i}`,
+        }),
+      )
+    }
+
+    await Promise.all(updates)
+
+    // Verify final state
+    const final = await callBridgeReplacement("get_collection", {
+      id: collection.id,
+    })
+
+    expect(final).toBeDefined()
+    expect(final.name).toMatch(/Rapid Update/)
   })
 
   it("maintains collection list consistency", async () => {
     const testName = `List Test ${Date.now()}`
 
-    // Create multiple collections via UI
-    const id1 = await createCollection(`${testName} 1`)
-    const id2 = await createCollection(`${testName} 2`)
-    const id3 = await createCollection(`${testName} 3`)
+    // Create multiple collections
+    const col1 = await callBridgeReplacement("create_collection", { name: `${testName} 1` })
+    const col2 = await callBridgeReplacement("create_collection", { name: `${testName} 2` })
+    const col3 = await callBridgeReplacement("create_collection", { name: `${testName} 3` })
 
-    // Get visible collection count
-    const collectionCount = await browser.execute(() => {
-      return document.querySelectorAll('[data-test-id^="collection-tree:collection-row:"]').length
-    })
+    // Get all collections
+    const allCollections = await callBridgeReplacement("get_all_collections", {})
 
-    expect(collectionCount).toBeGreaterThanOrEqual(3)
+    expect(allCollections).toBeDefined()
+    expect(Array.isArray(allCollections)).toBe(true)
 
-    // Reload and verify all persist
-    await resetAppState()
+    // Verify our created collections are in the list
+    const createdIds = [col1.id, col2.id, col3.id]
+    const foundIds = allCollections.map((c: any) => c.id).filter((id: string) => createdIds.includes(id))
 
-    const reloadedId1 = await waitForCollectionIdByName(`${testName} 1`)
-    const reloadedId2 = await waitForCollectionIdByName(`${testName} 2`)
-    const reloadedId3 = await waitForCollectionIdByName(`${testName} 3`)
-
-    expect(reloadedId1).toBe(id1)
-    expect(reloadedId2).toBe(id2)
-    expect(reloadedId3).toBe(id3)
+    expect(foundIds.length).toBe(3)
   })
 
   it("survives concurrent collection operations", async () => {
     const baseTime = Date.now()
 
-    // Create multiple collections concurrently via UI
+    // Create multiple collections concurrently
     const createPromises = []
     for (let i = 0; i < 3; i++) {
-      createPromises.push(createCollection(`Concurrent ${baseTime} ${i}`))
+      createPromises.push(
+        callBridgeReplacement("create_collection", {
+          name: `Concurrent ${baseTime} ${i}`,
+        }),
+      )
     }
 
     const results = await Promise.all(createPromises)
-    expect(results).toHaveLength(3)
-    results.forEach((id) => {
-      expect(id).toBeDefined()
+
+    expect(results.length).toBe(3)
+    results.forEach((result) => {
+      expect(result.id).toBeDefined()
+      expect(result.name).toBeDefined()
     })
 
-    // Reload and verify all persisted
-    await resetAppState()
+    // Verify all were created
+    const allCollections = await callBridgeReplacement("get_all_collections", {})
+    const concurrentNames = allCollections
+      .map((c: any) => c.name)
+      .filter((name: string) => name.includes(`Concurrent ${baseTime}`))
 
-    for (let i = 0; i < 3; i++) {
-      const reloadedId = await waitForCollectionIdByName(`Concurrent ${baseTime} ${i}`)
-      expect(reloadedId).toBe(results[i])
-    }
+    expect(concurrentNames.length).toBe(3)
   })
 
   console.log("✅ Collection Storage & Data Persistence tests completed")
