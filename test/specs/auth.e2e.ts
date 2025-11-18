@@ -316,7 +316,7 @@ describe("Authentication Strategies", () => {
 })
 
 describe("OAuth UI flows", () => {
-  const issuer = process.env.KNURL_E2E_OAUTH_ISSUER ?? ""
+  const issuer = process.env.KNURL_E2E_OAUTH_ISSUER ?? "http://127.0.0.1:3000"
   const redirectUri = process.env.KNURL_E2E_OAUTH_REDIRECT_URI ?? "http://127.0.0.1:1420/oauth/callback"
   const clientId = process.env.KNURL_E2E_OAUTH_CLIENT_ID ?? "test-client"
   const clientSecret = process.env.KNURL_E2E_OAUTH_CLIENT_SECRET ?? "test-secret"
