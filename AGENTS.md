@@ -3,6 +3,32 @@
 This file is the complete, canonical instructions for any AI tool/agent working in this repository. If you find
 conflicting guidance anywhere else, defer to this file.
 
+## 🚨 CRITICAL: Agent Operating Discipline
+
+**This is non-negotiable. Scope creep and autonomously redefining requirements wastes resources and breaks trust.**
+
+When the user specifies work to do:
+
+1. **Create a TODO file in docs/work/ of EXACTLY what was asked** — treat that TODO list as the sole work plan. Do not
+   add work, reinterpret, or expand scope without explicit approval.
+2. **If you encounter a blocker that prevents achieving the stated goals, STOP immediately** — do not work around the
+   blocker by changing the requirement. Instead, communicate the blocker clearly and ask for help.
+3. **Never unilaterally change what work "should really do"** — if the requirement seems suboptimal, ask first. Do not
+   autonomously rewrite test assertions, change test purpose, or expand scope to handle edge cases you think should be
+   covered.
+4. **Do not make unilateral decisions about implementation approach** — if hitting a technical wall (e.g., app reload
+   breaks WebDriver, UI interaction is flaky), share the problem and ask for guidance rather than changing scope.
+
+**Example of violation:** User asks to verify collection persistence across app reload. You encounter a technical
+blocker (app reload breaks WebDriver), so you unilaterally rewrite the test to verify only immediate UI state instead.
+This changed the test's purpose without asking.
+
+**Example of correct approach:** User asks to verify collection persistence across app reload. You encounter the same
+blocker. You STOP, document the blocker clearly, and ask: "How should we verify persistence if location.reload() breaks
+the WebDriver session?"
+
+---
+
 Mandatory communication output rule: Be extremely concise. Sacrifice grammar for the sake of concision.
 
 ## Project Snapshot
@@ -85,65 +111,67 @@ ensure Immer-based immutable updates in Zustand slices. Never modify generated S
 ## Testing Expectations
 
 ### Unit Tests (Vitest + React Testing Library)
-Setup lives in `src/test/setup.ts` and mocks Tauri IPC via `mockIPC`. Mock all external dependencies—filesystem, network, Tauri commands. Test business logic, state mutations, component behavior in isolation. Target 70%+ coverage on frontend lines, 90%+ on deterministic Rust helpers.
+
+Setup lives in `src/test/setup.ts` and mocks Tauri IPC via `mockIPC`. Mock all external dependencies—filesystem,
+network, Tauri commands. Test business logic, state mutations, component behavior in isolation. Target 70%+ coverage on
+frontend lines, 90%+ on deterministic Rust helpers.
 
 Test file naming and co-location:
+
 - For every source file `foo.ts(x)`, all unit tests must live in a single sibling file named `foo.test.ts(x)`.
 - Do not split tests across multiple files per target.
 - Co-locate tests next to their target source under `src/`.
 
 ### E2E Tests (WebDriver.io)
-**Golden rule:** Only test user-visible behavior via UI interactions. Do NOT access internal state, filesystem, or Tauri commands.
+
+**Golden rule:** Only test user-visible behavior via UI interactions. Do NOT access internal state, filesystem, or Tauri
+commands.
 
 Strict E2E discipline:
-- **Create state** exclusively through UI actions (clicks, form input, navigation). If you can't create a state via the UI, it's not E2E—use unit tests or integration tests.
-- **Verify outcomes** only by checking what the UI displays (text, element visibility, form values). Never read filesystem, app state, or call Tauri commands.
-- **No plumbing.** Do not access `__vite_ssr_modules__`, call `browser.execute()` to inspect state, or invoke Tauri commands. If behavior can't be verified via the UI, it belongs in a unit test or integration test.
+
+- **Create state** exclusively through UI actions (clicks, form input, navigation). If you can't create a state via the
+  UI, it's not E2E—use unit tests or integration tests.
+- **Verify outcomes** only by checking what the UI displays (text, element visibility, form values). Never read
+  filesystem, app state, or call Tauri commands.
+- **No plumbing.** Do not access `__vite_ssr_modules__`, call `browser.execute()` to inspect state, or invoke Tauri
+  commands. If behavior can't be verified via the UI, it belongs in a unit test or integration test.
 - Use only the shared UI helpers from `test/support/ui.ts`; extend that library instead of hand-rolling selectors.
 
 ### Integration Tests (WebDriver.io + Backend Access)
-**Purpose:** Verify cross-layer behavior that cannot be tested via UI alone. Examples: encryption at rest, file persistence, backend state synchronization, keyring integration.
+
+**Purpose:** Verify cross-layer behavior that cannot be tested via UI alone. Examples: encryption at rest, file
+persistence, backend state synchronization, keyring integration.
 
 **Requirements:**
-- **Coordination required.** Do NOT write integration tests without explicit discussion and approval. Poor integration test design is a common source of maintenance burden.
+
+- **Coordination required.** Do NOT write integration tests without explicit discussion and approval. Poor integration
+  test design is a common source of maintenance burden.
 - **Clear justification.** Document why this behavior cannot be tested via E2E (UI) or unit tests.
-- **Minimal plumbing.** Use `callBridgeReplacement` helpers and filesystem utilities from `test/support/` to access backend state. Access state only for **verification**, not setup.
-- **Setup via UI.** Create test conditions through UI interactions where possible. Use backend access only to verify outcomes that the UI doesn't expose.
+- **Minimal plumbing.** Use `callBridgeReplacement` helpers and filesystem utilities from `test/support/` to access
+  backend state. Access state only for **verification**, not setup.
+- **Setup via UI.** Create test conditions through UI interactions where possible. Use backend access only to verify
+  outcomes that the UI doesn't expose.
 - **Location:** Store in `test/specs/integration/` to distinguish from pure E2E tests.
 
 Example use cases:
+
 - Verifying encrypted data is properly stored on disk with expected format/keys
 - Testing Tauri backend command behavior with real filesystem
 - Validating state persistence across app restarts
 
 Example non-use-cases:
+
 - Creating collections via backend to avoid UI interaction complexity (use E2E + UI helpers instead)
 - Checking internal app state that has a UI representation (verify via UI instead)
 
-Rust code uses inline `#[cfg(test)]` modules for units and `src-tauri/tests/` for integration; avoid hitting real network or OS services.
+Rust code uses inline `#[cfg(test)]` modules for units and `src-tauri/tests/` for integration; avoid hitting real
+network or OS services.
 
 ## Git & PR Practice
 
 Write conventional commits (`feat:`, `fix:`, `chore:`) in imperative tense. Pull requests should state intent, outline
 major changes, document tests executed, and link issues. Include screenshots or recordings for UI tweaks and call out
 follow-up tasks or risk areas.
-
-## 🚨 CRITICAL: Agent Operating Discipline
-
-**This is non-negotiable. Scope creep and autonomously redefining requirements wastes resources and breaks trust.**
-
-When the user specifies work to do:
-
-1. **Create a TODO of EXACTLY what was asked** — treat that TODO list as the sole test plan. Do not add work, reinterpret, or expand scope without explicit approval.
-2. **If you encounter a blocker that prevents achieving the stated goal, STOP immediately** — do not work around the blocker by changing the requirement. Instead, communicate the blocker clearly and ask for help.
-3. **Never unilaterally change what work "should really do"** — if the requirement seems suboptimal, ask first. Do not autonomously rewrite test assertions, change test purpose, or expand scope to handle edge cases you think should be covered.
-4. **Do not make unilateral decisions about implementation approach** — if hitting a technical wall (e.g., app reload breaks WebDriver, UI interaction is flaky), share the problem and ask for guidance rather than changing the test's purpose.
-
-**Example of violation:** User asks to verify collection persistence across app reload. You encounter a technical blocker (app reload breaks WebDriver), so you unilaterally rewrite the test to verify only immediate UI state instead. This changed the test's purpose without asking.
-
-**Example of correct approach:** User asks to verify collection persistence across app reload. You encounter the same blocker. You STOP, document the blocker clearly, and ask: "How should we verify persistence if location.reload() breaks the WebDriver session?"
-
----
 
 ## Agent Operating Guide
 
@@ -154,8 +182,10 @@ General practices:
 - Avoid unrelated refactors; prefer minimal, targeted changes.
 - Never edit generated Shadcn primitives under `src/components/ui`.
 - Use `@/` absolute imports; group externals before locals.
-- Use the shared e2e UI helper (`test/support/ui.ts`) for all automated interactions with app components; extend this library instead of hand-rolling selectors.
-- Review `docs/feature-inventory.md` before altering behaviour; call out verification steps that preserve listed features and update the inventory when functionality changes.
+- Use the shared e2e UI helper (`test/support/ui.ts`) for all automated interactions with app components; extend this
+  library instead of hand-rolling selectors.
+- Review `docs/feature-inventory.md` before altering behaviour; call out verification steps that preserve listed
+  features and update the inventory when functionality changes.
 
 Environment + safety:
 
