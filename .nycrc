@@ -15,6 +15,7 @@
   ],
   "reporter": [
     "text",
+    "text-summary",
     "html",
     "lcov",
     "json"
@@ -25,5 +26,8 @@
   "functions": 70,
   "branches": 65,
   "statements": 70,
-  "check-coverage": false
+  "check-coverage": false,
+  "sourceMap": true,
+  "cache": true,
+  "instrument": false
 }
