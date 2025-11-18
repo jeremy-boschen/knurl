@@ -1,5 +1,5 @@
 import * as path from 'node:path';
-import {existsSync, mkdtempSync, mkdirSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync, copyFileSync} from 'node:fs';
 import {homedir, tmpdir} from 'node:os';
 import {spawn, spawnSync} from 'child_process';
 import {fileURLToPath} from 'url';
@@ -23,6 +23,85 @@ const MOCK_ENDPOINT_HOST = '127.0.0.1';
 
 // Track per-session tauri-driver instances
 const tauriDriversByCapability: Map<number, any> = new Map();
+
+/**
+ * E2E Test Annotations Guide
+ * ===========================
+ *
+ * Use these annotations in test names to control test behavior:
+ *
+ * [STATE:PRESERVE]
+ *   Description: Retains all config directory files and settings from the previous test
+ *   Use case: Tests that need to verify persistent state across multiple operations
+ *   Example: it("[STATE:PRESERVE] verifies collection persists after reload", async () => { ... })
+ *   Effect: The beforeTest hook will NOT reset/clear the config directory
+ *
+ * Default Behavior (without [STATE:PRESERVE]):
+ *   - Config directory is completely wiped
+ *   - Fresh settings.json is copied from test/fixtures/settings.json
+ *   - Provides clean slate for each test
+ */
+
+// ============================================================================
+// State Management Utilities
+// ============================================================================
+
+/**
+ * Check if a test has the [STATE:PRESERVE] annotation
+ */
+function shouldPreserveState(testTitle: string): boolean {
+  return testTitle.includes('[STATE:PRESERVE]');
+}
+
+/**
+ * Reset the config directory: wipe all files and restore default settings
+ */
+function resetConfigDirectory(configDir: string): void {
+  try {
+    // Remove all files in config directory
+    if (existsSync(configDir)) {
+      const files = readdirSync(configDir);
+      for (const file of files) {
+        const filePath = path.join(configDir, file);
+        rmSync(filePath, { recursive: true, force: true });
+      }
+    }
+
+    // Copy fresh settings.json from fixtures
+    const fixtureSettingsPath = path.join(__dirname, 'test', 'fixtures', 'settings.json');
+    const configSettingsPath = path.join(configDir, 'settings.json');
+    if (existsSync(fixtureSettingsPath)) {
+      copyFileSync(fixtureSettingsPath, configSettingsPath);
+    }
+  } catch (error) {
+    console.warn(`[resetConfigDirectory] Failed to reset config directory at ${configDir}:`, error);
+  }
+}
+
+/**
+ * Pretty-print test metadata for logging
+ */
+function formatTestMetadata(test: any): string {
+  return [
+    `title: "${test.title}"`,
+    `fullTitle: "${test.fullTitle}"`,
+    `file: "${test.file}"`,
+    test.parent ? `parent: "${test.parent}"` : null,
+  ]
+    .filter(Boolean)
+    .join(' | ');
+}
+
+/**
+ * Pretty-print test result for logging
+ */
+function formatTestResult(result: any): string {
+  const parts = [];
+  if (result.duration !== undefined) parts.push(`duration: ${result.duration}ms`);
+  if (result.state) parts.push(`state: ${result.state}`);
+  if (result.error) parts.push(`error: ${result.error.message}`);
+  return parts.length > 0 ? parts.join(' | ') : 'result: passed';
+}
 
 function killProcessesOnPort(port: number) {
   try {
@@ -119,19 +198,27 @@ export const config = {
 
   // ensure the rust project is built since we expect this binary to exist for the webdriver sessions
   onPrepare: async () => {
+    console.log(`\n${'='.repeat(80)}`);
+    console.log('[onPrepare] 🔧 Global test preparation (run once for entire test suite)');
+    console.log(`  timestamp: ${new Date().toISOString()}`);
+
     // Kill any existing processes on critical ports
+    console.log(`  cleaning up processes on critical ports...`);
     killProcessesOnPort(1420);
     killProcessesOnPort(4444);
     killProcessesOnPort(4445); // WebKitWebDriver port
     killProcessesOnPort(MOCK_ENDPOINT_PORT);
     // Kill lingering processes from previous runs
+    console.log(`  killing lingering processes from previous runs...`);
     killProcessesByPattern('vite');
     killProcessesByPattern('esbuild');
     killProcessesByPattern('tauri-driver');
     killProcessesByPattern('WebKitWebDriver');
     killProcessesByPattern(path.join('src-tauri', 'target', 'debug', 'knurl'));
+    console.log(`  ✓ Process cleanup complete`);
 
     // Start mock endpoint server (OAuth, GitHub API, and other test endpoints)
+    console.log(`  starting mock endpoint server on port ${MOCK_ENDPOINT_PORT}...`);
     const mockEndpointEnv = {
       ...process.env,
       HOST: MOCK_ENDPOINT_HOST,
@@ -167,6 +254,7 @@ export const config = {
 
     try {
       await waitForEndpoint(`http://${MOCK_ENDPOINT_HOST}:${MOCK_ENDPOINT_PORT}/.well-known/openid-configuration`);
+      console.log(`  ✓ Mock endpoint server ready`);
     } catch (error) {
       const detail =
         error instanceof Error
@@ -178,6 +266,7 @@ export const config = {
     }
 
     // OAuth and test configuration
+    console.log(`  configuring OAuth environment variables...`);
     const oauthIssuer = `http://${MOCK_ENDPOINT_HOST}:${MOCK_ENDPOINT_PORT}`;
     process.env.VITE_E2E_OAUTH_ISSUER = oauthIssuer;
     process.env.VITE_E2E_OAUTH_CLIENT_ID = 'test-client';
@@ -186,6 +275,9 @@ export const config = {
     process.env.VITE_E2E_STUB_OAUTH = '0';
     process.env.KNURL_OAUTH_HEADLESS = '1';
     process.env.KNURL_OAUTH_AUTO_DEVICE = '1';
+    console.log(`  ✓ OAuth configured (issuer: ${oauthIssuer})`);
+    console.log(`  ✓ Environment variables set`);
+    console.log(`  building Rust backend...`);
 
     // Don't set config dir in onPrepare; it will be set per-capability in beforeSession
     // This allows each test suite/capability to have its own config directory
@@ -210,7 +302,9 @@ export const config = {
     if (buildResult.status !== 0) {
       throw new Error('cargo build failed');
     }
+    console.log(`  ✓ Rust backend built successfully`);
 
+    console.log(`  starting Vite dev server on port 1420...`);
     const viteEnv = {
       ...buildEnvWithKeyringDefaults(),
       BROWSER: 'none',
@@ -263,8 +357,10 @@ export const config = {
     });
 
     await waitForDevServer('http://127.0.0.1:1420');
+    console.log(`  ✓ Vite dev server ready`);
 
     // Start tauri-driver once for all workers (only once in onPrepare)
+    console.log(`  starting tauri-driver...`);
     const tauriDriverBinary = path.join(cargoHome, 'bin', process.platform === 'win32' ? 'tauri-driver.exe' : 'tauri-driver');
     if (!existsSync(tauriDriverBinary)) {
       throw new Error(`tauri-driver not found at ${tauriDriverBinary}. Install via "cargo install tauri-driver".`);
@@ -325,23 +421,30 @@ export const config = {
 
     // Wait for tauri-driver to be ready and fully initialized
     await new Promise(resolve => setTimeout(resolve, 5000));
-    console.log('[tauri-driver] Started successfully');
+    console.log(`  ✓ tauri-driver started and ready`);
+    console.log(`[onPrepare] ✓ Global test preparation complete\n`);
   },
 
   // Create a unique config directory for each session to prevent test pollution
   beforeSession: async (config, capabilities, specs) => {
+    console.log(`\n${'='.repeat(80)}`);
+    console.log('[beforeSession] 🚀 Session initialization starting');
+    console.log(`  capabilities: ${capabilities ? Object.keys(capabilities).join(', ') : 'none'}`);
+    console.log(`  specs: ${specs ? specs.length : 0} spec files`);
+
     // Create a unique config directory for this capability/session
     // This prevents test pollution when multiple suites run in parallel
     const configDir = mkdtempSync(path.join(tmpdir(), 'knurl-e2e-config-'));
     configDirsByCapability.set(process.pid, configDir);
+    console.log(`  configDir: ${configDir}`);
 
     // Copy test settings fixture to disable auto-save during tests
     try {
-      const { copyFileSync } = await import('fs');
       const fixtureSettingsPath = path.join(__dirname, 'test', 'fixtures', 'settings.json');
       const configSettingsPath = path.join(configDir, 'settings.json');
       if (existsSync(fixtureSettingsPath)) {
         copyFileSync(fixtureSettingsPath, configSettingsPath);
+        console.log(`  ✓ Copied settings.json fixture to config directory`);
       }
     } catch (error) {
       console.warn('[beforeSession] Failed to copy settings fixture:', error);
@@ -359,17 +462,48 @@ export const config = {
       } else {
         tauriOptions.args.push(`--config-dir=${normalizedConfigDir}`);
       }
+      console.log(`  ✓ Injected --config-dir into Tauri args`);
     }
 
+    console.log(`[beforeSession] ✓ Session initialization complete\n`);
     // tauri-driver is now shared across all sessions and started in onPrepare
+  },
+
+  // Per-test hook: runs before each individual test
+  beforeTest: async function (test) {
+    const configDir = configDirsByCapability.get(process.pid);
+    const preserveState = shouldPreserveState(test.title);
+
+    console.log(`\n[beforeTest] 📋 Starting test: "${test.title}"`);
+    console.log(`  ${formatTestMetadata(test)}`);
+    console.log(`  state annotation: ${preserveState ? '[STATE:PRESERVE] 💾' : 'reset to defaults'}`);
+
+    if (!preserveState && configDir) {
+      console.log(`  resetting config directory...`);
+      resetConfigDirectory(configDir);
+      console.log(`  ✓ Config directory reset`);
+    } else if (preserveState && configDir) {
+      console.log(`  ✓ Preserving config directory state from previous test`);
+    }
+  },
+
+  // Called before each test suite starts
+  beforeSuite: async function (suite) {
+    console.log(`\n[beforeSuite] 📦 Suite starting: "${suite.title}"`);
+    console.log(`  fullTitle: "${suite.fullTitle}"`);
+    console.log(`  tests in suite: ${suite.tests ? suite.tests.length : 'unknown'}`);
   },
 
   // afterSession cleanup is no longer needed as tauri-driver is shared across sessions
   afterSession: () => {
+    console.log(`\n[afterSession] 🏁 Session ending`);
     // tauri-driver cleanup is now handled in onShutdown
   },
 
   before: async () => {
+    console.log(`\n[before] 🌐 Per-session setup (run once per session, before first test)`);
+    console.log(`  waiting for app to reach startup state 2...`);
+
     await browser.waitUntil(
       async () => {
         const state = await browser.execute(() => {
@@ -383,6 +517,7 @@ export const config = {
         timeoutMsg: 'Application did not reach startup state 2 within 60s',
       },
     );
+    console.log(`  ✓ App startup state reached`);
 
     // Make config directory available to tests
     const configDir = configDirsByCapability.get(process.pid);
@@ -391,6 +526,7 @@ export const config = {
         const globalWindow = window as any;
         globalWindow.__KNURL_E2E_CONFIG_DIR__ = dir;
       }, configDir);
+      console.log(`  ✓ Injected __KNURL_E2E_CONFIG_DIR__ into window`);
     }
 
     // Enable event history tracking for E2E tests
@@ -398,14 +534,23 @@ export const config = {
       const globalWindow = window as Record<string, unknown>;
       globalWindow.__KNURL_ENABLE_EVENT_HISTORY = true;
     });
+    console.log(`  ✓ Enabled event history tracking`);
 
     await browser.pause(2000);
+    console.log(`  ✓ Stabilization pause complete`);
+    console.log(`[before] ✓ Per-session setup complete\n`);
   },
 
-  afterTest: async function (test) {
+  // Called after each individual test ends
+  afterTest: async function (test, result) {
+    console.log(`[afterTest] ✓ Test complete: "${test.title}"`);
+    console.log(`  ${formatTestMetadata(test)}`);
+    console.log(`  ${formatTestResult(result)}`);
+
     // Collect coverage from browser (always enabled)
     // Skip if coverage collection is disabled
     if (envFlag(process.env.KNURL_SKIP_COVERAGE)) {
+      console.log(`  coverage collection skipped (KNURL_SKIP_COVERAGE=true)`);
       return;
     }
 
@@ -425,6 +570,7 @@ export const config = {
           `coverage-${Date.now()}-${Math.random().toString(36).slice(2, 9)}.json`
         )
         writeFileSync(coverageFile, JSON.stringify(coverage, null, 2))
+        console.log(`  ✓ Coverage data collected and saved`);
       }
     } catch (error) {
       // Silently ignore coverage collection errors; tests should not fail due to coverage
@@ -432,31 +578,51 @@ export const config = {
     }
   },
 
+  // Called after each test suite completes
+  afterSuite: async function (suite) {
+    console.log(`[afterSuite] 📦 Suite complete: "${suite.title}"`);
+    console.log(`  fullTitle: "${suite.fullTitle}"`);
+  },
+
   after: async function () {
     // Coverage merge and report generation is now handled by a separate post-test process
     // See scripts/aggregate-e2e-coverage.mjs
+    console.log(`[after] 🏁 Post-session cleanup (run once per session, after all tests)`);
+    console.log(`[after] ✓ Session cleanup complete\n`);
   },
 
   onComplete: async () => {
+    console.log(`\n${'='.repeat(80)}`);
+    console.log('[onComplete] 🛑 Global test completion (run once after all test workers finish)');
+    console.log(`  timestamp: ${new Date().toISOString()}`);
+    console.log(`  stopping all test infrastructure...`);
+
     // Explicit cleanup when all tests are complete
     closeProcesses();
 
     // Clean up ports and lingering processes
+    console.log(`  waiting for processes to terminate gracefully...`);
     await new Promise((resolve) => setTimeout(resolve, 500));
     try {
+      console.log(`  killing processes on critical ports...`);
       killProcessesOnPort(1420);
       killProcessesOnPort(4444);
       killProcessesOnPort(4445); // WebKitWebDriver
       killProcessesOnPort(MOCK_ENDPOINT_PORT);
+      console.log(`  killing lingering process patterns...`);
       killProcessesByPattern('vite');
       killProcessesByPattern('esbuild');
       killProcessesByPattern('tauri-driver');
       killProcessesByPattern('WebKitWebDriver');
       killProcessesByPattern('knurl');
+      console.log(`  ✓ All processes cleaned up`);
     } catch (error) {
       // Ignore errors during cleanup - processes may already be dead
       console.log('[cleanup] Completed with expected process-already-dead errors');
     }
+
+    console.log(`[onComplete] ✓ Global test completion done\n`);
+    console.log(`${'='.repeat(80)}\n`);
   },
 };
 
