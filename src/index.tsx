@@ -1,6 +1,6 @@
 import React, { Suspense } from "react"
 
-import { attachConsole, debug, error, info, warn } from "@tauri-apps/plugin-log"
+import { attachConsole } from "@tauri-apps/plugin-log"
 import { enablePatches } from "immer"
 import { createRoot } from "react-dom/client"
 
@@ -22,26 +22,6 @@ enablePatches()
 
 // This can be awaited as it doesn't block other module imports in the same way.
 await attachConsole()
-
-const logMethods = ["log", "debug", "info", "warn", "error"] as const
-type LogMethodName = (typeof logMethods)[number]
-
-const pluginLoggers: Record<LogMethodName, typeof info> = {
-  log: info,
-  debug: debug,
-  info: info,
-  warn: warn,
-  error: error,
-}
-
-for (const name of logMethods) {
-  const original = console[name as keyof typeof console] as typeof console.log
-  const plugin = pluginLoggers[name]
-  console[name as keyof typeof console] = ((...args: Parameters<typeof console.log>) => {
-    original(...args)
-    void plugin(...args)
-  }) as typeof console.log
-}
 
 setStartupState(0)
 
