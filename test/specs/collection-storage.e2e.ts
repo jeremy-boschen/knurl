@@ -1,6 +1,6 @@
 import { expect } from "@wdio/globals"
 
-import { ensureWorkspaceReady } from "../support/ui"
+import { ensureWorkspaceReady, clickByTestId, setInputText, resetAppState } from "../support/ui"
 import { createCollection, waitForCollectionIdByName } from "../support/collections"
 
 describe("Collection Storage & Data Persistence", () => {
@@ -15,9 +15,25 @@ describe("Collection Storage & Data Persistence", () => {
     const collectionId = await createCollection(collectionName)
     expect(collectionId).toBeDefined()
 
-    // Verify collection is in the UI after creation
-    const foundId = await waitForCollectionIdByName(collectionName)
-    expect(foundId).toBe(collectionId)
+    // Reload the app without wiping config directory
+    await resetAppState()
+
+    // Verify collection reappears after reload
+    const reloadedId = await waitForCollectionIdByName(collectionName)
+    expect(reloadedId).toBe(collectionId)
+  })
+
+  it("retrieves collection data without corruption", async () => {
+    const testName = `Retrieval Test ${Date.now()}`
+
+    // Create collection via UI
+    const collectionId = await createCollection(testName)
+
+    // Reload and verify it persists with correct name
+    await resetAppState()
+    const reloadedId = await waitForCollectionIdByName(testName)
+
+    expect(reloadedId).toBe(collectionId)
   })
 
   it("maintains collection list consistency", async () => {
@@ -28,14 +44,23 @@ describe("Collection Storage & Data Persistence", () => {
     const id2 = await createCollection(`${testName} 2`)
     const id3 = await createCollection(`${testName} 3`)
 
-    // Verify all appear in UI
-    const foundId1 = await waitForCollectionIdByName(`${testName} 1`)
-    const foundId2 = await waitForCollectionIdByName(`${testName} 2`)
-    const foundId3 = await waitForCollectionIdByName(`${testName} 3`)
+    // Get visible collection count
+    const collectionCount = await browser.execute(() => {
+      return document.querySelectorAll('[data-test-id^="collection-tree:collection-row:"]').length
+    })
 
-    expect(foundId1).toBe(id1)
-    expect(foundId2).toBe(id2)
-    expect(foundId3).toBe(id3)
+    expect(collectionCount).toBeGreaterThanOrEqual(3)
+
+    // Reload and verify all persist
+    await resetAppState()
+
+    const reloadedId1 = await waitForCollectionIdByName(`${testName} 1`)
+    const reloadedId2 = await waitForCollectionIdByName(`${testName} 2`)
+    const reloadedId3 = await waitForCollectionIdByName(`${testName} 3`)
+
+    expect(reloadedId1).toBe(id1)
+    expect(reloadedId2).toBe(id2)
+    expect(reloadedId3).toBe(id3)
   })
 
   it("survives concurrent collection operations", async () => {
@@ -53,10 +78,12 @@ describe("Collection Storage & Data Persistence", () => {
       expect(id).toBeDefined()
     })
 
-    // Verify all appear in UI
+    // Reload and verify all persisted
+    await resetAppState()
+
     for (let i = 0; i < 3; i++) {
-      const foundId = await waitForCollectionIdByName(`Concurrent ${baseTime} ${i}`)
-      expect(foundId).toBe(results[i])
+      const reloadedId = await waitForCollectionIdByName(`Concurrent ${baseTime} ${i}`)
+      expect(reloadedId).toBe(results[i])
     }
   })
 
