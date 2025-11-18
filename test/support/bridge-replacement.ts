@@ -19,19 +19,28 @@ import { readAppDataJson, readAppDataFile, appDataFileExists, writeAppDataFile, 
  * Create a collection and return its data
  */
 export async function createCollectionViaUI(params: { name: string }): Promise<any> {
-  const collectionId = await createCollection(params.name)
-
-  // Read the created collection from disk to return its data
   try {
-    const collectionData = await readAppDataJson(`collections/${collectionId}.json`)
-    return {
-      id: collectionId,
-      ...collectionData,
+    const collectionId = await createCollection(params.name)
+
+    // Read the created collection from disk to return its data
+    try {
+      const collectionData = await readAppDataJson(`collections/${collectionId}.json`)
+      return {
+        id: collectionId,
+        ...collectionData,
+      }
+    } catch {
+      // If file doesn't exist yet, return minimal data
+      return {
+        id: collectionId,
+        name: params.name,
+      }
     }
-  } catch {
-    // If file doesn't exist yet, return minimal data
+  } catch (error) {
+    // If collection creation fails, return error details
+    console.error("Failed to create collection via UI:", error)
     return {
-      id: collectionId,
+      error: error instanceof Error ? error.message : String(error),
       name: params.name,
     }
   }
