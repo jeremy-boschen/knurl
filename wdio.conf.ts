@@ -403,10 +403,10 @@ async function handleOnPrepare() {
   const env = {
     ...process.env,
     CARGO_INCREMENTAL: process.env.CARGO_INCREMENTAL ?? "1",
-    RUSTFLAGS: [process.env.RUSTFLAGS, "-C opt-level=0", "-C debuginfo=1"].filter(Boolean).join(" ").trim(),
+    RUSTFLAGS: [process.env.RUSTFLAGS].filter(Boolean).join(" ").trim(),
   }
 
-  const buildResult = spawnSync("cargo", ["build", "--manifest-path", manifestPath, "--profile", "dev"], {
+  const buildResult = spawnSync("cargo", ["build", "--manifest-path", manifestPath, "--profile", "release"], {
     stdio: "inherit",
     shell: true,
     env,
