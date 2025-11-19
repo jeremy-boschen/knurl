@@ -247,7 +247,7 @@ export function useRequestTab(tabId?: string): HookResult<RequestTabHookState, R
   const activeTabId = useActiveTabId()
   const effectiveTabId = tabId ?? activeTabId
 
-  const data = useApplication(
+  const selectorData = useApplication(
     useShallow((app) => {
       if (!effectiveTabId) {
         return null
@@ -264,17 +264,30 @@ export function useRequestTab(tabId?: string): HookResult<RequestTabHookState, R
         return null
       }
 
-      // Always compute merged from original (source of truth) to ensure latest state
-      const merged = toMergedRequest(original)
-
       return {
         activeTab: tab,
-        request: merged,
         original,
         isDirty: isRequestDirty(original),
+        requestVersion: original.updated,
       }
     }),
   )
+
+  // Use useMemo to compute merged request based on request version.
+  // This ensures merged request is recomputed only when original.updated changes,
+  // preventing infinite loops while maintaining freshness of derived data (like auth).
+  const data = useMemo(() => {
+    if (!selectorData) {
+      return null
+    }
+
+    return {
+      activeTab: selectorData.activeTab,
+      request: toMergedRequest(selectorData.original),
+      original: selectorData.original,
+      isDirty: selectorData.isDirty,
+    }
+  }, [selectorData?.requestVersion, selectorData])
 
   // If a tabId was explicitly provided, we expect the data to exist.
   // If it doesn't, it's a programming error (e.g., component rendered with stale ID).

@@ -361,6 +361,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const patch = ensureRequestPatch(request)
         patch.authentication = authentication
         pruneObjectPatchIfEqual(request, patch, "authentication")
+        request.updated += 1
       })
     },
 

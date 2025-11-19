@@ -47,21 +47,33 @@ describe("Auth Tab Activation", () => {
     console.log("Selected basic auth")
 
     // Verify menu closes
-    await browser.pause(300)
+    await browser.pause(500)
 
-    // Verify auth panel is shown
-    await browser.waitUntil(
-      async () => {
-        try {
-          const panel = await $('[data-test-id="request-auth-panel"]')
-          return await panel.isDisplayed().catch(() => false)
-        } catch {
-          return false
-        }
-      },
-      { timeout: 5000 }
-    )
+    // Diagnostic: Check what's actually in the DOM
+    const panelContainerExists = await browser.execute(() => {
+      return !!document.querySelector('[data-test-id="request-auth-panel"]')
+    })
+    console.log(`Panel container exists: ${panelContainerExists}`)
 
-    console.log("Auth panel visible - basic auth configured successfully")
+    const basicFormExists = await browser.execute(() => {
+      return !!document.querySelector('[data-test-id="request-auth-panel:basic-auth-form"]')
+    })
+    console.log(`Basic auth form exists: ${basicFormExists}`)
+
+    const noAuthMessageExists = await browser.execute(() => {
+      return !!document.querySelector('[data-test-id="request-auth-panel:no-auth-message"]')
+    })
+    console.log(`No auth message exists: ${noAuthMessageExists}`)
+
+    // Dump auth panel HTML for debugging
+    const panelHtml = await browser.execute(() => {
+      const panel = document.querySelector('[data-test-id="request-auth-panel"]')
+      return panel ? panel.innerHTML.substring(0, 500) : "Panel not found"
+    })
+    console.log(`Panel HTML: ${panelHtml}`)
+
+    // Verify basic auth form is shown
+    expect(basicFormExists).toBe(true)
+    console.log("Basic auth form rendered successfully")
   })
 })
