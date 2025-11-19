@@ -1,8 +1,9 @@
 import * as path from 'node:path';
-import {existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync, copyFileSync} from 'node:fs';
+import {copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync} from 'node:fs';
 import {homedir, tmpdir} from 'node:os';
-import {spawn, spawnSync} from 'child_process';
+import {ChildProcessByStdio, spawn, spawnSync} from 'child_process';
 import {fileURLToPath} from 'url';
+import {Readable} from "stream";
 
 // @ts-ignore
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -11,9 +12,9 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 // Global State
 // ============================================================================
 
-let tauriDriver;
-let viteProcess;
-let mockEndpointProcess;
+let tauriDriver: ChildProcessByStdio<null, Readable, Readable>;
+let viteProcess: ChildProcessByStdio<null, Readable, Readable>;
+let mockEndpointProcess: ChildProcessByStdio<null, Readable, Readable>;
 let exit = false;
 const cargoHome = resolveCargoHome();
 const nativeDriverPath = resolveNativeDriverPath();
@@ -62,7 +63,7 @@ function resetConfigDirectory(configDir: string): void {
       const files = readdirSync(configDir);
       for (const file of files) {
         const filePath = path.join(configDir, file);
-        rmSync(filePath, { recursive: true, force: true });
+        rmSync(filePath, {recursive: true, force: true});
       }
     }
 
@@ -144,11 +145,11 @@ function killProcessesByPattern(pattern: string) {
           Try { Stop-Process -Id $_.Id -Force -ErrorAction Stop } Catch { }
         }
       `;
-      spawnSync('powershell.exe', ['-NoLogo', '-NoProfile', '-Command', script], { stdio: 'ignore' });
+      spawnSync('powershell.exe', ['-NoLogo', '-NoProfile', '-Command', script], {stdio: 'ignore'});
       return;
     }
 
-    const result = spawnSync('pkill', ['-9', '-f', pattern], { stdio: 'ignore' });
+    const result = spawnSync('pkill', ['-9', '-f', pattern], {stdio: 'ignore'});
     if (result.status === 0) {
       return;
     }
@@ -677,7 +678,7 @@ async function handleAfterTest(test: any, result: any) {
     if (coverage) {
       const coverageDir = path.join(process.cwd(), '.nyc_output');
       if (!existsSync(coverageDir)) {
-        mkdirSync(coverageDir, { recursive: true });
+        mkdirSync(coverageDir, {recursive: true});
       }
 
       const coverageFile = path.join(
@@ -814,8 +815,8 @@ export const config = {
     },
   ],
   reporters: [
-    ['spec', { symbols: { success: '✓', pending: '○', fail: '✕' }, realtimeReporting: false }],
-    ['json', { outputDir: './test-results', outputFileFormat: (opts) => `results-${opts.cid}.json` }],
+    ['spec', {symbols: {success: '✓', pending: '○', fail: '✕'}, realtimeReporting: false}],
+    ['json', {outputDir: './test-results', outputFileFormat: (opts) => `results-${opts.cid}.json`}],
   ],
   framework: 'mocha',
   baseUrl: 'http://localhost:1420',
