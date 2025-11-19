@@ -10,7 +10,7 @@
     "skipLibCheck": true,
     "noEmit": true,
 
-    "types": ["node"]
+    "types": ["node", "@wdio/globals/types", "webdriverio/async"]
   },
   "include": [
     "vite.config.ts",
