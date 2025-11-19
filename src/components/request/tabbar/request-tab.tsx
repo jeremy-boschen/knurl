@@ -50,7 +50,7 @@ export default function RequestTab({ tabId, onSelectTab, onCloseTab, onContextMe
       onClick={onSelectTab}
       onKeyDown={onSelectTab}
       onContextMenu={onContextMenu}
-      data-test-id={`tab:${tabId}`}
+      data-test-id={`request-tab:${tabId}`}
     >
       {/* Active tab indicator */}
       {isActive && <div className={cn("absolute bottom-0 left-0 right-0 h-[2px] rounded-t-full bg-primary")}></div>}

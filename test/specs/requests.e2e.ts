@@ -979,7 +979,7 @@ async function selectCollection(collectionId: string): Promise<void> {
  * Gets tab information from DOM instead of internal state
  */
 async function getTabSnapshot(tabKey: string) {
-  const tabElement = await $(`[data-test-id="tab:${tabKey}"]`)
+  const tabElement = await $(`[data-test-id="request-tab:${tabKey}"]`)
   const exists = await tabElement.isDisplayed().catch(() => false)
 
   if (!exists) {
