@@ -406,7 +406,7 @@ async function handleOnPrepare() {
     RUSTFLAGS: [process.env.RUSTFLAGS].filter(Boolean).join(" ").trim(),
   }
 
-  const buildResult = spawnSync("cargo", ["build", "--manifest-path", manifestPath, "--profile", "release"], {
+  const buildResult = spawnSync("cargo", ["build", "--manifest-path", manifestPath, "--profile", "e2e-test"], {
     stdio: "inherit",
     shell: true,
     env,
@@ -441,7 +441,7 @@ async function handleOnPrepare() {
   }
 
   // Build production bundle
-  const buildResult = spawnSync(
+  const viteBuildResult = spawnSync(
     "vite",
     ["build", "--config", "vite.config.e2e.ts", "--mode", "e2e"],
     {
@@ -452,7 +452,7 @@ async function handleOnPrepare() {
     },
   )
 
-  if (buildResult.status !== 0) {
+  if (viteBuildResult.status !== 0) {
     throw new Error("Vite build failed")
   }
   console.log(`  ✓ Vite production bundle built successfully`)
