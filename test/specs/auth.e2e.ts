@@ -1,6 +1,5 @@
 import { expect } from "@wdio/globals"
 
-import { callBridgeReplacement } from "../support/bridge-replacement"
 import { waitForActiveRequestTab, waitForRequestEditor } from "../support/request"
 import {
   clickByTestId,
@@ -430,12 +429,14 @@ async function startOAuthRequest(): Promise<{ tabKey: string; requestId: string 
   const tabKey = await waitForActiveRequestTab()
   await waitForRequestEditor()
 
-  const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
-  if (!snapshot) {
-    throw new Error("Workspace snapshot not available - app may not be fully hydrated")
+  // Query the tab element directly from DOM instead of using bridge
+  const tabElement = await $(`[data-test-id="request-tab:${tabKey}"]`)
+  const tabExists = await tabElement.isDisplayed().catch(() => false)
+  if (!tabExists) {
+    throw new Error("Unable to locate request tab in DOM")
   }
-  const tabEntry = snapshot.openTabs.find((tab) => tab.tabKey === tabKey)
-  const baseRequestId = tabEntry?.requestId
+
+  const baseRequestId = await tabElement.getAttribute("data-request-id")
   if (!baseRequestId) {
     throw new Error("Unable to resolve request id for OAuth tab")
   }
@@ -444,11 +445,7 @@ async function startOAuthRequest(): Promise<{ tabKey: string; requestId: string 
   await authTab.waitForDisplayed({ timeout: 5000 })
   await authTab.click()
 
-  const authContainer = await authTab.$("..")
-  if (!(await authContainer.isExisting())) {
-    throw new Error("Unable to resolve auth tab container")
-  }
-  const authMenuTrigger = await authContainer.$('[data-test-id="request-editor:tab-dropdown-trigger"]')
+  const authMenuTrigger = await getElementByTestId("request-editor:auth-tab-dropdown-trigger")
   await authMenuTrigger.waitForDisplayed({ timeout: 5000 })
   await authMenuTrigger.click()
 

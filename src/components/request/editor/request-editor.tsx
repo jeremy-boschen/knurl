@@ -173,9 +173,10 @@ type TabDropdownProps = {
   ariaLabel: string
   children: ReactNode
   onActivate: () => void
+  tabName: string
 }
 
-function TabDropdown({ ariaLabel, children, onActivate }: TabDropdownProps) {
+function TabDropdown({ ariaLabel, children, onActivate, tabName }: TabDropdownProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -189,7 +190,7 @@ function TabDropdown({ ariaLabel, children, onActivate }: TabDropdownProps) {
               onActivate?.()
             }
           }}
-          data-test-id="request-editor:tab-dropdown-trigger"
+          data-test-id={`request-editor:${tabName}-tab-dropdown-trigger`}
         >
           <ChevronDownIcon className="h-4 w-4" />
         </button>
@@ -207,7 +208,7 @@ function ParamsTabMenu({ tabId, onActivate }: { tabId: string; onActivate: () =>
   const showCookieItem = cookieParams !== undefined
 
   return (
-    <TabDropdown ariaLabel="Open parameters menu" onActivate={onActivate}>
+    <TabDropdown ariaLabel="Open parameters menu" onActivate={onActivate} tabName="params">
       <DropdownMenuContent side="bottom" align="end" className="w-56" data-test-id="request-editor:params-menu">
         <DropdownMenuItem
           onSelect={() => void actions.addPathParam()}
@@ -241,7 +242,7 @@ function HeadersTabMenu({ tabId, onActivate }: { tabId: string; onActivate?: () 
   const { actions } = useRequestHeaders(tabId)
 
   return (
-    <TabDropdown ariaLabel="Open headers menu" onActivate={onActivate}>
+    <TabDropdown ariaLabel="Open headers menu" onActivate={onActivate} tabName="headers">
       <DropdownMenuContent side="bottom" align="end" className="w-48" data-test-id="request-editor:headers-menu">
         <DropdownMenuItem
           onSelect={() => void actions.addHeader()}
@@ -352,7 +353,7 @@ function BodyTabMenu({ tabId, onActivate }: { tabId: string; onActivate?: () => 
   }
 
   return (
-    <TabDropdown ariaLabel="Open body menu" onActivate={onActivate}>
+    <TabDropdown ariaLabel="Open body menu" onActivate={onActivate} tabName="body">
       <DropdownMenuContent side="bottom" align="end" className="w-64" data-test-id="request-editor:body-menu">
         <DropdownMenuLabel>Body Type</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={selectedValue} onValueChange={handleValueChange}>
@@ -465,7 +466,7 @@ function AuthTabMenu({ tabId, onActivate }: { tabId: string; onActivate?: () => 
   }
 
   return (
-    <TabDropdown ariaLabel="Open authentication menu" onActivate={onActivate}>
+    <TabDropdown ariaLabel="Open authentication menu" onActivate={onActivate} tabName="auth">
       <DropdownMenuContent side="bottom" align="end" className="w-56" data-test-id="request-editor:auth-menu">
         <DropdownMenuLabel>Authentication</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={authType} onValueChange={(value) => handleAuthTypeChange(value as AuthType)}>
