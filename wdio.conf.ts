@@ -441,16 +441,12 @@ async function handleOnPrepare() {
   }
 
   // Build production bundle
-  const viteBuildResult = spawnSync(
-    "vite",
-    ["build", "--config", "vite.config.e2e.ts", "--mode", "e2e"],
-    {
-      cwd: process.cwd(),
-      shell: true,
-      env: viteEnv,
-      stdio: "inherit",
-    },
-  )
+  const viteBuildResult = spawnSync("vite", ["build", "--config", "vite.config.e2e.ts", "--mode", "e2e"], {
+    cwd: process.cwd(),
+    shell: true,
+    env: viteEnv,
+    stdio: "inherit",
+  })
 
   if (viteBuildResult.status !== 0) {
     throw new Error("Vite build failed")
@@ -459,16 +455,12 @@ async function handleOnPrepare() {
 
   // Start preview server to serve production bundle
   console.log(`  starting Vite preview server on port 1420...`)
-  viteProcess = spawn(
-    "vite",
-    ["preview", "--config", "vite.config.e2e.ts", "--host", "127.0.0.1", "--port", "1420"],
-    {
-      cwd: process.cwd(),
-      shell: true,
-      env: viteEnv,
-      stdio: ["ignore", "pipe", "pipe"],
-    },
-  )
+  viteProcess = spawn("vite", ["preview", "--config", "vite.config.e2e.ts", "--host", "127.0.0.1", "--port", "1420"], {
+    cwd: process.cwd(),
+    shell: true,
+    env: viteEnv,
+    stdio: ["ignore", "pipe", "pipe"],
+  })
 
   viteProcess.stdout?.on("data", (data) => {
     process.stdout.write(`[vite-preview] ${data}`)

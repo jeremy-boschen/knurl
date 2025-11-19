@@ -18,7 +18,7 @@ type RequestTabProps = {
 }
 
 export default function RequestTab({ tabId, onSelectTab, onCloseTab, onContextMenu }: RequestTabProps) {
-  const { isActive, name, method, isDirty, requestId } = useRequestsTabSummary(tabId)
+  const { isActive, name, method, isDirty, requestId, collectionId } = useRequestsTabSummary(tabId)
 
   // Emit requestUi:opened event after tab renders
   useEffect(() => {
@@ -45,10 +45,12 @@ export default function RequestTab({ tabId, onSelectTab, onCloseTab, onContextMe
       data-state={isActive ? "active" : "inactive"}
       data-tab-id={requestId}
       data-tab-key={tabId}
+      data-request-id={requestId}
+      data-collection-id={collectionId}
       onClick={onSelectTab}
       onKeyDown={onSelectTab}
       onContextMenu={onContextMenu}
-      data-test-id={`request-tab:${tabId}`}
+      data-test-id={`tab:${tabId}`}
     >
       {/* Active tab indicator */}
       {isActive && <div className={cn("absolute bottom-0 left-0 right-0 h-[2px] rounded-t-full bg-primary")}></div>}

@@ -303,6 +303,7 @@ export type UseRequestsTabSummary = {
   method: HttpMethod
   isDirty: boolean
   requestId: string
+  collectionId: string
 }
 
 export const useRequestsTabSummary = (tabId: string): UseRequestsTabSummary => {
@@ -324,7 +325,7 @@ export const useRequestsTabSummary = (tabId: string): UseRequestsTabSummary => {
       const method = merged.method
       const isDirty = isRequestDirty(originalRequest)
 
-      return { isActive, name, method, isDirty, requestId: tab.requestId }
+      return { isActive, name, method, isDirty, requestId: tab.requestId, collectionId: tab.collectionId }
     }),
   )
 }
