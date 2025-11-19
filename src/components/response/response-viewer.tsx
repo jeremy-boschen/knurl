@@ -273,7 +273,10 @@ export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
                 <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="text-muted-foreground">Status:</span>
-                    <span className={cn("font-mono font-medium", getStatusColor(httpResponse.status ?? -1))}>
+                    <span
+                      className={cn("font-mono font-medium", getStatusColor(httpResponse.status ?? -1))}
+                      data-test-id="response-panel:status-code"
+                    >
                       {httpResponse.status} {httpResponse.statusText}
                     </span>
                   </div>
