@@ -1,11 +1,18 @@
 import * as path from "node:path"
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import { homedir, tmpdir } from "node:os"
-import { ChildProcessByStdio, spawn, spawnSync } from "child_process"
-import { fileURLToPath } from "url"
-import { Readable } from "stream"
+import { spawn, spawnSync } from "node:child_process"
+import type { ChildProcessByStdio } from "node:child_process"
+import { fileURLToPath } from "node:url"
+import type { Readable } from "node:stream"
+import type { Browser } from "webdriverio"
 
-// @ts-ignore
+declare global {
+  // eslint-disable-next-line no-var
+  var browser: Browser
+}
+
+// @ts-expect-error __dirname is not available in ESM
 const __dirname = fileURLToPath(new URL(".", import.meta.url))
 
 // ============================================================================
@@ -81,6 +88,7 @@ function resetConfigDirectory(configDir: string): void {
 /**
  * Pretty-print test metadata for logging
  */
+// biome-ignore lint/suspicious/noExplicitAny: Test object type is complex
 function formatTestMetadata(test: any): string {
   return [
     `title: "${test.title}"`,
@@ -95,6 +103,7 @@ function formatTestMetadata(test: any): string {
 /**
  * Pretty-print test result for logging
  */
+// biome-ignore lint/suspicious/noExplicitAny: Test result type is complex
 function formatTestResult(result: any): string {
   const parts = []
   if (result.duration !== undefined) parts.push(`duration: ${result.duration}ms`)
