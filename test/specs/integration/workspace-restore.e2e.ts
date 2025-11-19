@@ -28,14 +28,6 @@ import {
 
 type WorkspaceSnapshot = Awaited<ReturnType<typeof callBridgeReplacement>>
 type WorkspaceTab = WorkspaceSnapshot["openTabs"][number]
-type PersistedWorkspaceState = {
-  collectionId: string
-  requestId: string
-  tabKey: string
-}
-
-let persistedState: PersistedWorkspaceState | null = null
-let appDataDir: string | null = null
 
 describe("Workspace Restore UX", () => {
   before(async () => {
@@ -45,15 +37,15 @@ describe("Workspace Restore UX", () => {
 
   after(async () => {
     await resetWorkspaceTabs()
-    persistedState = null
   })
 
-  it("captures open collection request state", async () => {
+  it("persists and restores workspace state (open tabs and collection context) across app restart", async () => {
     const scratchCollectionId = "scratch" // mirror ScratchCollectionId; keep synced with src/state/collections.ts
     const unique = Date.now()
     const collectionName = `Restore Collection ${unique}`
     const requestName = `Restore Request ${unique}`
 
+    // === Phase 1: Create collection and request ===
     const collectionId = await createCollection(collectionName)
 
     await openNewRequestTab()
@@ -68,6 +60,7 @@ describe("Workspace Restore UX", () => {
     await waitForRequestEditor()
     await browser.pause(200)
 
+    // Save request to collection
     await saveActiveRequest(requestName, collectionId, tabKey)
 
     // Get the request ID from the snapshot after saving
@@ -78,35 +71,19 @@ describe("Workspace Restore UX", () => {
     }
     const requestId = activeTab.requestId
 
-    persistedState = {
-      collectionId,
-      requestId,
-      tabKey,
-    }
+    const appDataDirBefore = await callBridgeReplacement("getAppDataDir")
 
-    appDataDir = await callBridgeReplacement("getAppDataDir")
-
+    // === Phase 2: Close and reload app to trigger full state restoration ===
     await closeApplicationWindow()
 
+    // Reload entire WebDriver session to simulate full app restart
     await browser.reloadSession()
     await ensureAppReady()
     await ensureWorkspaceReady()
-  })
 
-  it("restores open collection requests after reload", async () => {
-    if (!persistedState) {
-      throw new Error("Persisted workspace state unavailable from setup test")
-    }
-
-    const { collectionId, requestId } = persistedState
-
-    await ensureAppReady()
-    await ensureWorkspaceReady()
-
-    if (appDataDir) {
-      const currentAppDataDir = await callBridgeReplacement("getAppDataDir")
-      expect(currentAppDataDir).toBe(appDataDir)
-    }
+    // === Phase 3: Verify workspace was restored ===
+    const appDataDirAfter = await callBridgeReplacement("getAppDataDir")
+    expect(appDataDirAfter).toBe(appDataDirBefore)
 
     const snapshotAfter = await waitForSnapshotWithTab(requestId)
     const restoredTab = findTab(snapshotAfter.openTabs, requestId)
