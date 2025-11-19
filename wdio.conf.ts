@@ -161,6 +161,8 @@ function closeProcesses() {
   exit = true;
 
   // Kill processes with SIGKILL (-9) for immediate termination
+  // Negative PID kills the process group (process + all children)
+  // Ensures no orphaned child processes remain after shutdown
   if (tauriDriver && !tauriDriver.killed) {
     try {
       process.kill(-tauriDriver.pid, 'SIGKILL');
