@@ -27,28 +27,20 @@ export async function logTestTime(step: string): Promise<void> {
  */
 async function waitForAppReady(timeout = DEFAULT_TIMEOUT): Promise<void> {
   // Wait for React to render and the app to be interactive
-  // Try to wait for the main window element
-  try {
-    const appContainer = await $('[data-test-id="app:main-window"]')
-    await appContainer.waitForExist({ timeout: Math.min(timeout, 5000) })
-    await appContainer.waitForDisplayed({ timeout: Math.min(timeout, 5000) })
-    return
-  } catch {
-    // Fallback: wait for the document to be ready
-    await browser.waitUntil(
-      async () => {
-        const ready = await browser.execute(() => {
-          return document.readyState === "complete"
-        })
-        return ready
-      },
-      {
-        timeout,
-        timeoutMsg: "App did not load in time",
-      },
-    )
-    await browser.pause(500)
-  }
+  // Check document readiness - the app:main-window element appears later, so skip that check
+  await browser.waitUntil(
+    async () => {
+      const ready = await browser.execute(() => {
+        return document.readyState === "complete"
+      })
+      return ready
+    },
+    {
+      timeout: Math.min(timeout, 10000),
+      interval: 100,
+      timeoutMsg: "App did not load in time",
+    },
+  )
 }
 
 async function withFallbackClick(element: WebdriverIO.Element): Promise<void> {
