@@ -417,8 +417,8 @@ async function handleOnPrepare() {
   }
   console.log(`  ✓ Rust backend built successfully`)
 
-  // Start Vite dev server
-  console.log(`  starting Vite dev server on port 1420...`)
+  // Build and serve Vite production bundle
+  console.log(`  building Vite production bundle with Istanbul instrumentation...`)
   const viteEnv = {
     ...buildEnvWithKeyringDefaults(),
     BROWSER: "none",
@@ -440,9 +440,28 @@ async function handleOnPrepare() {
     throw new Error("Failed to generate knurl icon")
   }
 
+  // Build production bundle
+  const buildResult = spawnSync(
+    "vite",
+    ["build", "--config", "vite.config.e2e.ts", "--mode", "e2e"],
+    {
+      cwd: process.cwd(),
+      shell: true,
+      env: viteEnv,
+      stdio: "inherit",
+    },
+  )
+
+  if (buildResult.status !== 0) {
+    throw new Error("Vite build failed")
+  }
+  console.log(`  ✓ Vite production bundle built successfully`)
+
+  // Start preview server to serve production bundle
+  console.log(`  starting Vite preview server on port 1420...`)
   viteProcess = spawn(
     "vite",
-    ["--config", "vite.config.e2e.ts", "--host", "127.0.0.1", "--port", "1420", "--mode", "e2e"],
+    ["preview", "--config", "vite.config.e2e.ts", "--host", "127.0.0.1", "--port", "1420"],
     {
       cwd: process.cwd(),
       shell: true,
@@ -452,27 +471,27 @@ async function handleOnPrepare() {
   )
 
   viteProcess.stdout?.on("data", (data) => {
-    process.stdout.write(`[vite] ${data}`)
+    process.stdout.write(`[vite-preview] ${data}`)
   })
 
   viteProcess.stderr?.on("data", (data) => {
-    process.stderr.write(`[vite] ${data}`)
+    process.stderr.write(`[vite-preview] ${data}`)
   })
 
   viteProcess.on("error", (error) => {
-    console.error("vite dev server error:", error)
+    console.error("vite preview server error:", error)
     process.exit(1)
   })
 
   viteProcess.on("exit", (code) => {
     if (!exit) {
-      console.error("vite dev server exited with code:", code)
+      console.error("vite preview server exited with code:", code)
       process.exit(1)
     }
   })
 
   await waitForDevServer("http://127.0.0.1:1420")
-  console.log(`  ✓ Vite dev server ready`)
+  console.log(`  ✓ Vite preview server ready (serving production bundle with Istanbul coverage)`)
 
   // Start tauri-driver
   console.log(`  starting tauri-driver...`)
