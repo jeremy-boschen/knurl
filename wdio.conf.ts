@@ -97,9 +97,9 @@ function formatTestMetadata(test: any): string {
  */
 function formatTestResult(result: any): string {
   const parts = []
-  if (result.duration !== undefined) parts.push(`duration: ${result.duration}ms`)
-  if (result.state) parts.push(`state: ${result.state}`)
-  if (result.error) parts.push(`error: ${result.error.message}`)
+  if (result.duration !== undefined) { parts.push(`duration: ${result.duration}ms`) }
+  if (result.state) { parts.push(`state: ${result.state}`) }
+  if (result.error) { parts.push(`error: ${result.error.message}`) }
   return parts.length > 0 ? parts.join(" | ") : "result: passed"
 }
 
@@ -536,6 +536,7 @@ async function handleOnPrepare() {
 async function handleBeforeSession(config: any, capabilities: any, specs: any) {
   console.log(`\n${"=".repeat(80)}`)
   console.log("[beforeSession] 🚀 Session initialization starting")
+  console.log(`  config: ${JSON.stringify(config)}`)
   console.log(`  capabilities: ${capabilities ? Object.keys(capabilities).join(", ") : "none"}`)
   console.log(`  specs: ${specs ? specs.length : 0} spec files`)
 
