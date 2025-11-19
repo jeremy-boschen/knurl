@@ -1,5 +1,6 @@
 import {promises as fs} from 'node:fs'
 import {join} from 'node:path'
+import {execSync} from 'node:child_process'
 
 const svgPath = join(process.cwd(), 'src', 'assets', 'knurl.svg')
 const componentPath = join(process.cwd(), 'src', 'components', 'icons', 'knurl-icon.tsx')
@@ -51,4 +52,13 @@ export { KnurlIcon }
 
 // Write the component
 await fs.writeFile(componentPath, componentCode)
+
+// Format the generated file with Biome
+try {
+  execSync(`yarn biome format --write "${componentPath}"`, { stdio: 'pipe' })
+} catch (error) {
+  // Biome format errors are non-fatal; log but don't fail
+  console.warn('⚠ Biome formatting had issues (non-fatal):', error.message)
+}
+
 console.log('✓ Generated KnurlIcon component from SVG')
