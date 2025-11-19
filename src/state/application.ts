@@ -264,8 +264,8 @@ export function useRequestTab(tabId?: string): HookResult<RequestTabHookState, R
         return null
       }
 
-      // Use pre-computed merged request from tab state, fallback to computing it if not available
-      const merged = tab.merged ?? toMergedRequest(original)
+      // Always compute merged from original (source of truth) to ensure latest state
+      const merged = toMergedRequest(original)
 
       return {
         activeTab: tab,
