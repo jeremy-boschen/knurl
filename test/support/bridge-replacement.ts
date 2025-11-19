@@ -50,42 +50,57 @@ export async function createCollectionViaUI(params: { name: string }): Promise<a
  * Get workspace snapshot from app state
  */
 export async function getWorkspaceSnapshotFromState(): Promise<any> {
-  return await browser.execute(() => {
-    try {
-      const modules = (window as any).__vite_ssr_modules__
-      if (!modules) return null
+  // Retry up to 10 times with 500ms delay to wait for app to fully hydrate
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const snapshot = await browser.execute(() => {
+      try {
+        const modules = (window as any).__vite_ssr_modules__
+        if (!modules) return null
 
-      const appModule = Object.values(modules).find((mod: any) => {
-        return mod && mod.useApplication && typeof mod.useApplication === 'function'
-      }) as any
+        const appModule = Object.values(modules).find((mod: any) => {
+          return mod && mod.useApplication && typeof mod.useApplication === 'function'
+        }) as any
 
-      if (!appModule?.useApplication) return null
+        if (!appModule?.useApplication) return null
 
-      const state = appModule.useApplication.getState()
-      const openTabs = Object.values(state.requestTabsState?.openTabs ?? {}).map((tab: any) => ({
-        tabKey: tab.tabId,
-        requestId: tab.requestId,
-        collectionId: tab.collectionId,
-        activePanel: tab.activeTab,
-        selectedEnvironmentId: tab.selectedEnvironmentId ?? null,
-      }))
+        const state = appModule.useApplication.getState()
+        const openTabs = Object.values(state.requestTabsState?.openTabs ?? {}).map((tab: any) => ({
+          tabKey: tab.tabId,
+          requestId: tab.requestId,
+          collectionId: tab.collectionId,
+          activePanel: tab.activeTab,
+          selectedEnvironmentId: tab.selectedEnvironmentId ?? null,
+        }))
 
-      const collectionsIndex = state.collectionsState?.index?.map((entry: any) => ({
-        id: entry.id,
-        name: entry.name,
-        opened: entry.opened ? entry.opened.slice() : [],
-        order: typeof entry.order === 'number' ? entry.order : null,
-      })) ?? []
+        const collectionsIndex = state.collectionsState?.index?.map((entry: any) => ({
+          id: entry.id,
+          name: entry.name,
+          opened: entry.opened ? entry.opened.slice() : [],
+          order: typeof entry.order === 'number' ? entry.order : null,
+        })) ?? []
 
-      return {
-        activeTab: state.requestTabsState?.activeTab ?? null,
-        openTabs,
-        collectionsIndex,
+        return {
+          activeTab: state.requestTabsState?.activeTab ?? null,
+          openTabs,
+          collectionsIndex,
+        }
+      } catch {
+        return null
       }
-    } catch {
-      return null
+    })
+
+    if (snapshot) {
+      return snapshot
     }
-  })
+
+    // Wait before retrying if not on last attempt
+    if (attempt < 9) {
+      await browser.pause(500)
+    }
+  }
+
+  // Return null if all retries failed
+  return null
 }
 
 /**

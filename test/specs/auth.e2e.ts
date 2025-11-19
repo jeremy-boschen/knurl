@@ -431,6 +431,9 @@ async function startOAuthRequest(): Promise<{ tabKey: string; requestId: string 
   await waitForRequestEditor()
 
   const snapshot = await callBridgeReplacement("getWorkspaceSnapshot")
+  if (!snapshot) {
+    throw new Error("Workspace snapshot not available - app may not be fully hydrated")
+  }
   const tabEntry = snapshot.openTabs.find((tab) => tab.tabKey === tabKey)
   const baseRequestId = tabEntry?.requestId
   if (!baseRequestId) {
