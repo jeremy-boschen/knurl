@@ -43,9 +43,9 @@ describe("Collection Storage & Data Persistence", () => {
     await browser.refresh()
     console.log(`✅ App reloaded via browser.refresh()`)
 
-    // Wait for app to stabilize after reload
-    // Extended pause to allow Zustand to hydrate from disk and React to render
-    await browser.pause(2000)
+    // Wait for full hydration: ensureWorkspaceReady() waits for the close button
+    // (always present in titlebar) to render, which indicates Zustand hydration + React rendering complete
+    await ensureWorkspaceReady()
 
     // Verify the collection was reloaded from disk
     console.log(`Verifying collection persists after reload...`)

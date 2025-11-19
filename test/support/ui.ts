@@ -174,35 +174,25 @@ export async function resetOverlays(attempts = 2): Promise<void> {
 export async function ensureWorkspaceReady(): Promise<void> {
   await ensureAppReady()
 
-  // Ensure the UI is fully ready with new request controls available
+  // Wait for the close button (always present in titlebar regardless of state)
+  // By the time this renders, full hydration has completed and all state is loaded
   await browser.waitUntil(
     async () => {
-      const titleButton = await $('[data-test-id="titlebar:new-request-button"]')
-      if (await titleButton.isExisting()) {
+      const closeButton = await $('[data-test-id="title-bar:close-button"]')
+      if (await closeButton.isExisting()) {
         try {
-          await titleButton.waitForDisplayed({ timeout: 200 })
-          return true
-        } catch {
-          // fall through to check tab bar button
-        }
-      }
-
-      const tabBarButton = await $('[data-test-id="request-tab-bar:new-request-button"]')
-      if (await tabBarButton.isExisting()) {
-        try {
-          await tabBarButton.waitForDisplayed({ timeout: 200 })
+          await closeButton.waitForDisplayed({ timeout: 200 })
           return true
         } catch {
           return false
         }
       }
-
       return false
     },
     {
       timeout: DEFAULT_TIMEOUT,
       interval: 100,
-      timeoutMsg: "Workspace UI did not expose new request controls",
+      timeoutMsg: "Workspace close button did not appear - app hydration incomplete",
     },
   )
 }
