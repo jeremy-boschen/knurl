@@ -1,7 +1,7 @@
-import { expect } from "@wdio/globals"
+import {expect} from "@wdio/globals"
 
-import { ensureWorkspaceReady } from "../support/ui"
-import { createCollection, waitForCollectionIdByName } from "../support/collections"
+import {ensureWorkspaceReady} from "../support/ui.ts"
+import {createCollection, waitForCollectionIdByName} from "../support/collections.ts"
 
 /**
  * Collection Storage & Data Persistence Tests
