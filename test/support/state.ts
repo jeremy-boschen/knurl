@@ -17,14 +17,43 @@ export async function resetCollectionsState(): Promise<void> {
   const result = await browser.executeAsync(
     async (done: (value: { ok: boolean; error?: string }) => void) => {
       try {
-        const app = await import("/src/state/application")
-        const { ScratchCollectionId } = await import("/src/state/collections")
-        const index = app.collectionsApi().getCollectionsIndex()
+        // Access modules through __vite_ssr_modules__ instead of file paths
+        const modules = (window as any).__vite_ssr_modules__
+        if (!modules) {
+          throw new Error("App modules not available - app may not be fully hydrated")
+        }
+
+        // Find the application module
+        const appModule = Object.values(modules).find((mod: any) => {
+          return mod && mod.useApplication && typeof mod.useApplication === 'function'
+        }) as any
+
+        if (!appModule?.useApplication) {
+          throw new Error("Application module not found")
+        }
+
+        // Find the collections module
+        const collectionsModule = Object.values(modules).find((mod: any) => {
+          return mod && mod.ScratchCollectionId !== undefined
+        }) as any
+
+        const { ScratchCollectionId } = collectionsModule || {}
+        if (!ScratchCollectionId) {
+          throw new Error("ScratchCollectionId not found in collections module")
+        }
+
+        const api = appModule.useApplication.getState()
+        const collectionsApi = api.collectionsApi?.()
+        if (!collectionsApi) {
+          throw new Error("Collections API not available")
+        }
+
+        const index = collectionsApi.getCollectionsIndex()
         for (const entry of index) {
           if (entry.id === ScratchCollectionId) {
             continue
           }
-          app.collectionsApi().removeCollection(entry.id)
+          collectionsApi.removeCollection(entry.id)
         }
         done({ ok: true })
       } catch (error) {
@@ -55,23 +84,45 @@ export async function seedCollectionWithOpenRequest({
       done: (value: { ok: true; data: SeedCollectionResult } | { ok: false; error: string }) => void,
     ) => {
       try {
-        const app = await import("/src/state/application")
-        const { collectionsApi } = app
-        const stateBefore = app.useApplication.getState()
-        const { requestTabsApi } = stateBefore
+        // Access modules through __vite_ssr_modules__ instead of file paths
+        const modules = (window as any).__vite_ssr_modules__
+        if (!modules) {
+          throw new Error("App modules not available - app may not be fully hydrated")
+        }
 
-        const collection = collectionsApi().addCollection(args.collectionName)
-        const request = collectionsApi().createRequest(collection.id, {
+        // Find the application module
+        const appModule = Object.values(modules).find((mod: any) => {
+          return mod && mod.useApplication && typeof mod.useApplication === 'function'
+        }) as any
+
+        if (!appModule?.useApplication) {
+          throw new Error("Application module not found")
+        }
+
+        const stateBefore = appModule.useApplication.getState()
+        const { requestTabsApi } = stateBefore
+        const collectionsApi = stateBefore.collectionsApi?.()
+
+        if (!collectionsApi) {
+          throw new Error("Collections API not available")
+        }
+
+        if (!requestTabsApi) {
+          throw new Error("Request tabs API not available")
+        }
+
+        const collection = collectionsApi.addCollection(args.collectionName)
+        const request = collectionsApi.createRequest(collection.id, {
           name: args.requestName,
           url: args.requestUrl,
         })
 
         requestTabsApi.openRequestTab(collection.id, request.id)
-        const stateAfter = app.useApplication.getState()
+        const stateAfter = appModule.useApplication.getState()
         const tabKey = stateAfter.requestTabsState.activeTab ?? null
         const indexSnapshot = stateAfter.collectionsState.index.map((entry) => ({ ...entry }))
 
-        collectionsApi().saveCollection(collection.id)
+        collectionsApi.saveCollection(collection.id)
 
         done({
           ok: true,
