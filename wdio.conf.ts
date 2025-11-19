@@ -1,11 +1,10 @@
 import * as path from "node:path"
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import { homedir, tmpdir } from "node:os"
-import { ChildProcessByStdio, spawn, spawnSync } from "child_process"
-import { fileURLToPath } from "url"
-import { Readable } from "stream"
+import { ChildProcessByStdio, spawn, spawnSync } from "node:child_process"
+import { fileURLToPath } from "node:url"
+import { Readable } from "node:stream"
 
-// @ts-ignore
 const __dirname = fileURLToPath(new URL(".", import.meta.url))
 
 // ============================================================================
