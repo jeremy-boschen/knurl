@@ -485,8 +485,19 @@ describe("Authentication Strategies", () => {
       await expect(apiKeyField).toBeDefined()
 
       // Configure and test API Key auth
-      await setInputText("request-auth-panel:api-key-auth-key-input", "X-API-Key")
-      await setInputText("request-auth-panel:api-key-auth-value-input", "api-key-value")
+      const apiKeyName = "X-API-Key"
+      const apiKeyValue = "api-key-value"
+      await setInputText("request-auth-panel:api-key-auth-key-input", apiKeyName)
+      await setInputText("request-auth-panel:api-key-auth-value-input", apiKeyValue)
+
+      // Allow time for React to sync the state
+      await browser.pause(300)
+
+      // Set the placement name (header name) - must be set after placement type selection
+      await setInputText("request-auth-panel:api-key-auth-placement-name-input", apiKeyName)
+
+      // Allow time for placement name change to sync
+      await browser.pause(200)
 
       // Send request with API Key auth
       await clickByTestId("request-workspace:send-button")
@@ -677,8 +688,19 @@ describe("Authentication Strategies", () => {
       await expect(apiKeyForm).toBeDefined()
 
       // Configure and test API Key
-      await setInputText("request-auth-panel:api-key-auth-key-input", "X-Test-Key")
-      await setInputText("request-auth-panel:api-key-auth-value-input", "test-value")
+      const testKeyName = "X-Test-Key"
+      const testKeyValue = "test-value"
+      await setInputText("request-auth-panel:api-key-auth-key-input", testKeyName)
+      await setInputText("request-auth-panel:api-key-auth-value-input", testKeyValue)
+
+      // Allow time for React to sync the state
+      await browser.pause(300)
+
+      // Set the placement name (header name) - must be set after placement type selection
+      await setInputText("request-auth-panel:api-key-auth-placement-name-input", testKeyName)
+
+      // Allow time for placement name change to sync
+      await browser.pause(200)
 
       // Send request with API Key
       await clickByTestId("request-workspace:send-button")
