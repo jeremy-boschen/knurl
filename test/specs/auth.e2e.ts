@@ -27,14 +27,11 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/json`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Click on auth tab - must exist
+      // Click on auth tab
       await clickByTestId("request-editor:auth-tab")
 
-      // Click auth dropdown trigger
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-
-      // Select Basic auth type from menu
-      await clickByTestId("request-editor:auth-menu:type-basic")
+      // Select Basic auth type using proper dropdown pattern
+      await selectOptionByTestId("request-editor:auth-tab-dropdown-trigger", "request-editor:auth-menu:type-basic")
 
       // Configure Basic auth - these fields MUST exist
       const usernameInput = await getElementByTestId("request-auth-panel:basic-auth-username-input", 5000)
@@ -199,19 +196,15 @@ describe("Authentication Strategies", () => {
       // Click on auth tab
       await clickByTestId("request-editor:auth-tab")
 
-      // Click auth dropdown trigger
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-
-      // Select Bearer auth type
-      await clickByTestId("request-editor:auth-menu:type-bearer")
+      // Select Bearer auth type using proper dropdown pattern
+      await selectOptionByTestId("request-editor:auth-tab-dropdown-trigger", "request-editor:auth-menu:type-bearer")
 
       // Verify scheme selector exists
       const schemeSelect = await getElementByTestId("request-auth-panel:bearer-auth-scheme-select", 5000)
       await expect(schemeSelect).toBeDefined()
 
-      // Click scheme selector and select custom
-      await clickByTestId("request-auth-panel:bearer-auth-scheme-select")
-      await clickByTestId("request-auth-panel:bearer-auth-scheme-custom")
+      // Select custom scheme using proper test ID selection
+      await selectOptionByTestId("request-auth-panel:bearer-auth-scheme-select", "request-auth-panel:bearer-auth-scheme-custom")
 
       // Verify custom scheme input appears
       const customSchemeInput = await getElementByTestId("request-auth-panel:bearer-auth-custom-scheme-input", 5000)
@@ -238,11 +231,8 @@ describe("Authentication Strategies", () => {
       // Click on auth tab
       await clickByTestId("request-editor:auth-tab")
 
-      // Click auth dropdown trigger
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-
-      // Select Bearer auth type
-      await clickByTestId("request-editor:auth-menu:type-bearer")
+      // Select Bearer auth type using proper dropdown pattern
+      await selectOptionByTestId("request-editor:auth-tab-dropdown-trigger", "request-editor:auth-menu:type-bearer")
 
       // Set Bearer token
       const token = "test-bearer-token-12345"
@@ -296,11 +286,8 @@ describe("Authentication Strategies", () => {
       // Click on auth tab
       await clickByTestId("request-editor:auth-tab")
 
-      // Click auth dropdown trigger
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-
-      // Select API Key auth type
-      await clickByTestId("request-editor:auth-menu:type-apiKey")
+      // Select API Key auth type using proper dropdown pattern
+      await selectOptionByTestId("request-editor:auth-tab-dropdown-trigger", "request-editor:auth-menu:type-apiKey")
 
       // Verify API Key key and value inputs exist
       const keyInput = await getElementByTestId("request-auth-panel:api-key-auth-key-input", 5000)
@@ -347,16 +334,8 @@ describe("Authentication Strategies", () => {
       await setInputText("request-auth-panel:api-key-auth-key-input", "api_token")
       await setInputText("request-auth-panel:api-key-auth-value-input", "token123")
 
-      // Click placement selector
-      await clickByTestId("request-auth-panel:api-key-auth-placement-select")
-
       // Select query parameter placement
-      const queryParamOption = await browser.execute(() => {
-        const options = Array.from(document.querySelectorAll('[role="option"]'))
-        const queryOption = options.find(opt => opt.textContent?.toLowerCase().includes("query"))
-        return !!queryOption
-      })
-      await expect(queryParamOption).toBe(true)
+      await selectOptionByTestId("request-auth-panel:api-key-auth-placement-select", "request-auth-panel:api-key-auth-placement-option:query")
     })
 
     it("allows custom API Key header name", async () => {
