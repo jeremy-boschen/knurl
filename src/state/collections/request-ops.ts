@@ -304,8 +304,8 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const patch = ensureRequestPatch(request)
         ensureParamPatch(request, patch, "cookieParams")
         if (update) {
-          // Always merge against the base param to get a canonical form
-          const baseParam = request.cookieParams?.[id] ?? {}
+          // Merge against existing patch first to avoid losing prior fields, then fall back to base
+          const baseParam = patch.cookieParams?.[id] ?? request.cookieParams?.[id] ?? {}
           // biome-ignore lint/style/noNonNullAssertion: ensureParamPatch guarantees cookieParams exists
           patch.cookieParams![id] = { ...baseParam, ...update, id }
         } else {

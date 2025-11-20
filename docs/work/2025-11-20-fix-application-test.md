@@ -1,0 +1,1 @@
+- [x] Fix failing unit test in `src/state/application.test.ts` for `useRequestCookies` handling existing and new cookies (expects `session` and `csrf` cookies present).
