@@ -178,12 +178,19 @@ describe("ExportCollectionSheet", () => {
       </Sheet>,
     )
 
-    // Filter to only r1 then deselect environment e2
-    await user.type(screen.getByTestId("export-collection:filter-input"), "keep")
-    await user.click(screen.getByTestId("export-collection:environment-checkbox:e2"))
+    // Clear selections then filter down and pick only r1
+    const masterCheckbox = await waitFor(() => getByDataTestId("export-collection:requests-master-checkbox"))
+    await user.click(masterCheckbox) // deselect all requests
+    const filterInput = await waitFor(() => getByDataTestId("export-collection:filter-input"))
+    await user.type(filterInput, "keep")
+    const reqCheckbox = await waitFor(() => getByDataTestId("export-collection:request-checkbox:r1"))
+    await user.click(reqCheckbox)
+    const envCheckboxE2 = await waitFor(() => getByDataTestId("export-collection:environment-checkbox:e2"))
+    await user.click(envCheckboxE2)
 
     // Export
-    await user.click(screen.getByTestId("export-collection:export-button"))
+    const exportBtn = await waitFor(() => getByDataTestId("export-collection:export-button"))
+    await user.click(exportBtn)
 
     const parsed = JSON.parse(savedPayload)
     expect(parsed.collection.requests).toHaveLength(1)
