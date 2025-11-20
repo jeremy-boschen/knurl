@@ -110,6 +110,7 @@ export default defineConfig({
     minify: 'terser',
     sourcemap: true,
     terserOptions: {
+      sourceMap: true,
       compress: {
         drop_console: process.env.NODE_ENV === 'production',
       },
