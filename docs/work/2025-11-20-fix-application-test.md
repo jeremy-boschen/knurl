@@ -1,1 +1,3 @@
 - [x] Fix failing unit test in `src/state/application.test.ts` for `useRequestCookies` handling existing and new cookies (expects `session` and `csrf` cookies present).
+- [ ] Run `yarn test:unit` and inspect coverage output for low-coverage files (blocked: suite fails on `src/index.test.tsx` timeout, coverage report not generated).
+- [ ] Add coverage-focused unit tests for: `response-viewer.tsx`, `utility-sheets/export-collection/index.tsx`, `utility-sheets/import-collection/parsers.ts`, `state/application.ts`, `state/request-tabs.ts`, `state/middleware/storage.ts`.
