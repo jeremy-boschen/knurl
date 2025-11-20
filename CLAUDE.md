@@ -141,6 +141,7 @@ types; use Zod for validation.
       test.
     - **UI helpers only:** Use only shared helpers from `test/support/ui.ts`. Extend that library instead of
       hand-rolling selectors.
+    - **See:** `test/support/E2E_GUIDELINES.md` for comprehensive patterns, helper functions, common patterns, and troubleshooting.
 - **Integration tests** (WebDriver.io + backend access): Cross-layer behavior verification (encryption at rest, file
   persistence, state synchronization). **Requires explicit approval.** Setup via UI where possible; use backend access
   only for verification. Store in `test/specs/integration/`.

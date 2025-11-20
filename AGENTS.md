@@ -137,6 +137,8 @@ Strict E2E discipline:
   commands. If behavior can't be verified via the UI, it belongs in a unit test or integration test.
 - Use only the shared UI helpers from `test/support/ui.ts`; extend that library instead of hand-rolling selectors.
 
+**See `test/support/E2E_GUIDELINES.md`** for complete patterns, helper function requirements, error handling, reload strategies, and troubleshooting guidance.
+
 ### Integration Tests (WebDriver.io + Backend Access)
 
 **Purpose:** Verify cross-layer behavior that cannot be tested via UI alone. Examples: encryption at rest, file
