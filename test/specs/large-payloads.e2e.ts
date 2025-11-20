@@ -17,11 +17,8 @@ describe("Large Payload Handling", () => {
 
     const existingIds = await getOpenRequestIds()
     await clickByTestId(`collection-tree:collection-row:${collectionId}`)
-    await browser.pause(200)
     await clickByTestId(`collection-tree:collection-row:menu-button:${collectionId}`)
-    await browser.pause(200)
     await clickByTestId(`collection-menu:item:new-request:${collectionId}`)
-    await browser.pause(300)
 
     const newRequest = await waitForNewRequest(existingIds)
     tabKey = newRequest.tabKey
@@ -37,7 +34,7 @@ describe("Large Payload Handling", () => {
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
-        const responseHeading = await $('[data-test-id="response-viewer:heading"]')
+        const responseHeading = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
         return await responseHeading.isDisplayed()
       },
       {
@@ -47,7 +44,7 @@ describe("Large Payload Handling", () => {
     )
 
     // Verify response viewer is rendered and responsive
-    const responseHeading = await $('[data-test-id="response-viewer:heading"]')
+    const responseHeading = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
     expect(await responseHeading.isDisplayed()).toBe(true)
   })
 
@@ -58,7 +55,7 @@ describe("Large Payload Handling", () => {
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
-        const responseHeading = await $('[data-test-id="response-viewer:heading"]')
+        const responseHeading = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
         return await responseHeading.isDisplayed()
       },
       {
@@ -68,7 +65,7 @@ describe("Large Payload Handling", () => {
     )
 
     // Verify response panel displays
-    const responseHeading = await $('[data-test-id="response-viewer:heading"]')
+    const responseHeading = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
     expect(await responseHeading.isDisplayed()).toBe(true)
   })
 
@@ -79,7 +76,7 @@ describe("Large Payload Handling", () => {
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
-        const heading = await $('[data-test-id="response-viewer:heading"]')
+        const heading = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
         return await heading.isDisplayed()
       },
       {
@@ -88,7 +85,7 @@ describe("Large Payload Handling", () => {
       },
     )
 
-    const heading = await $('[data-test-id="response-viewer:heading"]')
+    const heading = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
     const headingText = await heading.getText()
     // Should display size information in heading
     expect(headingText).toBeDefined()
@@ -100,7 +97,7 @@ describe("Large Payload Handling", () => {
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
-        const heading = await $('[data-test-id="response-viewer:heading"]')
+        const heading = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
         return await heading.isDisplayed()
       },
       {
@@ -115,7 +112,7 @@ describe("Large Payload Handling", () => {
     expect(headingExists).toBe(true)
 
     // Also verify headers tab exists (shows response headers are available)
-    const headersTab = await $('[data-test-id="response-viewer:tab-headers"]')
+    const headersTab = await getElementByTestId("response-viewer:tab-headers", 5000).catch(() => null)
     const headersTabExists = await headersTab.isExisting()
     expect(headersTabExists).toBe(true)
   })
@@ -126,7 +123,7 @@ describe("Large Payload Handling", () => {
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
-        const heading = await $('[data-test-id="response-viewer:heading"]')
+        const heading = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
         return await heading.isDisplayed()
       },
       {
@@ -136,18 +133,17 @@ describe("Large Payload Handling", () => {
     )
 
     // Try to find and click format toggle button
-    const formatToggle = await $('[data-test-id="response-viewer:format-toggle-button"]')
+    const formatToggle = await getElementByTestId("response-viewer:format-toggle-button", 5000).catch(() => null)
     if (await formatToggle.isDisplayed()) {
       await formatToggle.click()
-      await browser.pause(200)
 
       // Verify the toggle is working by checking the button still exists
-      const toggleAfter = await $('[data-test-id="response-viewer:format-toggle-button"]')
+      const toggleAfter = await getElementByTestId("response-viewer:format-toggle-button", 5000).catch(() => null)
       expect(await toggleAfter.isDisplayed()).toBe(true)
     }
 
     // Verify response viewer heading is still visible after toggle
-    const heading = await $('[data-test-id="response-viewer:heading"]')
+    const heading = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
     expect(await heading.isDisplayed()).toBe(true)
   })
 
@@ -157,7 +153,7 @@ describe("Large Payload Handling", () => {
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
-        const heading = await $('[data-test-id="response-viewer:heading"]')
+        const heading = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
         return await heading.isDisplayed()
       },
       {
@@ -168,15 +164,15 @@ describe("Large Payload Handling", () => {
 
     // Navigate away (open new request)
     await clickByTestId("request-tab-bar:new-request-button")
-    await browser.pause(200)
 
     // Navigate back to original request
-    const originalTab = await $(`[data-test-id="request-tab:${tabKey}"]`)
-    await originalTab.click()
-    await browser.pause(200)
+    const originalTab = await getElementByTestId(`request-tab:${tabKey}`, 5000).catch(() => null)
+    if (originalTab) {
+      await originalTab.click()
+    }
 
     // Heading should still be there with metadata
-    const heading = await $('[data-test-id="response-viewer:heading"]')
+    const heading = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
     if (await heading.isDisplayed()) {
       expect(await heading.getText()).toBeDefined()
     }

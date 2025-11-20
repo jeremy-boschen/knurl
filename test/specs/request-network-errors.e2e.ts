@@ -19,7 +19,7 @@ describe("Request Execution Error Handling", () => {
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
-        const errorPanel = await $('[data-test-id="response-viewer:heading"]')
+        const errorPanel = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
         return await errorPanel.isDisplayed()
       },
       {
@@ -39,7 +39,7 @@ describe("Request Execution Error Handling", () => {
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
-        const errorPanel = await $('[data-test-id="response-viewer:heading"]')
+        const errorPanel = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
         return await errorPanel.isDisplayed()
       },
       {
@@ -59,7 +59,7 @@ describe("Request Execution Error Handling", () => {
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
-        const errorPanel = await $('[data-test-id="response-viewer:heading"]')
+        const errorPanel = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
         return await errorPanel.isDisplayed()
       },
       {
@@ -80,7 +80,7 @@ describe("Request Execution Error Handling", () => {
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
-        const responseStatus = await $('[data-test-id="response-viewer:heading"]')
+        const responseStatus = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
         return await responseStatus.isDisplayed()
       },
       {
@@ -101,7 +101,7 @@ describe("Request Execution Error Handling", () => {
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
-        const errorPanel = await $('[data-test-id="response-viewer:heading"]')
+        const errorPanel = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
         return await errorPanel.isDisplayed()
       },
       {
@@ -111,12 +111,11 @@ describe("Request Execution Error Handling", () => {
     )
 
     // Verify retry button exists and click it
-    const retryButton = await $('[data-test-id="response-viewer:heading"]')
+    const retryButton = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
     if (await retryButton.isDisplayed()) {
       await retryButton.click()
-      await browser.pause(500)
       // Error should re-appear after retry
-      const errorPanel = await $('[data-test-id="response-viewer:heading"]')
+      const errorPanel = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
       expect(await errorPanel.isDisplayed()).toBe(true)
     }
   })
