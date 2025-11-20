@@ -238,6 +238,7 @@ type ApiKeyAuthFormProps = {
   auth: Partial<ApiKeyAuth>
   onUpdate: (updates: Record<string, unknown>) => void
   onPlacementUpdate: (updates: Record<string, unknown>) => void
+  canUseBodyPlacement: boolean
 }
 
 const ApiKeyAuthForm: FC<ApiKeyAuthFormProps> = ({ auth, onUpdate, onPlacementUpdate, canUseBodyPlacement }) => {
