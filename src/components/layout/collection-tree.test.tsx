@@ -32,6 +32,14 @@ vi.mock("@dnd-kit/core", async () => {
   }
 })
 
+const getByDataId = (id: string): HTMLElement => {
+  const el = document.querySelector(`[data-test-id="${id}"]`)
+  if (!el) {
+    throw new Error(`Missing element with data-test-id=${id}`)
+  }
+  return el as HTMLElement
+}
+
 vi.mock("@/components/ui/knurl/rename-dialog", () => ({
   __esModule: true,
   default: (props: any) => {
@@ -77,6 +85,7 @@ vi.mock("@/components/ui/knurl/request-menu", () => ({
 }))
 
 const stateMocks = vi.hoisted(() => {
+  const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value))
   const mockCollectionsApi = {
     reorderCollections: vi.fn(),
     moveFolder: vi.fn(),
@@ -109,7 +118,7 @@ const stateMocks = vi.hoisted(() => {
 
   const rootId = "root"
 
-  const collectionsById = {
+  const baseCollectionsById = {
     "col-1": {
       id: "col-1",
       name: "Alpha",
@@ -131,7 +140,7 @@ const stateMocks = vi.hoisted(() => {
           parentId: rootId,
           order: 0,
           childFolderIds: [],
-          requestIds: ["req-1"],
+          requestIds: ["req-1", "req-target"],
         },
         "folder-2": {
           id: "folder-2",
@@ -148,6 +157,18 @@ const stateMocks = vi.hoisted(() => {
           name: "List Users",
           method: "GET",
           url: "https://api.example.com/users",
+          authentication: { type: "none" },
+          headers: [],
+          query: [],
+          body: { type: "json", value: "" },
+          variables: [],
+          patch: null,
+        },
+        "req-target": {
+          id: "req-target",
+          name: "Get Target",
+          method: "POST",
+          url: "https://api.example.com/target",
           authentication: { type: "none" },
           headers: [],
           query: [],
@@ -177,22 +198,38 @@ const stateMocks = vi.hoisted(() => {
     },
   }
 
-  const collectionsIndex = [
+  const baseCollectionsIndex = [
     { id: "col-1", name: "Alpha", order: 0 },
     { id: "col-2", name: "Beta", order: 1 },
   ]
 
-  const mockUseApplication: any = vi.fn(() => ({ collectionsState: { cache: collectionsById } }))
-  mockUseApplication.getState = () => ({ collectionsState: { cache: collectionsById } })
-
-  return {
+  const state = {
     mockCollectionsApi,
     mockRequestTabsApi,
     mockUtilitySheetsApi,
-    collectionsById,
-    collectionsIndex,
-    mockUseApplication,
+    collectionsById: {} as typeof baseCollectionsById,
+    collectionsIndex: [] as typeof baseCollectionsIndex,
+    mockUseApplication: undefined as any,
+    sidebarCollapsed: false,
+    expandSidebarMock: vi.fn(),
+    reset: () => {
+      state.collectionsById = clone(baseCollectionsById)
+      state.collectionsIndex = clone(baseCollectionsIndex)
+      state.sidebarCollapsed = false
+      state.expandSidebarMock = vi.fn()
+    },
   }
+
+  state.reset()
+
+  const mockUseApplication: any = vi.fn((selector?: (state: any) => unknown) => {
+    const current = { collectionsState: { cache: state.collectionsById } }
+    return typeof selector === "function" ? selector(current) : current
+  })
+  mockUseApplication.getState = () => ({ collectionsState: { cache: state.collectionsById } })
+  state.mockUseApplication = mockUseApplication
+
+  return state
 })
 
 vi.mock("@/state", () => ({
@@ -201,8 +238,8 @@ vi.mock("@/state", () => ({
     actions: { collectionsApi: () => stateMocks.mockCollectionsApi },
   }),
   useSidebar: () => ({
-    state: { isCollapsed: false },
-    actions: { expandSidebar: vi.fn() },
+    state: { isCollapsed: stateMocks.sidebarCollapsed },
+    actions: { expandSidebar: stateMocks.expandSidebarMock },
   }),
   useOpenTabs: () => ({
     actions: { requestTabsApi: stateMocks.mockRequestTabsApi },
@@ -222,6 +259,7 @@ import { CollectionTree } from "./collection-tree"
 
 describe("CollectionTree", () => {
   beforeEach(() => {
+    stateMocks.reset()
     vi.clearAllMocks()
     mockRenameDialog.mockClear()
     mockDeleteDialog.mockClear()
@@ -473,5 +511,126 @@ describe("CollectionTree", () => {
       return cls.includes("bottom-0") && cls.includes("bg-primary")
     })
     expect(bottomIndicator).toBeTruthy()
+  })
+
+  it("renders collapsed summary buttons and triggers sidebar expansion", async () => {
+    const user = userEvent.setup()
+    stateMocks.sidebarCollapsed = true
+    stateMocks.collectionsIndex = Array.from({ length: 12 }, (_, index) => ({
+      id: `col-${index + 1}`,
+      name: `Collection ${index + 1}`,
+      order: index,
+    }))
+
+    render(<CollectionTree searchTerm="" />)
+
+    const collapsedButtons = document.querySelectorAll(
+      '[data-test-id^="collection-tree:collapsed-collection-button:"]',
+    )
+    expect(collapsedButtons).toHaveLength(10)
+
+    await user.click(collapsedButtons[0] as HTMLButtonElement)
+    expect(stateMocks.expandSidebarMock).toHaveBeenCalled()
+  })
+
+  it("filters collections and requests when search is provided", () => {
+    render(<CollectionTree searchTerm="users" />)
+
+    expect(screen.getByRole("treeitem", { name: /Alpha/ })).toBeInTheDocument()
+    expect(screen.queryByRole("treeitem", { name: /Beta/ })).toBeNull()
+
+    const requestRow = getByDataId("collection-tree:request-row:req-1")
+    expect(requestRow).toHaveTextContent("List Users")
+  })
+
+  it("reorders requests when dropping above a sibling", async () => {
+    render(<CollectionTree searchTerm="" />)
+
+    await act(async () => {
+      dndHandlers.onDragOver?.({
+        active: {
+          id: "req-1",
+          data: {
+            current: {
+              type: "request-item",
+              collectionId: "col-1",
+              requestId: "req-1",
+              folderId: "folder-1",
+              siblings: ["req-1", "req-target"],
+            },
+          },
+          rect: { current: { translated: { top: 0, height: 10 } } },
+        },
+        over: {
+          id: "req-target",
+          data: {
+            current: {
+              type: "request-item",
+              collectionId: "col-1",
+              requestId: "req-target",
+              folderId: "folder-1",
+              siblings: ["req-1", "req-target"],
+            },
+          },
+          rect: { top: 0, height: 90 },
+        },
+      })
+    })
+
+    await act(async () => {
+      dndHandlers.onDragEnd?.({
+        active: {
+          id: "req-1",
+          data: {
+            current: {
+              type: "request-item",
+              collectionId: "col-1",
+              requestId: "req-1",
+              folderId: "folder-1",
+              siblings: ["req-1", "req-target"],
+            },
+          },
+        },
+        over: {
+          id: "req-target",
+          data: {
+            current: {
+              type: "request-item",
+              collectionId: "col-1",
+              requestId: "req-target",
+              folderId: "folder-1",
+              siblings: ["req-1", "req-target"],
+            },
+          },
+        },
+      } as DragEndEvent)
+    })
+
+    expect(stateMocks.mockCollectionsApi.moveRequestToFolder).toHaveBeenCalledWith("col-1", "req-1", "folder-1", 1)
+  })
+
+  it("moves requests into root when dropped on collection row", () => {
+    render(<CollectionTree searchTerm="" />)
+
+    dndHandlers.onDragEnd?.({
+      active: {
+        id: "req-1",
+        data: {
+          current: {
+            type: "request-item",
+            collectionId: "col-1",
+            requestId: "req-1",
+            folderId: "folder-1",
+            siblings: ["req-1"],
+          },
+        },
+      },
+      over: {
+        id: "col-2",
+        data: { current: { type: "collection", collectionId: "col-2" } },
+      },
+    } as DragEndEvent)
+
+    expect(stateMocks.mockCollectionsApi.moveRequestToFolder).toHaveBeenCalledWith("col-1", "req-1", RootCollectionFolderId)
   })
 })
