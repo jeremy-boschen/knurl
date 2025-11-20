@@ -10,16 +10,13 @@ import {
   waitForTestIdToDisappear,
   clearInputText,
 } from "../support/ui"
-import { resetCollectionsState } from "../support/state"
 import { createCollection, clickVisibleNewCollectionButton, waitForCollectionIdByName } from "../support/collections"
 
 const SCRATCH_COLLECTION_ID = "scratch"
 
 describe("Collections Management UX", () => {
   before(async () => {
-    await ensureWorkspaceReady()
-    await resetCollectionsState()
-    await browser.pause(500) // Ensure collections are persisted
+    await browser.refresh()
     await ensureWorkspaceReady()
   })
 

@@ -3,7 +3,6 @@ import { expect } from "@wdio/globals"
 import { createCollection } from "../support/collections"
 import { waitForRequestEditor } from "../support/request"
 import { clickByTestId, ensureWorkspaceReady, getElementByTestId, openNewRequestViaUI, resetOverlays, setInputText } from "../support/ui"
-import { resetCollectionsState } from "../support/state"
 
 describe("Environment Manager Smoke", () => {
   const state: {
@@ -19,8 +18,7 @@ describe("Environment Manager Smoke", () => {
   }
 
   before(async () => {
-    await ensureWorkspaceReady()
-    await resetCollectionsState()
+    await browser.refresh()
     await ensureWorkspaceReady()
     await resetOverlays()
 
@@ -101,7 +99,7 @@ describe("Environment Manager Smoke", () => {
     await clickByTestId("environment-selector:trigger-button").catch(() => {})
     await resetOverlays()
     await clickByTestId("collection-tree:collection-row:menu-button:scratch").catch(() => {})
-    await resetCollectionsState()
+    await browser.refresh()
   })
 
   console.log("✅ Environment Manager Smoke tests completed")

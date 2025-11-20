@@ -11,7 +11,6 @@ import {
   clearInputText,
   logTestTime,
 } from "../support/ui"
-import { resetCollectionsState } from "../support/state"
 import { createCollection, clickVisibleNewCollectionButton, waitForCollectionIdByName } from "../support/collections"
 import { waitForRequestEditor } from "../support/request"
 import { openNewRequestViaUI, selectOptionByTestId } from "../support/ui"
@@ -28,9 +27,7 @@ describe("Collections Management & Storage", () => {
   describe("Collections Management UX", () => {
     before(async () => {
       await logTestTime("Collections Management - before")
-      await ensureWorkspaceReady()
-      await resetCollectionsState()
-      await browser.pause(500)
+      await browser.refresh()
       await ensureWorkspaceReady()
     })
 
@@ -80,7 +77,8 @@ describe("Collections Management & Storage", () => {
       })
       await logTestTime("Collections Management - verified rename in tree")
 
-      await browser.pause(500)
+      // Wait for auto-save to complete before reload
+      await browser.pause(2000)
       await browser.execute(() => window.location.reload())
       await ensureWorkspaceReady()
       await logTestTime("Collections Management - reloaded page")

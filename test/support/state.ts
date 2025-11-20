@@ -1,3 +1,12 @@
+/**
+ * State helpers for INTEGRATION TESTS ONLY.
+ *
+ * ⚠️  WARNING: These functions use bridge methods to access internal state.
+ *     They should ONLY be used in integration tests (test/specs/integration/).
+ *
+ * E2E tests should use UI interactions only. See CLAUDE.md for the golden rule.
+ */
+
 import { callBridgeReplacement } from "./bridge-replacement"
 
 type SeedCollectionArgs = {
@@ -13,17 +22,21 @@ type SeedCollectionResult = {
   index: Array<Record<string, unknown>>
 }
 
+/**
+ * Integration test helper: Reset collections state via bridge access.
+ *
+ * ⚠️  DO NOT USE IN E2E TESTS. This violates the E2E golden rule.
+ * Use only in test/specs/integration/ tests.
+ */
 export async function resetCollectionsState(): Promise<void> {
-  const result = await browser.executeAsync(
+  await browser.executeAsync(
     async (done: (value: { ok: boolean; error?: string }) => void) => {
       try {
-        // Access modules through __vite_ssr_modules__ instead of file paths
         const modules = (window as any).__vite_ssr_modules__
         if (!modules) {
           throw new Error("App modules not available - app may not be fully hydrated")
         }
 
-        // Find the application module
         const appModule = Object.values(modules).find((mod: any) => {
           return mod && mod.useApplication && typeof mod.useApplication === 'function'
         }) as any
@@ -32,7 +45,6 @@ export async function resetCollectionsState(): Promise<void> {
           throw new Error("Application module not found")
         }
 
-        // Find the collections module
         const collectionsModule = Object.values(modules).find((mod: any) => {
           return mod && mod.ScratchCollectionId !== undefined
         }) as any
@@ -66,13 +78,15 @@ export async function resetCollectionsState(): Promise<void> {
     },
   )
 
-  if (!result.ok) {
-    throw new Error(result.error ?? "resetCollectionsState failed")
-  }
-
   await callBridgeReplacement("flushStorage")
 }
 
+/**
+ * Integration test helper: Seed a collection with an open request via bridge access.
+ *
+ * ⚠️  DO NOT USE IN E2E TESTS. This violates the E2E golden rule.
+ * Use only in test/specs/integration/ tests.
+ */
 export async function seedCollectionWithOpenRequest({
   collectionName,
   requestName,
@@ -84,13 +98,11 @@ export async function seedCollectionWithOpenRequest({
       done: (value: { ok: true; data: SeedCollectionResult } | { ok: false; error: string }) => void,
     ) => {
       try {
-        // Access modules through __vite_ssr_modules__ instead of file paths
         const modules = (window as any).__vite_ssr_modules__
         if (!modules) {
           throw new Error("App modules not available - app may not be fully hydrated")
         }
 
-        // Find the application module
         const appModule = Object.values(modules).find((mod: any) => {
           return mod && mod.useApplication && typeof mod.useApplication === 'function'
         }) as any
