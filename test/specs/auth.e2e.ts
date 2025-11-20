@@ -82,22 +82,29 @@ describe("Authentication Strategies", () => {
       await setInputText("request-auth-panel:basic-auth-username-input", "admin")
       await setInputText("request-auth-panel:basic-auth-password-input", "password123")
 
-      // Send request and verify Authorization header is present
-      const sendButton = await getElementByTestId("request-workspace:send-button")
+      // Send request
       await clickByTestId("request-workspace:send-button")
 
-      // Wait for response - look for response panel
+      // Wait for response to appear - check for response body containing the request details
       await browser.waitUntil(
         async () => {
-          const responsePanel = await getElementByTestId("request-workspace:response-panel", 1000).catch(() => null)
-          return !!responsePanel
+          const responseText = await browser.execute(() => {
+            const responseBody = document.querySelector('[data-test-id="response-body"]')
+            return responseBody ? responseBody.textContent : ""
+          })
+          // Check if the response contains the authorization header
+          return responseText.includes("authorization") || responseText.includes("admin")
         },
         { timeout: 5000 }
       )
 
-      // Verify request was sent with Authorization header by checking response or request tab
-      const responsePanel = await getElementByTestId("request-workspace:response-panel")
-      await expect(responsePanel).toBeDefined()
+      // Verify the authorization header is in the response
+      const responseText = await browser.execute(() => {
+        const responseBody = document.querySelector('[data-test-id="response-body"]')
+        return responseBody ? responseBody.textContent : ""
+      })
+
+      await expect(responseText).toMatch(/authorization|Basic/)
     })
 
     it("encodes credentials properly for Basic auth", async () => {
@@ -231,21 +238,29 @@ describe("Authentication Strategies", () => {
       const token = "test-bearer-token-12345"
       await setInputText("request-auth-panel:bearer-auth-token-input", token)
 
-      // Send request and verify Authorization header is present
+      // Send request
       await clickByTestId("request-workspace:send-button")
 
-      // Wait for response
+      // Wait for response to appear - check for response body containing the request details
       await browser.waitUntil(
         async () => {
-          const responsePanel = await getElementByTestId("request-workspace:response-panel", 1000).catch(() => null)
-          return !!responsePanel
+          const responseText = await browser.execute(() => {
+            const responseBody = document.querySelector('[data-test-id="response-body"]')
+            return responseBody ? responseBody.textContent : ""
+          })
+          // Check if the response contains the authorization header
+          return responseText.includes("authorization") || responseText.includes("Bearer")
         },
         { timeout: 5000 }
       )
 
-      // Verify request was sent
-      const responsePanel = await getElementByTestId("request-workspace:response-panel")
-      await expect(responsePanel).toBeDefined()
+      // Verify the Authorization header with Bearer scheme is in the response
+      const responseText = await browser.execute(() => {
+        const responseBody = document.querySelector('[data-test-id="response-body"]')
+        return responseBody ? responseBody.textContent : ""
+      })
+
+      await expect(responseText).toMatch(/authorization|Bearer/)
     })
   })
 
@@ -370,24 +385,34 @@ describe("Authentication Strategies", () => {
       await clickByTestId("request-editor:auth-menu:type-apiKey")
 
       // Configure API Key
-      await setInputText("request-auth-panel:api-key-auth-key-input", "X-Custom-Key")
-      await setInputText("request-auth-panel:api-key-auth-value-input", "secret-value")
+      const headerName = "X-Custom-Key"
+      const headerValue = "secret-value"
+      await setInputText("request-auth-panel:api-key-auth-key-input", headerName)
+      await setInputText("request-auth-panel:api-key-auth-value-input", headerValue)
 
       // Send request
       await clickByTestId("request-workspace:send-button")
 
-      // Wait for response
+      // Wait for response to appear - check for response body containing the request details
       await browser.waitUntil(
         async () => {
-          const responsePanel = await getElementByTestId("request-workspace:response-panel", 1000).catch(() => null)
-          return !!responsePanel
+          const responseText = await browser.execute(() => {
+            const responseBody = document.querySelector('[data-test-id="response-body"]')
+            return responseBody ? responseBody.textContent : ""
+          })
+          // Check if the response contains the custom header
+          return responseText.includes("x-custom-key") || responseText.includes("secret-value")
         },
         { timeout: 5000 }
       )
 
-      // Verify request was sent
-      const responsePanel = await getElementByTestId("request-workspace:response-panel")
-      await expect(responsePanel).toBeDefined()
+      // Verify the custom header is in the response
+      const responseText = await browser.execute(() => {
+        const responseBody = document.querySelector('[data-test-id="response-body"]')
+        return responseBody ? responseBody.textContent : ""
+      })
+
+      await expect(responseText).toMatch(/x-custom-key|secret-value/)
     })
   })
 
@@ -535,8 +560,10 @@ describe("Authentication Strategies", () => {
       await clickByTestId("request-editor:auth-menu:type-basic")
 
       // Configure basic auth
-      await setInputText("request-auth-panel:basic-auth-username-input", "user")
-      await setInputText("request-auth-panel:basic-auth-password-input", "pass")
+      const username = "user"
+      const password = "pass"
+      await setInputText("request-auth-panel:basic-auth-username-input", username)
+      await setInputText("request-auth-panel:basic-auth-password-input", password)
 
       // Send button should be clickable
       const sendButton = await getElementByTestId("request-workspace:send-button")
@@ -545,17 +572,26 @@ describe("Authentication Strategies", () => {
       // Send the request
       await clickByTestId("request-workspace:send-button")
 
-      // Verify request completes
+      // Wait for response to appear - check for response body containing the request details
       await browser.waitUntil(
         async () => {
-          const responsePanel = await getElementByTestId("request-workspace:response-panel", 1000).catch(() => null)
-          return !!responsePanel
+          const responseText = await browser.execute(() => {
+            const responseBody = document.querySelector('[data-test-id="response-body"]')
+            return responseBody ? responseBody.textContent : ""
+          })
+          // Check if the response contains the authorization header
+          return responseText.includes("authorization") || responseText.includes("user")
         },
         { timeout: 5000 }
       )
 
-      const responsePanel = await getElementByTestId("request-workspace:response-panel")
-      await expect(responsePanel).toBeDefined()
+      // Verify the authorization header is in the response
+      const responseText = await browser.execute(() => {
+        const responseBody = document.querySelector('[data-test-id="response-body"]')
+        return responseBody ? responseBody.textContent : ""
+      })
+
+      await expect(responseText).toMatch(/authorization|Basic/)
     })
   })
 
