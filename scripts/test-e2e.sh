@@ -47,7 +47,7 @@ if [[ -n "$spec_file" ]]; then
 fi
 
 if [[ -n "$test_name" ]]; then
-  wdio_cmd="$wdio_cmd --grep \"$test_name\""
+  wdio_cmd="$wdio_cmd --mochaOpts.grep \"$test_name\""
 fi
 
 if [[ -n "$spec_file" ]] || [[ -n "$test_name" ]]; then

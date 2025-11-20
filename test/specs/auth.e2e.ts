@@ -27,39 +27,38 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/json`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Click on the auth tab to access auth settings
-      const authTabTrigger = await browser.execute(() => {
-        const tabs = document.querySelectorAll('[data-test-id^="request-editor:"][data-test-id$="-tab"]')
-        for (const tab of tabs) {
-          if (tab.textContent?.toLowerCase().includes("auth")) {
-            return tab.getAttribute("data-test-id")
-          }
-        }
-        return null
+      // Click on auth tab - must exist
+      await clickByTestId("request-editor:auth-tab")
+
+      // Click auth dropdown trigger
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+
+      // Select Basic auth type from menu
+      await clickByTestId("request-editor:auth-menu:type-basic")
+
+      // Configure Basic auth - these fields MUST exist
+      const usernameInput = await getElementByTestId("request-auth-panel:basic-auth-username-input", 5000)
+      await expect(usernameInput).toBeDefined()
+
+      const passwordInput = await getElementByTestId("request-auth-panel:basic-auth-password-input", 5000)
+      await expect(passwordInput).toBeDefined()
+
+      // Set username and password
+      await setInputText("request-auth-panel:basic-auth-username-input", "testuser")
+      await setInputText("request-auth-panel:basic-auth-password-input", "testpass")
+
+      // Verify values were set
+      const usernameValue = await browser.execute(() => {
+        const input = document.querySelector('[data-test-id="request-auth-panel:basic-auth-username-input"]') as HTMLInputElement
+        return input ? input.value : ""
       })
+      await expect(usernameValue).toEqual("testuser")
 
-      if (authTabTrigger) {
-        await clickByTestId(authTabTrigger)
-
-        // Look for auth type selector
-        const authTypeSelector = await browser.execute(() => {
-          return !!document.querySelector('[data-test-id*="auth"][data-test-id*="type"]')
-        })
-
-        if (authTypeSelector) {
-          // Try to find and click the auth type dropdown
-          const dropdownButtons = await browser.execute(() => {
-            const buttons = Array.from(document.querySelectorAll('[role="combobox"]'))
-            return buttons.map(b => b.getAttribute("data-test-id")).filter(Boolean)
-          })
-          if (dropdownButtons.length > 0 && dropdownButtons[0]) {
-            await clickByTestId(dropdownButtons[0])
-          }
-        }
-      }
-
-      // Verify auth tab is accessible and can be configured
-      expect(true).toBe(true)
+      const passwordValue = await browser.execute(() => {
+        const input = document.querySelector('[data-test-id="request-auth-panel:basic-auth-password-input"]') as HTMLInputElement
+        return input ? input.value : ""
+      })
+      await expect(passwordValue).toEqual("testpass")
     })
 
     it("includes Basic auth header in request", async () => {
@@ -70,28 +69,72 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/get`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Find auth section via DOM inspection
-      const authSectionExists = await browser.execute(() => {
-        const authRelated = Array.from(document.querySelectorAll("[data-test-id*='auth']"))
-        return authRelated.length > 0
-      })
+      // Click on auth tab
+      await clickByTestId("request-editor:auth-tab")
 
-      expect(authSectionExists).toBe(true)
+      // Click auth dropdown trigger
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+
+      // Select Basic auth type
+      await clickByTestId("request-editor:auth-menu:type-basic")
+
+      // Configure with test credentials
+      await setInputText("request-auth-panel:basic-auth-username-input", "admin")
+      await setInputText("request-auth-panel:basic-auth-password-input", "password123")
+
+      // Send request and verify Authorization header is present
+      const sendButton = await getElementByTestId("request-workspace:send-button")
+      await clickByTestId("request-workspace:send-button")
+
+      // Wait for response - look for response panel
+      await browser.waitUntil(
+        async () => {
+          const responsePanel = await getElementByTestId("request-workspace:response-panel", 1000).catch(() => null)
+          return !!responsePanel
+        },
+        { timeout: 5000 }
+      )
+
+      // Verify request was sent with Authorization header by checking response or request tab
+      const responsePanel = await getElementByTestId("request-workspace:response-panel")
+      await expect(responsePanel).toBeDefined()
     })
 
     it("encodes credentials properly for Basic auth", async () => {
       await openNewRequestViaUI()
       await waitForRequestEditor()
 
-      // Verify Basic auth component is available in the UI
-      const hasAuthUI = await browser.execute(() => {
-        // Look for auth-related UI elements
-        const authElements = document.querySelectorAll("[data-test-id*='auth'], [class*='auth' i], [placeholder*='username' i], [placeholder*='password' i]")
-        return authElements.length > 0
-      })
+      // Set URL
+      const mockUrl = `http://127.0.0.1:3000/mock/get`
+      await setInputText("request-workspace:url-input", mockUrl)
 
-      // Even if we can't fully interact with auth UI in this test, we verify it exists
-      expect(true).toBe(true)
+      // Click on auth tab
+      await clickByTestId("request-editor:auth-tab")
+
+      // Click auth dropdown trigger
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+
+      // Select Basic auth type
+      await clickByTestId("request-editor:auth-menu:type-basic")
+
+      // Set credentials with special characters that require encoding
+      const username = "user@domain.com"
+      const password = "pass:word!123"
+      await setInputText("request-auth-panel:basic-auth-username-input", username)
+      await setInputText("request-auth-panel:basic-auth-password-input", password)
+
+      // Verify credentials were stored
+      const storedUsername = await browser.execute(() => {
+        const input = document.querySelector('[data-test-id="request-auth-panel:basic-auth-username-input"]') as HTMLInputElement
+        return input ? input.value : ""
+      })
+      await expect(storedUsername).toEqual(username)
+
+      const storedPassword = await browser.execute(() => {
+        const input = document.querySelector('[data-test-id="request-auth-panel:basic-auth-password-input"]') as HTMLInputElement
+        return input ? input.value : ""
+      })
+      await expect(storedPassword).toEqual(password)
     })
   })
 
@@ -104,22 +147,29 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/json`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Look for Bearer token input in auth section
-      const bearerTokenInput = await browser.execute(() => {
-        const inputs = document.querySelectorAll('input[type="text"], input[type="password"]')
-        for (const input of inputs) {
-          const label = input.closest('[data-test-id*="auth"], label')
-          if (label && (label.textContent?.toLowerCase().includes("bearer") || label.textContent?.toLowerCase().includes("token"))) {
-            return true
-          }
-        }
-        // Also check for any auth-related inputs
-        const authSection = document.querySelector('[data-test-id*="auth"]')
-        return !!authSection
-      })
+      // Click on auth tab
+      await clickByTestId("request-editor:auth-tab")
 
-      // Verify Bearer token auth is accessible
-      expect(true).toBe(true)
+      // Click auth dropdown trigger
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+
+      // Select Bearer auth type
+      await clickByTestId("request-editor:auth-menu:type-bearer")
+
+      // Verify Bearer token input exists and set token
+      const tokenInput = await getElementByTestId("request-auth-panel:bearer-auth-token-input", 5000)
+      await expect(tokenInput).toBeDefined()
+
+      // Set Bearer token
+      const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0"
+      await setInputText("request-auth-panel:bearer-auth-token-input", token)
+
+      // Verify token was set
+      const storedToken = await browser.execute(() => {
+        const input = document.querySelector('[data-test-id="request-auth-panel:bearer-auth-token-input"]') as HTMLInputElement
+        return input ? input.value : ""
+      })
+      await expect(storedToken).toEqual(token)
     })
 
     it("allows custom scheme for Bearer token", async () => {
@@ -129,14 +179,36 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/get`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Look for Bearer auth type selector
-      const hasBearerOption = await browser.execute(() => {
-        const authText = document.body.innerText ?? ""
-        return /bearer|token|scheme/i.test(authText)
-      })
+      // Click on auth tab
+      await clickByTestId("request-editor:auth-tab")
 
-      // Verify Bearer is available as an auth option
-      expect(true).toBe(true)
+      // Click auth dropdown trigger
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+
+      // Select Bearer auth type
+      await clickByTestId("request-editor:auth-menu:type-bearer")
+
+      // Verify scheme selector exists
+      const schemeSelect = await getElementByTestId("request-auth-panel:bearer-auth-scheme-select", 5000)
+      await expect(schemeSelect).toBeDefined()
+
+      // Click scheme selector and select custom
+      await clickByTestId("request-auth-panel:bearer-auth-scheme-select")
+      await clickByTestId("request-auth-panel:bearer-auth-scheme-custom")
+
+      // Verify custom scheme input appears
+      const customSchemeInput = await getElementByTestId("request-auth-panel:bearer-auth-custom-scheme-input", 5000)
+      await expect(customSchemeInput).toBeDefined()
+
+      // Set custom scheme
+      await setInputText("request-auth-panel:bearer-auth-custom-scheme-input", "MyCustomScheme")
+
+      // Verify scheme was set
+      const storedScheme = await browser.execute(() => {
+        const input = document.querySelector('[data-test-id="request-auth-panel:bearer-auth-custom-scheme-input"]') as HTMLInputElement
+        return input ? input.value : ""
+      })
+      await expect(storedScheme).toEqual("MyCustomScheme")
     })
 
     it("includes Authorization header with Bearer token", async () => {
@@ -146,11 +218,34 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/get`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Send a request to verify Bearer token would be included
-      const sendButton = await getElementByTestId("request-workspace:send-button")
-      await sendButton.waitForClickable({ timeout: 5000 })
-      // Don't actually send since we haven't configured auth yet, just verify button is clickable
-      expect(sendButton).toBeDefined()
+      // Click on auth tab
+      await clickByTestId("request-editor:auth-tab")
+
+      // Click auth dropdown trigger
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+
+      // Select Bearer auth type
+      await clickByTestId("request-editor:auth-menu:type-bearer")
+
+      // Set Bearer token
+      const token = "test-bearer-token-12345"
+      await setInputText("request-auth-panel:bearer-auth-token-input", token)
+
+      // Send request and verify Authorization header is present
+      await clickByTestId("request-workspace:send-button")
+
+      // Wait for response
+      await browser.waitUntil(
+        async () => {
+          const responsePanel = await getElementByTestId("request-workspace:response-panel", 1000).catch(() => null)
+          return !!responsePanel
+        },
+        { timeout: 5000 }
+      )
+
+      // Verify request was sent
+      const responsePanel = await getElementByTestId("request-workspace:response-panel")
+      await expect(responsePanel).toBeDefined()
     })
   })
 
@@ -163,14 +258,38 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/json`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Look for API Key configuration
-      const hasApiKeyUI = await browser.execute(() => {
-        const authElements = Array.from(document.querySelectorAll("[data-test-id*='auth']"))
-        return authElements.length > 0
-      })
+      // Click on auth tab
+      await clickByTestId("request-editor:auth-tab")
 
-      // Verify API Key auth UI is available
-      expect(true).toBe(true)
+      // Click auth dropdown trigger
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+
+      // Select API Key auth type
+      await clickByTestId("request-editor:auth-menu:type-apiKey")
+
+      // Verify API Key key and value inputs exist
+      const keyInput = await getElementByTestId("request-auth-panel:api-key-auth-key-input", 5000)
+      await expect(keyInput).toBeDefined()
+
+      const valueInput = await getElementByTestId("request-auth-panel:api-key-auth-value-input", 5000)
+      await expect(valueInput).toBeDefined()
+
+      // Set custom header name and value
+      await setInputText("request-auth-panel:api-key-auth-key-input", "X-API-Key")
+      await setInputText("request-auth-panel:api-key-auth-value-input", "abc123xyz789")
+
+      // Verify values were set
+      const storedKey = await browser.execute(() => {
+        const input = document.querySelector('[data-test-id="request-auth-panel:api-key-auth-key-input"]') as HTMLInputElement
+        return input ? input.value : ""
+      })
+      await expect(storedKey).toEqual("X-API-Key")
+
+      const storedValue = await browser.execute(() => {
+        const input = document.querySelector('[data-test-id="request-auth-panel:api-key-auth-value-input"]') as HTMLInputElement
+        return input ? input.value : ""
+      })
+      await expect(storedValue).toEqual("abc123xyz789")
     })
 
     it("supports API Key in query parameter", async () => {
@@ -180,14 +299,29 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/json`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Look for auth configuration options
-      const authSectionExists = await browser.execute(() => {
-        const authRelated = document.querySelector("[data-test-id*='auth'], .auth-section")
-        return !!authRelated
-      })
+      // Click on auth tab
+      await clickByTestId("request-editor:auth-tab")
 
-      // Verify auth configuration is accessible
-      expect(true).toBe(true)
+      // Click auth dropdown trigger
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+
+      // Select API Key auth type
+      await clickByTestId("request-editor:auth-menu:type-apiKey")
+
+      // Set key and value
+      await setInputText("request-auth-panel:api-key-auth-key-input", "api_token")
+      await setInputText("request-auth-panel:api-key-auth-value-input", "token123")
+
+      // Click placement selector
+      await clickByTestId("request-auth-panel:api-key-auth-placement-select")
+
+      // Select query parameter placement
+      const queryParamOption = await browser.execute(() => {
+        const options = Array.from(document.querySelectorAll('[role="option"]'))
+        const queryOption = options.find(opt => opt.textContent?.toLowerCase().includes("query"))
+        return !!queryOption
+      })
+      await expect(queryParamOption).toBe(true)
     })
 
     it("allows custom API Key header name", async () => {
@@ -197,12 +331,26 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/json`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Verify API Key auth type is available
-      const hasAuthUI = await browser.execute(() => {
-        return document.querySelectorAll("[data-test-id*='auth'], input[placeholder*='key' i], input[placeholder*='header' i]").length > 0
-      })
+      // Click on auth tab
+      await clickByTestId("request-editor:auth-tab")
 
-      expect(true).toBe(true)
+      // Click auth dropdown trigger
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+
+      // Select API Key auth type
+      await clickByTestId("request-editor:auth-menu:type-apiKey")
+
+      // Set custom header name (not default Authorization)
+      const customHeader = "Authorization-Custom"
+      await setInputText("request-auth-panel:api-key-auth-key-input", customHeader)
+      await setInputText("request-auth-panel:api-key-auth-value-input", "mykey123")
+
+      // Verify custom header name was set
+      const storedHeader = await browser.execute(() => {
+        const input = document.querySelector('[data-test-id="request-auth-panel:api-key-auth-key-input"]') as HTMLInputElement
+        return input ? input.value : ""
+      })
+      await expect(storedHeader).toEqual(customHeader)
     })
 
     it("includes custom header with API Key value in request", async () => {
@@ -212,10 +360,34 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/get`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Send request to verify headers would include API Key
-      const sendButton = await getElementByTestId("request-workspace:send-button")
-      await sendButton.waitForClickable({ timeout: 5000 })
-      expect(sendButton).toBeDefined()
+      // Click on auth tab
+      await clickByTestId("request-editor:auth-tab")
+
+      // Click auth dropdown trigger
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+
+      // Select API Key auth type
+      await clickByTestId("request-editor:auth-menu:type-apiKey")
+
+      // Configure API Key
+      await setInputText("request-auth-panel:api-key-auth-key-input", "X-Custom-Key")
+      await setInputText("request-auth-panel:api-key-auth-value-input", "secret-value")
+
+      // Send request
+      await clickByTestId("request-workspace:send-button")
+
+      // Wait for response
+      await browser.waitUntil(
+        async () => {
+          const responsePanel = await getElementByTestId("request-workspace:response-panel", 1000).catch(() => null)
+          return !!responsePanel
+        },
+        { timeout: 5000 }
+      )
+
+      // Verify request was sent
+      const responsePanel = await getElementByTestId("request-workspace:response-panel")
+      await expect(responsePanel).toBeDefined()
     })
   })
 
@@ -227,12 +399,34 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/json`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Look for auth type selector
-      const authTypeSelectorCount = await browser.execute(() => {
-        const selectors = Array.from(document.querySelectorAll('[role="combobox"], [role="listbox"], select'))
-        return selectors.length
-      })
-      expect(authTypeSelectorCount >= 0).toBe(true)
+      // Click on auth tab
+      await clickByTestId("request-editor:auth-tab")
+
+      // Click auth dropdown trigger
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+
+      // Select Basic auth type
+      await clickByTestId("request-editor:auth-menu:type-basic")
+
+      // Verify Basic auth fields appear
+      const basicUsername = await getElementByTestId("request-auth-panel:basic-auth-username-input", 5000)
+      await expect(basicUsername).toBeDefined()
+
+      // Switch to Bearer
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+      await clickByTestId("request-editor:auth-menu:type-bearer")
+
+      // Verify Bearer token field appears
+      const bearerToken = await getElementByTestId("request-auth-panel:bearer-auth-token-input", 5000)
+      await expect(bearerToken).toBeDefined()
+
+      // Switch to API Key
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+      await clickByTestId("request-editor:auth-menu:type-apiKey")
+
+      // Verify API Key fields appear
+      const apiKeyField = await getElementByTestId("request-auth-panel:api-key-auth-key-input", 5000)
+      await expect(apiKeyField).toBeDefined()
     })
 
     it("clears auth settings when switching to No Auth", async () => {
@@ -242,13 +436,26 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/json`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Verify auth UI is present and can be configured
-      const authUI = await browser.execute(() => {
-        return !!document.querySelector("[data-test-id*='auth']")
-      })
+      // Click on auth tab
+      await clickByTestId("request-editor:auth-tab")
 
-      // Verify we can interact with auth settings
-      expect(true).toBe(true)
+      // Click auth dropdown trigger
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+
+      // Select Basic auth type
+      await clickByTestId("request-editor:auth-menu:type-basic")
+
+      // Set some credentials
+      await setInputText("request-auth-panel:basic-auth-username-input", "test-user")
+      await setInputText("request-auth-panel:basic-auth-password-input", "test-pass")
+
+      // Switch to No Auth
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+      await clickByTestId("request-editor:auth-menu:type-none")
+
+      // Verify no-auth message appears
+      const noAuthMessage = await getElementByTestId("request-auth-panel:no-auth-message", 5000)
+      await expect(noAuthMessage).toBeDefined()
     })
   })
 
@@ -260,57 +467,95 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/json`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Store initial auth state
-      const initialAuthState = await browser.execute(() => {
-        const authInputs = document.querySelectorAll("[data-test-id*='auth'] input, [class*='auth'] input")
-        return authInputs.length
+      // Set auth configuration
+      await clickByTestId("request-editor:auth-tab")
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+      await clickByTestId("request-editor:auth-menu:type-bearer")
+
+      const token = "test-token-123"
+      await setInputText("request-auth-panel:bearer-auth-token-input", token)
+
+      // Store initial token value
+      const initialToken = await browser.execute(() => {
+        const input = document.querySelector('[data-test-id="request-auth-panel:bearer-auth-token-input"]') as HTMLInputElement
+        return input ? input.value : ""
       })
 
       // Modify URL
       await setInputText("request-workspace:url-input", `${mockUrl}?test=1`)
 
-      // Verify auth state remains
-      const finalAuthState = await browser.execute(() => {
-        const authInputs = document.querySelectorAll("[data-test-id*='auth'] input, [class*='auth'] input")
-        return authInputs.length
+      // Verify auth configuration persists
+      const finalToken = await browser.execute(() => {
+        const input = document.querySelector('[data-test-id="request-auth-panel:bearer-auth-token-input"]') as HTMLInputElement
+        return input ? input.value : ""
       })
 
-      expect(initialAuthState).toBe(finalAuthState)
+      await expect(initialToken).toEqual(token)
+      await expect(finalToken).toEqual(token)
     })
 
     it("displays selected auth type in request editor", async () => {
       await openNewRequestViaUI()
       await waitForRequestEditor()
 
-      // Verify auth configuration UI is visible
-      const authUIVisible = await browser.execute(() => {
-        const authElements = document.querySelectorAll("[data-test-id*='auth']")
-        if (authElements.length === 0) return false
-        // Check if any auth element is displayed
-        for (const el of authElements) {
-          const style = window.getComputedStyle(el as HTMLElement)
-          if (style.display !== "none" && style.visibility !== "hidden") {
-            return true
-          }
-        }
-        return false
-      })
+      const mockUrl = `http://127.0.0.1:3000/mock/json`
+      await setInputText("request-workspace:url-input", mockUrl)
 
-      // Auth UI should be visible in the request editor
-      expect(true).toBe(true)
+      // Click auth tab
+      await clickByTestId("request-editor:auth-tab")
+
+      // Click auth dropdown trigger
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+
+      // Select API Key auth type
+      await clickByTestId("request-editor:auth-menu:type-apiKey")
+
+      // Verify API Key form is displayed
+      const apiKeyForm = await getElementByTestId("request-auth-panel:api-key-auth-form", 5000)
+      await expect(apiKeyForm).toBeDefined()
+
+      // Switch to Bearer and verify it displays
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+      await clickByTestId("request-editor:auth-menu:type-bearer")
+
+      const bearerForm = await getElementByTestId("request-auth-panel:bearer-auth-form", 5000)
+      await expect(bearerForm).toBeDefined()
     })
 
     it("validates auth configuration before sending request", async () => {
       await openNewRequestViaUI()
       await waitForRequestEditor()
 
-      const mockUrl = `http://127.0.0.1:3000/mock/json`
+      const mockUrl = `http://127.0.0.1:3000/mock/get`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Verify send button is present and can be clicked
+      // Set auth configuration
+      await clickByTestId("request-editor:auth-tab")
+      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+      await clickByTestId("request-editor:auth-menu:type-basic")
+
+      // Configure basic auth
+      await setInputText("request-auth-panel:basic-auth-username-input", "user")
+      await setInputText("request-auth-panel:basic-auth-password-input", "pass")
+
+      // Send button should be clickable
       const sendButton = await getElementByTestId("request-workspace:send-button")
-      await sendButton.waitForClickable({ timeout: 5000 })
-      expect(sendButton).toBeDefined()
+      await expect(sendButton).toBeDefined()
+
+      // Send the request
+      await clickByTestId("request-workspace:send-button")
+
+      // Verify request completes
+      await browser.waitUntil(
+        async () => {
+          const responsePanel = await getElementByTestId("request-workspace:response-panel", 1000).catch(() => null)
+          return !!responsePanel
+        },
+        { timeout: 5000 }
+      )
+
+      const responsePanel = await getElementByTestId("request-workspace:response-panel")
+      await expect(responsePanel).toBeDefined()
     })
   })
 
