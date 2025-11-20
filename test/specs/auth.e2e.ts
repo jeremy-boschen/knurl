@@ -89,8 +89,14 @@ describe("Authentication Strategies", () => {
       await browser.waitUntil(
         async () => {
           const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-body"]')
-            return responseBody ? responseBody.textContent : ""
+            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+            if (!responseBody) return ""
+            // Look for code editor within the response body
+            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+            if (!codeEditor) return ""
+            // CodeMirror wraps content in .cm-content
+            const content = codeEditor.querySelector(".cm-content")
+            return content ? content.textContent : codeEditor.textContent
           })
           // Check if the response contains the authorization header
           return responseText.includes("authorization") || responseText.includes("admin")
@@ -100,8 +106,12 @@ describe("Authentication Strategies", () => {
 
       // Verify the authorization header is in the response
       const responseText = await browser.execute(() => {
-        const responseBody = document.querySelector('[data-test-id="response-body"]')
-        return responseBody ? responseBody.textContent : ""
+        const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+        if (!responseBody) return ""
+        const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+        if (!codeEditor) return ""
+        const content = codeEditor.querySelector(".cm-content")
+        return content ? content.textContent : codeEditor.textContent
       })
 
       await expect(responseText).toMatch(/authorization|Basic/)
@@ -245,8 +255,14 @@ describe("Authentication Strategies", () => {
       await browser.waitUntil(
         async () => {
           const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-body"]')
-            return responseBody ? responseBody.textContent : ""
+            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+            if (!responseBody) return ""
+            // Look for code editor within the response body
+            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+            if (!codeEditor) return ""
+            // CodeMirror wraps content in .cm-content
+            const content = codeEditor.querySelector(".cm-content")
+            return content ? content.textContent : codeEditor.textContent
           })
           // Check if the response contains the authorization header
           return responseText.includes("authorization") || responseText.includes("Bearer")
@@ -256,8 +272,12 @@ describe("Authentication Strategies", () => {
 
       // Verify the Authorization header with Bearer scheme is in the response
       const responseText = await browser.execute(() => {
-        const responseBody = document.querySelector('[data-test-id="response-body"]')
-        return responseBody ? responseBody.textContent : ""
+        const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+        if (!responseBody) return ""
+        const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+        if (!codeEditor) return ""
+        const content = codeEditor.querySelector(".cm-content")
+        return content ? content.textContent : codeEditor.textContent
       })
 
       await expect(responseText).toMatch(/authorization|Bearer/)
@@ -397,8 +417,14 @@ describe("Authentication Strategies", () => {
       await browser.waitUntil(
         async () => {
           const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-body"]')
-            return responseBody ? responseBody.textContent : ""
+            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+            if (!responseBody) return ""
+            // Look for code editor within the response body
+            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+            if (!codeEditor) return ""
+            // CodeMirror wraps content in .cm-content
+            const content = codeEditor.querySelector(".cm-content")
+            return content ? content.textContent : codeEditor.textContent
           })
           // Check if the response contains the custom header
           return responseText.includes("x-custom-key") || responseText.includes("secret-value")
@@ -408,8 +434,12 @@ describe("Authentication Strategies", () => {
 
       // Verify the custom header is in the response
       const responseText = await browser.execute(() => {
-        const responseBody = document.querySelector('[data-test-id="response-body"]')
-        return responseBody ? responseBody.textContent : ""
+        const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+        if (!responseBody) return ""
+        const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+        if (!codeEditor) return ""
+        const content = codeEditor.querySelector(".cm-content")
+        return content ? content.textContent : codeEditor.textContent
       })
 
       await expect(responseText).toMatch(/x-custom-key|secret-value/)
@@ -576,8 +606,11 @@ describe("Authentication Strategies", () => {
       await browser.waitUntil(
         async () => {
           const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-body"]')
-            return responseBody ? responseBody.textContent : ""
+            const codeEditor = document.querySelector('[data-test-id="code-editor"]')
+            if (!codeEditor) return ""
+            // CodeMirror wraps content in .cm-content
+            const content = codeEditor.querySelector(".cm-content")
+            return content ? content.textContent : codeEditor.textContent
           })
           // Check if the response contains the authorization header
           return responseText.includes("authorization") || responseText.includes("user")
@@ -587,8 +620,10 @@ describe("Authentication Strategies", () => {
 
       // Verify the authorization header is in the response
       const responseText = await browser.execute(() => {
-        const responseBody = document.querySelector('[data-test-id="response-body"]')
-        return responseBody ? responseBody.textContent : ""
+        const codeEditor = document.querySelector('[data-test-id="code-editor"]')
+        if (!codeEditor) return ""
+        const content = codeEditor.querySelector(".cm-content")
+        return content ? content.textContent : codeEditor.textContent
       })
 
       await expect(responseText).toMatch(/authorization|Basic/)

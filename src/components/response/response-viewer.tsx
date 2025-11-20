@@ -329,7 +329,7 @@ export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            <TabsContent value="response-body" className="m-0 h-full">
+            <TabsContent value="response-body" className="m-0 h-full" data-test-id="response-viewer:body">
               <div className="flex h-full flex-col">
                 <div className="flex items-center justify-between bg-background/80 backdrop-blur-sm py-3 px-4 sticky top-0 z-20 border-b border-border/10">
                   <div className="flex items-center space-x-3">
