@@ -236,4 +236,34 @@ describe("ResponseViewer", () => {
     await user.click(within(logsPanel).getByRole("button", { name: /narrow/i }))
     expect(requestTabsApi.setResponseLogFilter).toHaveBeenCalledWith("tab-1", ["error"])
   })
+
+  it("applies status color classes for non-2xx responses", () => {
+    renderViewer({
+      httpData: { ...baseHttpData, status: 404, statusText: "Not Found" },
+    })
+    const statusEl = getByDataTestId("response-panel:status-code")
+    expect(statusEl.className).toContain("text-warning")
+  })
+
+  it("displays formatted size for zero-byte responses", () => {
+    renderViewer({
+      responseOverrides: { responseSize: 0 },
+    })
+    expect(screen.getByText("0 B")).toBeInTheDocument()
+  })
+
+  it("turns off formatted view when language changes", async () => {
+    const user = userEvent.setup()
+    renderViewer()
+
+    const formatButton = await waitFor(() => getByDataTestId("response-viewer:format-toggle-button"))
+    await user.click(formatButton)
+    expect(formatButton.textContent).toMatch(/Restore/)
+
+    const languageSelect = getByDataTestId("response-viewer:language-select")
+    await user.click(languageSelect)
+    await user.click(await screen.findByRole("option", { name: "XML" }))
+
+    await waitFor(() => expect(getByDataTestId("response-viewer:format-toggle-button").textContent).toMatch(/Format/))
+  })
 })
