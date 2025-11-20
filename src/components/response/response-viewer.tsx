@@ -121,33 +121,6 @@ export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
     return null
   }
 
-  const getEmptyStateMessage = () => {
-    if (!activeTab) {
-      return {
-        title: "No Response Yet",
-        subtitle: "Send a request to see the response here",
-      }
-    }
-
-    const hasUrl = request.url?.length > 0
-
-    if (!hasUrl) {
-      return {
-        title: "Ready to Send",
-        subtitle: "Enter a URL above and click Send to get started",
-      }
-    } else if (hasUrl && !response) {
-      return {
-        title: "Ready to Send",
-        subtitle: "Click the Send button to execute your request",
-      }
-    } else {
-      return {
-        title: "No Response Yet",
-        subtitle: "Send a request to see the response here",
-      }
-    }
-  }
 
   const getStatusColor = (status: number) => {
     if (status >= 200 && status < 300) {
@@ -563,15 +536,7 @@ export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
             </TabsContent>
           </div>
         </Tabs>
-      ) : (
-        <div className="flex flex-1 items-center justify-center text-muted-foreground">
-          <div className="text-center">
-            <div className="mb-4 text-6xl">{getEmptyStateMessage().icon}</div>
-            <div className="mb-2 text-lg font-medium">{getEmptyStateMessage().title}</div>
-            <div className="text-sm">{getEmptyStateMessage().subtitle}</div>
-          </div>
-        </div>
-      )}
+      ) : null}
     </div>
   )
 }
