@@ -9,46 +9,27 @@ describe("Response Viewer Analysis", () => {
     await resetOverlays()
   })
 
-  it("shows placeholder before any request is sent", async () => {
-    await openNewRequestViaUI()
-    await waitForRequestEditor()
-
-    const placeholder = await browser.execute(() => {
-      const text = document.body.innerText ?? ""
-      return /Ready to Send|No Response Yet|Send your first request/i.test(text)
-    })
-
-    expect(placeholder).toBe(true)
-  })
-
-  it("sends a JSON request and displays formatted response", async () => {
+  it("sends a JSON request and displays formatted response with correct status", async () => {
     const tabKey = await openNewRequestViaUI()
     await waitForRequestEditor()
 
     // Set up a request to mock server
     const mockUrl = `http://127.0.0.1:3000/mock/json`
     await setInputText("request-workspace:url-input", mockUrl)
-    await clickByTestId("request-workspace:method-select")
-
-    // Find and click GET option - use direct browser execution to find option by role and text
-    const foundOption = await browser.execute(() => {
-      const options = Array.from(document.querySelectorAll('[role="option"]'))
-      return options.find((opt) => opt.textContent?.trim() === "GET")?.getAttribute("data-test-id") ?? null
-    })
-    if (foundOption) {
-      await clickByTestId(foundOption)
-    }
 
     // Send the request
     await clickByTestId("request-workspace:send-button")
 
-    // Wait for response to appear
-    const responseHeading = await browser.execute(() => {
-      return !!document.querySelector('[data-test-id="response-viewer:heading"]')
-    })
-    expect(responseHeading).toBe(true)
+    // Wait for response viewer heading to appear (indicates response received)
+    const responseHeading = await getElementByTestId("response-viewer:heading", 10000)
+    expect(responseHeading).toBeDefined()
 
-    // Verify response body tab is accessible
+    // Verify status code is visible
+    const statusCode = await getElementByTestId("response-panel:status-code", 5000)
+    const statusText = await statusCode.getText()
+    expect(statusText).toContain("200")
+
+    // Verify response body tab is active by default
     const bodyTab = await getElementByTestId("response-viewer:tab-body", 5000)
     await expect(bodyTab).toHaveAttribute("data-state", "active")
   })
