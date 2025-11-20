@@ -1,6 +1,6 @@
 import React, { Suspense } from "react"
 
-import { attachConsole } from "@tauri-apps/plugin-log"
+import { attachConsole, debug, error, info, trace, warn } from "@tauri-apps/plugin-log"
 import { enablePatches } from "immer"
 import { createRoot } from "react-dom/client"
 
@@ -23,9 +23,18 @@ enablePatches()
 // This can be awaited as it doesn't block other module imports in the same way.
 try {
   await attachConsole()
-  console.log("[app] Console attached to Tauri logger")
-} catch (error) {
-  console.error("[app] Failed to attach console:", error)
+
+  // Replace console methods with Tauri logging functions
+  // This ensures all console logs go through Tauri's logger and appear in stdout
+  console.log = info
+  console.warn = warn
+  console.error = error
+  console.debug = debug
+  console.trace = trace
+
+  console.log("[app] Console attached to Tauri logger and console methods redirected")
+} catch (err) {
+  console.error("[app] Failed to attach console:", err)
 }
 
 setStartupState(0)
