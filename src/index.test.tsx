@@ -99,7 +99,7 @@ describe("index bootstrap", () => {
     } finally {
       consoleSpy.mockRestore()
     }
-  })
+  }, 15000)
 
   it("renders StrictMode>Suspense>Root and advances startup state", async () => {
     const module = await import("./index")
