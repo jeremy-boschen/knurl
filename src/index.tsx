@@ -11,8 +11,9 @@ import { getStartupState, setStartupState } from "@/lib/startup-state"
 import { loadApplication } from "@/state"
 import { asSuspense } from "@/state/utils"
 
-// Load E2E bridge for testing (dev/test builds only)
-if (import.meta.env.DEV) {
+// Load E2E bridge only during E2E tests (when VITE_E2E_ENABLED is set by wdio.conf.ts)
+// This is set explicitly during E2E test runs, not during unit tests or dev runs
+if (import.meta.env.VITE_E2E_ENABLED) {
   await import("./test/e2e-bridge")
 }
 

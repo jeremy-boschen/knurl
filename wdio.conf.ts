@@ -384,9 +384,10 @@ async function handleOnPrepare() {
     console.warn(`[mock-endpoints] Server startup warning: ${detail}`)
   }
 
-  // Configure OAuth
+  // Configure OAuth and E2E
   console.log(`  configuring OAuth environment variables...`)
   const oauthIssuer = `http://${MOCK_ENDPOINT_HOST}:${MOCK_ENDPOINT_PORT}`
+  process.env.VITE_E2E_ENABLED = "true"
   process.env.VITE_E2E_OAUTH_ISSUER = oauthIssuer
   process.env.VITE_E2E_OAUTH_CLIENT_ID = "test-client"
   process.env.VITE_E2E_OAUTH_CLIENT_SECRET = "test-secret"
