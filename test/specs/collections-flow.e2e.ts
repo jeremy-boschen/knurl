@@ -87,20 +87,36 @@ describe("Collection And Request Flow", () => {
       throw new Error("Collection tab key not resolved")
     }
 
+    // Close the collection tab
     await clickByTestId(`request-tab:close-button:${state.collectionTabKey}`)
     await waitForTestIdToDisappear(`request-tab:${state.collectionTabKey}`)
-    // Close any remaining tabs (scratch tab may be auto-created)
-    await browser.executeAsync(async (done: () => void) => {
+
+    // Close any remaining tabs (scratch tab may be auto-created) via UI
+    // Find all remaining tab close buttons and click them
+    let attempts = 0
+    while (attempts < 5) {
       try {
-        const mod = await import("@/state/application")
-        mod.useApplication.getState().requestTabsApi.closeAllTabs()
-        done()
-      } catch (error) {
-        console.error("Failed to close all tabs", error)
-        done()
+        // Try to find next close button by checking for request-tab elements
+        const nextTabElement = await getElementByTestId("request-tab-bar:tab-close-all-button", 1000).catch(() => null)
+        if (nextTabElement) {
+          await clickByTestId("request-tab-bar:tab-close-all-button")
+          break
+        }
+        // Otherwise try to close individual tabs
+        const tabElement = await browser.execute(() => {
+          const tab = document.querySelector('[data-test-id^="request-tab:"][data-test-id$="-close-button"]')
+          return tab?.getAttribute("data-test-id") ?? null
+        })
+        if (tabElement) {
+          await clickByTestId(tabElement)
+        } else {
+          break
+        }
+      } catch {
+        break
       }
-    })
-    await browser.pause(200)
+      attempts++
+    }
   })
 
   it("creates a new scratch request via the title bar button", async () => {

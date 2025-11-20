@@ -15,7 +15,7 @@
 import { expect } from '@wdio/globals'
 import * as fs from 'fs'
 
-import { ensureWorkspaceReady, getElementByTestId } from '../support/ui'
+import { ensureWorkspaceReady, getElementByTestId, clickByTestId } from '../support/ui'
 
 describe('Collection Import from OpenAPI', () => {
   const state = {
@@ -41,11 +41,15 @@ describe('Collection Import from OpenAPI', () => {
   it('expands sidebar if needed', async () => {
     console.log(`[TEST] ${new Date().toISOString()} Starting sidebar expansion check`)
     // First, try to expand the sidebar if it's collapsed
-    const expandButton = await getElementByTestId('sidebar:expand-button').catch(() => null)
-    console.log(`[TEST] ${new Date().toISOString()} Expand button found: ${!!expandButton}`)
-    if (expandButton) {
-      await expandButton.click()
-      console.log(`[TEST] ${new Date().toISOString()} Expand button clicked`)
+    try {
+      const expandButton = await getElementByTestId('sidebar:expand-button', 2000).catch(() => null)
+      console.log(`[TEST] ${new Date().toISOString()} Expand button found: ${!!expandButton}`)
+      if (expandButton) {
+        await clickByTestId('sidebar:expand-button')
+        console.log(`[TEST] ${new Date().toISOString()} Expand button clicked`)
+      }
+    } catch {
+      console.log(`[TEST] ${new Date().toISOString()} Sidebar already expanded`)
     }
   })
 
@@ -55,7 +59,7 @@ describe('Collection Import from OpenAPI', () => {
     const importButton = await getElementByTestId('sidebar:import-collection-button')
     console.log(`[TEST] ${new Date().toISOString()} Import button found`)
     await expect(importButton).toBeTruthy()
-    await importButton.click()
+    await clickByTestId('sidebar:import-collection-button')
     console.log(`[TEST] ${new Date().toISOString()} Import button clicked`)
   })
 
@@ -89,7 +93,7 @@ describe('Collection Import from OpenAPI', () => {
     await expect(pasteButton).toBeTruthy()
     console.log(`[TEST] ${new Date().toISOString()} Paste button found`)
 
-    await pasteButton.click()
+    await clickByTestId('import-source:paste-button')
     console.log(`[TEST] ${new Date().toISOString()} Paste button clicked`)
 
     // Wait for the import to parse and preview to render
