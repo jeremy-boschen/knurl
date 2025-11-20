@@ -103,13 +103,16 @@ The app uses React Suspense for lazy loading. Calling UI helpers without `ensure
 
 **Requirement:** The sidebar must be in expanded state to interact with the collection tree.
 
+Use the helper function to ensure sidebar expansion:
+
 ```typescript
-// ✓ Good: Sidebar is visible
+// ✓ CORRECT: Use helper function
+await ensureSidebarExpanded()
+await createCollection("My Collection")
+
+// ❌ WRONG: Don't manually check sidebar
 const sidebar = await $('[data-test-id="sidebar"]')
 await expect(sidebar).toBeDisplayed()
-
-// Then interact with collection tree
-await createCollection("My Collection")
 ```
 
 ### Request Tab Interactions
@@ -176,7 +179,34 @@ Page navigation can break WebDriver sessions. Use `browser.refresh()` instead.
 
 ## Helper Functions
 
-### From `test/support/ui.ts`
+### ⚠️  CRITICAL: All Helpers in One File
+
+**All E2E UI helper functions are in `test/support/ui.ts` - there are no separate `collections.ts` or `request.ts` files.**
+
+If you see imports like `from "../support/collections"` or `from "../support/request"` - **those are old and wrong**. Update them to:
+
+```typescript
+// ✓ CORRECT - all from ui.ts
+import {
+  ensureWorkspaceReady,
+  createCollection,
+  clickByTestId,
+  setInputText,
+  waitForRequestEditor,
+  openCollectionMenu,
+  // ... all helpers from ui.ts
+} from "../support/ui"
+
+// ❌ WRONG - these files don't exist
+import { createCollection } from "../support/collections"  // DELETED
+import { waitForRequestEditor } from "../support/request"  // DELETED
+```
+
+### Why Use Helper Functions?
+
+**IMPORTANT:** Always use the helper functions below instead of raw WebDriver commands. They handle timing, retries, and polling correctly. Using raw `$()`, `.click()`, etc. directly in tests is a common source of flaky tests.
+
+### Core Setup Functions
 
 #### ensureWorkspaceReady()
 Waits for app hydration. **Must be called** before any UI interaction.
@@ -187,34 +217,99 @@ before(async () => {
 })
 ```
 
+### Element Interaction (Use These, Not Raw WebDriver)
+
 #### getElementByTestId(testId, timeout?, options?)
-Find element by `data-test-id` attribute.
+**Preferred way** to find elements. Has built-in retries and polling.
 
 ```typescript
+// ✓ CORRECT - has retry logic
 const button = await getElementByTestId("submit-button")
-await button.click()
+
+// ❌ WRONG - no retry logic, flaky
+const button = await $('[data-test-id="submit-button"]')
 ```
 
 #### clickByTestId(testId)
-Click an element by test ID.
+Click an element by test ID. **Use this instead of `.click()`**.
 
 ```typescript
+// ✓ CORRECT
 await clickByTestId("save-button")
+
+// ❌ WRONG - raw WebDriver, no handling
+const element = await $('[data-test-id="save-button"]')
+await element.click()
 ```
 
 #### setInputText(testId, value)
-Set text in an input field.
+Set text in an input field. **Use this instead of `.setValue()`**.
 
 ```typescript
+// ✓ CORRECT - handles focus, clears existing text
 await setInputText("name-input", "New Name")
+
+// ❌ WRONG - may not clear existing text properly
+const input = await $('[data-test-id="name-input"]')
+await input.setValue("New Name")
 ```
 
 #### clearInputText(testId)
-Clear an input field.
+Clear an input field completely.
 
 ```typescript
 await clearInputText("name-input")
 ```
+
+### Collection Functions
+
+#### ensureSidebarExpanded()
+Expand the sidebar if collapsed. Call this before interacting with collection tree.
+
+```typescript
+await ensureSidebarExpanded()
+await createCollection("My Collection")
+```
+
+#### createCollection(name)
+Create a collection via UI and return its ID. **Handles all UI steps automatically.**
+
+```typescript
+const collectionId = await createCollection("My Collection")
+```
+
+#### waitForCollectionIdByName(name)
+Find a collection by name in the tree and return its ID. Throws if not found.
+
+```typescript
+const id = await waitForCollectionIdByName("My Collection")
+```
+
+#### clickVisibleNewCollectionButton()
+Click the new collection button (works in both expanded and collapsed sidebar).
+
+```typescript
+await clickVisibleNewCollectionButton()
+```
+
+### Request Functions
+
+#### waitForRequestEditor()
+Wait for the request editor panel (URL input) to appear.
+
+```typescript
+await openNewRequestViaUI()
+await waitForRequestEditor()
+```
+
+#### waitForActiveRequestTab()
+Get the active request tab key.
+
+```typescript
+const tabKey = await waitForActiveRequestTab()
+```
+
+### Overlay & Menu Functions
 
 #### resetOverlays()
 Close any open modals, sheets, or dropdowns.
@@ -225,48 +320,36 @@ after(async () => {
 })
 ```
 
-#### waitForActiveRequestTabChange(previousTabKey)
-Wait for the active request tab to change.
-
-```typescript
-const initialTab = await getActiveRequestTabKey()
-await clickNewRequestButton()
-await waitForActiveRequestTabChange(initialTab)
-```
-
 #### openCollectionMenu(collectionId)
 Open the context menu for a collection.
 
 ```typescript
 await openCollectionMenu(collectionId)
-const deleteButton = await getElementByTestId(`collection-menu:item:delete:${collectionId}`)
-await deleteButton.click()
 ```
 
-### From `test/support/collections.ts`
-
-#### createCollection(name)
-Create a collection via UI and return its ID.
+#### selectMenuActionById(actionId, options)
+Click a menu action by ID. Handles menu open/close timing.
 
 ```typescript
-const collectionId = await createCollection("My Collection")
+await selectMenuActionById("collection-menu:item:delete:123", {
+  triggerTestId: "collection-menu:trigger"
+})
 ```
 
-#### waitForCollectionIdByName(name)
-Find a collection by name. Returns ID or throws if not found.
+### State Verification
+
+#### expectAttributeValue(testId, attribute, expected)
+Assert an element's attribute value.
 
 ```typescript
-const id = await waitForCollectionIdByName("My Collection")
+await expectAttributeValue("collection-row:123", "data-selected", "true")
 ```
 
-### From `test/support/request.ts`
-
-#### waitForRequestEditor()
-Wait for the request editor panel to load.
+#### expectTextContent(testId, expected)
+Assert element text content.
 
 ```typescript
-await openNewRequestViaUI()
-await waitForRequestEditor()
+await expectTextContent("collection-name:123", "My Collection")
 ```
 
 ## Common Patterns
@@ -290,18 +373,15 @@ it("creates a collection", async () => {
 it("creates a request in a collection", async () => {
   const collectionId = await createCollection("My Collection")
 
-  // Open collection menu
+  // Open collection menu and create request
   await openCollectionMenu(collectionId)
+  await clickByTestId(`collection-menu:item:new-request:${collectionId}`)
 
-  // Click "New Request"
-  const newRequestButton = await getElementByTestId(`collection-menu:item:new-request:${collectionId}`)
-  await newRequestButton.click()
-
-  // Wait for request editor
+  // Wait for request editor to load
   await waitForRequestEditor()
 
-  // Verify request appears
-  const tabKey = await getActiveRequestTabKey()
+  // Verify tab is active
+  const tabKey = await waitForActiveRequestTab()
   expect(tabKey).toBeTruthy()
 })
 ```
@@ -319,11 +399,11 @@ it("renames a collection and persists on reload", async () => {
   await setInputText("rename-dialog:name-input", newName)
   await clickByTestId("rename-dialog:submit")
 
-  // Wait for auto-save
+  // Wait for auto-save to complete
   await browser.pause(2000)
 
-  // Reload
-  await browser.execute(() => window.location.reload())
+  // Reload (use browser.refresh(), not window.location.reload())
+  await browser.refresh()
   await ensureWorkspaceReady()
 
   // Verify
@@ -331,6 +411,29 @@ it("renames a collection and persists on reload", async () => {
   expect(found).toBe(collectionId)
 })
 ```
+
+## Why Use Helper Functions?
+
+Helper functions are **not optional**. They solve critical problems:
+
+1. **Retry Logic**: Built-in retries handle timing issues. Raw WebDriver fails immediately.
+   ```typescript
+   // Helper has 50ms polling + retries
+   await clickByTestId("button")  // Works even if element takes 200ms to appear
+
+   // Raw WebDriver fails immediately if not ready
+   await $('[data-test-id="button"]').click()  // "element not visible" error
+   ```
+
+2. **Polling Intervals**: 50ms polling (vs 500ms default) = 10x faster element detection.
+
+3. **Test ID Focus**: Keeps tests tied to semantic test IDs, not brittle selectors.
+
+4. **Consistent Timing**: All helpers use the same timeout/interval config.
+
+5. **Fallback Mechanisms**: Some helpers (like `withFallbackClick`) handle edge cases (focus, event dispatching).
+
+**Result:** Helper-based tests are 5-10x more reliable and rarely flaky.
 
 ## Anti-Patterns
 
@@ -383,11 +486,29 @@ await browser.navigateTo("/?reset=true")
 ```typescript
 // WRONG - auto-save may not complete
 await createCollection("test")
-await browser.execute(() => window.location.reload())  // Too fast!
+await browser.refresh()  // Too fast!
 await ensureWorkspaceReady()
 ```
 
 → Always `await browser.pause(2000)` before reload to allow auto-save.
+
+### ❌ DON'T: Use Raw WebDriver for Clicks/Inputs
+
+```typescript
+// WRONG - flaky, no retries
+const input = await $('[data-test-id="name-input"]')
+await input.setValue("New Name")
+const button = await $('[data-test-id="save"]')
+await button.click()
+```
+
+→ Use helper functions with built-in retry logic:
+
+```typescript
+// RIGHT - reliable, with retries
+await setInputText("name-input", "New Name")
+await clickByTestId("save")
+```
 
 ### ❌ DON'T: Hard-Code Timeouts
 
@@ -420,7 +541,17 @@ await clickByTestId("dropdown-item")
 
 ```typescript
 import { expect } from "@wdio/globals"
-import { ensureWorkspaceReady, createCollection, clickByTestId } from "../support/ui"
+import {
+  ensureWorkspaceReady,
+  createCollection,
+  clickByTestId,
+  openCollectionMenu,
+  resetOverlays,
+  setInputText,
+  waitForCollectionIdByName,
+  // Import all helpers from test/support/ui.ts ONLY
+  // NO imports from collections.ts or request.ts (those files are deleted)
+} from "../support/ui"
 
 describe("Feature Name", () => {
   before(async () => {
@@ -432,21 +563,21 @@ describe("Feature Name", () => {
   after(async () => {
     // Clean up any open overlays
     await resetOverlays()
-    // Optional: reload to clear state for next suite
-    await browser.refresh()
   })
 
   it("does something", async () => {
-    // Arrange
-    const id = await createCollection("test")
+    // Arrange - create test state
+    const collectionId = await createCollection(`Test ${Date.now()}`)
 
-    // Act
-    await openCollectionMenu(id)
-    await clickByTestId(`collection-menu:item:rename:${id}`)
+    // Act - perform user interaction
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:rename:${collectionId}`)
+    await setInputText("rename-dialog:name-input", "Renamed")
+    await clickByTestId("rename-dialog:submit")
 
-    // Assert
-    const renamed = await getCollectionNameFromTree(id)
-    expect(renamed).toBe("test")
+    // Assert - verify UI state
+    const found = await waitForCollectionIdByName("Renamed")
+    expect(found).toBe(collectionId)
   })
 })
 ```
