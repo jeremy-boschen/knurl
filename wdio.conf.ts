@@ -690,7 +690,9 @@ async function handleBefore() {
     ;(global as any).__KNURL_BROWSER_CONSOLE_LOGS__ = browserConsoleLogs
     console.log(`  ✓ WebDriver Bidi log capturing enabled`)
   } catch (error) {
-    console.warn(`  ⚠ WebDriver Bidi log capturing not available: ${error instanceof Error ? error.message : String(error)}`)
+    console.warn(
+      `  ⚠ WebDriver Bidi log capturing not available: ${error instanceof Error ? error.message : String(error)}`,
+    )
   }
 
   await browser.pause(2000)
@@ -872,6 +874,7 @@ export const config = {
   capabilities: [
     {
       maxInstances: 1,
+      webSocketUrl: true,
       "tauri:options": {
         application: "src-tauri/target/debug/knurl",
         args: ["--window-width=1440", "--window-height=900"],
