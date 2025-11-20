@@ -694,6 +694,8 @@ pub fn run() {
 
     probe.mark("before_run");
 
+    log::info!("🚀 Knurl application starting");
+
     builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
