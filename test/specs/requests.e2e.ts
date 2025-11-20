@@ -1,7 +1,7 @@
 import { expect } from "@wdio/globals"
 
-import { createCollection } from "../support/collections"
-import { waitForRequestEditor } from "../support/request"
+import { createCollection } from "../support/ui"
+import { waitForRequestEditor } from "../support/ui"
 import {
   clickByTestId,
   ensureWorkspaceReady,
@@ -886,7 +886,7 @@ describe("Scratch Collection UX", () => {
 
     // Wait a bit for storage to persist, then reload
     await browser.pause(500)
-    await browser.execute(() => window.location.reload())
+    await browser.refresh()
     await ensureWorkspaceReady()
     await ensureScratchVisible()
 

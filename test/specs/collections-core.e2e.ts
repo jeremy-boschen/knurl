@@ -11,8 +11,8 @@ import {
   clearInputText,
   logTestTime,
 } from "../support/ui"
-import { createCollection, clickVisibleNewCollectionButton, waitForCollectionIdByName } from "../support/collections"
-import { waitForRequestEditor } from "../support/request"
+import { createCollection, clickVisibleNewCollectionButton, waitForCollectionIdByName } from "../support/ui"
+import { waitForRequestEditor } from "../support/ui"
 import { openNewRequestViaUI, selectOptionByTestId } from "../support/ui"
 
 const SCRATCH_COLLECTION_ID = "scratch"
@@ -79,7 +79,7 @@ describe("Collections Management & Storage", () => {
 
       // Wait for auto-save to complete before reload
       await browser.pause(2000)
-      await browser.execute(() => window.location.reload())
+      await browser.refresh()
       await ensureWorkspaceReady()
       await logTestTime("Collections Management - reloaded page")
 

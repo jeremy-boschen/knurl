@@ -2,6 +2,74 @@
 
 This document defines best practices and requirements for writing E2E tests in Knurl. All E2E tests must follow the **golden rule**: test only user-visible behavior via UI interactions. See `CLAUDE.md` for the full context.
 
+## Test Session Architecture
+
+The E2E test suite uses a shared `tauri-driver` instance across all test files. Each test file gets its own isolated config directory to prevent state pollution while keeping initialization costs minimal.
+
+### Initialization Flow
+
+1. **onPrepare** (once per test run): Start single `tauri-driver`, Vite dev server, mock endpoints
+2. **beforeSession** (once per test file): Create unique temp config dir, copy test settings fixture
+3. **before** (once per describe block): Wait for app ready
+4. **Test execution**: Run individual tests
+5. **Reload**: Call `browser.refresh()` to reload page for next spec file
+
+### Performance Optimizations
+
+#### Aggressive Polling Intervals
+
+All WebdriverIO wait operations use a 50ms polling interval (vs default 500ms):
+
+```typescript
+// Fast element detection
+const element = await getElementByTestId('test-id', 15000, {
+  pollingInterval: 50
+})
+
+// Fast UI state checks
+await browser.waitUntil(
+  async () => document.querySelector('[data-test-id="ready"]'),
+  { timeout: 10000, interval: 50 }
+)
+```
+
+This provides ~10x faster detection when UI is ready.
+
+#### Test Settings Fixture
+
+Auto-save is disabled during tests to prevent background operations:
+
+```json
+// test/fixtures/settings.json
+{
+  "requests": {
+    "autoSave": 0  // Disables auto-save (0 interval)
+  }
+}
+```
+
+This fixture is automatically copied to each test session's config directory.
+
+#### Manual Readiness Observation
+
+During test development, press 'M' to log a timestamped readiness marker. Compare these with test detection timestamps to identify UI-test sync issues.
+
+```
+[E2E-MANUAL] 2025-11-16T21:08:17.789Z UI appears ready (manually marked)
+[TEST] 2025-11-16T21:08:17.738Z Paste button clicked  <- Test detected 51ms after visual ready
+```
+
+### Timing Guidelines
+
+| Operation | Expected Time | Notes |
+|-----------|---|---|
+| App startup | 5.5s | Cold Tauri/React init |
+| Page reload | 5.5s | Full re-init from scratch |
+| Element detection | 50-150ms | With 50ms polling vs 500-1000ms default |
+| Dialog open/close | 1-2s | Includes animations |
+| Import parse | 0.1-0.5s | Very fast, UI renders in ~60ms |
+| Paste operation | <100ms | Via E2E bridge |
+
 ## Golden Rule
 
 > **Only test user-visible behavior via UI interactions. Create test state exclusively through UI actions (clicking, typing, etc.). Verify outcomes only what the UI displays.**
@@ -413,6 +481,67 @@ it("test", async () => {
 ### Check Test IDs
 
 Verify test IDs match `test/data-test-ids.md`.
+
+## E2E Bridge Functions
+
+The E2E bridge provides clipboard and utility functions for tests:
+
+```typescript
+// Set clipboard content
+await browser.execute(async () => {
+  const bridge = (window as any).__E2E_BRIDGE__
+  await bridge.writeClipboard('content')
+})
+
+// Read clipboard
+const content = await browser.execute(async () => {
+  const bridge = (window as any).__E2E_BRIDGE__
+  return await bridge.readClipboard()
+})
+```
+
+The bridge is only available in E2E mode and is NOT exposed to production builds.
+
+## Common Issues & Troubleshooting
+
+### Test Waits Too Long for Element
+
+**Problem:** `getElementByTestId()` waits 15 seconds when element is visible after 100ms
+
+**Solution:** Element might have different test-id or be in different DOM structure. Check browser console.
+
+### Tests Fail After Running Multiple Files
+
+**Problem:** State pollution from previous test files
+
+**Solution:** Tests already use isolated config dirs. If state still bleeds:
+1. Check if auto-save is disabled (settings.json has `autoSave: 0`)
+2. Consider adding explicit `beforeEach` cleanup
+3. Use `browser.refresh()` between feature areas
+
+### Keyboard Events Not Reaching App
+
+**Problem:** `browser.keys(['Control', 'r'])` doesn't reload
+
+**Solution:** WebDriver focus might be on WebElement instead of window. Use:
+```typescript
+await browser.execute(() => window.focus())
+await browser.keys(['Control', 'r'])
+```
+
+### Page Reload Breaks WebDriver Session
+
+**Problem:** Using `browser.execute(() => window.location.reload())` breaks the WebDriver connection
+
+**Solution:** Always use `browser.refresh()` instead:
+```typescript
+// ❌ WRONG - breaks WebDriver
+await browser.execute(() => window.location.reload())
+
+// ✅ RIGHT - proper WebDriver refresh
+await browser.refresh()
+await ensureWorkspaceReady()
+```
 
 ## When to Use Integration Tests
 

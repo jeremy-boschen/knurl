@@ -1,7 +1,7 @@
 import { expect } from "@wdio/globals"
 
-import { waitForRequestEditor } from "../support/request"
-import { clickVisibleNewCollectionButton, waitForCollectionIdByName } from "../support/collections"
+import { waitForRequestEditor } from "../support/ui"
+import { clickVisibleNewCollectionButton, waitForCollectionIdByName } from "../support/ui"
 import {
   clickByTestId,
   ensureWorkspaceReady,

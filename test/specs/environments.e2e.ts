@@ -1,7 +1,7 @@
 import { expect } from "@wdio/globals"
 
-import { createCollection } from "../support/collections"
-import { waitForRequestEditor } from "../support/request"
+import { createCollection } from "../support/ui"
+import { waitForRequestEditor } from "../support/ui"
 import { clickByTestId, ensureWorkspaceReady, getElementByTestId, openNewRequestViaUI, resetOverlays, setInputText } from "../support/ui"
 
 describe("Environment Manager Smoke", () => {

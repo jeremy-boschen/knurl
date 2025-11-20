@@ -1,8 +1,8 @@
 import { expect } from "@wdio/globals"
 
 import { ensureWorkspaceReady, clickByTestId, setInputText, getElementByTestId } from "../support/ui"
-import { waitForRequestEditor } from "../support/request"
-import { createCollection } from "../support/collections"
+import { waitForRequestEditor } from "../support/ui"
+import { createCollection } from "../support/ui"
 
 describe("Large Payload Handling", () => {
   let tabKey: string

@@ -1,6 +1,6 @@
 import { expect } from "@wdio/globals"
 
-import { waitForRequestEditor } from "../support/request"
+import { waitForRequestEditor } from "../support/ui"
 import {
   clickByTestId,
   ensureWorkspaceReady,

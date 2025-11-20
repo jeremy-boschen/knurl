@@ -13,8 +13,8 @@
 import { expect } from "@wdio/globals"
 
 import { callBridgeReplacement } from "../../support/bridge-replacement"
-import { waitForActiveRequestTab, waitForRequestEditor } from "../../support/request"
-import { createCollection } from "../../support/collections"
+import { waitForActiveRequestTab, waitForRequestEditor } from "../../support/ui"
+import { createCollection } from "../../support/ui"
 import {
   clickByTestId,
   ensureAppReady,

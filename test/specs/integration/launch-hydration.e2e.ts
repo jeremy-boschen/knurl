@@ -14,7 +14,7 @@ import { expect } from "@wdio/globals"
 
 import { callBridgeReplacement } from "../../support/bridge-replacement"
 import { ensureWorkspaceReady, getElementByTestId, openNewRequestViaUI, resetOverlays } from "../../support/ui"
-import { waitForRequestEditor } from "../../support/request"
+import { waitForRequestEditor } from "../../support/ui"
 import { resetCollectionsState, seedCollectionWithOpenRequest } from "../../support/state"
 
 type WorkspaceSnapshot = Awaited<ReturnType<typeof callBridgeReplacement>>

@@ -7,8 +7,8 @@ import {
   setInputText,
   openNewRequestViaUI,
 } from "../support/ui"
-import { createCollection } from "../support/collections"
-import { waitForRequestEditor } from "../support/request"
+import { createCollection } from "../support/ui"
+import { waitForRequestEditor } from "../support/ui"
 
 describe("Large Collections Performance", () => {
   before(async () => {

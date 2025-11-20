@@ -1,6 +1,6 @@
 import { expect } from "@wdio/globals"
 
-import { waitForActiveRequestTab, waitForRequestEditor } from "../support/request"
+import { waitForActiveRequestTab, waitForRequestEditor } from "../support/ui"
 import {
   clickByTestId,
   ensureAppReady,

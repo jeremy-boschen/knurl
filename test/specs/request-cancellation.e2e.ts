@@ -1,7 +1,7 @@
 import { expect } from '@wdio/globals'
 
 import { ensureWorkspaceReady, clickByTestId, setInputText, openNewRequestViaUI, getElementByTestId } from '../support/ui'
-import { waitForRequestEditor } from '../support/request'
+import { waitForRequestEditor } from '../support/ui'
 
 describe('Request Cancellation & Abort Handling', () => {
   let tabKey: string

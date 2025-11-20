@@ -1,6 +1,6 @@
 import { expect } from "@wdio/globals"
 
-import { waitForRequestEditor, waitForActiveRequestTab } from "../support/request"
+import { waitForRequestEditor, waitForActiveRequestTab } from "../support/ui"
 import { clickByTestId, ensureWorkspaceReady, openNewRequestViaUI, resetOverlays, setInputText, getElementByTestId } from "../support/ui"
 
 describe("Response Viewer Analysis", () => {

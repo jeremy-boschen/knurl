@@ -10,7 +10,7 @@ import {
   waitForTestIdToDisappear,
   clearInputText,
 } from "../support/ui"
-import { createCollection, clickVisibleNewCollectionButton, waitForCollectionIdByName } from "../support/collections"
+import { createCollection, clickVisibleNewCollectionButton, waitForCollectionIdByName } from "../support/ui"
 
 const SCRATCH_COLLECTION_ID = "scratch"
 
