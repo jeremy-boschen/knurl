@@ -54,12 +54,22 @@ describe("Collections Management & Storage", () => {
       await setInputText("rename-dialog:name-input", newName)
       await logTestTime("Collections Management - set rename text")
 
-      const submit = await $("button=Rename")
-      await submit.waitForDisplayed({ timeout: 5000 })
-      await submit.click()
+      // Wait for rename dialog buttons to appear
+      await browser.waitUntil(
+        async () => {
+          const btn = await getElementByTestId("rename-dialog:rename-button", 1000).catch(() => null)
+          return !!btn
+        },
+        { timeout: 5000 }
+      )
+      await clickByTestId("rename-dialog:rename-button")
 
       await browser.waitUntil(
-        async () => !(await $("input[name=\"name\"]").isExisting()),
+        async () => {
+          return !(await browser.execute(() => {
+            return !!document.querySelector('input[name="name"]')
+          }))
+        },
         {
           timeout: 10000,
           interval: 200,
@@ -68,8 +78,6 @@ describe("Collections Management & Storage", () => {
       )
       await logTestTime("Collections Management - rename dialog closed")
 
-      await browser.pause(500)
-
       await browser.waitUntil(async () => await isCollectionNamedInTree(idB, newName), {
         timeout: 10000,
         interval: 200,
@@ -77,8 +85,7 @@ describe("Collections Management & Storage", () => {
       })
       await logTestTime("Collections Management - verified rename in tree")
 
-      // Wait for auto-save to complete before reload
-      await browser.pause(2000)
+      // Refresh to verify persistence
       await browser.refresh()
       await ensureWorkspaceReady()
       await logTestTime("Collections Management - reloaded page")
@@ -191,17 +198,22 @@ describe("Collections Management & Storage", () => {
       await waitForTestIdToDisappear(`request-tab:${state.collectionTabKey}`)
       await logTestTime("Collection Flow - request tab closed")
 
-      await browser.executeAsync(async (done: () => void) => {
-        try {
-          const mod = await import("@/state/application")
-          mod.useApplication.getState().requestTabsApi.closeAllTabs()
-          done()
-        } catch (error) {
-          console.error("Failed to close all tabs", error)
-          done()
-        }
+      // Close any remaining tabs by clicking close buttons on each tab
+      const tabCloseButtons = await browser.execute(() => {
+        const buttons = Array.from(document.querySelectorAll('[data-test-id^="request-tab:close-button:"]'))
+        return buttons.map(b => b.getAttribute("data-test-id"))
       })
-      await browser.pause(200)
+
+      for (const testId of tabCloseButtons) {
+        if (testId) {
+          try {
+            await clickByTestId(testId)
+            await waitForTestIdToDisappear(testId.replace("close-button:", ""))
+          } catch (e) {
+            // Tab may have already been closed
+          }
+        }
+      }
       await logTestTime("Collection Flow - all tabs closed")
     })
 
@@ -257,7 +269,7 @@ describe("Collections Management & Storage", () => {
       await waitForRequestEditor()
       await logTestTime("Collection Flow - switched to target tab")
 
-      const tabElement = await $(`[data-test-id="tab:${activeTabKey}"]`)
+      const tabElement = await getElementByTestId(`tab:${activeTabKey}`, 5000)
       const collectionIdBefore = await tabElement.getAttribute("data-collection-id")
       expect(collectionIdBefore).toBe(SCRATCH_COLLECTION_ID)
 
@@ -476,7 +488,8 @@ async function waitForTabSnapshot(tabKey: string, timeout = 10000): Promise<Open
   let resolved: OpenTabSnapshot | undefined
   await browser.waitUntil(
     async () => {
-      const tab = await $(`[data-test-id="tab:${tabKey}"]`)
+      const tab = await getElementByTestId(`tab:${tabKey}`, 1000).catch(() => null)
+      if (!tab) return false
       const exists = await tab.isDisplayed().catch(() => false)
       if (exists) {
         const requestId = await tab.getAttribute("data-request-id")

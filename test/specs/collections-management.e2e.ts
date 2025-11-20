@@ -26,14 +26,12 @@ describe("Collections Management UX", () => {
     const idC = await createCollection(`UX Spec C ${Date.now()}`)
 
     // Wait for UI to fully render all collections
-    await browser.pause(500)
 
     const ids = await resolveOrderedCollectionIds()
     expect(ids).toEqual([idA, idB, idC])
 
     // Test delete functionality
     await openCollectionMenu(idC)
-    await browser.pause(200) // Wait for menu to render
     await clickByTestId(`collection-menu:item:delete:${idC}`)
 
     const dialog = await getElementByTestId("delete-dialog")
