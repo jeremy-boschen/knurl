@@ -130,9 +130,15 @@ const BearerAuthForm: FC<BearerAuthFormProps> = ({ auth, onUpdate, onPlacementUp
                   <SelectValue placeholder="Select scheme" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Bearer" data-test-id="request-auth-panel:bearer-auth-scheme-bearer">Bearer</SelectItem>
-                  <SelectItem value="JWT" data-test-id="request-auth-panel:bearer-auth-scheme-jwt">JWT</SelectItem>
-                  <SelectItem value="custom" data-test-id="request-auth-panel:bearer-auth-scheme-custom">Custom…</SelectItem>
+                  <SelectItem value="Bearer" data-test-id="request-auth-panel:bearer-auth-scheme-bearer">
+                    Bearer
+                  </SelectItem>
+                  <SelectItem value="JWT" data-test-id="request-auth-panel:bearer-auth-scheme-jwt">
+                    JWT
+                  </SelectItem>
+                  <SelectItem value="custom" data-test-id="request-auth-panel:bearer-auth-scheme-custom">
+                    Custom…
+                  </SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -275,10 +281,20 @@ const ApiKeyAuthForm: FC<ApiKeyAuthFormProps> = ({ auth, onUpdate, onPlacementUp
               <SelectValue placeholder="Select placement" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="header" data-test-id="request-auth-panel:api-key-auth-placement-option:header">Header</SelectItem>
-              <SelectItem value="query" data-test-id="request-auth-panel:api-key-auth-placement-option:query">Query Param</SelectItem>
-              <SelectItem value="cookie" data-test-id="request-auth-panel:api-key-auth-placement-option:cookie">Cookie</SelectItem>
-              <SelectItem value="body" disabled={!canUseBodyPlacement} data-test-id="request-auth-panel:api-key-auth-placement-option:body">
+              <SelectItem value="header" data-test-id="request-auth-panel:api-key-auth-placement-option:header">
+                Header
+              </SelectItem>
+              <SelectItem value="query" data-test-id="request-auth-panel:api-key-auth-placement-option:query">
+                Query Param
+              </SelectItem>
+              <SelectItem value="cookie" data-test-id="request-auth-panel:api-key-auth-placement-option:cookie">
+                Cookie
+              </SelectItem>
+              <SelectItem
+                value="body"
+                disabled={!canUseBodyPlacement}
+                data-test-id="request-auth-panel:api-key-auth-placement-option:body"
+              >
                 Body
               </SelectItem>
             </SelectContent>
