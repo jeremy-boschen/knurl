@@ -18,7 +18,7 @@ import { EmptyState } from "./empty-state"
 import { FieldRow } from "./field-row"
 import { SectionHeader } from "./section-header"
 
-function guessContentTypeByExt(name: string | undefined): string | undefined {
+export function guessContentTypeByExt(name: string | undefined): string | undefined {
   if (!name) {
     return undefined
   }
@@ -74,7 +74,7 @@ export type RequestBodyPanelProps = {
 }
 
 // Helper to determine the display label for the dropdown trigger
-const getBodyTypeLabel = (body: RequestBodyData): string => {
+export const getBodyTypeLabel = (body: RequestBodyData): string => {
   switch (body.type) {
     case "none":
       return "None"

@@ -17,7 +17,7 @@ const DefaultThemeCss: string = buildDefaultThemeCss()
  * @param themeJson The parsed theme JSON.
  * @returns A formatted CSS string.
  */
-function _generateThemeCss(themeJson: CustomTheme): string {
+export function generateThemeCss(themeJson: CustomTheme): string {
   const { cssVars } = themeJson
   if (!cssVars) {
     return ""

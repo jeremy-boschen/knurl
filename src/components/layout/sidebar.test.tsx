@@ -116,6 +116,23 @@ describe("Sidebar", () => {
     expect(searchInput.value).toBe("")
   })
 
+  it("clears search when Escape is pressed", async () => {
+    const user = userEvent.setup()
+    setupMocks()
+    render(
+      <TooltipProvider>
+        <Sidebar />
+      </TooltipProvider>,
+    )
+
+    const searchInput = findByTestId("sidebar:search-input") as HTMLInputElement
+    await user.type(searchInput, "query")
+    expect(searchInput.value).toBe("query")
+
+    await user.keyboard("{Escape}")
+    expect(searchInput.value).toBe("")
+  })
+
   it("collapsed footer new collection button expands sidebar for dialog flow", async () => {
     const user = userEvent.setup()
     const { expandSidebar } = setupMocks({ isCollapsed: true })
@@ -127,6 +144,19 @@ describe("Sidebar", () => {
 
     await user.click(findByTestId("sidebar:new-collection-button-collapsed"))
     expect(expandSidebar).toHaveBeenCalled()
+  })
+
+  it("opens the new collection dialog when header button is used", async () => {
+    const user = userEvent.setup()
+    setupMocks()
+    render(
+      <TooltipProvider>
+        <Sidebar />
+      </TooltipProvider>,
+    )
+
+    await user.click(findByTestId("sidebar:new-collection-button"))
+    expect(screen.getByTestId("new-collection-dialog")).toBeInTheDocument()
   })
 
   it("toggles theme through ModeToggle", async () => {

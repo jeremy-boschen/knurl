@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { RequestBodyPanel } from "./request-body-panel"
+import { RequestBodyPanel, getBodyTypeLabel, guessContentTypeByExt } from "./request-body-panel"
 import { TooltipProvider } from "@/components/ui/knurl/tooltip"
 
 const formatMock = vi.fn()
@@ -36,9 +36,15 @@ vi.mock("@/state", () => ({
   useRequestBody: (tabId: string) => useRequestBodyMock(tabId),
 }))
 
+const applicationState = {
+  requestTabsState: {
+    openTabs: {} as Record<string, { merged?: { headers?: Record<string, { id: string; name: string; value: string; enabled: boolean }> } }>,
+  },
+}
+
 vi.mock("@/state/application", () => ({
-  useApplication: (selector?: (state: any) => any) =>
-    selector ? selector({ requestTabsState: { openTabs: {} } }) : { requestTabsState: { openTabs: {} } },
+  useApplication: (selector?: (state: typeof applicationState) => any) =>
+    selector ? selector(applicationState) : applicationState,
 }))
 
 const renderPanel = () =>
@@ -52,6 +58,7 @@ describe("RequestBodyPanel", () => {
   beforeEach(() => {
     formatMock.mockClear()
     useRequestBodyMock.mockReset()
+    applicationState.requestTabsState.openTabs = {}
   })
 
   it("formats text bodies and updates content", async () => {
@@ -118,6 +125,84 @@ describe("RequestBodyPanel", () => {
     })
 
     expect(actions.updateBody).toHaveBeenCalledWith(expect.objectContaining({ binaryPath: "/tmp/demo.json" }))
+  })
+
+  it("shows form warnings when file fields require multipart encoding", () => {
+    applicationState.requestTabsState.openTabs = {
+      "tab-1": {
+        merged: {
+          headers: {
+            h1: { id: "h1", name: "Content-Type", value: "application/json", enabled: true },
+          },
+        },
+      },
+    }
+
+    const actions = { updateBodyContent: vi.fn(), updateBody: vi.fn(), updateFormItem: vi.fn(), removeFormItem: vi.fn() }
+    useRequestBodyMock.mockReturnValue({
+      state: {
+        body: {
+          type: "form",
+          encoding: "url",
+          formData: {
+            f1: { id: "f1", key: "file", value: "", enabled: true, secure: false, kind: "file" },
+          },
+        },
+        original: { type: "form", encoding: "url", formData: {} },
+      },
+      actions,
+    })
+
+    renderPanel()
+
+    const warnings = getByDataId("request-body-panel:warnings")
+    expect(warnings.textContent).toContain("Files require multipart")
+  })
+
+  it("warns when binary body conflicts with headers", () => {
+    applicationState.requestTabsState.openTabs = {
+      "tab-1": {
+        merged: {
+          headers: {
+            h1: { id: "h1", name: "Content-Type", value: "multipart/form-data", enabled: true },
+          },
+        },
+      },
+    }
+
+    const actions = { updateBodyContent: vi.fn(), updateBody: vi.fn(), updateFormItem: vi.fn(), removeFormItem: vi.fn() }
+    useRequestBodyMock.mockReturnValue({
+      state: {
+        body: { type: "binary" },
+        original: { type: "binary" },
+      },
+      actions,
+    })
+
+    renderPanel()
+
+    const warnings = getByDataId("request-body-panel:warnings")
+    expect(warnings.textContent).toContain("Binary body conflicts")
+  })
+})
+
+describe("Request body helpers", () => {
+  it("detects content types by file extension", () => {
+    expect(guessContentTypeByExt("data.json")).toBe("application/json")
+    expect(guessContentTypeByExt("archive.TGZ")).toBe("application/gzip")
+    expect(guessContentTypeByExt("image.jpeg")).toBe("image/jpeg")
+    expect(guessContentTypeByExt("unknown.bin")).toBeUndefined()
+    expect(guessContentTypeByExt(undefined)).toBeUndefined()
+  })
+
+  it("builds body type labels for each mode", () => {
+    expect(getBodyTypeLabel({ type: "none" } as any)).toBe("None")
+    expect(getBodyTypeLabel({ type: "binary" } as any)).toBe("Binary File")
+    expect(getBodyTypeLabel({ type: "form", encoding: "multipart" } as any)).toBe("Form > Multipart")
+    expect(getBodyTypeLabel({ type: "form", encoding: "url" } as any)).toBe("Form > URL-Encoded")
+    expect(getBodyTypeLabel({ type: "text", language: "json" } as any)).toBe("Text > JSON")
+    expect(getBodyTypeLabel({ type: "text", language: "custom" as any } as any)).toBe("Text > Plain")
+    expect(getBodyTypeLabel({ type: "unknown" } as any)).toBe("Select Body Type")
   })
 })
 
