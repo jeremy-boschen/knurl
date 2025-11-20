@@ -515,19 +515,24 @@ export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
     const oauth2 = authentication.oauth2 ?? {}
     const discoveryBase = oauth2.discoveryUrl || oauth2.authUrl
     if (!discoveryBase) {
+      alert("Please enter a Discovery URL or Auth URL before attempting auto-discovery")
       return
     }
     try {
       const normalized = discoveryBase.replace(/\/$/, "")
       const url = /\.well-known\//.test(normalized) ? normalized : `${normalized}/.well-known/openid-configuration`
       const result = await discoverOidc(url)
+      // Only update fields if discovery was successful - no updates happen on error
       handleInputChange({
         authUrl: result.authorizationEndpoint,
         tokenUrl: result.tokenEndpoint,
         deviceAuthorizationUrl: result.deviceAuthorizationEndpoint,
       })
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
       console.error("OIDC Discovery failed:", error)
+      // Show error alert to user - existing fields remain unchanged
+      alert(`Auto-discovery failed: ${errorMessage}\n\nPlease check the Discovery URL and try again.`)
     }
   }
 

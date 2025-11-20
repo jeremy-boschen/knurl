@@ -157,6 +157,7 @@ function validateClientSecret(client, auth) {
 }
 
 function respondJson(res, status, body) {
+  console.debug(`[RESPONSE] Status: ${status}`, JSON.stringify(body, null, 2));
   res.status(status).json(body);
 }
 
@@ -241,8 +242,10 @@ async function main() {
   const app = server.service.requestHandler;
 
   wrapNamedHandler(app, '/.well-known/openid-configuration', 'openidConfigurationHandler', (original) => async (req, res, next) => {
+    console.debug('[DISCOVERY ENDPOINT] OpenID Connect discovery requested');
     const originalJson = res.json.bind(res);
     res.json = (body) => {
+      console.debug('[DISCOVERY ENDPOINT] Sending configuration:', { issuer: body.issuer, token_endpoint: body.token_endpoint, authorization_endpoint: body.authorization_endpoint });
       const issuer = server.issuer.url;
       const base = issuer ? issuer.replace(/\/$/, '') : `http://${HOST}:${PORT}`;
       const grantTypes = new Set([...(body.grant_types_supported ?? []), 'refresh_token', DEVICE_CODE_GRANT]);
@@ -262,6 +265,7 @@ async function main() {
   });
 
   wrapNamedHandler(app, '/authorize', 'authorizeHandler', (original) => async (req, res, next) => {
+    console.debug('[AUTHORIZE ENDPOINT] Query params:', { client_id: req.query.client_id, redirect_uri: req.query.redirect_uri, scope: req.query.scope });
     const clientId = firstString(req.query.client_id);
     if (!clientId) {
       respondJson(res, 400, { error: 'invalid_request', error_description: 'client_id required' });
@@ -302,9 +306,12 @@ async function main() {
   });
 
   wrapNamedHandler(app, '/token', 'tokenHandler', (original) => async (req, res, next) => {
+    console.debug('[TOKEN ENDPOINT] Request body:', JSON.stringify(req.body, null, 2));
+    console.debug('[TOKEN ENDPOINT] Auth headers:', req.headers.authorization ? '***' : 'none');
     const grantTypeRaw = typeof req.body?.grant_type === 'string' ? req.body.grant_type : '';
     const grantType = grantTypeRaw || '';
     const auth = extractClientAuth(req);
+    console.debug('[TOKEN ENDPOINT] Extracted auth:', { clientId: auth.clientId, method: auth.method });
     const client = auth.clientId ? clients.get(auth.clientId) : undefined;
 
     if (grantType === DEVICE_CODE_GRANT || grantType === 'device_code') {
@@ -388,7 +395,10 @@ async function main() {
   });
 
   app.post('/device_authorization', urlencoded({ extended: false }), (req, res) => {
+    console.debug('[DEVICE AUTHORIZATION ENDPOINT] Request body:', JSON.stringify(req.body, null, 2));
+    console.debug('[DEVICE AUTHORIZATION ENDPOINT] Auth headers:', req.headers.authorization ? '***' : 'none');
     const auth = extractClientAuth(req);
+    console.debug('[DEVICE AUTHORIZATION ENDPOINT] Extracted auth:', { clientId: auth.clientId, method: auth.method });
     if (!auth.clientId) {
       respondJson(res, 400, { error: 'invalid_client' });
       return;
