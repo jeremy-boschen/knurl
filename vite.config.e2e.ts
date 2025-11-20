@@ -107,14 +107,8 @@ export default defineConfig({
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
   build: {
     target: 'es2022',
-    minify: 'terser',
+    minify: false,
     sourcemap: true,
-    terserOptions: {
-      sourceMap: true,
-      compress: {
-        drop_console: process.env.NODE_ENV === 'production',
-      },
-    },
     rollupOptions: {
       plugins: [],
     },
