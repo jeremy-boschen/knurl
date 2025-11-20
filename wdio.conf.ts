@@ -874,7 +874,6 @@ export const config = {
   capabilities: [
     {
       maxInstances: 1,
-      webSocketUrl: true,
       "tauri:options": {
         application: "src-tauri/target/debug/knurl",
         args: ["--window-width=1440", "--window-height=900"],

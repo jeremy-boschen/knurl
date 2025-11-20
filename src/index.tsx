@@ -21,7 +21,12 @@ if (import.meta.env.DEV) {
 enablePatches()
 
 // This can be awaited as it doesn't block other module imports in the same way.
-await attachConsole()
+try {
+  await attachConsole()
+  console.log("[app] Console attached to Tauri logger")
+} catch (error) {
+  console.error("[app] Failed to attach console:", error)
+}
 
 setStartupState(0)
 
