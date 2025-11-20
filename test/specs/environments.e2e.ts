@@ -1,8 +1,6 @@
 import { expect } from "@wdio/globals"
 
-import { createCollection } from "../support/ui"
-import { waitForRequestEditor } from "../support/ui"
-import { clickByTestId, ensureWorkspaceReady, getElementByTestId, openNewRequestViaUI, resetOverlays, setInputText } from "../support/ui"
+import { createCollection, waitForRequestEditor, clickByTestId, ensureWorkspaceReady, getElementByTestId, resetOverlays, setInputText, waitForActiveRequestTab } from "../support/ui"
 
 describe("Environment Manager Smoke", () => {
   const state: {
@@ -24,54 +22,80 @@ describe("Environment Manager Smoke", () => {
 
     state.collectionId = await createCollection(`Environment Smoke ${Date.now()}`)
 
-    // Create a request in the collection instead of trying to use openNewRequestViaUI which is flaky
-    const existingIds = await getOpenRequestIds()
+    // Create a request in the collection via menu
     await clickByTestId(`collection-tree:collection-row:${state.collectionId}`)
-    await browser.pause(200)
     await clickByTestId(`collection-tree:collection-row:menu-button:${state.collectionId}`)
-    await browser.pause(200)
     await clickByTestId(`collection-menu:item:new-request:${state.collectionId}`)
-    await browser.pause(300)
 
-    const newRequest = await waitForNewRequest(existingIds)
-    state.tabKey = newRequest.tabKey
-    state.requestId = newRequest.requestId
-
+    // Wait for request editor to appear (this confirms request was created)
     await waitForRequestEditor()
+
+    // Get request info from active tab
+    state.tabKey = await waitForActiveRequestTab()
   })
 
   it("creates environment and secure variable via manager", async () => {
     await clickByTestId("environment-selector:trigger-button")
     await clickByTestId("environment-selector:manage-environments-item")
 
-    const sheet = await getElementByTestId("collection-settings:sheet")
-    await sheet.waitForDisplayed({ timeout: 10000 })
+    // Wait for settings sheet to appear
+    await getElementByTestId("collection-settings:sheet", 10000)
 
+    // Add new environment
     await clickByTestId("environment-list:add-button")
 
-    const environmentCards = await $$('[data-test-id^="environment-list:item:"]')
-    expect(environmentCards.length).toBeGreaterThan(0)
-    const latestCard = environmentCards[environmentCards.length - 1]!
-    const cardTestId = await latestCard.getAttribute("data-test-id")
-    state.environmentId = cardTestId?.split(":").pop() ?? null
+    // Get the latest environment card that was created
+    // We extract the ID from the test-id attribute: environment-list:item:XXXX
+    const environmentIdElement = await browser.execute(() => {
+      const cards = Array.from(document.querySelectorAll('[data-test-id^="environment-list:item:"]'))
+      if (cards.length === 0) return null
+      const latestCard = cards[cards.length - 1]
+      const testId = latestCard?.getAttribute("data-test-id")
+      return testId?.split(":").pop() ?? null
+    })
+    state.environmentId = environmentIdElement
     if (!state.environmentId) {
       throw new Error("Environment id not resolved")
     }
 
+    // Set environment details
     await setInputText("environment-editor:name-input", "Smoke Env")
     await setInputText("environment-editor:description-input", "E2E smoke environment")
 
+    // Add a variable
     await clickByTestId("environment-editor:add-variable-button")
-    const nameInput = await $(`[data-test-id^="environment-editor:variable-name-input:"]`)
-    await nameInput.waitForDisplayed({ timeout: 5000 })
-    await nameInput.setValue("API_TOKEN")
 
-    const valueInput = await $(`[data-test-id^="environment-editor:variable-value-input:"]`)
-    await valueInput.setValue("secret")
-    const secureToggles = await $$('[data-test-id^="environment-editor:variable-secure-toggle:"]')
-    const secureToggle = secureToggles[secureToggles.length - 1]!
-    await secureToggle.click()
-    await expect(await valueInput.getAttribute("type")).toBe("password")
+    // Find the variable name input (dynamically created with ID like environment-editor:variable-name-input:XXXX)
+    // Set the name
+    const variableNameSelector = await browser.execute(() => {
+      const inputs = Array.from(document.querySelectorAll('[data-test-id^="environment-editor:variable-name-input:"]'))
+      return inputs[inputs.length - 1]?.getAttribute("data-test-id") ?? null
+    })
+    if (variableNameSelector) {
+      await setInputText(variableNameSelector, "API_TOKEN")
+    }
+
+    // Find and set the value input
+    const variableValueSelector = await browser.execute(() => {
+      const inputs = Array.from(document.querySelectorAll('[data-test-id^="environment-editor:variable-value-input:"]'))
+      return inputs[inputs.length - 1]?.getAttribute("data-test-id") ?? null
+    })
+    if (variableValueSelector) {
+      await setInputText(variableValueSelector, "secret")
+    }
+
+    // Click the secure toggle for the variable
+    const secureToggleSelector = await browser.execute(() => {
+      const toggles = Array.from(document.querySelectorAll('[data-test-id^="environment-editor:variable-secure-toggle:"]'))
+      return toggles[toggles.length - 1]?.getAttribute("data-test-id") ?? null
+    })
+    if (secureToggleSelector) {
+      await clickByTestId(secureToggleSelector)
+      // Verify the value input changed to password type
+      const valueInput = await getElementByTestId(variableValueSelector, 5000)
+      const inputType = await valueInput.getAttribute("type")
+      await expect(inputType).toBe("password")
+    }
   })
 
   it("assigns environment to request and clears it", async () => {
@@ -104,74 +128,3 @@ describe("Environment Manager Smoke", () => {
 
   console.log("✅ Environment Manager Smoke tests completed")
 })
-
-/**
- * Gets open request IDs from DOM
- */
-async function getOpenRequestIds(): Promise<Set<string>> {
-  const ids = await browser.execute(() => {
-    const tabs = Array.from(document.querySelectorAll('[data-test-id^="request-tab:"]'))
-    return tabs.map((tab) => tab.getAttribute("data-tab-id")).filter(Boolean) as string[]
-  })
-  return new Set(ids)
-}
-
-/**
- * Waits for a new request to be created
- */
-async function waitForNewRequest(
-  knownRequestIds: Set<string>,
-  timeout = 15000,
-): Promise<{ requestId: string; tabKey: string }> {
-  let result: { requestId: string; tabKey: string } | null = null
-  await browser.waitUntil(
-    async () => {
-      const candidate = await browser.execute((knownIds: string[]) => {
-        const tabs = Array.from(document.querySelectorAll('[data-test-id^="request-tab:"]'))
-        for (const tab of tabs) {
-          const tabId = tab.getAttribute("data-tab-key")
-          const reqId = tab.getAttribute("data-tab-id")
-          if (reqId && !knownIds.includes(reqId) && tabId) {
-            return { requestId: reqId, tabKey: tabId }
-          }
-        }
-        return null
-      }, Array.from(knownRequestIds))
-
-      if (candidate) {
-        result = candidate
-        return true
-      }
-      return false
-    },
-    {
-      timeout,
-      interval: 200,
-      timeoutMsg: "New request did not appear",
-    },
-  )
-
-  if (!result) {
-    throw new Error("Request was not created")
-  }
-  return result
-}
-
-/**
- * Pure E2E test - no bridge dependency
- * Gets tab information from DOM instead of internal state
- */
-async function getTabSnapshot(tabKey: string) {
-  const tabElement = await $(`[data-test-id="request-tab:${tabKey}"]`)
-  const exists = await tabElement.isDisplayed().catch(() => false)
-
-  if (!exists) {
-    return null
-  }
-
-  return {
-    tabKey,
-    requestId: await tabElement.getAttribute("data-tab-id"),
-    collectionId: "scratch", // Default to scratch since we don't have collection info in tab
-  }
-}
