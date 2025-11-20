@@ -121,7 +121,6 @@ export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
     return null
   }
 
-
   const getStatusColor = (status: number) => {
     if (status >= 200 && status < 300) {
       return "text-green-500"
