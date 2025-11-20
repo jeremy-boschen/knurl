@@ -198,6 +198,8 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         assert(draftCollection, `Collection ${collectionId} missing from cache during request move`)
         const coll = touch(draftCollection)
         moveRequestWithinCollection(coll, requestId, targetFolderId, position)
+        const { request } = findRequestInCollection(coll, requestId)
+        request.updated += 1
       })
     },
 
@@ -227,6 +229,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         if (!isNotEmpty(patch)) {
           request.patch = {}
         }
+        request.updated += 1
       })
     },
 
@@ -255,6 +258,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         if (!isNotEmpty(patch)) {
           request.patch = {}
         }
+        request.updated += 1
       })
     },
 
@@ -283,6 +287,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         if (!isNotEmpty(patch)) {
           request.patch = {}
         }
+        request.updated += 1
       })
     },
 
@@ -311,6 +316,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         if (!isNotEmpty(patch)) {
           request.patch = {}
         }
+        request.updated += 1
       })
     },
 
@@ -392,6 +398,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         if (request.autoSave === value) {
           delete patch.autoSave
         }
+        request.updated += 1
       })
     },
 
@@ -405,6 +412,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         if (request.name === name) {
           delete patch.name
         }
+        request.updated += 1
       })
     },
 
@@ -418,6 +426,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         if (request.method === method) {
           delete patch.method
         }
+        request.updated += 1
       })
     },
 
@@ -431,6 +440,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         if (request.url === url) {
           delete patch.url
         }
+        request.updated += 1
       })
     },
 
@@ -495,6 +505,10 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         assert(draftCollection, `Collection ${collectionId} missing from cache during request reorder`)
         const coll = touch(draftCollection)
         reorderFolderRequests(coll, folderId, orderedIds)
+        for (const requestId of orderedIds) {
+          const { request } = findRequestInCollection(coll, requestId)
+          request.updated += 1
+        }
       })
     },
   }

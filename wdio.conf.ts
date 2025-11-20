@@ -642,6 +642,7 @@ async function handleBeforeSuite(suite: any) {
  * - Wait for app startup
  * - Inject config directory into window object
  * - Enable event history tracking for E2E tests
+ * - Set up WebDriver Bidi log capturing
  * - Stabilization pause
  */
 async function handleBefore() {
@@ -678,6 +679,20 @@ async function handleBefore() {
   })
   console.log(`  ✓ Enabled event history tracking`)
 
+  // Set up WebDriver Bidi log capturing
+  try {
+    const browserConsoleLogs: any[] = []
+    await browser.sessionSubscribe({ events: ["log.entryAdded"] })
+    browser.on("log.entryAdded", (entry) => {
+      browserConsoleLogs.push(entry)
+    })
+    // Store logs globally so afterTest hook can access them
+    ;(global as any).__KNURL_BROWSER_CONSOLE_LOGS__ = browserConsoleLogs
+    console.log(`  ✓ WebDriver Bidi log capturing enabled`)
+  } catch (error) {
+    console.warn(`  ⚠ WebDriver Bidi log capturing not available: ${error instanceof Error ? error.message : String(error)}`)
+  }
+
   await browser.pause(2000)
   console.log(`  ✓ Stabilization pause complete`)
   console.log(`[before] ✓ Per-session setup complete\n`)
@@ -689,12 +704,27 @@ async function handleBefore() {
  *
  * Responsibilities:
  * - Log test result and metadata
+ * - Print browser console logs if any
  * - Collect Istanbul coverage from browser
  */
 async function handleAfterTest(test: any, result: any) {
   console.log(`[afterTest] ✓ Test complete: "${test.title}"`)
   console.log(`  ${formatTestMetadata(test)}`)
   console.log(`  ${formatTestResult(result)}`)
+
+  // Print browser console logs if any were captured
+  const browserLogs = (global as any).__KNURL_BROWSER_CONSOLE_LOGS__ as any[] | undefined
+  if (browserLogs && browserLogs.length > 0) {
+    console.log(`  📋 Browser console logs (${browserLogs.length} entries):`)
+    for (const log of browserLogs) {
+      const level = log.level || "unknown"
+      const source = log.source || "unknown"
+      const text = log.text || ""
+      console.log(`    [${level}] ${source}: ${text}`)
+    }
+    // Clear logs for next test
+    browserLogs.length = 0
+  }
 
   if (envFlag(process.env.KNURL_SKIP_COVERAGE)) {
     console.log(`  coverage collection skipped (KNURL_SKIP_COVERAGE=true)`)
