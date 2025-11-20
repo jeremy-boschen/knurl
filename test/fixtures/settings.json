@@ -1,17 +1,23 @@
 {
-  "appearance": {
-    "fontSize": 13,
-    "autoHighlight": true,
-    "theme": "dark",
-    "themeSource": "default"
+  "content": {
+    "advanced": {
+      "devMode": true
+    },
+    "appearance": {
+      "autoHighlight": false,
+      "fontSize": 13,
+      "theme": "dark",
+      "themeSource": "default"
+    },
+    "requests": {
+      "autoSave": 0,
+      "disableSsl": false,
+      "maxRedirects": 5,
+      "timeout": 30
+    }
   },
-  "requests": {
-    "autoSave": 0,
-    "timeout": 30,
-    "maxRedirects": 5,
-    "disableSsl": false
-  },
-  "advanced": {
-    "devMode": false
+  "header": {
+    "updated": "2025-11-20T14:53:47.821Z",
+    "version": 1
   }
 }
