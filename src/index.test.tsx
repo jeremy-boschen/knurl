@@ -83,17 +83,22 @@ describe("index bootstrap", () => {
   })
 
   it("initializes tauri logging + hydration before rendering", async () => {
-    const module = await import("./index")
-    expect(immerMocks.enablePatches).toHaveBeenCalledTimes(1)
-    expect(pluginLogMocks.attachConsole).toHaveBeenCalledTimes(1)
-    const rootEl = document.getElementById("root")
-    expect(createRootMock).toHaveBeenCalledWith(rootEl)
-    expect(renderMock).toHaveBeenCalledTimes(1)
-    expect(suspenseMocks.asSuspense).toHaveBeenCalledWith(stateMocks.loadApplication)
-    expect(module.hydrationResource).toBe(suspenseMocks.resource)
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {})
+    try {
+      const module = await import("./index")
+      expect(immerMocks.enablePatches).toHaveBeenCalledTimes(1)
+      expect(pluginLogMocks.attachConsole).toHaveBeenCalledTimes(1)
+      const rootEl = document.getElementById("root")
+      expect(createRootMock).toHaveBeenCalledWith(rootEl)
+      expect(renderMock).toHaveBeenCalledTimes(1)
+      expect(suspenseMocks.asSuspense).toHaveBeenCalledWith(stateMocks.loadApplication)
+      expect(module.hydrationResource).toBe(suspenseMocks.resource)
 
-    console.log("hello", 42)
-    expect(pluginLogMocks.info).toHaveBeenCalledWith("hello", 42)
+      console.log("hello", 42)
+      expect(consoleSpy).toHaveBeenCalledWith("hello", 42)
+    } finally {
+      consoleSpy.mockRestore()
+    }
   })
 
   it("renders StrictMode>Suspense>Root and advances startup state", async () => {

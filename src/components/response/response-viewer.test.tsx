@@ -52,6 +52,14 @@ import ResponseViewer from "./response-viewer"
 import { saveBinary, saveFile } from "@/bindings/knurl"
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener"
 
+const getByDataTestId = (id: string): HTMLElement => {
+  const el = document.querySelector(`[data-test-id="${id}"]`)
+  if (!el) {
+    throw new Error(`Element with data-test-id=${id} not found`)
+  }
+  return el as HTMLElement
+}
+
 const baseHttpData = {
   status: 200,
   statusText: "OK",
@@ -173,6 +181,32 @@ describe("ResponseViewer", () => {
     await waitFor(() => {
       expect(clipboardWriteMock).toHaveBeenCalledWith("YmFzZTY0LWJvZHk=")
     })
+  })
+
+  it("copies plain text bodies via the copy button", async () => {
+    const user = userEvent.setup()
+    renderViewer({
+      httpData: {
+        headers: { "content-type": "text/plain" },
+        body: "hello world",
+      },
+    })
+
+    const bodyPanel = await screen.findByRole("tabpanel", { name: /Body/i })
+    await user.click(within(bodyPanel).getByRole("button", { name: /^Copy$/i }))
+    await waitFor(() => {
+      expect(clipboardWriteMock).toHaveBeenCalledWith("hello world")
+    })
+  })
+
+  it("toggles formatted view for structured responses", async () => {
+    const user = userEvent.setup()
+    renderViewer()
+
+    const formatButton = await waitFor(() => getByDataTestId("response-viewer:format-toggle-button"))
+    await waitFor(() => expect(formatButton).not.toBeDisabled())
+    await user.click(formatButton)
+    expect(formatButton.textContent).toMatch(/Restore/)
   })
 
   it("renders cookies, headers, and logs tabs and forwards log filter updates", async () => {

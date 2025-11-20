@@ -199,7 +199,7 @@ function TabDropdown({ ariaLabel, children, onActivate }: TabDropdownProps) {
   )
 }
 
-function ParamsTabMenu({ tabId, onActivate }: { tabId: string; onActivate: () => void }) {
+export function ParamsTabMenu({ tabId, onActivate }: { tabId: string; onActivate: () => void }) {
   const {
     state: { cookieParams },
     actions,
@@ -237,7 +237,7 @@ function ParamsTabMenu({ tabId, onActivate }: { tabId: string; onActivate: () =>
   )
 }
 
-function HeadersTabMenu({ tabId, onActivate }: { tabId: string; onActivate?: () => void }) {
+export function HeadersTabMenu({ tabId, onActivate }: { tabId: string; onActivate?: () => void }) {
   const { actions } = useRequestHeaders(tabId)
 
   return (
@@ -257,7 +257,7 @@ function HeadersTabMenu({ tabId, onActivate }: { tabId: string; onActivate?: () 
 
 const COMMON_LANGUAGES = ["json", "yaml", "graphql", "text"] as const
 
-function BodyTabMenu({ tabId, onActivate }: { tabId: string; onActivate?: () => void }) {
+export function BodyTabMenu({ tabId, onActivate }: { tabId: string; onActivate?: () => void }) {
   const {
     state: { body },
     actions,
@@ -428,7 +428,7 @@ function BodyTabMenu({ tabId, onActivate }: { tabId: string; onActivate?: () => 
   )
 }
 
-function AuthTabMenu({ tabId, onActivate }: { tabId: string; onActivate?: () => void }) {
+export function AuthTabMenu({ tabId, onActivate }: { tabId: string; onActivate?: () => void }) {
   const {
     state: { request },
   } = useRequestTab(tabId)

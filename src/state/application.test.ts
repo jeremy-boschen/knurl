@@ -14,6 +14,9 @@ vi.mock("@/lib/prettier", () => ({
 import {
   collectionsApi,
   useApplication,
+  useCollections,
+  useEnvironments,
+  useEnvironment,
   useRequestBody,
   useRequestCookies,
   useRequestHeaders,
@@ -21,6 +24,7 @@ import {
   useRequestParameters,
   useRequestTab,
   useRequestsTabSummary,
+  useSidebar,
 } from "@/state/application"
 import {resetApplicationStore} from "@/test/zustand"
 import {isRequestDirty, toMergedRequest, type Cookie} from "@/types"
@@ -182,5 +186,69 @@ describe("application store (test env)", () => {
 
     await waitFor(() => expect(result.current.name).toBe("Renamed"))
     expect(result.current.requestId).toBe(requestId)
+  })
+
+  it("useCollections hides empty scratch entries", () => {
+    act(() => {
+      useApplication.setState((state) => {
+        state.collectionsState.index = [
+          {id: "scratch", name: "Scratch", count: 0, order: 0},
+          {id: "col-live", name: "Live", count: 2, order: 1},
+        ] as any
+      })
+    })
+
+    const {result} = renderHook(() => useCollections())
+    expect(result.current.state.collectionsIndex.map((entry) => entry.id)).toEqual(["col-live"])
+    expect(typeof result.current.actions.collectionsApi).toBe("function")
+  })
+
+  it("useSidebar proxies actions to sidebar api", () => {
+    const setCollapsed = vi.fn()
+    const collapseSidebar = vi.fn()
+    const expandSidebar = vi.fn()
+    const setPanelGroupApi = vi.fn()
+
+    act(() => {
+      useApplication.setState((state) => {
+        state.sidebarState.isCollapsed = true
+        state.sidebarApi = {
+          setCollapsed,
+          collapseSidebar,
+          expandSidebar,
+          setPanelGroupApi,
+        } as any
+      })
+    })
+
+    const {result} = renderHook(() => useSidebar())
+    act(() => result.current.actions.setCollapsed(false))
+    expect(setCollapsed).toHaveBeenCalledWith(false)
+
+    act(() => result.current.actions.collapseSidebar())
+    expect(collapseSidebar).toHaveBeenCalled()
+
+    act(() => result.current.actions.expandSidebar())
+    expect(expandSidebar).toHaveBeenCalled()
+
+    const fakePanel = {panel: true} as any
+    act(() => result.current.actions.setPanelGroupApi(fakePanel))
+    expect(setPanelGroupApi).toHaveBeenCalledWith(fakePanel)
+    expect(result.current.state.isCollapsed).toBe(true)
+  })
+
+  it("useEnvironments and useEnvironment expose collection metadata", () => {
+    const {collectionsApi: api} = useApplication.getState()
+    const collection = api.addCollection("Env", "")
+    api.getCollection(collection.id)
+    const environment = api.createEnvironment(collection.id, "Prod", "Production")
+
+    const {result: envsResult} = renderHook(() => useEnvironments(collection.id))
+    expect(envsResult.current.state.collection.id).toBe(collection.id)
+    expect(envsResult.current.state.environments[environment.id]?.name).toBe("Prod")
+
+    const {result: envResult} = renderHook(() => useEnvironment(collection.id, environment.id))
+    expect(envResult.current.state.environment.id).toBe(environment.id)
+    expect(typeof envResult.current.actions.environmentsApi).toBe("function")
   })
 })

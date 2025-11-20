@@ -1,63 +1,100 @@
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it } from "vitest"
 
-vi.mock("./extracted-css-vars.json", () => ({
+import extracted from "./extracted-css-vars.json"
+import {
+  appendMissingCustomVars,
+  buildDefaultThemeCss,
+  ensureCustomCssVars,
+  ensureCustomCssVarsDetailed,
+} from "./custom-css-vars"
+
+type ExtractedShape = {
+  customNames?: string[]
+  custom?: {
+    light?: Record<string, string>
+    dark?: Record<string, string>
+  }
+  default?: {
+    light?: Record<string, string>
+    dark?: Record<string, string>
+  }
+}
+
+const baseExtracted: ExtractedShape = {
+  customNames: ["alpha-accent", "beta-shadow"],
+  custom: {
+    light: {
+      "alpha-accent": "  #fff ; extra",
+      "beta-shadow": "value-one*/ stray",
+    },
+    dark: {
+      "beta-shadow": "  #111 ;",
+    },
+  },
   default: {
-    default: {
+    light: { "base-color": "#123456" },
+    dark: { "base-color": "#654321" },
+  },
+}
+
+const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value))
+
+beforeEach(() => {
+  const target = extracted as Record<string, unknown>
+  for (const key of Object.keys(target)) {
+    delete target[key]
+  }
+  Object.assign(target, clone(baseExtracted))
+})
+
+describe("custom css vars helpers", () => {
+  it("ensures missing custom vars are inserted and tracks additions", () => {
+    const { ensured, added } = ensureCustomCssVarsDetailed({
+      theme: { "beta-shadow": "#222" },
       light: {},
       dark: {},
-    },
-    custom: {
-      light: {
-        alpha: "#123; /* trailing */",
-        beta: "var(--color-primary)\n/* comment */",
-        gamma: "   ;   ",
-      },
-      dark: {
-        beta: "var(--dark-primary); extra",
-      },
-    },
-    customNames: ["alpha", "beta", "gamma"],
-  },
-}))
+    })
 
-import { appendMissingCustomVars, ensureCustomCssVarsDetailed } from "./custom-css-vars"
+    expect(ensured.theme["alpha-accent"]).toBe("#fff")
+    expect(ensured.dark["beta-shadow"]).toBe("#111")
+    // fallback to light when dark missing
+    expect(ensured.dark["alpha-accent"]).toBe("#fff")
+    expect(added.base).toEqual(["alpha-accent"])
+    expect(added.dark).toEqual(["alpha-accent", "beta-shadow"])
 
-describe("custom-css-vars sanitisation", () => {
-  it("sanitises and injects missing custom variables", () => {
-    const base = { theme: {}, light: {}, dark: {} }
-
-    const result = ensureCustomCssVarsDetailed(base)
-
-    expect(result.ensured.theme.alpha).toBe("#123")
-    expect(result.ensured.dark.beta).toBe("var(--dark-primary)")
-    expect(result.added.base).toEqual(["alpha", "beta"])
-    expect(result.added.dark).toEqual(["alpha", "beta"])
-  })
-
-  it("does not override existing values when variables are present", () => {
-    const base = {
-      theme: { alpha: "custom-alpha" },
+    const ensuredOnly = ensureCustomCssVars({
+      theme: { existing: "value", "beta-shadow": "keep-me" },
       light: {},
-      dark: { beta: "existing-beta" },
-    }
-
-    const result = ensureCustomCssVarsDetailed(base)
-
-    expect(result.ensured.theme.alpha).toBe("custom-alpha")
-    expect(result.ensured.dark.beta).toBe("existing-beta")
-    expect(result.added.base).not.toContain("alpha")
-    expect(result.added.dark).toEqual(["alpha"])
+      dark: {},
+    })
+    expect(ensuredOnly.theme.existing).toBe("value")
+    expect(ensuredOnly.theme["alpha-accent"]).toBe("#fff")
+    expect(ensuredOnly.theme["beta-shadow"]).toBe("keep-me")
   })
 
-  it("appends missing custom vars block to raw CSS", () => {
-    const css = ":root {\n  --foo: bar;\n}\n"
+  it("skips injections when names already exist and returns original css", () => {
+    ;(extracted as ExtractedShape).customNames = []
+    const css = ":root {\n  --alpha-accent: #fff;\n}\n"
+    expect(appendMissingCustomVars(css)).toBe(css)
+  })
 
+  it("appends missing variables with sanitized light/dark defaults", () => {
+    const css = ":root {\n  --base-color: #123456;\n}\n"
     const result = appendMissingCustomVars(css)
 
-    expect(result).toContain("/* Injected custom variables")
-    expect(result).toContain("--alpha: #123;")
-    expect(result).toContain("--beta: var(--dark-primary);")
-    // The empty gamma value should be ignored entirely.
-    expect(result).not.toMatch(/--gamma:/)
+    expect(result).toContain(":root {")
+    expect(result).toContain("--alpha-accent: #fff;")
+    expect(result).toContain(".dark {")
+    expect(result).toContain("--beta-shadow: #111;")
+  })
+
+  it("builds default theme css with sorted entries and custom sections", () => {
+    const css = buildDefaultThemeCss()
+
+    expect(css).toContain(":root {")
+    expect(css).toContain("--base-color: #123456;")
+    expect(css).toContain("/* Custom variables (from App.css) */")
+    expect(css).toContain(".dark {")
+    expect(css).toContain("--beta-shadow: #111;")
   })
 })

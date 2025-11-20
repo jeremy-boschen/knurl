@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import React from "react"
@@ -16,6 +16,15 @@ const hoistedState = vi.hoisted(() => ({
     onClose: () => void
   },
 }))
+
+const toastMocks = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+}))
+
+const buildExportCommandMock = vi.hoisted(() => vi.fn().mockResolvedValue("curl command"))
+
+let clipboardWriteMock: ReturnType<typeof vi.fn>
 
 vi.mock("@/state", () => ({
   useRequestTab: hoistedState.useRequestTab,
@@ -49,17 +58,40 @@ vi.mock("@/components/error/error-boundary", () => ({
   default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
 
+vi.mock("@/components/ui/dropdown-menu", () => ({
+  DropdownMenu: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
+  DropdownMenuContent: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
+  DropdownMenuGroup: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
+  DropdownMenuLabel: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
+  DropdownMenuSeparator: () => <div role="separator" />,
+  DropdownMenuItem: ({ children, onSelect, ...props }: any) => (
+    <button
+      type="button"
+      {...props}
+      onClick={() => onSelect?.({ preventDefault() {}, stopPropagation() {} })}
+    >
+      {children}
+    </button>
+  ),
+}))
+
 vi.mock("@jeremy-boschen/react-adjustable-panels", () => {
-  const PanelGroup = React.forwardRef<HTMLDivElement, React.PropsWithChildren<{ direction: string }>>(
-    ({ children }, ref) => {
-      if (typeof ref === "function") {
-        ref({ panelGroup: true } as any)
-      } else if (ref) {
-        ;(ref as React.MutableRefObject<any>).current = { panelGroup: true }
-      }
-      return <div data-testid="panel-group">{children}</div>
-    },
-  )
+  const PanelGroup = React.forwardRef<
+    HTMLDivElement,
+    React.PropsWithChildren<{ direction: string; className?: string }>
+  >(({ children, direction, className }, ref) => {
+    if (typeof ref === "function") {
+      ref({ panelGroup: true } as any)
+    } else if (ref) {
+      ;(ref as React.MutableRefObject<any>).current = { panelGroup: true }
+    }
+    return (
+      <div data-testid="panel-group" data-direction={direction} className={className}>
+        {children}
+      </div>
+    )
+  })
 
   const Panel = ({ children }: React.PropsWithChildren) => <div data-testid="panel">{children}</div>
   const ResizeHandle = ({ children }: React.PropsWithChildren) => <div data-testid="resize-handle">{children}</div>
@@ -68,10 +100,11 @@ vi.mock("@jeremy-boschen/react-adjustable-panels", () => {
 })
 
 vi.mock("@/components/ui/sonner", () => ({
-  toast: {
-    success: vi.fn(),
-    error: vi.fn(),
-  },
+  toast: toastMocks,
+}))
+
+vi.mock("@/lib/request/exporters", () => ({
+  buildExportCommand: buildExportCommandMock,
 }))
 
 const buildRequestTab = (overrides?: Partial<ReturnType<typeof createRequestFixture>>) => {
@@ -137,11 +170,20 @@ describe("RequestWorkspace", () => {
     hoistedState.useRequestTab.mockReset()
     hoistedState.useCollection.mockReset()
     hoistedState.credentialsCacheApi.mockReturnValue({})
-    ;(global as any).navigator = {
-      clipboard: {
-        writeText: vi.fn(),
-      },
-    }
+    toastMocks.success.mockReset()
+    toastMocks.error.mockReset()
+    buildExportCommandMock.mockReset()
+    buildExportCommandMock.mockResolvedValue("curl command")
+    clipboardWriteMock = vi.fn()
+    const fakeNavigator = { clipboard: { writeText: clipboardWriteMock } }
+    Object.defineProperty(global, "navigator", {
+      value: fakeNavigator,
+      configurable: true,
+    })
+    Object.defineProperty(window, "navigator", {
+      value: fakeNavigator,
+      configurable: true,
+    })
   })
 
   it("returns null when no request tab exists", () => {
@@ -179,5 +221,62 @@ describe("RequestWorkspace", () => {
     hoistedState.useRequestTab.mockReturnValue(tabData)
     renderWorkspace()
     expect(getByDataTestId("request-workspace:cancel-button")).toBeInTheDocument()
+  })
+
+  it("toggles between vertical and horizontal layouts", async () => {
+    const user = userEvent.setup()
+    const tabData = buildRequestTab()
+    hoistedState.useRequestTab.mockReturnValue(tabData)
+    renderWorkspace()
+
+    const panelGroup = screen.getByTestId("panel-group")
+    expect(panelGroup.getAttribute("data-direction")).toBe("vertical")
+    expect(panelGroup.className).toContain("flex-col")
+
+    await user.click(getByDataTestId("request-workspace:layout-toggle-button"))
+    await waitFor(() => {
+      const updatedGroup = screen.getByTestId("panel-group")
+      expect(updatedGroup.getAttribute("data-direction")).toBe("horizontal")
+      expect(updatedGroup.className).toContain("flex-row")
+    })
+  })
+
+  it("copies export commands via the dropdown options", async () => {
+    const user = userEvent.setup()
+    const tabData = buildRequestTab()
+    hoistedState.useRequestTab.mockReturnValue(tabData)
+    renderWorkspace()
+
+    await user.click(getByDataTestId("request-workspace:export-menu-button"))
+    await user.click(getByDataTestId("request-workspace:export-option-curl"))
+
+    await waitFor(() => {
+      expect(buildExportCommandMock).toHaveBeenCalledWith("curl", expect.any(Object))
+      expect(toastMocks.success).toHaveBeenCalledWith("Copied CURL command to clipboard")
+    })
+  })
+
+  it("shows an error toast when clipboard access fails", async () => {
+    const user = userEvent.setup()
+    const tabData = buildRequestTab()
+    hoistedState.useRequestTab.mockReturnValue(tabData)
+    renderWorkspace()
+
+    const missingClipboard = { clipboard: undefined }
+    Object.defineProperty(global, "navigator", {
+      value: missingClipboard,
+      configurable: true,
+    })
+    Object.defineProperty(window, "navigator", {
+      value: missingClipboard,
+      configurable: true,
+    })
+
+    await user.click(getByDataTestId("request-workspace:export-menu-button"))
+    await user.click(getByDataTestId("request-workspace:export-option-wget"))
+
+    await waitFor(() => {
+      expect(toastMocks.error).toHaveBeenCalledWith("Clipboard API is unavailable in this environment.")
+    })
   })
 })
