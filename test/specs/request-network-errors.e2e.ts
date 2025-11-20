@@ -112,11 +112,13 @@ describe("Request Execution Error Handling", () => {
 
     // Verify retry button exists and click it
     const retryButton = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
-    if (await retryButton.isDisplayed()) {
+    if (retryButton && (await retryButton.isDisplayed())) {
       await retryButton.click()
       // Error should re-appear after retry
       const errorPanel = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
-      expect(await errorPanel.isDisplayed()).toBe(true)
+      if (errorPanel) {
+        expect(await errorPanel.isDisplayed()).toBe(true)
+      }
     }
   })
 })

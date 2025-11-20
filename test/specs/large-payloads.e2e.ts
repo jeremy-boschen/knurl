@@ -173,7 +173,7 @@ describe("Large Payload Handling", () => {
 
     // Heading should still be there with metadata
     const heading = await getElementByTestId("response-viewer:heading", 5000).catch(() => null)
-    if (await heading.isDisplayed()) {
+    if (heading && (await heading.isDisplayed())) {
       expect(await heading.getText()).toBeDefined()
     }
   })
