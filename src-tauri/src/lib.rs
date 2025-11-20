@@ -475,7 +475,11 @@ pub fn run() {
     }
 
     impl log::kv::Visitor<'_> for KvCollector {
-        fn visit_pair(&mut self, key: log::kv::Key, value: log::kv::Value<'_>) -> Result<(), log::kv::Error> {
+        fn visit_pair(
+            &mut self,
+            key: log::kv::Key,
+            value: log::kv::Value<'_>,
+        ) -> Result<(), log::kv::Error> {
             if !self.collected.is_empty() {
                 self.collected.push_str(", ");
             }
@@ -484,7 +488,7 @@ pub fn run() {
         }
     }
 
-    let builder = tauri::Builder::default().plugin(tauri_plugin_log::Builder::new().build());
+    let builder = tauri::Builder::default();
     probe.mark("builder_created");
 
     let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
@@ -517,17 +521,23 @@ pub fn run() {
                     tauri_plugin_log::TargetKind::Stdout,
                 ))
                 .format(|out, message, record| {
-                    let mut visitor = KvCollector { collected: String::new() };
+                    let mut visitor = KvCollector {
+                        collected: String::new(),
+                    };
                     let _ = record.key_values().visit(&mut visitor);
 
                     out.finish(format_args!(
-                      "[{}] [{}] {} ({}:{}){}",
-                      record.level(),
-                      record.target(),
-                      message,
-                      record.file().unwrap_or("unknown"),
-                      record.line().unwrap_or(0),
-                      if visitor.collected.is_empty() { String::new() } else { format!(" [{}]", visitor.collected) }
+                        "[{}] [{}] {} ({}:{}){}",
+                        record.level(),
+                        record.target(),
+                        message,
+                        record.file().unwrap_or("unknown"),
+                        record.line().unwrap_or(0),
+                        if visitor.collected.is_empty() {
+                            String::new()
+                        } else {
+                            format!(" [{}]", visitor.collected)
+                        }
                     ))
                 })
                 .filter(|meta| meta.target() != "keyring")
