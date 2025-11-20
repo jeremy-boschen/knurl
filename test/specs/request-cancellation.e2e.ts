@@ -18,18 +18,24 @@ describe('Request Cancellation & Abort Handling', () => {
     await setInputText('request-workspace:url-input', mockUrl)
 
     // Start the request
-    const sendButton = await getElementByTestId('request-workspace:send-button')
-    await sendButton.click()
+    await clickByTestId('request-workspace:send-button')
 
     // Wait briefly for the request to be in-flight
-    await browser.pause(1000)
+    await browser.waitUntil(
+      async () => {
+        return await browser.execute(() => {
+          return !!document.querySelector('[data-test-id="response-viewer:cancel-button"]')
+        })
+      },
+      { timeout: 5000 }
+    )
 
     // Look for a cancel button (typically appears while request is pending)
-    const cancelButton = await $('[data-test-id="response-viewer:cancel-button"]')
+    const cancelButton = await getElementByTestId('response-viewer:cancel-button', 2000).catch(() => null)
 
-    if (await cancelButton.isDisplayed()) {
+    if (cancelButton) {
       const startTime = Date.now()
-      await cancelButton.click()
+      await clickByTestId('response-viewer:cancel-button')
       const cancelTime = Date.now() - startTime
 
       // Cancel should be immediate
@@ -38,8 +44,8 @@ describe('Request Cancellation & Abort Handling', () => {
       // After cancellation, the response panel should indicate abort/cancellation
       await browser.waitUntil(
         async () => {
-          const statusElement = await $('[data-test-id="response-viewer:heading"]')
-          return !(await statusElement.isDisplayed())
+          const statusElement = await getElementByTestId('response-viewer:heading', 1000).catch(() => null)
+          return !statusElement || !(await statusElement.isDisplayed().catch(() => false))
         },
         {
           timeout: 5000,
@@ -54,15 +60,20 @@ describe('Request Cancellation & Abort Handling', () => {
     const mockUrl = `http://127.0.0.1:3000/mock/error`
     await setInputText('request-workspace:url-input', mockUrl)
 
-    const sendButton = await getElementByTestId('request-workspace:send-button')
-    await sendButton.click()
+    await clickByTestId('request-workspace:send-button')
 
     // Wait for response panel to update (either with status code or error)
-    // The UI may render errors in different ways depending on implementation
-    await browser.pause(2000)
+    await browser.waitUntil(
+      async () => {
+        return await browser.execute(() => {
+          return !!document.querySelector('[data-test-id="response-panel"]')
+        })
+      },
+      { timeout: 5000 }
+    )
 
     // Verify the request was made and response panel received something
-    const responsePanel = await $('[data-test-id="response-panel"]')
+    const responsePanel = await getElementByTestId('response-panel', 2000).catch(() => null)
     // Just verify response panel exists and request was processed
     expect(responsePanel).toBeDefined()
   })
@@ -73,19 +84,16 @@ describe('Request Cancellation & Abort Handling', () => {
     await setInputText('request-workspace:url-input', mockUrl)
 
     // Send request
-    const sendButton = await getElementByTestId('request-workspace:send-button')
-    await sendButton.click()
+    await clickByTestId('request-workspace:send-button')
 
-    // Wait a moment then cancel
-    await browser.pause(500)
-    const cancelButton = await $('[data-test-id="response-viewer:cancel-button"]')
-    if (await cancelButton.isDisplayed()) {
-      await cancelButton.click()
-      await browser.pause(500)
+    // Wait for cancel button to appear, then cancel
+    const cancelButton = await getElementByTestId('response-viewer:cancel-button', 3000).catch(() => null)
+    if (cancelButton) {
+      await clickByTestId('response-viewer:cancel-button')
     }
 
     // Verify URL is still intact
-    const urlInput = await getElementByTestId('request-workspace:url-input')
+    const urlInput = await getElementByTestId('request-workspace:url-input', 2000)
     const urlValue = await urlInput.getValue()
     expect(urlValue).toContain('/mock/delay/5')
   })
@@ -96,31 +104,40 @@ describe('Request Cancellation & Abort Handling', () => {
     await setInputText('request-workspace:url-input', mockUrl)
 
     // First attempt - send a quick request to /mock/json
-    let sendButton = await getElementByTestId('request-workspace:send-button')
-    await sendButton.click()
+    await clickByTestId('request-workspace:send-button')
 
     // Wait briefly and try to cancel if button appears
-    await browser.pause(300)
-    const cancelButton = await $('[data-test-id="response-viewer:cancel-button"]')
-    if (await cancelButton.isDisplayed()) {
-      await cancelButton.click()
-      // Wait for cancellation to complete
-      await browser.pause(1000)
-    } else {
-      // If no cancel button, the request completed too fast, which is fine
-      // Just wait for response to ensure cleanup
-      await browser.pause(500)
+    const cancelButton = await getElementByTestId('response-viewer:cancel-button', 2000).catch(() => null)
+    if (cancelButton) {
+      await clickByTestId('response-viewer:cancel-button')
     }
 
+    // Wait for response or cancellation to complete
+    await browser.waitUntil(
+      async () => {
+        return await browser.execute(() => {
+          return !!document.querySelector('[data-test-id="response-panel"]') ||
+                 !!document.querySelector('[data-test-id="response-viewer:heading"]')
+        })
+      },
+      { timeout: 5000 }
+    )
+
     // Second attempt - should work
-    sendButton = await getElementByTestId('request-workspace:send-button')
-    await sendButton.click()
+    await clickByTestId('request-workspace:send-button')
 
     // Wait for the second request to complete
-    await browser.pause(2000)
+    await browser.waitUntil(
+      async () => {
+        return await browser.execute(() => {
+          return !!document.querySelector('[data-test-id="response-viewer:heading"]')
+        })
+      },
+      { timeout: 5000 }
+    )
 
     // Verify the URL input is still there and unchanged
-    const urlInput = await getElementByTestId('request-workspace:url-input')
+    const urlInput = await getElementByTestId('request-workspace:url-input', 2000)
     const urlValue = await urlInput.getValue()
     expect(urlValue).toContain('/mock/json')
   })
@@ -130,19 +147,17 @@ describe('Request Cancellation & Abort Handling', () => {
     const mockUrl = `http://127.0.0.1:3000/mock/delay/8`
     await setInputText('request-workspace:url-input', mockUrl)
 
-    const sendButton = await getElementByTestId('request-workspace:send-button')
-    await sendButton.click()
+    await clickByTestId('request-workspace:send-button')
 
-    // Wait briefly then cancel
-    await browser.pause(1000)
-    const cancelButton = await $('[data-test-id="response-viewer:cancel-button"]')
-    if (await cancelButton.isDisplayed()) {
-      await cancelButton.click()
+    // Wait for cancel button to appear then cancel
+    const cancelButton = await getElementByTestId('response-viewer:cancel-button', 3000).catch(() => null)
+    if (cancelButton) {
+      await clickByTestId('response-viewer:cancel-button')
     }
 
     // Check for timeline panel with abort event
-    const timelinePanel = await $('[data-test-id="response-panel:timeline"]')
-    if (await timelinePanel.isDisplayed()) {
+    const timelinePanel = await getElementByTestId('response-panel:timeline', 2000).catch(() => null)
+    if (timelinePanel && (await timelinePanel.isDisplayed().catch(() => false))) {
       const timelineText = await timelinePanel.getText()
       // Timeline should indicate the request was terminated/aborted
       expect(timelineText).toBeDefined()

@@ -12,6 +12,7 @@ import {
   setInputText,
   setSwitchState,
   ensureWorkspaceReady,
+  getElementByTestId,
 } from "../support/ui"
 
 describe("Settings & UI Customization", () => {
@@ -23,56 +24,49 @@ describe("Settings & UI Customization", () => {
 
     it("switches preset theme in appearance settings", async () => {
       // Ensure sidebar is expanded
-      const sidebar = await $('[data-test-id="sidebar"]')
-      await sidebar.waitForDisplayed({ timeout: 5000 })
+      await getElementByTestId("sidebar", 5000)
 
-      // Check if sidebar is collapsed, expand if needed
-      const expandButton = await $('[data-test-id="sidebar:expand-button"]')
-      if (await expandButton.isDisplayed()) {
-        await expandButton.click()
-        await browser.pause(300)
+      // Try to expand sidebar if collapsed
+      try {
+        const expandButton = await getElementByTestId("sidebar:expand-button", 2000)
+        if (await expandButton.isDisplayed()) {
+          await clickByTestId("sidebar:expand-button")
+        }
+      } catch {
+        // Sidebar already expanded
       }
 
       // Open settings
-      const settingsButton = await $('[data-test-id="sidebar:settings-button"]')
-      await settingsButton.waitForDisplayed({ timeout: 5000 })
-      await settingsButton.click()
-
-      const settingsSheet = await $('[data-test-id="settings:sheet"]')
-      await settingsSheet.waitForDisplayed({ timeout: 5000 })
-      await browser.pause(800)
+      await clickByTestId("sidebar:settings-button")
+      await getElementByTestId("settings:sheet", 5000)
 
       // Navigate to appearance
-      const appearanceButton = await $('[data-test-id="settings-nav:appearance-button"]')
-      await appearanceButton.waitForDisplayed({ timeout: 5000 })
-      await appearanceButton.click()
+      await clickByTestId("settings-nav:appearance-button")
 
       // Switch to preset source
-      const presetSource = await $('[data-test-id="appearance:theme-source-preset"]')
-      await presetSource.waitForExist({ timeout: 5000 })
-      await presetSource.click()
+      await clickByTestId("appearance:theme-source-preset")
 
       // Fetch themes if needed
-      const fetchBtn = await $('[data-test-id="theme-selector:fetch-button"]')
-      if (await fetchBtn.isExisting()) {
-        console.log("Fetching themes...")
-        await fetchBtn.click()
-        await browser.pause(500)
+      try {
+        const fetchBtn = await getElementByTestId("theme-selector:fetch-button", 2000)
+        if (await fetchBtn.isDisplayed()) {
+          await clickByTestId("theme-selector:fetch-button")
+        }
+      } catch {
+        // Fetch button not available
       }
 
       // Wait for next button to be enabled
-      const nextBtn = await $('[data-test-id="theme-selector:next-button"]')
-      await nextBtn.waitForExist({ timeout: 20000 })
+      const nextBtn = await getElementByTestId("theme-selector:next-button", 20000)
       await nextBtn.waitForEnabled({ timeout: 20000 })
-      console.log("Next button is ready")
 
       // Get the currently selected theme name from the combobox trigger button
-      const comboboxTrigger = await $('[data-test-id="theme-selector:combobox-trigger"]')
+      const comboboxTrigger = await getElementByTestId("theme-selector:combobox-trigger", 5000)
       const beforeText = (await comboboxTrigger.getText()).trim()
       console.log("Currently selected theme:", beforeText)
 
       // Click to switch theme
-      await nextBtn.click()
+      await clickByTestId("theme-selector:next-button")
       console.log("Clicked next button, waiting for theme to apply...")
 
       // Wait for a different theme to be selected (combobox button text should change)
@@ -100,12 +94,8 @@ describe("Settings & UI Customization", () => {
 
       expect(themeChanged).toBe(true)
 
-      // Allow CSS to render
-      await browser.pause(2000)
-
       // Close settings
       await browser.keys(["Escape"])
-      await browser.pause(500)
     })
   })
 
@@ -113,8 +103,7 @@ describe("Settings & UI Customization", () => {
     before(async () => {
       await ensureAppReady()
       await navigateTo("/__tests/ui")
-      const page = await $("[data-test-id='ux-reference:page']")
-      await page.waitForDisplayed({ timeout: 10000 })
+      await getElementByTestId("ux-reference:page", 10000)
     })
 
     it("selectOption selects items by data-test-id", async () => {
@@ -158,7 +147,8 @@ describe("Settings & UI Customization", () => {
     it("click helper triggers buttons", async () => {
       await clickByTestId("ux-reference:button")
       await clickByTestId("ux-reference:button")
-      const text = await $("[data-test-id='ux-reference:button-count']").getText()
+      const buttonCount = await getElementByTestId("ux-reference:button-count", 5000)
+      const text = await buttonCount.getText()
       await expect(text).toContain("2")
     })
   })

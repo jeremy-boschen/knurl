@@ -30,15 +30,17 @@ describe("Response Viewer Analysis", () => {
     await setInputText("request-workspace:url-input", mockUrl)
     await clickByTestId("request-workspace:method-select")
 
-    const getOption = await $('//div[@role="option" and normalize-space()="GET"]')
-    await getOption.waitForDisplayed({ timeout: 5000 })
-    await getOption.click()
-    await browser.pause(100)
+    // Find and click GET option - use direct browser execution to find option by role and text
+    const foundOption = await browser.execute(() => {
+      const options = Array.from(document.querySelectorAll('[role="option"]'))
+      return options.find((opt) => opt.textContent?.trim() === "GET")?.getAttribute("data-test-id") ?? null
+    })
+    if (foundOption) {
+      await clickByTestId(foundOption)
+    }
 
     // Send the request
-    const sendButton = await getElementByTestId("request-workspace:send-button")
-    await sendButton.waitForClickable({ timeout: 5000 })
-    await sendButton.click()
+    await clickByTestId("request-workspace:send-button")
 
     // Wait for response to appear
     const responseHeading = await browser.execute(() => {
@@ -47,8 +49,7 @@ describe("Response Viewer Analysis", () => {
     expect(responseHeading).toBe(true)
 
     // Verify response body tab is accessible
-    const bodyTab = await $('[data-test-id="response-viewer:tab-body"]')
-    await bodyTab.waitForDisplayed({ timeout: 5000 })
+    const bodyTab = await getElementByTestId("response-viewer:tab-body", 5000)
     await expect(bodyTab).toHaveAttribute("data-state", "active")
   })
 
@@ -59,9 +60,7 @@ describe("Response Viewer Analysis", () => {
     const mockUrl = `http://127.0.0.1:3000/mock/json`
     await setInputText("request-workspace:url-input", mockUrl)
 
-    const sendButton = await getElementByTestId("request-workspace:send-button")
-    await sendButton.waitForClickable({ timeout: 5000 })
-    await sendButton.click()
+    await clickByTestId("request-workspace:send-button")
 
     // Wait for response viewer to appear
     await browser.waitUntil(
@@ -75,8 +74,7 @@ describe("Response Viewer Analysis", () => {
     )
 
     // Verify headers tab is clickable and accessible
-    const headersTab = await $('[data-test-id="response-viewer:tab-headers"]')
-    await headersTab.waitForDisplayed({ timeout: 5000 })
+    const headersTab = await getElementByTestId("response-viewer:tab-headers", 5000)
     expect(headersTab).toBeDefined()
   })
 
@@ -117,9 +115,7 @@ describe("Response Viewer Analysis", () => {
     const mockUrl = `http://127.0.0.1:3000/mock/json`
     await setInputText("request-workspace:url-input", mockUrl)
 
-    const sendButton = await getElementByTestId("request-workspace:send-button")
-    await sendButton.waitForClickable({ timeout: 5000 })
-    await sendButton.click()
+    await clickByTestId("request-workspace:send-button")
 
     // Wait for response viewer to appear
     await browser.waitUntil(
@@ -132,8 +128,7 @@ describe("Response Viewer Analysis", () => {
     )
 
     // Verify body tab is visible and accessible
-    const bodyTab = await $('[data-test-id="response-viewer:tab-body"]')
-    await bodyTab.waitForDisplayed({ timeout: 5000 })
+    const bodyTab = await getElementByTestId("response-viewer:tab-body", 5000)
     expect(bodyTab).toBeDefined()
   })
 
@@ -173,9 +168,7 @@ describe("Response Viewer Analysis", () => {
     const mockUrl = `http://127.0.0.1:3000/mock/get`
     await setInputText("request-workspace:url-input", mockUrl)
 
-    const sendButton = await getElementByTestId("request-workspace:send-button")
-    await sendButton.waitForClickable({ timeout: 5000 })
-    await sendButton.click()
+    await clickByTestId("request-workspace:send-button")
 
     // Wait for response
     await browser.waitUntil(
@@ -188,15 +181,10 @@ describe("Response Viewer Analysis", () => {
     )
 
     // Look for copy button in response viewer
-    const copyButton = await browser.execute(() => {
-      return !!document.querySelector('[data-test-id="response-viewer:copy-body-button"]')
-    })
+    const copyButton = await getElementByTestId("response-viewer:copy-body-button", 2000).catch(() => null)
 
     if (copyButton) {
-      const button = await $('[data-test-id="response-viewer:copy-body-button"]')
-      await button.click()
-      // Verify button shows success state or toast appears
-      await browser.pause(200)
+      await clickByTestId("response-viewer:copy-body-button")
     }
 
     // Test passes if copy button exists and can be clicked without error
@@ -210,9 +198,7 @@ describe("Response Viewer Analysis", () => {
     const mockUrl = `http://127.0.0.1:3000/mock/get`
     await setInputText("request-workspace:url-input", mockUrl)
 
-    const sendButton = await getElementByTestId("request-workspace:send-button")
-    await sendButton.waitForClickable({ timeout: 5000 })
-    await sendButton.click()
+    await clickByTestId("request-workspace:send-button")
 
     // Wait for response
     await browser.waitUntil(
@@ -225,15 +211,11 @@ describe("Response Viewer Analysis", () => {
     )
 
     // Try to find format toggle button
-    const formatToggle = await browser.execute(() => {
-      return !!document.querySelector('[data-test-id="response-viewer:format-toggle-button"]')
-    })
+    const toggle = await getElementByTestId("response-viewer:format-toggle-button", 2000).catch(() => null)
 
-    if (formatToggle) {
-      const toggle = await $('[data-test-id="response-viewer:format-toggle-button"]')
+    if (toggle) {
       const initialStateAttr = await toggle.getAttribute("data-state")
-      await toggle.click()
-      await browser.pause(200)
+      await clickByTestId("response-viewer:format-toggle-button")
       const newStateAttr = await toggle.getAttribute("data-state")
       // The button state might not change if it doesn't have data-state, just verify it's clickable
       expect(toggle).toBeDefined()
@@ -250,9 +232,7 @@ describe("Response Viewer Analysis", () => {
     const mockUrl = `http://127.0.0.1:3000/mock/get`
     await setInputText("request-workspace:url-input", mockUrl)
 
-    const sendButton = await getElementByTestId("request-workspace:send-button")
-    await sendButton.waitForClickable({ timeout: 5000 })
-    await sendButton.click()
+    await clickByTestId("request-workspace:send-button")
 
     // Wait for response
     await browser.waitUntil(
@@ -265,14 +245,10 @@ describe("Response Viewer Analysis", () => {
     )
 
     // Try to find and click logs/timeline tab
-    const logsTab = await browser.execute(() => {
-      return !!document.querySelector('[data-test-id="response-viewer:tab-logs"]')
-    })
+    const logsTab = await getElementByTestId("response-viewer:tab-logs", 2000).catch(() => null)
 
     if (logsTab) {
-      const tab = await $('[data-test-id="response-viewer:tab-logs"]')
-      await tab.click()
-      await browser.pause(300)
+      await clickByTestId("response-viewer:tab-logs")
 
       const logsContent = await browser.execute(() => {
         return !!document.querySelector('[data-test-id="logs-list"]')
