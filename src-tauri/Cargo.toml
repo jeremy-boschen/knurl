@@ -26,6 +26,8 @@ open_dev_tools = []
 
 [profile.dev]
 incremental = true # Compile your binary in smaller steps.
+debug = true # Ensure debug symbols are included
+opt-level = 0 # No optimizations, keep all debug info
 
 [profile.release]
 codegen-units = 1 # Allows LLVM to perform better optimization.
