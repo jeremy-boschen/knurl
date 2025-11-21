@@ -502,7 +502,8 @@ describe("Authentication Strategies", () => {
       // Send request with API Key auth
       await clickByTestId("request-workspace:send-button")
 
-      // Wait for response with API Key auth
+      // Wait for response with API Key auth (check for the header in the response)
+      // Add extra time to allow for response clearing and re-rendering
       await browser.waitUntil(
         async () => {
           const responseText = await browser.execute(() => {
@@ -513,9 +514,10 @@ describe("Authentication Strategies", () => {
             const content = codeEditor.querySelector(".cm-content")
             return content ? content.textContent : codeEditor.textContent
           })
-          return responseText.includes("x-api-key") || responseText.includes("api-key-value")
+          const lowerText = responseText.toLowerCase()
+          return lowerText.includes("req-header-x-api-key") || lowerText.includes("api-key-value")
         },
-        { timeout: 5000 }
+        { timeout: 10000 }
       )
     })
 
@@ -705,7 +707,8 @@ describe("Authentication Strategies", () => {
       // Send request with API Key
       await clickByTestId("request-workspace:send-button")
 
-      // Wait for response
+      // Wait for response with API Key auth
+      // Add extra time to allow for response clearing and re-rendering
       await browser.waitUntil(
         async () => {
           const responseText = await browser.execute(() => {
@@ -716,9 +719,10 @@ describe("Authentication Strategies", () => {
             const content = codeEditor.querySelector(".cm-content")
             return content ? content.textContent : codeEditor.textContent
           })
-          return responseText.includes("x-test-key") || responseText.includes("test-value")
+          const lowerText = responseText.toLowerCase()
+          return lowerText.includes("req-header-x-test-key") || lowerText.includes("test-value")
         },
-        { timeout: 5000 }
+        { timeout: 10000 }
       )
 
       // Switch to Bearer and verify it displays
@@ -735,6 +739,7 @@ describe("Authentication Strategies", () => {
       await clickByTestId("request-workspace:send-button")
 
       // Wait for response with Bearer auth
+      // Add extra time to allow for response clearing and re-rendering
       await browser.waitUntil(
         async () => {
           const responseText = await browser.execute(() => {
@@ -747,7 +752,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("Bearer")
         },
-        { timeout: 5000 }
+        { timeout: 10000 }
       )
     })
 
