@@ -93,18 +93,20 @@ export const BearerAuthForm: FC<BearerAuthFormProps> = ({
   const schemeMode: "Bearer" | "JWT" | "custom" =
     scheme === "Bearer" || scheme === "JWT" ? (scheme as "Bearer" | "JWT") : "custom"
 
-  // Wrapper for onUpdate that normalizes the updates before calling parent
+  // Wrapper for onUpdate that normalizes before calling parent
   const handleUpdate = (updates: Record<string, unknown>) => {
     const merged = { ...normalizedAuth, ...updates }
-    const normalized = zBearerAuth.parse(merged)
-    onUpdate(normalized)
+    void zBearerAuth.parse(merged)
+    // Pass only the fields that changed to parent handler
+    onUpdate(updates)
   }
 
   // Wrapper for onPlacementUpdate that normalizes before calling parent
   const handlePlacementUpdate = (updates: Record<string, unknown>) => {
     const merged = { ...normalizedAuth, placement: { ...(normalizedAuth.placement ?? {}), ...updates } }
-    const normalized = zBearerAuth.parse(merged)
-    onPlacementUpdate({ placement: normalized.placement })
+    void zBearerAuth.parse(merged)
+    // Pass only the placement updates to parent
+    onPlacementUpdate(updates)
   }
 
   return (
@@ -277,18 +279,20 @@ export const ApiKeyAuthForm: FC<ApiKeyAuthFormProps> = ({
 
   const placementType = normalizedAuth.placement?.type ?? "header"
 
-  // Wrapper for onUpdate that normalizes the updates before calling parent
+  // Wrapper for onUpdate that normalizes before calling parent
   const handleUpdate = (updates: Record<string, unknown>) => {
     const merged = { ...normalizedAuth, ...updates }
-    const normalized = zApiKeyAuth.parse(merged)
-    onUpdate(normalized)
+    void zApiKeyAuth.parse(merged)
+    // Pass only the fields that changed to parent handler
+    onUpdate(updates)
   }
 
   // Wrapper for onPlacementUpdate that normalizes before calling parent
   const handlePlacementUpdate = (updates: Record<string, unknown>) => {
     const merged = { ...normalizedAuth, placement: { ...(normalizedAuth.placement ?? {}), ...updates } }
-    const normalized = zApiKeyAuth.parse(merged)
-    onPlacementUpdate({ placement: normalized.placement })
+    void zApiKeyAuth.parse(merged)
+    // Pass only the placement updates to parent
+    onPlacementUpdate(updates)
   }
 
   return (
