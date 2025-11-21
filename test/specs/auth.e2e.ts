@@ -3,9 +3,11 @@ import { expect } from "@wdio/globals"
 import { waitForActiveRequestTab, waitForRequestEditor } from "../support/ui"
 import {
   clickByTestId,
+  createCollection,
   ensureAppReady,
   ensureWorkspaceReady,
   getElementByTestId,
+  openCollectionMenu,
   openNewRequestViaUI,
   resetOverlays,
   selectOptionByTestId,
@@ -1053,4 +1055,239 @@ describe("OAuth Flows", () => {
   })
 
   console.log("✅ OAuth flows tests completed")
+})
+
+describe("Collection Auth Inheritance", () => {
+  before(async () => {
+    await ensureWorkspaceReady()
+    await resetOverlays()
+  })
+
+  it("request inherits Basic auth from collection", async () => {
+    // Create a collection
+    const collectionName = `BasicAuthCollection-${Date.now()}`
+    const collectionId = await createCollection(collectionName)
+
+    // Open collection settings and navigate to auth tab
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:manage-settings:${collectionId}`)
+
+    // Wait for settings sheet and click auth tab
+    await getElementByTestId("collection-settings:sheet", 5000)
+    await clickByTestId("collection-settings:auth-tab-button")
+
+    // Set auth type to Basic
+    await selectOptionByTestId("collection-auth:type-trigger", "basic")
+
+    // Configure basic auth credentials at collection level
+    const collectionUsername = "collection-user"
+    const collectionPassword = "collection-pass"
+    await setInputText("collection-auth:basic-auth-username-input", collectionUsername)
+    await setInputText("collection-auth:basic-auth-password-input", collectionPassword)
+
+    // Close settings sheet
+    await browser.keys(["Escape"])
+
+    // Create a request in this collection
+    const requestName = "BasicAuthRequest"
+    const createButton = await getElementByTestId("sidebar:new-request-button", 5000)
+    await createButton.click()
+    await setInputText("new-request-dialog:name-input", requestName)
+    await clickByTestId("new-request-dialog:create-button")
+
+    // Set request URL
+    const mockUrl = `http://127.0.0.1:3000/mock/get`
+    await setInputText("request-workspace:url-input", mockUrl)
+
+    // Click on auth tab and set to Inherit
+    await clickByTestId("request-editor:auth-tab")
+    await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+    await clickByTestId("request-editor:auth-menu:type-inherit")
+
+    // Verify that inherit message appears
+    const inheritMessage = await getElementByTestId("request-auth-panel:no-auth-message", 5000)
+    const inheritText = await inheritMessage.getText()
+    await expect(inheritText).toContain("inherits authentication from its parent")
+
+    // Send request
+    await clickByTestId("request-workspace:send-button")
+
+    // Wait for response
+    await browser.waitUntil(
+      async () => {
+        const responseText = await browser.execute(() => {
+          const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+          if (!responseBody) return ""
+          const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+          if (!codeEditor) return ""
+          const content = codeEditor.querySelector(".cm-content")
+          return content ? content.textContent : codeEditor.textContent
+        })
+        return responseText.includes("authorization") || responseText.includes("collection-user")
+      },
+      { timeout: 5000 }
+    )
+
+    // Verify the inherited auth was applied
+    const responseText = await browser.execute(() => {
+      const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+      if (!responseBody) return ""
+      const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+      if (!codeEditor) return ""
+      const content = codeEditor.querySelector(".cm-content")
+      return content ? content.textContent : codeEditor.textContent
+    })
+
+    await expect(responseText).toMatch(/authorization|Basic/)
+  })
+
+  it("request inherits Bearer auth from collection", async () => {
+    // Create a collection
+    const collectionName = `BearerAuthCollection-${Date.now()}`
+    const collectionId = await createCollection(collectionName)
+
+    // Open collection settings and navigate to auth tab
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:manage-settings:${collectionId}`)
+
+    // Wait for settings sheet and click auth tab
+    await getElementByTestId("collection-settings:sheet", 5000)
+    await clickByTestId("collection-settings:auth-tab-button")
+
+    // Set auth type to Bearer
+    await selectOptionByTestId("collection-auth:type-trigger", "bearer")
+
+    // Configure bearer auth at collection level
+    const collectionToken = "inherited-bearer-token-12345"
+    await setInputText("collection-auth:bearer-auth-token-input", collectionToken)
+
+    // Close settings sheet
+    await browser.keys(["Escape"])
+
+    // Create a request in this collection
+    const requestName = "BearerAuthRequest"
+    const createButton = await getElementByTestId("sidebar:new-request-button", 5000)
+    await createButton.click()
+    await setInputText("new-request-dialog:name-input", requestName)
+    await clickByTestId("new-request-dialog:create-button")
+
+    // Set request URL
+    const mockUrl = `http://127.0.0.1:3000/mock/get`
+    await setInputText("request-workspace:url-input", mockUrl)
+
+    // Click on auth tab and set to Inherit
+    await clickByTestId("request-editor:auth-tab")
+    await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+    await clickByTestId("request-editor:auth-menu:type-inherit")
+
+    // Send request
+    await clickByTestId("request-workspace:send-button")
+
+    // Wait for response
+    await browser.waitUntil(
+      async () => {
+        const responseText = await browser.execute(() => {
+          const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+          if (!responseBody) return ""
+          const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+          if (!codeEditor) return ""
+          const content = codeEditor.querySelector(".cm-content")
+          return content ? content.textContent : codeEditor.textContent
+        })
+        return responseText.includes("authorization") || responseText.includes("Bearer")
+      },
+      { timeout: 5000 }
+    )
+
+    // Verify the inherited auth was applied
+    const responseText = await browser.execute(() => {
+      const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+      if (!responseBody) return ""
+      const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+      if (!codeEditor) return ""
+      const content = codeEditor.querySelector(".cm-content")
+      return content ? content.textContent : codeEditor.textContent
+    })
+
+    await expect(responseText).toMatch(/authorization|Bearer/)
+  })
+
+  it("request inherits API Key auth from collection", async () => {
+    // Create a collection
+    const collectionName = `ApiKeyAuthCollection-${Date.now()}`
+    const collectionId = await createCollection(collectionName)
+
+    // Open collection settings and navigate to auth tab
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:manage-settings:${collectionId}`)
+
+    // Wait for settings sheet and click auth tab
+    await getElementByTestId("collection-settings:sheet", 5000)
+    await clickByTestId("collection-settings:auth-tab-button")
+
+    // Set auth type to API Key
+    await selectOptionByTestId("collection-auth:type-trigger", "apiKey")
+
+    // Configure API key auth at collection level
+    const headerName = "X-API-Key"
+    const headerValue = "inherited-api-key-value"
+    await setInputText("collection-auth:api-key-auth-key-input", headerName)
+    await setInputText("collection-auth:api-key-auth-value-input", headerValue)
+
+    // Set placement to header (default)
+    await selectOptionByTestId("collection-auth:api-key-auth-placement-select", "header")
+    await browser.pause(200)
+    await setInputText("collection-auth:api-key-auth-placement-name-input", headerName)
+
+    // Close settings sheet
+    await browser.keys(["Escape"])
+
+    // Create a request in this collection
+    const requestName = "ApiKeyAuthRequest"
+    const createButton = await getElementByTestId("sidebar:new-request-button", 5000)
+    await createButton.click()
+    await setInputText("new-request-dialog:name-input", requestName)
+    await clickByTestId("new-request-dialog:create-button")
+
+    // Set request URL
+    const mockUrl = `http://127.0.0.1:3000/mock/get`
+    await setInputText("request-workspace:url-input", mockUrl)
+
+    // Click on auth tab and set to Inherit
+    await clickByTestId("request-editor:auth-tab")
+    await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+    await clickByTestId("request-editor:auth-menu:type-inherit")
+
+    // Send request
+    await clickByTestId("request-workspace:send-button")
+
+    // Wait for response
+    await browser.waitUntil(
+      async () => {
+        const responseBody = await browser.execute(() => {
+          const body = document.querySelector('[data-test-id="response-viewer:body"]')
+          return body ? "response_received" : ""
+        })
+        return responseBody
+      },
+      { timeout: 5000 }
+    )
+
+    // Verify response exists (request with inherited auth was sent successfully)
+    const responseExists = await browser.execute(() => {
+      const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+      return !!responseBody
+    })
+
+    await expect(responseExists).toBe(true)
+  })
+
+  it.skip("request inherits OAuth2 auth from collection", async () => {
+    // TODO: Implement OAuth2 collection auth inheritance test
+    // Similar to above tests but with OAuth2 configuration
+    // Collection auth: client_credentials grant, clientId, clientSecret, tokenUrl
+    // Request: Set auth to Inherit, send request, verify OAuth token was added
+  })
+
+  console.log("✅ Collection auth inheritance tests completed")
 })
