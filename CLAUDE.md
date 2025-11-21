@@ -49,10 +49,9 @@ yarn check            # Format, lint, typecheck, tests
 yarn format           # Biome + cargo fmt
 yarn lint             # Biome + cargo clippy -D warnings
 yarn typecheck        # TypeScript only
-yarn test             # All tests (frontend + backend)
-yarn test:fe          # Vitest + React Testing Library
-yarn test:be          # cargo test (src-tauri)
-yarn test:e2e         # WebDriver.io E2E
+yarn test:unit        # All unit tests (frontend + backend)
+yarn test:e2e         # WebDriver.io E2E tests
+yarn test:coverage    # Coverage report
 yarn portal:package   # Distribution bundle
 yarn security         # gitleaks, cargo-deny, cargo-audit
 ```
@@ -130,6 +129,13 @@ types; use Zod for validation.
 
 **Testing:**
 
+Commands:
+- `yarn test:unit` — All unit tests (Vitest + cargo test)
+- `yarn test:e2e` — All E2E tests (WebDriver.io)
+- `yarn test:e2e --spec="path/to/test.e2e.ts"` — Single E2E file
+- `yarn test:coverage` — Coverage report
+
+Patterns:
 - **Unit tests** (Vitest + React Testing Library): Located in `*.test.ts(x)` files colocated with source. Mock all
   external dependencies (Tauri IPC, filesystem, network). Focus on business logic, state mutations, and component
   behavior in isolation. Use `mockIPC` from `src/test/setup.ts`.
