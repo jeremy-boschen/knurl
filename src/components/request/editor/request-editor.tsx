@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
-import { assert } from "@/lib"
+import { assert, createDefaultAuthConfig } from "@/lib"
 import { useCollections, useRequestBody, useRequestHeaders, useRequestParameters, useRequestTab } from "@/state"
 import { generateUniqueId } from "@/lib/utils"
 import {
@@ -446,28 +446,7 @@ export function AuthTabMenu({ tabId, onActivate }: { tabId: string; onActivate?:
   const authType = request.authentication?.type ?? "none"
 
   const handleAuthTypeChange = (value: AuthType) => {
-    const base: AuthConfig = (() => {
-      switch (value) {
-        case "none":
-          return { type: "none" }
-        case "inherit":
-          return { type: "inherit" }
-        case "basic":
-          return { type: "basic", basic: {} }
-        case "bearer":
-          return { type: "bearer", bearer: { scheme: "Bearer", placement: { type: "header", name: "Authorization" } } }
-        case "apiKey":
-          return { type: "apiKey", apiKey: { placement: { type: "header", name: "" } } }
-        case "oauth2":
-          return {
-            type: "oauth2",
-            oauth2: { grantType: "client_credentials", tokenCaching: "always", clientAuth: "body" },
-          }
-        default:
-          return { type: "none" }
-      }
-    })()
-
+    const base = createDefaultAuthConfig(value as string)
     void collectionsApi().setRequestAuthentication(request.collectionId, request.id, base)
   }
 
