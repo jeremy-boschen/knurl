@@ -1,7 +1,6 @@
-# Repository & Agents Guide (Single Source of Truth)
+# AGENTS.md
 
-This file is the complete, canonical instructions for any AI tool/agent working in this repository. If you find
-conflicting guidance anywhere else, defer to this file.
+This file provides guidance to agentic tools when working with code in this repository.
 
 ## 🚨 CRITICAL: Agent Operating Discipline
 
@@ -29,190 +28,293 @@ the WebDriver session?"
 
 ---
 
-Mandatory communication output rule: Be extremely concise. Sacrifice grammar for the sake of concision.
+## Project Overview
 
-## Project Snapshot
+**Knurl:** Privacy-first desktop HTTP client.
 
-Knurl is a cloudless desktop HTTP client built with React 19 + Vite on the frontend and a Rust-powered Tauri 2 backend.
-Frontend sources live in `src/`; backend commands, storage, and platform integration under `src-tauri/`. Yarn 4 and Node
-20+ are required, alongside Rust 1.88+, MSVC, and WebView2 on Windows.
+- **Frontend:** React 19 + TypeScript, Zustand state management, Vite build
+- **Backend:** Rust with Tauri 2 (Hyper + Rustls for HTTP, AES-GCM encryption)
+- Offline-only; no cloud sync or telemetry
 
-## Directory Essentials
+## Development Commands
 
-- `src/components/{feature}` feature UIs; `src/components/ui` Shadcn primitives (generated, do not edit);
-  `src/components/ui/knurl` custom wrappers.
-- `src/state/` Zustand slices built with Immer; `src/types/` Zod schemas + shared TS types; `src/lib/` utilities.
-- `src/bindings/` TypeScript contracts for Rust commands; stay in sync with `src-tauri/src`.
-- `public/` static assets; `scripts/` automations; co-locate Vitest specs as `*.test.ts(x)`.
+```bash
+yarn dev              # Frontend-only Vite dev server
+yarn tauri dev        # Full-stack dev (hot reload)
+yarn tauri build      # Production build
+yarn check            # Format, lint, typecheck, tests
+yarn format           # Biome + cargo fmt
+yarn lint             # Biome + cargo clippy -D warnings
+yarn typecheck        # TypeScript only
+yarn test:unit        # All unit tests (frontend + backend)
+yarn test:e2e         # WebDriver.io E2E tests
+yarn test:coverage    # Coverage report
+yarn portal:package   # Distribution bundle
+yarn security         # gitleaks, cargo-deny, cargo-audit
+```
 
-Additional structure context:
+## Directory Structure
 
-- `src-tauri/src/http_client/` Hyper + Rustls HTTP execution.
-- `src-tauri/src/app_data/` cloudless storage with AES-GCM encryption.
-- `src/test/setup.ts` configures testing, including `mockIPC` for Tauri.
+```
+src/                      React 19 frontend
+├── components/            Feature UIs + shadcn UI
+├── state/                 Zustand slices (Immer + storage middleware)
+│   ├── application.ts     Root store + hook accessors
+│   ├── collections.ts     Collections/requests/folders
+│   ├── request-tabs.ts    Request tab editing state
+│   ├── settings.ts        User preferences
+│   ├── credentials.ts     Auth cache
+│   └── utility-sheets.ts  Modal/sheet state
+├── types/                 Type defs + Zod schemas
+├── lib/                   Utilities (env, theme, etc.)
+├── hooks/                 Custom React hooks
+├── pages/                 Route components
+├── request/               Request execution + WebSocket
+└── test/                  Setup + Tauri/browser mocks
 
-## Setup & Commands
+src-tauri/                Rust backend
+├── src/
+│   ├── http_client/       HTTP engine (Hyper + Rustls)
+│   │   ├── engine.rs      Request/response handling
+│   │   ├── auth.rs        Auth schemes
+│   │   ├── cookies.rs     Cookie jar (RFC 6265)
+│   │   ├── manager.rs     Lifecycle management
+│   │   └── hyper_engine/  Hyper connector
+│   ├── app_data/          AES-GCM encrypted storage
+│   │   ├── crypto.rs      Encrypt/decrypt
+│   │   └── loader.rs      File I/O + keyring
+│   ├── errors/            Error types
+│   └── main.rs            Tauri commands
+└── Cargo.toml
 
-Run `yarn install` once, then `yarn tauri dev` for full-stack development or `yarn dev` for UI-only work. Production
-builds use `yarn build` or `yarn tauri build`.
+scripts/                   Build/release helpers
+docs/
+├── DEVELOPMENT.md         Setup guide
+├── CONTRIBUTING.md        Contribution expectations
+└── plans/                 Workstream docs
+.github/                   Workflows, templates
+```
 
-Quality + tests:
+## Architecture Patterns
 
-- `yarn format`, `yarn lint`, `yarn lint:fix`
-- `yarn test`, `yarn test:watch`, `yarn test:e2e`
-- `cargo test` (from `src-tauri/`)
+**State Management:** `useApplication` (src/state/application.ts) composes slices with Immer + storage middleware. Each
+domain (collections, settings, credentials) has a slice creator. Access via stable function-returning APIs:
+`collectionsApi()`, `settingsApi()`, etc. (critical for HMR). React hooks (`useCollection(id)`, `useCollections`) ensure
+data is loaded before return.
 
-Common Tauri entrypoints:
+**Collections API (src/state/application.ts:63-93 + collections.ts)** is single source of truth:
 
-- `yarn tauri dev` (frontend + backend, hot reload)
-- `yarn tauri build` (packaged app)
+- **Index/persistence:** `getCollectionsIndex`, `loadCollection`, `saveCollection`
+- **Collection ops:** `add`, `update`, `remove`, `import`, `export`
+- **Request ops:** `getRequest`, `createRequest`, `duplicateRequest`, `deleteRequest`, `updateRequest`,
+  `setRequestAuthentication`, `updateRequestBody`, plus granular patch mutators
+- **Folder ops:** `createFolder`, `renameFolder`, `deleteFolder`, `moveFolder`
+- **Environment ops:** `createEnvironment`, `updateEnvironment`, `deleteEnvironment`, `addEnvironmentVariable`
 
-## Coding Standards
+All mutators run synchronously; persistence is transparent.
 
-Biome enforces formatting and linting; `cargo fmt`/`cargo clippy` keep Rust idiomatic. Use PascalCase for
-components/types, camelCase for variables/functions, and UPPER_SNAKE_CASE for constants. Imports should be stable
-absolute paths via the `@/` alias; external packages precede local modules. Use Zod for all runtime validation and
-ensure Immer-based immutable updates in Zustand slices. Never modify generated Shadcn primitives directly.
+**HTTP Client (src-tauri/src/http_client/):** Hyper + Rustls engine (engine.rs). Native TLS validation per platform.
+Auth: Bearer, Basic, API Key, OAuth2. Cookies: persistent jar (RFC 6265 domain/path matching). WebSocket supported.
 
-### Frontend Guidance
+**Storage:** AES-GCM encrypted via system keyring (Windows Credential Manager, macOS Keychain, Linux Secret Service).
+Collections as JSON files in app data dir.
 
-- Use the following libraries unless the user or repo specifies otherwise:
-- Framework: React + TypeScript
-- Styling: Tailwind CSS
-- Components: shadcn/ui
-- Icons: lucide-react
-- Animation: Framer Motion
-- Charts: Recharts
-- Fonts: San Serif, Inter, Geist, Mona Sans, IBM Plex Sans, Manrope
+## Development Workflow
 
-### Additional Coding Rules (observed conventions)
+**Before PR:** Run `yarn check` (format, lint, tests). For Rust: `cargo fmt && cargo clippy -- -D warnings`. Zero `any`
+types; use Zod for validation.
 
-- Store APIs are function-returning: access via stable accessors for HMR.
-    - Example: `collectionsApi()` returns the API object; do not capture or pass a plain object.
-- Lucide icons: always import/use `*Icon` variants (e.g., `PlusIcon`, not `Plus`).
-- TypeScript/JavaScript blocks: always use braces for `if/else`, loops, and callbacks where side-effects occur; avoid
-  ambiguous single-line bodies.
-- React hooks:
-    - Use `useCallback`/`useMemo` appropriately and satisfy `useExhaustiveDependencies` (do not suppress; include stable
-      deps like setters).
-    - Avoid suppression comments unless absolutely necessary and documented.
-- Types over `any`:
-    - Do not use `any`. Prefer precise types (e.g., `Record<string, FormField>`, `Partial<FormField>`).
-    - When normalizing objects, parse through Zod types instead of casting to `any`.
-- Testing ergonomics:
-    - Do not trigger real Tauri IPC in unit tests. Use provided mocks and guards already present in state
-      initialization.
-    - Keep APIs stable for tests (e.g., `collectionsApi()` function contract).
-- Rust standards:
-    - Clippy must pass with `-D warnings`. Address lints like `collapsible_if` by using `let`-chains and combined
-      conditions where appropriate.
-    - Run `cargo fmt` to maintain formatting.
+**Testing:**
 
-## Testing Expectations
+Commands:
 
-### Unit Tests (Vitest + React Testing Library)
+- `yarn test:unit` — All unit tests (Vitest + cargo test)
+- `yarn test:e2e` — All E2E tests (WebDriver.io)
+- `yarn test:e2e --spec="path/to/test.e2e.ts"` — Single E2E file
+- `yarn test:coverage` — Coverage report
 
-Setup lives in `src/test/setup.ts` and mocks Tauri IPC via `mockIPC`. Mock all external dependencies—filesystem,
-network, Tauri commands. Test business logic, state mutations, component behavior in isolation. Target 70%+ coverage on
-frontend lines, 90%+ on deterministic Rust helpers.
+Patterns:
 
-Test file naming and co-location:
+- **Unit tests** (Vitest + React Testing Library): Located in `*.test.ts(x)` files colocated with source. Mock all
+  external dependencies (Tauri IPC, filesystem, network). Focus on business logic, state mutations, and component
+  behavior in isolation. Use `mockIPC` from `src/test/setup.ts`.
+- **E2E tests** (WebDriver.io):
+    - **Golden rule:** Only test user-visible behavior via UI interactions. Create test state **exclusively** through UI
+      actions (clicking, typing, etc.). Verify outcomes **only** what the UI displays.
+    - **No plumbing:** Never access internal app state, `__vite_ssr_modules__`, call `browser.execute()` to inspect
+      state, filesystem, or invoke Tauri commands. If you can't create or verify via the UI, use a unit or integration
+      test.
+    - **UI helpers only:** Use only shared helpers from `test/support/ui.ts`. Extend that library instead of
+      hand-rolling selectors.
+    - **See:** `test/support/E2E_GUIDELINES.md` for comprehensive patterns, helper functions, common patterns, and
+      troubleshooting.
+- **Integration tests** (WebDriver.io + backend access): Cross-layer behavior verification (encryption at rest, file
+  persistence, state synchronization). **Requires explicit approval.** Setup via UI where possible; use backend access
+  only for verification. Store in `test/specs/integration/`.
+  See [Integration Test Criteria](#integration-test-approval-criteria) below.
+- **Rust tests**: Inline `#[cfg(test)]` modules for units; `src-tauri/tests/` for integration. No real network/OS calls.
+- **Network mocking:** Avoid hitting real networks/OS services in all tests; rely on mocks. E2E tests use the mock
+  server at `http://127.0.0.1:3000`. Add endpoints to `scripts/mock-endpoint-server.mjs` if needed, do not call external
+  services like httpbin.org.
 
-- For every source file `foo.ts(x)`, all unit tests must live in a single sibling file named `foo.test.ts(x)`.
-- Do not split tests across multiple files per target.
-- Co-locate tests next to their target source under `src/`.
+**Code style:**
 
-### E2E Tests (WebDriver.io)
+- Imports: `@/` alias (internal); Biome order: React → packages → local
+- Zustand: use `set` (Immer), `get` in slices
+- Zod: define as `zSomething`; validate at boundaries
+- Rust: no `unwrap()`/`expect()` in production; use `thiserror`
+- Icons: always `*Icon` variants (e.g., `PlusIcon`)
 
-**Golden rule:** Only test user-visible behavior via UI interactions. Do NOT access internal state, filesystem, or Tauri
-commands.
+## Communication Style
 
-Strict E2E discipline:
+Be extremely concise. Sacrifice grammar for the sake of brevity. Avoid unnecessary words; prioritize clarity and action.
 
-- **Create state** exclusively through UI actions (clicks, form input, navigation). If you can't create a state via the
-  UI, it's not E2E—use unit tests or integration tests.
-- **Verify outcomes** only by checking what the UI displays (text, element visibility, form values). Never read
-  filesystem, app state, or call Tauri commands.
-- **No plumbing.** Do not access `__vite_ssr_modules__`, call `browser.execute()` to inspect state, or invoke Tauri
-  commands. If behavior can't be verified via the UI, it belongs in a unit test or integration test.
-- Use only the shared UI helpers from `test/support/ui.ts`; extend that library instead of hand-rolling selectors.
+## 🚨 CRITICAL: Agent Operating Discipline
 
-**See `test/support/E2E_GUIDELINES.md`** for complete patterns, helper function requirements, error handling, reload strategies, and troubleshooting guidance.
+**NEVER autonomously expand scope or change what is being tested.**
 
-### Integration Tests (WebDriver.io + Backend Access)
+When given a task:
 
-**Purpose:** Verify cross-layer behavior that cannot be tested via UI alone. Examples: encryption at rest, file
-persistence, backend state synchronization, keyring integration.
+1. **Create a TODO of EXACTLY what was asked for** - treat it as the sole test plan
+2. **If you hit a blocker**, you MUST:
+    - Stop immediately
+    - Share the specific blocker
+    - Ask for help/direction
+    - Wait for response
+3. **Do NOT work around blockers** by changing requirements
+4. **Do NOT make unilateral decisions** about what the work should really do
 
-**Requirements:**
+This is non-negotiable. Scope creep and autonomously redefining requirements wastes resources and breaks trust.
 
-- **Coordination required.** Do NOT write integration tests without explicit discussion and approval. Poor integration
-  test design is a common source of maintenance burden.
-- **Clear justification.** Document why this behavior cannot be tested via E2E (UI) or unit tests.
-- **Minimal plumbing.** Use `callBridgeReplacement` helpers and filesystem utilities from `test/support/` to access
-  backend state. Access state only for **verification**, not setup.
-- **Setup via UI.** Create test conditions through UI interactions where possible. Use backend access only to verify
-  outcomes that the UI doesn't expose.
-- **Location:** Store in `test/specs/integration/` to distinguish from pure E2E tests.
+## Planning Protocol
 
-Example use cases:
+For multi-step work (3+ steps or non-trivial tasks):
 
-- Verifying encrypted data is properly stored on disk with expected format/keys
-- Testing Tauri backend command behavior with real filesystem
-- Validating state persistence across app restarts
+1. Create or update a dated plan file under `docs/plans/` named `docs/plans/YYYY-MM-DD-<task>-plan.md`
+2. Include a live task checklist with status (pending/in-progress/completed)
+3. Update the plan file immediately when scope or approach changes
+4. This allows work to resume after interruptions with full context preserved
 
-Example non-use-cases:
+## Common Tasks
 
-- Creating collections via backend to avoid UI interaction complexity (use E2E + UI helpers instead)
-- Checking internal app state that has a UI representation (verify via UI instead)
+**Add request field:**
 
-Rust code uses inline `#[cfg(test)]` modules for units and `src-tauri/tests/` for integration; avoid hitting real
-network or OS services.
+1. Type in `src/types/request.ts`
+2. Zod schema (e.g., `zRequestPathParam`)
+3. Setter in `collectionsApi()` (e.g., `updateRequestPatchPathParam`)
+4. Component in `src/components/request/editor/`
+5. Sync via `commitRequestPatch` or granular setters
 
-## Git & PR Practice
+**Add environment variable:** Use `environmentsApi().addEnvironmentVariable(envId, key, value)`. Templates:
+`{{variableName}}` syntax in `src/lib/environments.ts`. Substitution in Rust engine before send.
 
-Write conventional commits (`feat:`, `fix:`, `chore:`) in imperative tense. Pull requests should state intent, outline
-major changes, document tests executed, and link issues. Include screenshots or recordings for UI tweaks and call out
-follow-up tasks or risk areas.
+**Add OAuth2 provider:** Config in `src/components/auth/oauth2-editor.tsx`. OpenID Connect discovery flow. Redirect URI
+always `http(s)://localhost` (Tauri handles browser). Test with `yarn oauth-server`.
 
-## Agent Operating Guide
+**Work with collections:** Read via `useCollection(id)` hook (handles loading). Persist via
+`collectionsApi().saveCollection()`. JSON imports validate via `importCollection`. Reordering uses `dnd-kit`; call
+`reorderFolders` or `reorderRequestsInFolder`.
 
-General practices:
+## Integration Test Approval Criteria
 
-- Treat this file as the sole source of truth for agent behavior.
-- Execute only user-specified steps; if extra work seems needed, pause and ask for approval before expanding scope.
-- Avoid unrelated refactors; prefer minimal, targeted changes.
-- Never edit generated Shadcn primitives under `src/components/ui`.
-- Use `@/` absolute imports; group externals before locals.
-- Use the shared e2e UI helper (`test/support/ui.ts`) for all automated interactions with app components; extend this
-  library instead of hand-rolling selectors.
-- Review `docs/feature-inventory.md` before altering behaviour; call out verification steps that preserve listed
-  features and update the inventory when functionality changes.
+Integration tests verify cross-layer behavior and require **explicit approval** before implementation. Use this decision
+tree:
 
-Environment + safety:
+### When to Use Integration Tests
 
-- Avoid hitting real networks/OS services in tests; rely on mocks.
-- For destructive operations (deletions, resets), get explicit human approval first.
+Integration tests are appropriate when **ALL** of the following are true:
 
-Shell & cross‑platform:
+1. **Backend verification is essential**
+    - The behavior depends on correct backend implementation (file I/O, encryption, Tauri commands)
+    - The implementation details are NOT exposed through the normal UI
+    - You cannot verify the behavior by inspecting the DOM after user interactions
 
-- All development commands run under `bash` on every platform (Windows/macOS/Linux).
-- Prefer plain scripts in `package.json` and hooks (no extra `bash -lc`).
-- Do not add PowerShell/CMD variants.
+2. **Cannot test via E2E alone**
+    - State cannot be created exclusively through UI interactions
+    - Outcome cannot be verified by inspecting the UI (DOM queries, visual elements)
+    - Bridge/backend access is required for verification
 
-### Context7 Documentation
+3. **Cannot test via unit tests**
+    - The behavior requires real app state (not mocked)
+    - The behavior requires actual file system access
+    - The behavior requires Tauri backend integration
 
-- When working with dependencies, libraries, or external APIs, resolve the relevant Context7 library (
-  `context7__resolve-library-id`) before fetching documentation.
-- Prefer official docs and versions that match the repository’s declared dependencies; note mismatches and adjust usage
-  accordingly.
-- Limit Context7 fetches to the necessary topic scope to reduce noise and stay aligned with the active dependency set.
+### Before Writing an Integration Test
 
-### Agent Planning Protocol
+Ask yourself:
 
-- Always create or update a dated plan file under `docs/plans/` for multi-step work, named
-  `docs/plans/YYYY-MM-DD-<task>-plan.md`.
-- Include a live task list (checkboxes) and update it as you progress.
-- Reflect scope or approach changes immediately in the plan file so work can resume after interruptions.
+- Can I create this state through UI interactions? → **Use E2E test**
+- Can I verify the outcome by inspecting the DOM? → **Use E2E test**
+- Can I test the logic with mocked dependencies? → **Use unit test**
+- Do I need to verify backend behavior not exposed in the UI? → **Integrate test (with justification)**
 
-Conflict resolution: When guidance conflicts, defer to this `AGENTS.md`.
+### Integration Test Template
+
+```typescript
+/**
+ * Integration Test: [One-line description of what behavior is tested]
+ *
+ * This test verifies [specific cross-layer behavior]. [Explain why this
+ * cannot be tested via E2E or unit tests]. This requires [list bridge methods
+ * used] for verification, as [explain why backend verification is necessary].
+ *
+ * See AGENTS.md for integration test approval criteria.
+ */
+
+describe('[Feature] Integration', () => {
+  // Test implementation
+})
+```
+
+### Current Approved Integration Tests
+
+See `test/specs/integration/README.md` for:
+
+- Detailed rationale for each approved test
+- Bridge method usage guidelines
+- Instructions for running integration tests
+
+### Examples
+
+**✅ Justified integration test:**
+
+```typescript
+// Persists collections to disk and restores on reload
+// Cannot verify file persistence through UI alone
+// Requires loadAppData() bridge method for verification
+```
+
+**❌ Not justified:**
+
+```typescript
+// Tests that UI correctly displays collection name
+// Can be tested via E2E - create via UI, inspect DOM for name
+// Bridge access not needed
+```
+
+## Context7 Documentation
+
+When working with dependencies, libraries, or external APIs:
+
+1. Resolve the relevant Context7 library via `context7__resolve-library-id` before fetching docs
+2. Prefer official docs matching the repo's declared dependencies
+3. Note version mismatches and adjust usage accordingly
+4. Limit Context7 fetches to necessary topic scope to reduce noise
+
+## Troubleshooting
+
+| Issue                          | Solution                                                                       |
+|--------------------------------|--------------------------------------------------------------------------------|
+| `yarn install` fails (Windows) | Enable Developer Mode; run from path without spaces                            |
+| Tauri build stalls             | Check `target/cargo-timings/*.html`; exclude `src-tauri/target` from antivirus |
+| Types fail to check            | `yarn typecheck` for details; check for missing `React` imports                |
+| Tests fail mysteriously        | Verify `src/test/setup.ts` imported; Tauri API must be mocked                  |
+| OAuth browser won't open       | Whitelist `http(s)://localhost` in OAuth provider's redirect URI               |
+
+## References
+
+- Full dev guide: `docs/DEVELOPMENT.md`
+- Contribution expectations: `.github/CONTRIBUTING.md`
+- Release process: `scripts/update-version.mjs`
+- Active workstreams: `docs/plans/`
+- Commit style: Conventional Commits (`feat:`, `fix:`, `chore:`)

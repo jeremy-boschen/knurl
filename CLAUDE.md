@@ -2,9 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**AUTHORITATIVE SOURCE:** When this file conflicts with AGENTS.md, defer to AGENTS.md. AGENTS.md is the canonical
-ruleset for all AI tools.
-
 ## 🚨 CRITICAL: Agent Operating Discipline
 
 **This is non-negotiable. Scope creep and autonomously redefining requirements wastes resources and breaks trust.**
@@ -130,12 +127,14 @@ types; use Zod for validation.
 **Testing:**
 
 Commands:
+
 - `yarn test:unit` — All unit tests (Vitest + cargo test)
 - `yarn test:e2e` — All E2E tests (WebDriver.io)
 - `yarn test:e2e --spec="path/to/test.e2e.ts"` — Single E2E file
 - `yarn test:coverage` — Coverage report
 
 Patterns:
+
 - **Unit tests** (Vitest + React Testing Library): Located in `*.test.ts(x)` files colocated with source. Mock all
   external dependencies (Tauri IPC, filesystem, network). Focus on business logic, state mutations, and component
   behavior in isolation. Use `mockIPC` from `src/test/setup.ts`.
@@ -147,7 +146,8 @@ Patterns:
       test.
     - **UI helpers only:** Use only shared helpers from `test/support/ui.ts`. Extend that library instead of
       hand-rolling selectors.
-    - **See:** `test/support/E2E_GUIDELINES.md` for comprehensive patterns, helper functions, common patterns, and troubleshooting.
+    - **See:** `test/support/E2E_GUIDELINES.md` for comprehensive patterns, helper functions, common patterns, and
+      troubleshooting.
 - **Integration tests** (WebDriver.io + backend access): Cross-layer behavior verification (encryption at rest, file
   persistence, state synchronization). **Requires explicit approval.** Setup via UI where possible; use backend access
   only for verification. Store in `test/specs/integration/`.
