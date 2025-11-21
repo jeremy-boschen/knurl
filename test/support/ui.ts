@@ -6,11 +6,12 @@ const ESCAPE_KEY = "Escape"
 /**
  * Default timing configuration for waitFor operations:
  * - initialDelay: time to wait before starting to poll (allows UI to render)
- * - pollingInterval: how frequently to check once polling starts (tight but not excessive)
+ * - pollingInterval: how frequently to check once polling starts
+ *   Note: 100ms is a good balance. Too aggressive (50ms) can starve the browser event loop.
  */
 const DEFAULT_WAIT_CONFIG = {
   initialDelay: 0,
-  pollingInterval: 50,
+  pollingInterval: 100,
 }
 
 /**
@@ -214,20 +215,11 @@ export async function resetAppState(): Promise<void> {
 
 export async function setInputText(testId: string, value: string): Promise<void> {
   const element = await getElementByTestId(testId)
-  await element.waitForDisplayed({timeout: DEFAULT_TIMEOUT})
-  // For controlled inputs in React, use keyboard events instead of direct DOM manipulation
-  // This ensures onChange events are triggered properly
+  await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
   await element.click()
-  await browser.pause(100) // Give input time to receive focus
-  await browser.keys(['Control', 'a']) // Select all
+  await element.setValue(value)
+  // Small pause to allow React state updates to propagate
   await browser.pause(50)
-  await browser.keys(['Delete']) // Clear
-  await browser.pause(100) // Allow state update
-  // Only add value if not empty - WebdriverIO throws "invalid argument" for empty addValue
-  if (value.length > 0) {
-    await element.addValue(value) // Type the new value
-    await browser.pause(50) // Allow state update after typing
-  }
 }
 
 export async function getInputText(testId: string): Promise<string> {
@@ -245,18 +237,32 @@ export async function appendInputText(testId: string, value: string): Promise<vo
 
 export async function clearInputText(testId: string): Promise<void> {
   const element = await getElementByTestId(testId)
-  await element.waitForDisplayed({timeout: DEFAULT_TIMEOUT})
-  // For controlled inputs, use keyboard events
-  await element.click()
-  await browser.keys(['Control', 'a'])
-  await browser.keys(['Delete'])
-  await browser.pause(50)
+  await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
+  await element.clearValue()
+}
+
+export async function waitForSendButtonReady(timeout = DEFAULT_TIMEOUT): Promise<void> {
+  // Wait for the Send button to be visible and ready (Cancel button should disappear)
+  // This ensures any pending request has completed before we send a new one
+  await browser.waitUntil(
+    async () => {
+      const sendBtn = await $('[data-test-id="request-workspace:send-button"]')
+      const cancelBtn = await $('[data-test-id="request-workspace:cancel-button"]')
+      // Button is ready when Send exists and Cancel doesn't
+      return (await sendBtn.isExisting()) && !(await cancelBtn.isExisting())
+    },
+    {
+      timeout,
+      interval: 100,
+      timeoutMsg: "Send button did not become ready (request may still be pending)",
+    },
+  )
 }
 
 export async function clickByTestId(testId: string): Promise<void> {
   const element = await getElementByTestId(testId)
-  await element.waitForDisplayed({timeout: DEFAULT_TIMEOUT})
-  await element.scrollIntoView({block: "center", inline: "center"})
+  await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
+  await element.scrollIntoView({ block: "center", inline: "center" })
   await withFallbackClick(element)
 }
 
@@ -274,19 +280,19 @@ export async function waitForTestIdToDisappear(testId: string, timeout = DEFAULT
 
 export async function selectOptionByTestId(selectTriggerTestId: string, optionTestId: string): Promise<void> {
   const trigger = await getElementByTestId(selectTriggerTestId)
-  await trigger.waitForDisplayed({timeout: DEFAULT_TIMEOUT})
-  await trigger.scrollIntoView({block: "center", inline: "center"})
+  await trigger.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
+  await trigger.scrollIntoView({ block: "center", inline: "center" })
   await withFallbackClick(trigger)
 
   const option = await getElementByTestId(optionTestId)
-  await option.waitForDisplayed({timeout: DEFAULT_TIMEOUT})
-  await option.scrollIntoView({block: "center", inline: "center"})
+  await option.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
+  await option.scrollIntoView({ block: "center", inline: "center" })
   await withFallbackClick(option)
 }
 
 export async function setSwitchState(testId: string, desired: boolean): Promise<void> {
   const element = await getElementByTestId(testId)
-  await element.waitForDisplayed({timeout: DEFAULT_TIMEOUT})
+  await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
   const current = await element.getAttribute("data-state")
   const isOn = current === "checked" || current === "on"
   if (isOn === desired) {
@@ -349,7 +355,7 @@ export async function closeApplicationWindow(timeout = DEFAULT_TIMEOUT): Promise
 
 export async function setCheckboxState(testId: string, desired: boolean): Promise<void> {
   const element = await getElementByTestId(testId)
-  await element.waitForDisplayed({timeout: DEFAULT_TIMEOUT})
+  await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
   const current = await element.getAttribute("data-state")
   const isChecked = current === "checked" || (await element.isSelected())
   if (isChecked === desired) {
@@ -360,7 +366,7 @@ export async function setCheckboxState(testId: string, desired: boolean): Promis
 
 export async function expectTextContent(testId: string, expected: string | RegExp): Promise<void> {
   const element = await getElementByTestId(testId)
-  await element.waitForDisplayed({timeout: DEFAULT_TIMEOUT})
+  await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
   const text = await element.getText()
   await expect(text).toMatch(expected)
 }
@@ -369,10 +375,10 @@ export async function ensureCollectionRowVisible(collectionId: string, timeout =
   await browser.waitUntil(
     async () =>
       await browser.execute(
-        ({targetId}) => {
+        ({ targetId }) => {
           return Boolean(document.querySelector(`[data-test-id="collection-tree:collection-row:${targetId}"]`))
         },
-        {targetId: collectionId},
+        { targetId: collectionId },
       ),
     {
       timeout,
@@ -382,7 +388,7 @@ export async function ensureCollectionRowVisible(collectionId: string, timeout =
   )
 
   const row = await getElementByTestId(`collection-tree:collection-row:${collectionId}`, timeout)
-  await row.scrollIntoView({block: "center", inline: "center"})
+  await row.scrollIntoView({ block: "center", inline: "center" })
   return row
 }
 
@@ -390,8 +396,7 @@ export async function openCollectionMenu(collectionId: string): Promise<void> {
   const row = await ensureCollectionRowVisible(collectionId)
   try {
     await row.moveTo()
-  } catch {
-  }
+  } catch {}
   await browser.pause(50)
   await clickByTestId(`collection-tree:collection-row:menu-button:${collectionId}`)
 }
@@ -403,7 +408,7 @@ export async function selectCollectionRow(collectionId: string): Promise<void> {
 
 export async function expectAttributeValue(testId: string, attribute: string, expected: string): Promise<void> {
   const element = await getElementByTestId(testId)
-  await element.waitForDisplayed({timeout: DEFAULT_TIMEOUT})
+  await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
   const value = await element.getAttribute(attribute)
   await expect(value).toBe(expected)
 }
@@ -419,7 +424,7 @@ export async function selectMenuActionById(
   // Click the menu action by its ID - use extended timeout for menu items
   // especially on second+ invocations where menu may have animation delays
   const actionElement = await $(`[data-test-id="${actionId}"]`)
-  await actionElement.waitForDisplayed({timeout: 20000})
+  await actionElement.waitForDisplayed({ timeout: 20000 })
   await browser.pause(150) // Extra wait to ensure menu item is ready
   await withFallbackClick(actionElement)
   await browser.pause(200) // Wait for menu to close after selection
@@ -467,7 +472,7 @@ export async function clickVisibleNewCollectionButton(): Promise<void> {
     const elements = await $$(`[data-test-id="${testId}"]`)
     for (const element of elements) {
       if (await element.isDisplayed()) {
-        await element.scrollIntoView({block: "center", inline: "center"})
+        await element.scrollIntoView({ block: "center", inline: "center" })
         await element.click()
         return
       }
@@ -572,6 +577,6 @@ export async function waitForActiveRequestTab(timeout = 15000): Promise<string> 
  */
 export async function waitForRequestEditor(timeout = 10000): Promise<WebdriverIO.Element> {
   const urlInput = await $('[data-test-id="request-workspace:url-input"]')
-  await urlInput.waitForDisplayed({timeout})
+  await urlInput.waitForDisplayed({ timeout })
   return urlInput
 }

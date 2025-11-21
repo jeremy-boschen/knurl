@@ -1,15 +1,17 @@
-import {expect} from "@wdio/globals"
+import { expect } from "@wdio/globals"
 
+import { waitForActiveRequestTab, waitForRequestEditor } from "../support/ui"
 import {
   clickByTestId,
+  ensureAppReady,
   ensureWorkspaceReady,
   getElementByTestId,
   openNewRequestViaUI,
   resetOverlays,
   selectOptionByTestId,
   setInputText,
-  waitForRequestEditor
-} from "../support/ui.js"
+  waitForSendButtonReady,
+} from "../support/ui"
 
 describe("Authentication Strategies", () => {
   before(async () => {
@@ -48,7 +50,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("testuser")
         },
-        {timeout: 5000}
+        { timeout: 5000 }
       )
 
       const responseText = await browser.execute(() => {
@@ -93,7 +95,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("user@domain")
         },
-        {timeout: 5000}
+        { timeout: 5000 }
       )
 
       const responseText = await browser.execute(() => {
@@ -140,7 +142,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("Bearer")
         },
-        {timeout: 5000}
+        { timeout: 5000 }
       )
 
       const responseText = await browser.execute(() => {
@@ -192,7 +194,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("MyCustomScheme")
         },
-        {timeout: 5000}
+        { timeout: 5000 }
       )
 
       const responseText = await browser.execute(() => {
@@ -227,7 +229,7 @@ describe("Authentication Strategies", () => {
       await clickByTestId("request-editor:auth-menu:type-apiKey")
 
       // Wait for API Key form to be present and fully rendered (with initial delay for React render)
-      await getElementByTestId("request-auth-panel:api-key-auth-form", 5000, {initialDelay: 200})
+      await getElementByTestId("request-auth-panel:api-key-auth-form", 5000, { initialDelay: 200 })
 
       // Verify API Key key and value inputs exist
       const keyInput = await getElementByTestId("request-auth-panel:api-key-auth-key-input", 5000)
@@ -269,7 +271,7 @@ describe("Authentication Strategies", () => {
           })
           return responseBody
         },
-        {timeout: 10000}
+        { timeout: 10000 }
       )
 
       // Verify response exists (request with auth was sent successfully)
@@ -331,7 +333,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("api_token") || responseText.includes("token123")
         },
-        {timeout: 5000}
+        { timeout: 5000 }
       )
 
       // Verify the query parameter is in the response
@@ -385,7 +387,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("cookie") || responseText.includes("session_token")
         },
-        {timeout: 5000}
+        { timeout: 5000 }
       )
 
       const responseText = await browser.execute(() => {
@@ -442,10 +444,11 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("basicuser")
         },
-        {timeout: 5000}
+        { timeout: 5000 }
       )
 
       // Switch to Bearer
+      await waitForSendButtonReady()
       await clickByTestId("request-editor:auth-tab-dropdown-trigger")
       await clickByTestId("request-editor:auth-menu:type-bearer")
 
@@ -472,10 +475,11 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("Bearer")
         },
-        {timeout: 5000}
+        { timeout: 5000 }
       )
 
       // Switch to API Key
+      await waitForSendButtonReady()
       await clickByTestId("request-editor:auth-tab-dropdown-trigger")
       await clickByTestId("request-editor:auth-menu:type-apiKey")
 
@@ -516,7 +520,7 @@ describe("Authentication Strategies", () => {
           const lowerText = responseText.toLowerCase()
           return lowerText.includes("req-header-x-api-key") || lowerText.includes("api-key-value")
         },
-        {timeout: 10000}
+        { timeout: 10000 }
       )
     })
 
@@ -556,7 +560,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("test-user")
         },
-        {timeout: 5000}
+        { timeout: 5000 }
       )
 
       // Switch to No Auth
@@ -583,7 +587,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.length > 0
         },
-        {timeout: 5000}
+        { timeout: 5000 }
       )
 
       // Verify the response does NOT contain authorization header from previous auth
@@ -634,7 +638,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("Bearer")
         },
-        {timeout: 5000}
+        { timeout: 5000 }
       )
 
       // Modify URL
@@ -656,7 +660,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("Bearer")
         },
-        {timeout: 5000}
+        { timeout: 5000 }
       )
 
       // Verify auth configuration persists in the UI
@@ -721,10 +725,11 @@ describe("Authentication Strategies", () => {
           const lowerText = responseText.toLowerCase()
           return lowerText.includes("req-header-x-test-key") || lowerText.includes("test-value")
         },
-        {timeout: 10000}
+        { timeout: 10000 }
       )
 
       // Switch to Bearer and verify it displays
+      await waitForSendButtonReady()
       await clickByTestId("request-editor:auth-tab-dropdown-trigger")
       await clickByTestId("request-editor:auth-menu:type-bearer")
 
@@ -751,7 +756,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("Bearer")
         },
-        {timeout: 10000}
+        { timeout: 10000 }
       )
     })
 
@@ -793,7 +798,7 @@ describe("Authentication Strategies", () => {
           // Check if the response contains the authorization header
           return responseText.includes("authorization") || responseText.includes("user")
         },
-        {timeout: 5000}
+        { timeout: 5000 }
       )
 
       // Verify the authorization header is in the response
@@ -880,7 +885,7 @@ describe("OAuth Flows", () => {
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
-    await sendBtn.waitForClickable({timeout: 5000})
+    await sendBtn.waitForClickable({ timeout: 5000 })
 
     // Click Send button
     await clickByTestId("request-workspace:send-button")
@@ -958,7 +963,7 @@ describe("OAuth Flows", () => {
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
-    await sendBtn.waitForClickable({timeout: 5000})
+    await sendBtn.waitForClickable({ timeout: 5000 })
 
     // Click Send button
     await clickByTestId("request-workspace:send-button")
@@ -1012,7 +1017,7 @@ describe("OAuth Flows", () => {
 
     // Verify and set Token URL field (required for all grant types)
     const tokenUrlField = await getElementByTestId("oauth2-editor:token-url-input", 5000)
-    await tokenUrlField.waitForDisplayed({timeout: 5000})
+    await tokenUrlField.waitForDisplayed({ timeout: 5000 })
     await setInputText("oauth2-editor:token-url-input", baseAuthConfig.tokenUrl)
 
     // Set Client ID (use public client for device code flow)
@@ -1026,7 +1031,7 @@ describe("OAuth Flows", () => {
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
-    await sendBtn.waitForClickable({timeout: 5000})
+    await sendBtn.waitForClickable({ timeout: 5000 })
 
     // Click Send button
     await clickByTestId("request-workspace:send-button")
@@ -1098,19 +1103,19 @@ describe("OAuth Flows", () => {
 
     // Verify the configuration is set correctly by checking field values
     const tokenUrlValue = await browser.execute(() => {
-      const input = document.querySelector('[data-test-id="oauth2-editor:token-url-input"]') as HTMLInputElement
+      const input = document.querySelector('[data-test-id="oauth2-editor:token-url-input"]')
       return input ? input.value : ""
     })
     await expect(tokenUrlValue).toContain("token")
 
     const clientIdValue = await browser.execute(() => {
-      const input = document.querySelector('[data-test-id="oauth2-editor:client-id-input"]') as HTMLInputElement
+      const input = document.querySelector('[data-test-id="oauth2-editor:client-id-input"]')
       return input ? input.value : ""
     })
     await expect(clientIdValue).toEqual(clientId)
 
     const refreshTokenValue = await browser.execute(() => {
-      const input = document.querySelector('[data-test-id="oauth2-editor:refresh-token-input"]') as HTMLInputElement
+      const input = document.querySelector('[data-test-id="oauth2-editor:refresh-token-input"]')
       return input ? input.value : ""
     })
     await expect(refreshTokenValue).toEqual(mockRefreshToken)
@@ -1211,7 +1216,7 @@ describe("OAuth Flows", () => {
 
     // Store the initial auth URL
     const initialAuthUrl = await browser.execute(() => {
-      const input = document.querySelector('[data-test-id="oauth2-editor:auth-url-input"]') as HTMLInputElement
+      const input = document.querySelector('[data-test-id="oauth2-editor:auth-url-input"]')
       return input ? input.value : ""
     })
 
@@ -1229,7 +1234,7 @@ describe("OAuth Flows", () => {
     // Check if an error alert was shown (this depends on implementation)
     // Verify that the auth URL was NOT changed
     const authUrlAfterError = await browser.execute(() => {
-      const input = document.querySelector('[data-test-id="oauth2-editor:auth-url-input"]') as HTMLInputElement
+      const input = document.querySelector('[data-test-id="oauth2-editor:auth-url-input"]')
       return input ? input.value : ""
     })
 
@@ -1238,7 +1243,7 @@ describe("OAuth Flows", () => {
 
     // Client ID should also remain unchanged
     const clientIdAfterError = await browser.execute(() => {
-      const input = document.querySelector('[data-test-id="oauth2-editor:client-id-input"]') as HTMLInputElement
+      const input = document.querySelector('[data-test-id="oauth2-editor:client-id-input"]')
       return input ? input.value : ""
     })
     await expect(clientIdAfterError).toEqual("my-initial-client-id")

@@ -1,20 +1,25 @@
 #!/bin/bash
 
-# E2E test runner that supports --spec and --test parameters
+# E2E test runner that supports --spec, --test/--grep, and --coverage parameters
 # Usage:
-#   yarn test:e2e                           # Run all E2E tests
+#   yarn test:e2e                           # Run all E2E tests (no coverage)
 #   yarn test:e2e --spec <filename>         # Run specific test file
 #   yarn test:e2e --spec=<filename>         # Run specific test file
 #   yarn test:e2e --test <test name>        # Run tests matching name (mocha -g)
 #   yarn test:e2e --test=<test name>        # Run tests matching name (mocha -g)
+#   yarn test:e2e --grep <test name>        # Alias for --test
+#   yarn test:e2e --grep=<test name>        # Alias for --test
+#   yarn test:e2e --coverage                # Enable coverage aggregation
+#   yarn test:e2e --spec=file.e2e.ts --coverage
 
 set -e
 
 spec_file=""
 test_name=""
+enable_coverage=0
 
 # Parse arguments to support both --spec <filename> and --spec=<filename>
-# and both --test <name> and --test=<name>
+# and both --test <name> and --test=<name>, --grep as alias for --test
 for arg in "$@"; do
   if [[ "$arg" == "--spec="* ]]; then
     # Handle --spec=filename format
@@ -36,6 +41,19 @@ for arg in "$@"; do
     # This is the test name following --test
     test_name="$arg"
     test_next=0
+  elif [[ "$arg" == "--grep="* ]]; then
+    # Handle --grep=name format (alias for --test)
+    test_name="${arg#--grep=}"
+  elif [[ "$arg" == "--grep" ]]; then
+    # Mark that we found --grep, next arg should be the test name
+    grep_next=1
+  elif [[ $grep_next == 1 ]]; then
+    # This is the test name following --grep
+    test_name="$arg"
+    grep_next=0
+  elif [[ "$arg" == "--coverage" ]]; then
+    # Enable coverage aggregation
+    enable_coverage=1
   fi
 done
 
@@ -59,9 +77,13 @@ if [[ -n "$spec_file" ]] || [[ -n "$test_name" ]]; then
     echo "Running E2E tests matching: $test_name"
   fi
   eval "$wdio_cmd"
-  node scripts/aggregate-e2e-coverage.mjs
+  if [[ $enable_coverage == 1 ]]; then
+    node scripts/aggregate-e2e-coverage.mjs
+  fi
 else
   echo "Running all E2E tests"
   yarn wdio run ./wdio.conf.ts
-  node scripts/aggregate-e2e-coverage.mjs
+  if [[ $enable_coverage == 1 ]]; then
+    node scripts/aggregate-e2e-coverage.mjs
+  fi
 fi
