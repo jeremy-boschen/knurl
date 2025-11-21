@@ -3,7 +3,7 @@ import React, { type FC, type ReactNode, useId } from "react"
 import { useShallow } from "zustand/shallow"
 
 import { discoverOidc } from "@/bindings/knurl"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Input } from "@/components/ui/knurl/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -449,6 +449,7 @@ export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
   const parentAuth = useApplication((state) =>
     request ? state.collectionsState.cache[request.collectionId]?.authentication : undefined,
   )
+  const [discoveryError, setDiscoveryError] = React.useState<string | null>(null)
 
   if (!request || !requestTab || !requestTabsApi) {
     return null
@@ -532,10 +533,11 @@ export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
     const oauth2 = authentication.oauth2 ?? {}
     const discoveryBase = oauth2.discoveryUrl || oauth2.authUrl
     if (!discoveryBase) {
-      alert("Please enter a Discovery URL or Auth URL before attempting auto-discovery")
+      setDiscoveryError("Please enter a Discovery URL or Auth URL before attempting auto-discovery")
       return
     }
     try {
+      setDiscoveryError(null)
       const normalized = discoveryBase.replace(/\/$/, "")
       const url = /\.well-known\//.test(normalized) ? normalized : `${normalized}/.well-known/openid-configuration`
       const result = await discoverOidc(url)
@@ -549,7 +551,7 @@ export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.error("OIDC Discovery failed:", error)
       // Show error alert to user - existing fields remain unchanged
-      alert(`Auto-discovery failed: ${errorMessage}\n\nPlease check the Discovery URL and try again.`)
+      setDiscoveryError(`Auto-discovery failed: ${errorMessage}`)
     }
   }
 
@@ -624,6 +626,13 @@ export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
               This request inherits authentication that uses Body placement, but the current body is not a Form with
               URL-encoded or Multipart encoding. Update the request body or change the inherited placement.
             </AlertDescription>
+          </Alert>
+        )}
+
+        {discoveryError && (
+          <Alert variant="destructive" data-test-id="request-auth-panel:discovery-error-alert">
+            <AlertTitle>Discovery Error</AlertTitle>
+            <AlertDescription>{discoveryError}</AlertDescription>
           </Alert>
         )}
 

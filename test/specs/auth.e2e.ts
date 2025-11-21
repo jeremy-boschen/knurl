@@ -1015,14 +1015,24 @@ describe("OAuth Flows", () => {
     await getElementByTestId("oauth2-editor:discovery-url-input", 5000)
     await setInputText("oauth2-editor:discovery-url-input", "http://127.0.0.1:3000/invalid/discovery/endpoint")
 
-    // Click the auto-discovery button if it exists
-    try {
-      await clickByTestId("oauth2-editor:discovery-button")
-    } catch (e) {
-      // If no explicit button, the discovery might happen on input blur
-    }
+    // Click the auto-discovery button to trigger discovery with invalid URL
+    await clickByTestId("oauth2-editor:discover-button")
 
-    // Check if an error alert was shown (this depends on implementation)
+    // Wait for the error alert to appear in the request auth panel
+    const errorAlert = await browser.waitUntil(
+      async () => {
+        const alert = await getElementByTestId("request-auth-panel:discovery-error-alert", 1000)
+        return alert ? alert : null
+      },
+      {
+        timeout: 5000,
+        timeoutMsg: "Discovery error alert did not appear within timeout",
+      }
+    )
+
+    // Verify the error alert is displayed
+    await expect(errorAlert).toBeDefined()
+
     // Verify that the auth URL was NOT changed
     const authUrlAfterError = await browser.execute(() => {
       const input = document.querySelector('[data-test-id="oauth2-editor:auth-url-input"]')
