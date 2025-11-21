@@ -560,7 +560,7 @@ async function main() {
       headers: Object.fromEntries(
         Object.entries(req.headers)
           .filter(([k]) => !k.startsWith('host'))
-          .slice(0, 5)
+          .map(([k, v]) => [`Req-Header-${k}`, v])
       ),
       origin: req.ip || '127.0.0.1',
       url: `http://${req.hostname}${req.originalUrl}`,
@@ -576,7 +576,7 @@ async function main() {
       headers: Object.fromEntries(
         Object.entries(req.headers)
           .filter(([k]) => !k.startsWith('host'))
-          .slice(0, 5)
+          .map(([k, v]) => [`Req-Header-${k}`, v])
       ),
       origin: req.ip || '127.0.0.1',
       url: `http://${req.hostname}${req.originalUrl}`,
