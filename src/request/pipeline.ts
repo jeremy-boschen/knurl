@@ -55,13 +55,20 @@ export const createAuthPhase = (
     const state = get()
     const collection = state.collectionsApi.getCollection(request.collectionId)
 
-    const effectiveAuth = request.authentication.type === "inherit" ? collection.authentication : request.authentication
+    if (request.authentication.type === "inherit" && !collection) {
+      throw new Error(`Cannot inherit authentication: collection "${request.collectionId}" not found`)
+    }
+
+    const effectiveAuth =
+      request.authentication.type === "inherit" ? collection?.authentication : request.authentication
 
     const toBindingAuth = (auth: typeof request.authentication): BindingAuthConfig => {
       switch (auth.type) {
         case "none":
+          return { type: "none" }
         case "inherit":
-          return { type: auth.type }
+          // Should never reach here due to validation above, but handle gracefully
+          return { type: "none" }
         case "basic":
           return {
             type: "basic",
@@ -106,6 +113,8 @@ export const createAuthPhase = (
             tokenExtraParams: auth.oauth2?.tokenExtraParams,
           }
         }
+        default:
+          return { type: "none" }
       }
     }
 

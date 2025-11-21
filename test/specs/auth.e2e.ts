@@ -1094,13 +1094,14 @@ describe("Collection Auth Inheritance", () => {
     // Wait for request editor to be ready
     await waitForRequestEditor()
 
-    // Set request URL
-    const mockUrl = `http://127.0.0.1:3000/mock/get`
-    const urlInput = await getElementByTestId("request-workspace:url-input", 3000)
-    await urlInput.clearValue()
-    await urlInput.setValue(mockUrl)
+    // Extra pause to ensure the input is fully ready
+    await browser.pause(1000)
 
-    // Wait a moment for URL to be set
+    // Set request URL using the same method as existing tests
+    const mockUrl = `http://127.0.0.1:3000/mock/get`
+    await setInputText("request-workspace:url-input", mockUrl)
+
+    // Wait for URL to be properly synced to state
     await browser.pause(500)
 
     // Click on auth tab and set to Inherit
@@ -1186,13 +1187,14 @@ describe("Collection Auth Inheritance", () => {
     // Wait for request editor to be ready
     await waitForRequestEditor()
 
-    // Set request URL
-    const mockUrl = `http://127.0.0.1:3000/mock/get`
-    const urlInput = await getElementByTestId("request-workspace:url-input", 3000)
-    await urlInput.clearValue()
-    await urlInput.setValue(mockUrl)
+    // Extra pause to ensure the input is fully ready
+    await browser.pause(1000)
 
-    // Wait a moment for URL to be set
+    // Set request URL using the same method as existing tests
+    const mockUrl = `http://127.0.0.1:3000/mock/get`
+    await setInputText("request-workspace:url-input", mockUrl)
+
+    // Wait for URL to be properly synced to state
     await browser.pause(500)
 
     // Click on auth tab and set to Inherit
@@ -1277,13 +1279,14 @@ describe("Collection Auth Inheritance", () => {
     // Wait for request editor to be ready
     await waitForRequestEditor()
 
-    // Set request URL
-    const mockUrl = `http://127.0.0.1:3000/mock/get`
-    const urlInput = await getElementByTestId("request-workspace:url-input", 3000)
-    await urlInput.clearValue()
-    await urlInput.setValue(mockUrl)
+    // Extra pause to ensure the input is fully ready
+    await browser.pause(1000)
 
-    // Wait a moment for URL to be set
+    // Set request URL using the same method as existing tests
+    const mockUrl = `http://127.0.0.1:3000/mock/get`
+    await setInputText("request-workspace:url-input", mockUrl)
+
+    // Wait for URL to be properly synced to state
     await browser.pause(500)
 
     // Click on auth tab and set to Inherit
