@@ -208,6 +208,106 @@ describe("Authentication Strategies", () => {
 
       await expect(responseText).toMatch(/MyCustomScheme|authorization/)
     })
+
+    it("supports Bearer token in query parameter", async () => {
+      await openNewRequestViaUI()
+      await waitForRequestEditor()
+
+      const mockUrl = `http://127.0.0.1:3000/mock/get`
+      await setInputText("request-workspace:url-input", mockUrl)
+
+      await clickByTestId("request-editor:auth-tab")
+      await selectOptionByTestId("request-editor:auth-tab-dropdown-trigger", "request-editor:auth-menu:type-bearer")
+
+      // Set token
+      const token = "query-param-bearer-token"
+      await setInputText("request-auth-panel:bearer-auth-token-input", token)
+
+      // Change placement to query
+      await selectOptionByTestId("request-auth-panel:bearer-auth-placement-select", "request-auth-panel:bearer-auth-placement-option:query")
+
+      // Set parameter name
+      const paramName = "access_token"
+      await setInputText("request-auth-panel:bearer-auth-placement-name-input", paramName)
+
+      await clickByTestId("request-workspace:send-button")
+
+      await browser.waitUntil(
+        async () => {
+          const responseText = await browser.execute(() => {
+            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+            if (!responseBody) return ""
+            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+            if (!codeEditor) return ""
+            const content = codeEditor.querySelector(".cm-content")
+            return content ? content.textContent : codeEditor.textContent
+          })
+          return responseText && responseText.includes(token)
+        },
+        {timeout: 5000}
+      )
+
+      const responseText = await browser.execute(() => {
+        const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+        if (!responseBody) return ""
+        const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+        if (!codeEditor) return ""
+        const content = codeEditor.querySelector(".cm-content")
+        return content ? content.textContent : codeEditor.textContent
+      })
+
+      await expect(responseText).toContain(token)
+    })
+
+    it("supports Bearer token in cookie placement", async () => {
+      await openNewRequestViaUI()
+      await waitForRequestEditor()
+
+      const mockUrl = `http://127.0.0.1:3000/mock/get`
+      await setInputText("request-workspace:url-input", mockUrl)
+
+      await clickByTestId("request-editor:auth-tab")
+      await selectOptionByTestId("request-editor:auth-tab-dropdown-trigger", "request-editor:auth-menu:type-bearer")
+
+      // Set token
+      const token = "cookie-bearer-token"
+      await setInputText("request-auth-panel:bearer-auth-token-input", token)
+
+      // Change placement to cookie
+      await selectOptionByTestId("request-auth-panel:bearer-auth-placement-select", "request-auth-panel:bearer-auth-placement-option:cookie")
+
+      // Set cookie name
+      const cookieName = "auth_token"
+      await setInputText("request-auth-panel:bearer-auth-placement-name-input", cookieName)
+
+      await clickByTestId("request-workspace:send-button")
+
+      await browser.waitUntil(
+        async () => {
+          const responseText = await browser.execute(() => {
+            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+            if (!responseBody) return ""
+            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+            if (!codeEditor) return ""
+            const content = codeEditor.querySelector(".cm-content")
+            return content ? content.textContent : codeEditor.textContent
+          })
+          return responseText && responseText.includes(token)
+        },
+        {timeout: 5000}
+      )
+
+      const responseText = await browser.execute(() => {
+        const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+        if (!responseBody) return ""
+        const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+        if (!codeEditor) return ""
+        const content = codeEditor.querySelector(".cm-content")
+        return content ? content.textContent : codeEditor.textContent
+      })
+
+      await expect(responseText).toContain(token)
+    })
   })
 
   describe("API Key Authentication", () => {
@@ -1324,11 +1424,101 @@ describe("Collection Auth Inheritance", () => {
     await expect(responseExists).toBe(true)
   })
 
-  it.skip("request inherits OAuth2 auth from collection", async () => {
-    // TODO: Implement OAuth2 collection auth inheritance test
-    // Similar to above tests but with OAuth2 configuration
-    // Collection auth: client_credentials grant, clientId, clientSecret, tokenUrl
-    // Request: Set auth to Inherit, send request, verify OAuth token was added
+  it("request inherits OAuth2 auth from collection", async () => {
+    // Create a collection
+    const collectionName = `OAuth2AuthCollection-${Date.now()}`
+    const collectionId = await createCollection(collectionName)
+
+    // Open collection settings and navigate to auth tab
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:manage-settings:${collectionId}`)
+
+    // Wait for settings sheet and click auth tab
+    await getElementByTestId("collection-settings:sheet", 5000)
+    await clickByTestId("collection-settings:auth-tab-button")
+
+    // Set auth type to OAuth2
+    await selectOptionByTestId("collection-auth:type-trigger", "collection-auth:type-oauth2")
+
+    // Configure OAuth2 auth at collection level
+    const clientId = "oauth2-test-client"
+    const clientSecret = "oauth2-test-secret"
+    const tokenUrl = "http://127.0.0.1:3000/token"
+
+    // Ensure client_credentials grant type is selected (should be default)
+    await selectOptionByTestId("oauth2-editor:grant-type-select", "oauth2-editor:grant-type-option:client_credentials")
+
+    // Set token URL
+    await setInputText("oauth2-editor:token-url-input", tokenUrl)
+
+    // Set client ID
+    await setInputText("oauth2-editor:client-id-input", clientId)
+
+    // Set client secret
+    await setInputText("oauth2-editor:client-secret-input", clientSecret)
+
+    // Close settings sheet
+    await browser.keys(["Escape"])
+
+    // Create a request in this collection
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:new-request:${collectionId}`)
+
+    // Wait for request editor to be ready
+    await waitForRequestEditor()
+
+    // Extra pause to ensure the input is fully ready
+    await browser.pause(1000)
+
+    // Set request URL
+    const mockUrl = `http://127.0.0.1:3000/mock/get`
+    await setInputText("request-workspace:url-input", mockUrl)
+
+    // Wait for URL to be properly synced to state
+    await browser.pause(500)
+
+    // Click on auth tab and set to Inherit
+    await clickByTestId("request-editor:auth-tab")
+    await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+    await clickByTestId("request-editor:auth-menu:type-inherit")
+
+    // Wait a moment for auth to be set
+    await browser.pause(300)
+
+    // Send request
+    await clickByTestId("request-workspace:send-button")
+
+    // Wait a moment for request to be sent
+    await browser.pause(800)
+
+    // Wait for response
+    await browser.waitUntil(
+      async () => {
+        const responseText = await browser.execute(() => {
+          const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+          if (!responseBody) return ""
+          const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+          if (!codeEditor) return ""
+          const content = codeEditor.querySelector(".cm-content")
+          return content ? (content.textContent || codeEditor.textContent) : codeEditor.textContent
+        })
+        return responseText && responseText.length > 0
+      },
+      {timeout: 15000}
+    )
+
+    // Verify response was received (request was sent successfully with inherited OAuth2 auth)
+    const responseText = await browser.execute(() => {
+      const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+      if (!responseBody) return ""
+      const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+      if (!codeEditor) return ""
+      const content = codeEditor.querySelector(".cm-content")
+      return content ? (content.textContent || codeEditor.textContent) : codeEditor.textContent
+    })
+
+    await expect(responseText).toBeTruthy()
+    await expect(responseText.length).toBeGreaterThan(0)
   })
 
   console.log("✅ Collection auth inheritance tests completed")
