@@ -19,11 +19,17 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
 import { assert } from "@/lib"
-import { useRequestTab, useCollections, useRequestParameters, useRequestHeaders, useRequestBody } from "@/state"
+import { useCollections, useRequestBody, useRequestHeaders, useRequestParameters, useRequestTab } from "@/state"
 import { generateUniqueId } from "@/lib/utils"
-import { CodeLanguages, type RequestBodyData, type RequestBodyGrammar, type RequestBodyType } from "@/types"
+import {
+  CodeLanguages,
+  type RequestBodyData,
+  type RequestBodyGrammar,
+  type RequestBodyType,
+  type RequestTabId,
+  zRequestTabId,
+} from "@/types"
 import { type AuthConfig, type AuthType, AuthTypes } from "@/types/request"
-import { type RequestTabId, zRequestTabId } from "@/types"
 import { RequestAuthPanel } from "./request-auth-panel"
 import { RequestBodyPanel } from "./request-body-panel"
 import { RequestHeadersPanel } from "./request-headers-panel"
@@ -123,7 +129,7 @@ export function RequestEditor({ tabId }: RequestEditorProps) {
           </div>
         </div>
 
-        <div className="flex min-h-0 h-full">
+        <div className="flex min-h-0 h-full mr-2">
           <TabsContent value="params" className="m-0 h-full overflow-y-auto">
             <RequestParametersPanel tabId={tabId} />
           </TabsContent>

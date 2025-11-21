@@ -1,10 +1,8 @@
-import { expect } from "@wdio/globals"
+import {expect} from "@wdio/globals"
 
-import { waitForActiveRequestTab, waitForRequestEditor } from "../support/ui"
 import {
   clickByTestId,
   createCollection,
-  ensureAppReady,
   ensureWorkspaceReady,
   getElementByTestId,
   openCollectionMenu,
@@ -12,6 +10,7 @@ import {
   resetOverlays,
   selectOptionByTestId,
   setInputText,
+  waitForRequestEditor
 } from "../support/ui"
 
 describe("Authentication Strategies", () => {
@@ -51,7 +50,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("testuser")
         },
-        { timeout: 5000 }
+        {timeout: 5000}
       )
 
       const responseText = await browser.execute(() => {
@@ -96,7 +95,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("user@domain")
         },
-        { timeout: 5000 }
+        {timeout: 5000}
       )
 
       const responseText = await browser.execute(() => {
@@ -143,7 +142,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("Bearer")
         },
-        { timeout: 5000 }
+        {timeout: 5000}
       )
 
       const responseText = await browser.execute(() => {
@@ -195,7 +194,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("MyCustomScheme")
         },
-        { timeout: 5000 }
+        {timeout: 5000}
       )
 
       const responseText = await browser.execute(() => {
@@ -230,7 +229,7 @@ describe("Authentication Strategies", () => {
       await clickByTestId("request-editor:auth-menu:type-apiKey")
 
       // Wait for API Key form to be present and fully rendered (with initial delay for React render)
-      await getElementByTestId("request-auth-panel:api-key-auth-form", 5000, { initialDelay: 200 })
+      await getElementByTestId("request-auth-panel:api-key-auth-form", 5000, {initialDelay: 200})
 
       // Verify API Key key and value inputs exist
       const keyInput = await getElementByTestId("request-auth-panel:api-key-auth-key-input", 5000)
@@ -272,7 +271,7 @@ describe("Authentication Strategies", () => {
           })
           return responseBody
         },
-        { timeout: 10000 }
+        {timeout: 10000}
       )
 
       // Verify response exists (request with auth was sent successfully)
@@ -334,7 +333,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("api_token") || responseText.includes("token123")
         },
-        { timeout: 5000 }
+        {timeout: 5000}
       )
 
       // Verify the query parameter is in the response
@@ -388,7 +387,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("cookie") || responseText.includes("session_token")
         },
-        { timeout: 5000 }
+        {timeout: 5000}
       )
 
       const responseText = await browser.execute(() => {
@@ -441,7 +440,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("test-user")
         },
-        { timeout: 5000 }
+        {timeout: 5000}
       )
 
       // Switch to No Auth
@@ -468,7 +467,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.length > 0
         },
-        { timeout: 5000 }
+        {timeout: 5000}
       )
 
       // Verify the response does NOT contain authorization header from previous auth
@@ -519,7 +518,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("Bearer")
         },
-        { timeout: 5000 }
+        {timeout: 5000}
       )
 
       // Modify URL
@@ -541,7 +540,7 @@ describe("Authentication Strategies", () => {
           })
           return responseText.includes("authorization") || responseText.includes("Bearer")
         },
-        { timeout: 5000 }
+        {timeout: 5000}
       )
 
       // Verify auth configuration persists in the UI
@@ -591,7 +590,7 @@ describe("Authentication Strategies", () => {
           // Check if the response contains the authorization header
           return responseText.includes("authorization") || responseText.includes("user")
         },
-        { timeout: 5000 }
+        {timeout: 5000}
       )
 
       // Verify the authorization header is in the response
@@ -678,7 +677,7 @@ describe("OAuth Flows", () => {
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
-    await sendBtn.waitForClickable({ timeout: 5000 })
+    await sendBtn.waitForClickable({timeout: 5000})
 
     // Click Send button
     await clickByTestId("request-workspace:send-button")
@@ -756,7 +755,7 @@ describe("OAuth Flows", () => {
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
-    await sendBtn.waitForClickable({ timeout: 5000 })
+    await sendBtn.waitForClickable({timeout: 5000})
 
     // Click Send button
     await clickByTestId("request-workspace:send-button")
@@ -810,7 +809,7 @@ describe("OAuth Flows", () => {
 
     // Verify and set Token URL field (required for all grant types)
     const tokenUrlField = await getElementByTestId("oauth2-editor:token-url-input", 5000)
-    await tokenUrlField.waitForDisplayed({ timeout: 5000 })
+    await tokenUrlField.waitForDisplayed({timeout: 5000})
     await setInputText("oauth2-editor:token-url-input", baseAuthConfig.tokenUrl)
 
     // Set Client ID (use public client for device code flow)
@@ -824,7 +823,7 @@ describe("OAuth Flows", () => {
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
-    await sendBtn.waitForClickable({ timeout: 5000 })
+    await sendBtn.waitForClickable({timeout: 5000})
 
     // Click Send button
     await clickByTestId("request-workspace:send-button")
@@ -1077,7 +1076,7 @@ describe("Collection Auth Inheritance", () => {
     await clickByTestId("collection-settings:auth-tab-button")
 
     // Set auth type to Basic
-    await selectOptionByTestId("collection-auth:type-trigger", "basic")
+    await selectOptionByTestId("collection-auth:type-trigger", "collection-auth:type-basic")
 
     // Configure basic auth credentials at collection level
     const collectionUsername = "collection-user"
@@ -1125,7 +1124,7 @@ describe("Collection Auth Inheritance", () => {
         })
         return responseText.includes("authorization") || responseText.includes("collection-user")
       },
-      { timeout: 5000 }
+      {timeout: 5000}
     )
 
     // Verify the inherited auth was applied
@@ -1196,7 +1195,7 @@ describe("Collection Auth Inheritance", () => {
         })
         return responseText.includes("authorization") || responseText.includes("Bearer")
       },
-      { timeout: 5000 }
+      {timeout: 5000}
     )
 
     // Verify the inherited auth was applied
@@ -1270,7 +1269,7 @@ describe("Collection Auth Inheritance", () => {
         })
         return responseBody
       },
-      { timeout: 5000 }
+      {timeout: 5000}
     )
 
     // Verify response exists (request with inherited auth was sent successfully)

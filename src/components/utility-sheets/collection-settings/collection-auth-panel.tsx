@@ -280,7 +280,7 @@ export default function CollectionAuthPanel({ collectionId }: Props) {
           <DropdownMenuContent align="start" className="w-48">
             <DropdownMenuRadioGroup value={authType} onValueChange={(v) => handleAuthTypeChange(v as AuthType)}>
               {typeLabels.map(([type, name]) => (
-                <DropdownMenuRadioItem key={type} value={type}>
+                <DropdownMenuRadioItem key={type} value={type} data-test-id={`collection-auth:type-${type}`}>
                   {name}
                 </DropdownMenuRadioItem>
               ))}
