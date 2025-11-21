@@ -39,41 +39,19 @@ const zBasicAuth = z.object({
 })
 export type BasicAuth = z.infer<typeof zBasicAuth>
 
-export const zBearerAuth = z.preprocess(
-  (value) => {
-    if (typeof value === 'object' && value !== null && 'placement' in value) {
-      const obj = value as any
-      if (obj.placement && !obj.placement.type) {
-        obj.placement = { ...obj.placement, type: "header" }
-      }
-    }
-    return value
-  },
-  z.object({
-    token: z.string().optional(),
-    // Optional scheme for Authorization header (e.g., "Bearer", "JWT", or custom)
-    scheme: z.string().optional(),
-    placement: zAuthPlacement.default({ type: "header", name: "Authorization" }),
-  })
-)
+export const zBearerAuth = z.object({
+  token: z.string().optional(),
+  // Optional scheme for Authorization header (e.g., "Bearer", "JWT", or custom)
+  scheme: z.string().optional(),
+  placement: zAuthPlacement.default({ type: "header", name: "Authorization" }),
+})
 export type BearerAuth = z.infer<typeof zBearerAuth>
 
-export const zApiKeyAuth = z.preprocess(
-  (value) => {
-    if (typeof value === 'object' && value !== null && 'placement' in value) {
-      const obj = value as any
-      if (obj.placement && !obj.placement.type) {
-        obj.placement = { ...obj.placement, type: "header" }
-      }
-    }
-    return value
-  },
-  z.object({
-    key: z.string().optional(),
-    value: z.string().optional(),
-    placement: zAuthPlacement.default({ type: "header", name: "" }),
-  })
-)
+export const zApiKeyAuth = z.object({
+  key: z.string().optional(),
+  value: z.string().optional(),
+  placement: zAuthPlacement.default({ type: "header", name: "" }),
+})
 export type ApiKeyAuth = z.infer<typeof zApiKeyAuth>
 
 export const zOauth2Auth = z.object({

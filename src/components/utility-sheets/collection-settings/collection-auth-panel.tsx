@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { credentialsCacheApi, useApplication, useCollection } from "@/state"
 import type { Collection } from "@/types"
-import type { AuthType, OAuth2Auth } from "@/types/request"
+import type { AuthConfig, AuthType, OAuth2Auth } from "@/types/request"
 import { AuthTypes } from "@/types/request"
 
 type Props = {
@@ -136,13 +136,25 @@ export default function CollectionAuthPanel({ collectionId }: Props) {
     if (value === "inherit") {
       return
     }
-    const base =
-      value === "oauth2"
-        ? {
-            type: "oauth2" as const,
-            oauth2: { grantType: "client_credentials", tokenCaching: "always", clientAuth: "body" } as const,
+    const base: AuthConfig = (() => {
+      switch (value) {
+        case "none":
+          return { type: "none" }
+        case "basic":
+          return { type: "basic", basic: {} }
+        case "bearer":
+          return { type: "bearer", bearer: { scheme: "Bearer", placement: { type: "header", name: "Authorization" } } }
+        case "apiKey":
+          return { type: "apiKey", apiKey: { placement: { type: "header", name: "" } } }
+        case "oauth2":
+          return {
+            type: "oauth2",
+            oauth2: { grantType: "client_credentials", tokenCaching: "always", clientAuth: "body" },
           }
-        : ({ type: value } as const)
+        default:
+          return { type: "none" }
+      }
+    })()
     void collectionsApi().updateCollection(collection.id, { authentication: base } as Partial<Collection>)
   }
 
