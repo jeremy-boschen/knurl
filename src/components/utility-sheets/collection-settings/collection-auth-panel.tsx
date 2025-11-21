@@ -1,8 +1,9 @@
-import React, { type FC, type ReactNode, useId } from "react"
+import React, { type FC } from "react"
 
 import type { AuthConfig as BindingAuthConfig } from "@/bindings/knurl"
 import { discoverOidc, getAuthenticationResult } from "@/bindings/knurl"
 import { OAuth2Editor } from "@/components/auth/oauth2-editor"
+import { ApiKeyAuthForm, BasicAuthForm, BearerAuthForm } from "@/components/auth/auth-forms"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InfoIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -13,299 +14,13 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/knurl/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
 import { credentialsCacheApi, useApplication, useCollection } from "@/state"
 import type { Collection } from "@/types"
-import type { ApiKeyAuth, AuthType, BasicAuth, BearerAuth, OAuth2Auth } from "@/types/request"
+import type { AuthType, OAuth2Auth } from "@/types/request"
 import { AuthTypes } from "@/types/request"
 
 type Props = {
   collectionId: string
-}
-
-// --- Layout Field ---
-type AuthFieldProps = {
-  label: ReactNode
-  placement?: "left" | "right"
-  children: (id: string) => ReactNode
-  className?: string
-}
-
-function AuthField({ label, children, className, placement = "left" }: AuthFieldProps) {
-  const id = useId()
-  return (
-    <div
-      className={cn(
-        "grid items-center gap-x-4",
-        placement === "left" ? "grid-cols-[6rem_auto]" : "grid-cols-[6rem_auto]",
-        className,
-      )}
-    >
-      <Label htmlFor={id} className="text-sm text-muted-foreground">
-        {label}
-      </Label>
-      <div className="min-w-0">{children(id)}</div>
-    </div>
-  )
-}
-
-// --- Basic ---
-type BasicAuthFormProps = { auth: Partial<BasicAuth>; onUpdate: (updates: Record<string, unknown>) => void }
-const BasicAuthForm: FC<BasicAuthFormProps> = ({ auth, onUpdate }) => (
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-    <AuthField label="Username">
-      {(id) => (
-        <Input
-          id={id}
-          type="text"
-          value={auth.username ?? ""}
-          onChange={(e) => onUpdate({ username: e.target.value })}
-          className="w-full font-mono"
-          data-test-id="collection-auth:basic-username-input"
-        />
-      )}
-    </AuthField>
-    <AuthField label="Password" placement="right">
-      {(id) => (
-        <Input
-          id={id}
-          type="password"
-          value={auth.password ?? ""}
-          onChange={(e) => onUpdate({ password: e.target.value })}
-          className="w-full font-mono"
-          data-test-id="collection-auth:basic-password-input"
-        />
-      )}
-    </AuthField>
-  </div>
-)
-
-// --- Bearer ---
-type BearerAuthFormProps = {
-  auth: Partial<BearerAuth>
-  onUpdate: (updates: Record<string, unknown>) => void
-  onPlacementUpdate: (updates: Record<string, unknown>) => void
-}
-
-const BearerAuthForm: FC<BearerAuthFormProps> = ({ auth, onUpdate, onPlacementUpdate }) => {
-  const placementType = auth.placement?.type ?? "header"
-  const scheme = auth.scheme ?? "Bearer"
-  const schemeMode: "Bearer" | "JWT" | "custom" =
-    scheme === "Bearer" || scheme === "JWT" ? (scheme as "Bearer" | "JWT") : "custom"
-  return (
-    <div className="max-w-2xl space-y-4">
-      <AuthField label="Token">
-        {(id) => (
-          <Input
-            id={id}
-            type="password"
-            value={auth.token ?? ""}
-            onChange={(e) => onUpdate({ token: e.target.value })}
-            className="w-full font-mono"
-            data-test-id="collection-auth:bearer-token-input"
-          />
-        )}
-      </AuthField>
-      {placementType === "header" && (
-        <>
-          <AuthField label="Scheme">
-            {(id) => (
-              <Select
-                value={schemeMode}
-                onValueChange={(value) => (value === "custom" ? onUpdate({ scheme: "" }) : onUpdate({ scheme: value }))}
-              >
-                <SelectTrigger id={id} className="w-full text-sm" data-test-id="collection-auth:bearer-scheme-trigger">
-                  <SelectValue placeholder="Select scheme" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Bearer">Bearer</SelectItem>
-                  <SelectItem value="JWT">JWT</SelectItem>
-                  <SelectItem value="custom">Custom…</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          </AuthField>
-          {schemeMode === "custom" && (
-            <AuthField label="Custom Scheme">
-              {(id) => (
-                <Input
-                  id={id}
-                  type="text"
-                  value={scheme}
-                  onChange={(e) => onUpdate({ scheme: e.target.value })}
-                  placeholder="e.g., Token"
-                  className="w-full font-mono"
-                  data-test-id="collection-auth:bearer-custom-scheme-input"
-                />
-              )}
-            </AuthField>
-          )}
-        </>
-      )}
-      <AuthField label="Placement">
-        {(id) => (
-          <Select value={placementType} onValueChange={(value) => onPlacementUpdate({ type: value })}>
-            <SelectTrigger id={id} className="w-full text-sm" data-test-id="collection-auth:bearer-placement-trigger">
-              <SelectValue placeholder="Select placement" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="header">Header</SelectItem>
-              <SelectItem value="query">Query Param</SelectItem>
-              <SelectItem value="cookie">Cookie</SelectItem>
-              <SelectItem value="body">Body</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-      </AuthField>
-
-      {(placementType === "header" || placementType === "query" || placementType === "cookie") && (
-        <AuthField label={placementType === "header" ? "Header Name" : "Name"}>
-          {(id) => (
-            <Input
-              id={id}
-              type="text"
-              value={auth.placement?.name ?? ""}
-              onChange={(e) => onPlacementUpdate({ name: e.target.value })}
-              className="w-full font-mono"
-              data-test-id="collection-auth:bearer-placement-name-input"
-            />
-          )}
-        </AuthField>
-      )}
-
-      {placementType === "body" && (
-        <>
-          <AuthField label="Field Name">
-            {(id) => (
-              <Input
-                id={id}
-                type="text"
-                value={auth.placement?.fieldName ?? ""}
-                onChange={(e) => onPlacementUpdate({ fieldName: e.target.value })}
-                className="w-full font-mono"
-                data-test-id="collection-auth:bearer-field-name-input"
-              />
-            )}
-          </AuthField>
-          <AuthField label="Content-Type">
-            {(id) => (
-              <Input
-                id={id}
-                type="text"
-                value={auth.placement?.contentType ?? ""}
-                onChange={(e) => onPlacementUpdate({ contentType: e.target.value })}
-                className="w-full font-mono"
-                data-test-id="collection-auth:bearer-content-type-input"
-              />
-            )}
-          </AuthField>
-        </>
-      )}
-    </div>
-  )
-}
-
-// --- API Key ---
-type ApiKeyAuthFormProps = {
-  auth: Partial<ApiKeyAuth>
-  onUpdate: (updates: Record<string, unknown>) => void
-  onPlacementUpdate: (updates: Record<string, unknown>) => void
-}
-
-const ApiKeyAuthForm: FC<ApiKeyAuthFormProps> = ({ auth, onUpdate, onPlacementUpdate }) => {
-  const placementType = auth.placement?.type ?? "header"
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <AuthField label="Key">
-          {(id) => (
-            <Input
-              id={id}
-              type="text"
-              value={auth.key ?? ""}
-              onChange={(e) => onUpdate({ key: e.target.value })}
-              className="w-full font-mono"
-              data-test-id="collection-auth:api-key-key-input"
-            />
-          )}
-        </AuthField>
-        <AuthField label="Value">
-          {(id) => (
-            <Input
-              id={id}
-              type="password"
-              value={auth.value ?? ""}
-              onChange={(e) => onUpdate({ value: e.target.value })}
-              className="w-full font-mono"
-              data-test-id="collection-auth:api-key-value-input"
-            />
-          )}
-        </AuthField>
-      </div>
-      <AuthField label="Placement">
-        {(id) => (
-          <Select value={placementType} onValueChange={(value) => onPlacementUpdate({ type: value })}>
-            <SelectTrigger id={id} className="w-full text-sm" data-test-id="collection-auth:api-key-placement-trigger">
-              <SelectValue placeholder="Select placement" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="header">Header</SelectItem>
-              <SelectItem value="query">Query Param</SelectItem>
-              <SelectItem value="cookie">Cookie</SelectItem>
-              <SelectItem value="body">Body</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-      </AuthField>
-
-      {(placementType === "header" || placementType === "query" || placementType === "cookie") && (
-        <AuthField label="Name">
-          {(id) => (
-            <Input
-              id={id}
-              type="text"
-              value={auth.placement?.name ?? ""}
-              onChange={(e) => onPlacementUpdate({ name: e.target.value })}
-              className="w-full font-mono"
-              data-test-id="collection-auth:api-key-name-input"
-            />
-          )}
-        </AuthField>
-      )}
-
-      {placementType === "body" && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <AuthField label="Field Name">
-            {(id) => (
-              <Input
-                id={id}
-                type="text"
-                value={auth.placement?.fieldName ?? ""}
-                onChange={(e) => onPlacementUpdate({ fieldName: e.target.value })}
-                className="w-full font-mono"
-                data-test-id="collection-auth:api-key-field-name-input"
-              />
-            )}
-          </AuthField>
-          <AuthField label="Content-Type">
-            {(id) => (
-              <Input
-                id={id}
-                type="text"
-                value={auth.placement?.contentType ?? ""}
-                onChange={(e) => onPlacementUpdate({ contentType: e.target.value })}
-                className="w-full font-mono"
-                data-test-id="collection-auth:api-key-content-type-input"
-              />
-            )}
-          </AuthField>
-        </div>
-      )}
-    </div>
-  )
 }
 
 // --- OAuth2 ---
@@ -494,13 +209,20 @@ export default function CollectionAuthPanel({ collectionId }: Props) {
   const renderAuthForm = () => {
     switch (authentication.type) {
       case "basic":
-        return <BasicAuthForm auth={authentication.basic ?? {}} onUpdate={handleInputChange} />
+        return (
+          <BasicAuthForm
+            auth={authentication.basic ?? {}}
+            onUpdate={handleInputChange}
+            testIdPrefix="collection-auth"
+          />
+        )
       case "bearer":
         return (
           <BearerAuthForm
             auth={authentication.bearer ?? {}}
             onUpdate={handleInputChange}
             onPlacementUpdate={handlePlacementChange}
+            testIdPrefix="collection-auth"
           />
         )
       case "apiKey":
@@ -509,6 +231,7 @@ export default function CollectionAuthPanel({ collectionId }: Props) {
             auth={authentication.apiKey ?? {}}
             onUpdate={handleInputChange}
             onPlacementUpdate={handlePlacementChange}
+            testIdPrefix="collection-auth"
           />
         )
       case "oauth2":
