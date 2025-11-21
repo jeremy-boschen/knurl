@@ -29,7 +29,7 @@ import {
   type RequestTabId,
   zRequestTabId,
 } from "@/types"
-import { type AuthConfig, type AuthType, AuthTypes } from "@/types/request"
+import { type AuthType, AuthTypes } from "@/types/request"
 import { RequestAuthPanel } from "./request-auth-panel"
 import { RequestBodyPanel } from "./request-body-panel"
 import { RequestHeadersPanel } from "./request-headers-panel"

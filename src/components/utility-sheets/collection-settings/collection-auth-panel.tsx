@@ -17,8 +17,8 @@ import {
 import { createDefaultAuthConfig } from "@/lib"
 import { credentialsCacheApi, useApplication, useCollection } from "@/state"
 import type { Collection } from "@/types"
-import type { AuthType, OAuth2Auth } from "@/types/request"
-import { AuthTypes } from "@/types/request"
+import type { OAuth2Auth } from "@/types/request"
+import { type AuthType, AuthTypes } from "@/types/request"
 
 type Props = {
   collectionId: string
