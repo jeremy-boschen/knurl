@@ -1161,11 +1161,8 @@ describe("Collection Auth Inheritance", () => {
     await browser.keys(["Escape"])
 
     // Create a request in this collection
-    const requestName = "BearerAuthRequest"
-    const createButton = await getElementByTestId("sidebar:new-request-button", 5000)
-    await createButton.click()
-    await setInputText("new-request-dialog:name-input", requestName)
-    await clickByTestId("new-request-dialog:create-button")
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:new-request:${collectionId}`)
 
     // Set request URL
     const mockUrl = `http://127.0.0.1:3000/mock/get`
@@ -1239,11 +1236,8 @@ describe("Collection Auth Inheritance", () => {
     await browser.keys(["Escape"])
 
     // Create a request in this collection
-    const requestName = "ApiKeyAuthRequest"
-    const createButton = await getElementByTestId("sidebar:new-request-button", 5000)
-    await createButton.click()
-    await setInputText("new-request-dialog:name-input", requestName)
-    await clickByTestId("new-request-dialog:create-button")
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:new-request:${collectionId}`)
 
     // Set request URL
     const mockUrl = `http://127.0.0.1:3000/mock/get`
