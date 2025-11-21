@@ -6,11 +6,12 @@ const ESCAPE_KEY = "Escape"
 /**
  * Default timing configuration for waitFor operations:
  * - initialDelay: time to wait before starting to poll (allows UI to render)
- * - pollingInterval: how frequently to check once polling starts (tight but not excessive)
+ * - pollingInterval: how frequently to check once polling starts
+ *   Note: 100ms is a good balance. Too aggressive (50ms) can starve the browser event loop.
  */
 const DEFAULT_WAIT_CONFIG = {
   initialDelay: 0,
-  pollingInterval: 50,
+  pollingInterval: 100,
 }
 
 /**
@@ -214,19 +215,10 @@ export async function resetAppState(): Promise<void> {
 export async function setInputText(testId: string, value: string): Promise<void> {
   const element = await getElementByTestId(testId)
   await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
-  // For controlled inputs in React, use keyboard events instead of direct DOM manipulation
-  // This ensures onChange events are triggered properly
   await element.click()
-  await browser.pause(100) // Give input time to receive focus
-  await browser.keys(['Control', 'a']) // Select all
+  await element.setValue(value)
+  // Small pause to allow React state updates to propagate
   await browser.pause(50)
-  await browser.keys(['Delete']) // Clear
-  await browser.pause(100) // Allow state update
-  // Only add value if not empty - WebdriverIO throws "invalid argument" for empty addValue
-  if (value.length > 0) {
-    await element.addValue(value) // Type the new value
-    await browser.pause(50) // Allow state update after typing
-  }
 }
 
 export async function appendInputText(testId: string, value: string): Promise<void> {
@@ -239,11 +231,25 @@ export async function appendInputText(testId: string, value: string): Promise<vo
 export async function clearInputText(testId: string): Promise<void> {
   const element = await getElementByTestId(testId)
   await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
-  // For controlled inputs, use keyboard events
-  await element.click()
-  await browser.keys(['Control', 'a'])
-  await browser.keys(['Delete'])
-  await browser.pause(50)
+  await element.clearValue()
+}
+
+export async function waitForSendButtonReady(timeout = DEFAULT_TIMEOUT): Promise<void> {
+  // Wait for the Send button to be visible and ready (Cancel button should disappear)
+  // This ensures any pending request has completed before we send a new one
+  await browser.waitUntil(
+    async () => {
+      const sendBtn = await $('[data-test-id="request-workspace:send-button"]')
+      const cancelBtn = await $('[data-test-id="request-workspace:cancel-button"]')
+      // Button is ready when Send exists and Cancel doesn't
+      return (await sendBtn.isExisting()) && !(await cancelBtn.isExisting())
+    },
+    {
+      timeout,
+      interval: 100,
+      timeoutMsg: "Send button did not become ready (request may still be pending)",
+    },
+  )
 }
 
 export async function clickByTestId(testId: string): Promise<void> {

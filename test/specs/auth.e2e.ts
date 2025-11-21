@@ -10,6 +10,7 @@ import {
   resetOverlays,
   selectOptionByTestId,
   setInputText,
+  waitForSendButtonReady,
 } from "../support/ui"
 
 describe("Authentication Strategies", () => {
@@ -447,6 +448,7 @@ describe("Authentication Strategies", () => {
       )
 
       // Switch to Bearer
+      await waitForSendButtonReady()
       await clickByTestId("request-editor:auth-tab-dropdown-trigger")
       await clickByTestId("request-editor:auth-menu:type-bearer")
 
@@ -477,6 +479,7 @@ describe("Authentication Strategies", () => {
       )
 
       // Switch to API Key
+      await waitForSendButtonReady()
       await clickByTestId("request-editor:auth-tab-dropdown-trigger")
       await clickByTestId("request-editor:auth-menu:type-apiKey")
 
@@ -726,6 +729,7 @@ describe("Authentication Strategies", () => {
       )
 
       // Switch to Bearer and verify it displays
+      await waitForSendButtonReady()
       await clickByTestId("request-editor:auth-tab-dropdown-trigger")
       await clickByTestId("request-editor:auth-menu:type-bearer")
 
