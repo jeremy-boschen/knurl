@@ -165,10 +165,20 @@ export const BearerAuthForm: FC<BearerAuthFormProps> = ({
               <SelectValue placeholder="Select placement" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="header">Header</SelectItem>
-              <SelectItem value="query">Query Param</SelectItem>
-              <SelectItem value="cookie">Cookie</SelectItem>
-              <SelectItem value="body" disabled={!canUseBodyPlacement}>
+              <SelectItem value="header" data-test-id={`${testIdPrefix}:bearer-auth-placement-option:header`}>
+                Header
+              </SelectItem>
+              <SelectItem value="query" data-test-id={`${testIdPrefix}:bearer-auth-placement-option:query`}>
+                Query Param
+              </SelectItem>
+              <SelectItem value="cookie" data-test-id={`${testIdPrefix}:bearer-auth-placement-option:cookie`}>
+                Cookie
+              </SelectItem>
+              <SelectItem
+                value="body"
+                disabled={!canUseBodyPlacement}
+                data-test-id={`${testIdPrefix}:bearer-auth-placement-option:body`}
+              >
                 Body
               </SelectItem>
             </SelectContent>
