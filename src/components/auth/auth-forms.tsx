@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/knurl/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import type { ApiKeyAuth, BasicAuth, BearerAuth } from "@/types/request"
+import type { BasicAuth } from "@/types/request"
+import { zApiKeyAuth, zBearerAuth } from "@/types/request"
 
 // --- Layout Field ---
 export type AuthFieldProps = {
@@ -84,10 +85,27 @@ export const BearerAuthForm: FC<BearerAuthFormProps> = ({
   canUseBodyPlacement = true,
   testIdPrefix = "request-auth-panel",
 }) => {
-  const placementType = auth.placement?.type ?? "header"
-  const scheme = auth.scheme ?? "Bearer"
+  // Normalize auth data using Zod to ensure defaults are applied
+  const normalizedAuth = zBearerAuth.parse(auth)
+
+  const placementType = normalizedAuth.placement?.type ?? "header"
+  const scheme = normalizedAuth.scheme ?? "Bearer"
   const schemeMode: "Bearer" | "JWT" | "custom" =
     scheme === "Bearer" || scheme === "JWT" ? (scheme as "Bearer" | "JWT") : "custom"
+
+  // Wrapper for onUpdate that normalizes the updates before calling parent
+  const handleUpdate = (updates: Record<string, unknown>) => {
+    const merged = { ...normalizedAuth, ...updates }
+    const normalized = zBearerAuth.parse(merged)
+    onUpdate(normalized)
+  }
+
+  // Wrapper for onPlacementUpdate that normalizes before calling parent
+  const handlePlacementUpdate = (updates: Record<string, unknown>) => {
+    const merged = { ...normalizedAuth, placement: { ...(normalizedAuth.placement ?? {}), ...updates } }
+    const normalized = zBearerAuth.parse(merged)
+    onPlacementUpdate({ placement: normalized.placement })
+  }
 
   return (
     <div className="max-w-2xl space-y-4" data-test-id={`${testIdPrefix}:bearer-auth-form`}>
@@ -96,8 +114,8 @@ export const BearerAuthForm: FC<BearerAuthFormProps> = ({
           <Input
             id={id}
             type="password"
-            value={auth.token ?? ""}
-            onChange={(e) => onUpdate({ token: e.target.value })}
+            value={normalizedAuth.token ?? ""}
+            onChange={(e) => handleUpdate({ token: e.target.value })}
             className="w-full font-mono"
             data-test-id={`${testIdPrefix}:bearer-auth-token-input`}
           />
@@ -111,9 +129,9 @@ export const BearerAuthForm: FC<BearerAuthFormProps> = ({
                 value={schemeMode}
                 onValueChange={(value) => {
                   if (value === "custom") {
-                    return onUpdate({ scheme: "" })
+                    return handleUpdate({ scheme: "" })
                   }
-                  onUpdate({ scheme: value })
+                  handleUpdate({ scheme: value })
                 }}
               >
                 <SelectTrigger
@@ -144,7 +162,7 @@ export const BearerAuthForm: FC<BearerAuthFormProps> = ({
                   id={id}
                   type="text"
                   value={scheme}
-                  onChange={(e) => onUpdate({ scheme: e.target.value })}
+                  onChange={(e) => handleUpdate({ scheme: e.target.value })}
                   placeholder="e.g., Token"
                   className="w-full font-mono"
                   data-test-id={`${testIdPrefix}:bearer-auth-custom-scheme-input`}
@@ -156,7 +174,7 @@ export const BearerAuthForm: FC<BearerAuthFormProps> = ({
       )}
       <AuthField label="Placement">
         {(id) => (
-          <Select value={placementType} onValueChange={(value) => onPlacementUpdate({ type: value })}>
+          <Select value={placementType} onValueChange={(value) => handlePlacementUpdate({ type: value })}>
             <SelectTrigger
               id={id}
               className="w-full text-sm"
@@ -197,8 +215,8 @@ export const BearerAuthForm: FC<BearerAuthFormProps> = ({
             <Input
               id={id}
               type="text"
-              value={auth.placement?.name ?? ""}
-              onChange={(e) => onPlacementUpdate({ name: e.target.value })}
+              value={normalizedAuth.placement?.name ?? ""}
+              onChange={(e) => handlePlacementUpdate({ name: e.target.value })}
               className="w-full font-mono"
               data-test-id={`${testIdPrefix}:bearer-auth-placement-name-input`}
             />
@@ -213,8 +231,8 @@ export const BearerAuthForm: FC<BearerAuthFormProps> = ({
               <Input
                 id={id}
                 type="text"
-                value={auth.placement?.fieldName ?? ""}
-                onChange={(e) => onPlacementUpdate({ fieldName: e.target.value })}
+                value={normalizedAuth.placement?.fieldName ?? ""}
+                onChange={(e) => handlePlacementUpdate({ fieldName: e.target.value })}
                 className="w-full font-mono"
                 data-test-id={`${testIdPrefix}:bearer-auth-placement-field-name-input`}
               />
@@ -225,8 +243,8 @@ export const BearerAuthForm: FC<BearerAuthFormProps> = ({
               <Input
                 id={id}
                 type="text"
-                value={auth.placement?.contentType ?? ""}
-                onChange={(e) => onPlacementUpdate({ contentType: e.target.value })}
+                value={normalizedAuth.placement?.contentType ?? ""}
+                onChange={(e) => handlePlacementUpdate({ contentType: e.target.value })}
                 className="w-full font-mono"
                 data-test-id={`${testIdPrefix}:bearer-auth-placement-content-type-input`}
               />
@@ -254,7 +272,24 @@ export const ApiKeyAuthForm: FC<ApiKeyAuthFormProps> = ({
   canUseBodyPlacement = true,
   testIdPrefix = "request-auth-panel",
 }) => {
-  const placementType = auth.placement?.type ?? "header"
+  // Normalize auth data using Zod to ensure defaults are applied
+  const normalizedAuth = zApiKeyAuth.parse(auth)
+
+  const placementType = normalizedAuth.placement?.type ?? "header"
+
+  // Wrapper for onUpdate that normalizes the updates before calling parent
+  const handleUpdate = (updates: Record<string, unknown>) => {
+    const merged = { ...normalizedAuth, ...updates }
+    const normalized = zApiKeyAuth.parse(merged)
+    onUpdate(normalized)
+  }
+
+  // Wrapper for onPlacementUpdate that normalizes before calling parent
+  const handlePlacementUpdate = (updates: Record<string, unknown>) => {
+    const merged = { ...normalizedAuth, placement: { ...(normalizedAuth.placement ?? {}), ...updates } }
+    const normalized = zApiKeyAuth.parse(merged)
+    onPlacementUpdate({ placement: normalized.placement })
+  }
 
   return (
     <div className="space-y-4" data-test-id={`${testIdPrefix}:api-key-auth-form`}>
@@ -264,8 +299,8 @@ export const ApiKeyAuthForm: FC<ApiKeyAuthFormProps> = ({
             <Input
               id={id}
               type="text"
-              value={auth.key ?? ""}
-              onChange={(e) => onUpdate({ key: e.target.value })}
+              value={normalizedAuth.key ?? ""}
+              onChange={(e) => handleUpdate({ key: e.target.value })}
               className="w-full font-mono"
               data-test-id={`${testIdPrefix}:api-key-auth-key-input`}
             />
@@ -276,8 +311,8 @@ export const ApiKeyAuthForm: FC<ApiKeyAuthFormProps> = ({
             <Input
               id={id}
               type="password"
-              value={auth.value ?? ""}
-              onChange={(e) => onUpdate({ value: e.target.value })}
+              value={normalizedAuth.value ?? ""}
+              onChange={(e) => handleUpdate({ value: e.target.value })}
               className="w-full font-mono"
               data-test-id={`${testIdPrefix}:api-key-auth-value-input`}
             />
@@ -286,7 +321,7 @@ export const ApiKeyAuthForm: FC<ApiKeyAuthFormProps> = ({
       </div>
       <AuthField label="Placement">
         {(id) => (
-          <Select value={placementType} onValueChange={(value) => onPlacementUpdate({ type: value })}>
+          <Select value={placementType} onValueChange={(value) => handlePlacementUpdate({ type: value })}>
             <SelectTrigger
               id={id}
               className="w-full text-sm"
@@ -327,8 +362,8 @@ export const ApiKeyAuthForm: FC<ApiKeyAuthFormProps> = ({
             <Input
               id={id}
               type="text"
-              value={auth.placement?.name ?? ""}
-              onChange={(e) => onPlacementUpdate({ name: e.target.value })}
+              value={normalizedAuth.placement?.name ?? ""}
+              onChange={(e) => handlePlacementUpdate({ name: e.target.value })}
               className="w-full font-mono"
               data-test-id={`${testIdPrefix}:api-key-auth-placement-name-input`}
             />
@@ -343,8 +378,8 @@ export const ApiKeyAuthForm: FC<ApiKeyAuthFormProps> = ({
               <Input
                 id={id}
                 type="text"
-                value={auth.placement?.fieldName ?? ""}
-                onChange={(e) => onPlacementUpdate({ fieldName: e.target.value })}
+                value={normalizedAuth.placement?.fieldName ?? ""}
+                onChange={(e) => handlePlacementUpdate({ fieldName: e.target.value })}
                 className="w-full font-mono"
                 data-test-id={`${testIdPrefix}:api-key-auth-placement-field-name-input`}
               />
@@ -355,8 +390,8 @@ export const ApiKeyAuthForm: FC<ApiKeyAuthFormProps> = ({
               <Input
                 id={id}
                 type="text"
-                value={auth.placement?.contentType ?? ""}
-                onChange={(e) => onPlacementUpdate({ contentType: e.target.value })}
+                value={normalizedAuth.placement?.contentType ?? ""}
+                onChange={(e) => handlePlacementUpdate({ contentType: e.target.value })}
                 className="w-full font-mono"
                 data-test-id={`${testIdPrefix}:api-key-auth-placement-content-type-input`}
               />
