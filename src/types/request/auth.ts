@@ -54,7 +54,7 @@ export const zApiKeyAuth = z.object({
 })
 export type ApiKeyAuth = z.infer<typeof zApiKeyAuth>
 
-const zOauth2Auth = z.object({
+export const zOauth2Auth = z.object({
   grantType: z
     .enum(["client_credentials", "password", "refresh_token", "authorization_code", "device_code"])
     .default("client_credentials"),
