@@ -1441,8 +1441,8 @@ describe("Collection Auth Inheritance", () => {
     await selectOptionByTestId("collection-auth:type-trigger", "collection-auth:type-oauth2")
 
     // Configure OAuth2 auth at collection level
-    const clientId = "oauth2-test-client"
-    const clientSecret = "oauth2-test-secret"
+    const clientId = "service-client"
+    const clientSecret = "service-secret"
     const tokenUrl = "http://127.0.0.1:3000/token"
 
     // Ensure client_credentials grant type is selected (should be default)
