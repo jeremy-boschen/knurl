@@ -43,14 +43,14 @@ const zBearerAuth = z.object({
   token: z.string().optional(),
   // Optional scheme for Authorization header (e.g., "Bearer", "JWT", or custom)
   scheme: z.string().optional(),
-  placement: zAuthPlacement.optional(),
+  placement: zAuthPlacement.default({ type: "header", name: "Authorization" }),
 })
 export type BearerAuth = z.infer<typeof zBearerAuth>
 
 const zApiKeyAuth = z.object({
   key: z.string().optional(),
   value: z.string().optional(),
-  placement: zAuthPlacement.optional(),
+  placement: zAuthPlacement.default({ type: "header", name: "" }),
 })
 export type ApiKeyAuth = z.infer<typeof zApiKeyAuth>
 

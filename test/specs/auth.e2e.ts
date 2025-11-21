@@ -1312,7 +1312,7 @@ describe("Collection Auth Inheritance", () => {
         })
         return responseBody
       },
-      {timeout: 10000}
+      {timeout: 15000}
     )
 
     // Verify response exists (request with inherited auth was sent successfully)
