@@ -136,27 +136,13 @@ export default function CollectionAuthPanel({ collectionId }: Props) {
     if (value === "inherit") {
       return
     }
-    let base: Record<string, unknown> = { type: value }
-    if (value === "oauth2") {
-      base = {
-        type: "oauth2" as const,
-        oauth2: { grantType: "client_credentials", tokenCaching: "always", clientAuth: "body" } as const,
-      }
-    } else if (value === "bearer") {
-      base = {
-        type: "bearer" as const,
-        bearer: {
-          placement: { type: "header" as const, name: "Authorization" },
-        } as const,
-      }
-    } else if (value === "apiKey") {
-      base = {
-        type: "apiKey" as const,
-        apiKey: {
-          placement: { type: "header" as const, name: "" },
-        } as const,
-      }
-    }
+    const base =
+      value === "oauth2"
+        ? {
+            type: "oauth2" as const,
+            oauth2: { grantType: "client_credentials", tokenCaching: "always", clientAuth: "body" } as const,
+          }
+        : ({ type: value } as const)
     void collectionsApi().updateCollection(collection.id, { authentication: base } as Partial<Collection>)
   }
 
