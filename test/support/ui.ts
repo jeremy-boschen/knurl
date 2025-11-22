@@ -580,3 +580,67 @@ export async function waitForRequestEditor(timeout = 10000): Promise<WebdriverIO
   await urlInput.waitForDisplayed({ timeout })
   return urlInput
 }
+
+/**
+ * Extracts text content from the response viewer body (CodeMirror).
+ * Returns empty string if response body not found.
+ */
+export async function getResponseBodyText(): Promise<string> {
+  const responseText = await browser.execute(() => {
+    const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+    if (!responseBody) return ""
+    const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+    if (!codeEditor) return ""
+    const content = codeEditor.querySelector(".cm-content")
+    return content ? content.textContent : codeEditor.textContent
+  })
+  return responseText || ""
+}
+
+/**
+ * Waits for response body to appear, then extracts and verifies it contains specific text.
+ * Polls until response body exists, then returns the text (verifying search content in caller).
+ * More efficient than polling+extracting every iteration.
+ */
+export async function waitForResponseContaining(
+  searchText: string,
+  timeout = 5000
+): Promise<string> {
+  // First, poll until response body element exists
+  await browser.waitUntil(
+    async () => {
+      const text = await getResponseBodyText()
+      return text.length > 0
+    },
+    { timeout, interval: 100, timeoutMsg: `Response body did not appear within ${timeout}ms` }
+  )
+
+  // Then extract once and verify content
+  const responseText = await getResponseBodyText()
+  if (!responseText.includes(searchText)) {
+    throw new Error(
+      `Response body does not contain "${searchText}". Got: ${responseText.substring(0, 200)}`
+    )
+  }
+
+  return responseText
+}
+
+/**
+ * Selects an authentication type from the request editor auth dropdown.
+ * Handles both single-click and two-step selection patterns.
+ */
+export async function selectAuthType(
+  type: "basic" | "bearer" | "apiKey" | "oauth2" | "none" | "inherit"
+): Promise<void> {
+  await clickByTestId("request-editor:auth-tab")
+  const typeTestIds: Record<string, string> = {
+    basic: "request-editor:auth-menu:type-basic",
+    bearer: "request-editor:auth-menu:type-bearer",
+    apiKey: "request-editor:auth-menu:type-apiKey",
+    oauth2: "request-editor:auth-menu:type-oauth2",
+    none: "request-editor:auth-menu:type-none",
+    inherit: "request-editor:auth-menu:type-inherit",
+  }
+  await selectOptionByTestId("request-editor:auth-tab-dropdown-trigger", typeTestIds[type])
+}
