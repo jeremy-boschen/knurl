@@ -1,20 +1,21 @@
-import { expect } from "@wdio/globals"
+import {expect} from "@wdio/globals"
 
 import {
   clickByTestId,
+  clickVisibleNewCollectionButton,
+  createCollection,
+  ensureSidebarExpanded,
   ensureWorkspaceReady,
   getElementByTestId,
+  logTestTime,
   openCollectionMenu,
+  openNewRequestViaUI,
   resetOverlays,
   setInputText,
+  waitForCollectionIdByName,
+  waitForRequestEditor,
   waitForTestIdToDisappear,
-  clearInputText,
-  logTestTime,
-  ensureSidebarExpanded,
 } from "../support/ui"
-import { createCollection, clickVisibleNewCollectionButton, waitForCollectionIdByName } from "../support/ui"
-import { waitForRequestEditor } from "../support/ui"
-import { openNewRequestViaUI, selectOptionByTestId } from "../support/ui"
 
 const SCRATCH_COLLECTION_ID = "scratch"
 
@@ -64,7 +65,7 @@ describe("Collections Management & Storage", () => {
       await clickByTestId(`collection-menu:item:delete:${idC}`)
 
       const dialog = await getElementByTestId("delete-dialog")
-      await dialog.waitForDisplayed({ timeout: 5000 })
+      await dialog.waitForDisplayed({timeout: 5000})
       await clickByTestId("delete-dialog:confirm-button")
       await waitForTestIdToDisappear("delete-dialog")
       await logTestTime("Collections Management - deleted collection C")
@@ -102,6 +103,8 @@ describe("Collections Management & Storage", () => {
       await ensureSidebarExpanded()
       await logTestTime("Collections Management - browser reloaded")
 
+      browser.pause(60000)
+
       // Verify collections still exist after reload
       const idsAfter = await resolveOrderedCollectionIds()
       expect(idsAfter).toEqual([idA, idB])
@@ -130,7 +133,7 @@ describe("Collections Management & Storage", () => {
 
       const collectionId = await waitForCollectionIdByName(collectionName)
       const collectionRow = await getElementByTestId(`collection-tree:collection-row:${collectionId}`)
-      await collectionRow.waitForDisplayed({ timeout: 10000 })
+      await collectionRow.waitForDisplayed({timeout: 10000})
       await logTestTime("Collection Flow - collection created and displayed")
 
       // Step 2: Create scratch request via title bar
@@ -253,7 +256,7 @@ async function waitForNewCollectionRequest(
           const reqId = tab.getAttribute("data-request-id")
           const tabKey = tab.getAttribute("data-test-id")?.split(":")[1]
           if (collId === targetCollectionId && reqId && !knownIds.includes(reqId) && tabKey) {
-            return { requestId: reqId, tabKey }
+            return {requestId: reqId, tabKey}
           }
         }
         return null
@@ -292,7 +295,7 @@ async function waitForNewScratchRequest(
           const reqId = tab.getAttribute("data-request-id")
           const tabKey = tab.getAttribute("data-test-id")?.split(":")[1]
           if (collId === scratchId && reqId && !knownIds.includes(reqId) && tabKey) {
-            return { requestId: reqId, tabKey }
+            return {requestId: reqId, tabKey}
           }
         }
         return null
@@ -328,7 +331,7 @@ async function waitForTabSnapshot(tabKey: string, timeout = 10000): Promise<Open
         const requestId = await tab.getAttribute("data-request-id")
         const collectionId = await tab.getAttribute("data-collection-id")
         if (requestId && collectionId) {
-          resolved = { tabKey, requestId, collectionId }
+          resolved = {tabKey, requestId, collectionId}
           return true
         }
       }
@@ -347,7 +350,7 @@ async function waitForRequestPlacement(collectionId: string, requestId: string, 
   await browser.waitUntil(
     async () =>
       await browser.execute(
-        ({ targetCollectionId, targetRequestId }) => {
+        ({targetCollectionId, targetRequestId}) => {
           const selector = `[data-test-id="collection-tree:request-row:${targetRequestId}"]`
           const element = document.querySelector(selector) as HTMLElement | null
           if (!element) {
@@ -355,7 +358,7 @@ async function waitForRequestPlacement(collectionId: string, requestId: string, 
           }
           return element.getAttribute("data-collection-id") === targetCollectionId
         },
-        { targetCollectionId: collectionId, targetRequestId: requestId },
+        {targetCollectionId: collectionId, targetRequestId: requestId},
       ),
     {
       timeout,
@@ -369,11 +372,11 @@ async function ensureRequestRemovedFromScratch(requestId: string, timeout = 1000
   await browser.waitUntil(
     async () =>
       await browser.execute(
-        ({ targetRequestId, scratchId }) => {
+        ({targetRequestId, scratchId}) => {
           const selector = `[data-test-id="collection-tree:request-row:${targetRequestId}"][data-collection-id="${scratchId}"]`
           return !document.querySelector(selector)
         },
-        { targetRequestId: requestId, scratchId: SCRATCH_COLLECTION_ID },
+        {targetRequestId: requestId, scratchId: SCRATCH_COLLECTION_ID},
       ),
     {
       timeout,

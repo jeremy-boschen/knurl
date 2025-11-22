@@ -9,6 +9,8 @@
       "theme": "dark",
       "themeSource": "default"
     },
+    "data": {
+    },
     "requests": {
       "autoSave": 0,
       "disableSsl": false,
