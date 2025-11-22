@@ -80,15 +80,15 @@ export default function RequestTabBar() {
             data-test-id="request-tab-bar:context-menu:close"
           >
             <XIcon className="mr-2 h-4 w-4" />
-            Close
+            Close tab
           </ContextMenuItem>
           <ContextMenuItem
             onClick={() => void requestTabsApi.closeOthers(tabId)}
             disabled={!canCloseOthers}
             data-test-id="request-tab-bar:context-menu:close-others"
           >
-            <XIcon className="mr-2 h-4 w-4" />
-            Close Others
+            <span className="mr-2 h-4 w-4" />
+            Close other tabs
           </ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem
@@ -96,14 +96,16 @@ export default function RequestTabBar() {
             disabled={!canCloseLeft}
             data-test-id="request-tab-bar:context-menu:close-left"
           >
-            Close Left
+            <span className="mr-2 h-4 w-4" />
+            Close tabs to the left
           </ContextMenuItem>
           <ContextMenuItem
             onClick={() => void requestTabsApi.closeTabsToRight(tabId)}
             disabled={!canCloseRight}
             data-test-id="request-tab-bar:context-menu:close-right"
           >
-            Close Right
+            <span className="mr-2 h-4 w-4" />
+            Close tabs to the right
           </ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem
@@ -111,7 +113,7 @@ export default function RequestTabBar() {
             data-test-id="request-tab-bar:context-menu:close-all"
           >
             <XIcon className="mr-2 h-4 w-4" />
-            Close All
+            Close all tabs
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
