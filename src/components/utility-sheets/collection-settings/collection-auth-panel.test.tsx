@@ -71,7 +71,7 @@ describe("CollectionAuthPanel", () => {
   it("updates basic auth credentials", () => {
     render(<CollectionAuthPanel collectionId="col-1" />)
 
-    const usernameInput = getByDataId("collection-auth:basic-username-input") as HTMLInputElement
+    const usernameInput = getByDataId("collection-auth:basic-auth-username-input") as HTMLInputElement
     fireEvent.change(usernameInput, { target: { value: "bob" } })
 
     expect(updateCollectionMock).toHaveBeenCalledWith("col-1", {
@@ -91,7 +91,13 @@ describe("CollectionAuthPanel", () => {
     await user.click(await screen.findByText(/Bearer/i))
 
     expect(updateCollectionMock).toHaveBeenCalledWith("col-1", {
-      authentication: { type: "bearer" },
+      authentication: expect.objectContaining({
+        type: "bearer",
+        bearer: expect.objectContaining({
+          scheme: "Bearer",
+          placement: expect.objectContaining({ type: "header", name: "Authorization" }),
+        }),
+      }),
     })
   })
 
@@ -104,7 +110,7 @@ describe("CollectionAuthPanel", () => {
 
     render(<CollectionAuthPanel collectionId="col-1" />)
 
-    await user.click(getByDataId("collection-auth:bearer-placement-trigger"))
+    await user.click(getByDataId("collection-auth:bearer-auth-placement-select"))
     await user.click(await screen.findByText(/Query Param/i))
 
     expect(updateCollectionMock).toHaveBeenCalledWith("col-1", {
@@ -127,7 +133,7 @@ describe("CollectionAuthPanel", () => {
 
     render(<CollectionAuthPanel collectionId="col-1" />)
 
-    await user.click(getByDataId("collection-auth:api-key-placement-trigger"))
+    await user.click(getByDataId("collection-auth:api-key-auth-placement-select"))
     await user.click(await screen.findByText(/Query Param/i))
 
     expect(updateCollectionMock).toHaveBeenCalledWith("col-1", {
@@ -137,7 +143,7 @@ describe("CollectionAuthPanel", () => {
       },
     })
 
-    const nameInput = getByDataId("collection-auth:api-key-name-input") as HTMLInputElement
+    const nameInput = getByDataId("collection-auth:api-key-auth-placement-name-input") as HTMLInputElement
     fireEvent.change(nameInput, { target: { value: "X-Custom" } })
     expect(updateCollectionMock).toHaveBeenCalledWith("col-1", {
       authentication: {
