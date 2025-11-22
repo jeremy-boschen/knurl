@@ -1,7 +1,16 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: OK */
 import type { ChildProcessByStdio } from "node:child_process"
 import { spawn, spawnSync } from "node:child_process"
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs"
 import { homedir, tmpdir } from "node:os"
 import * as path from "node:path"
 import type { Readable } from "node:stream"
@@ -68,7 +77,9 @@ function prepareSettingsFile(configDir: string): void {
     const configSettingsPath = path.join(configDir, "settings.json")
     if (existsSync(fixtureSettingsPath)) {
       let settingsContent = readFileSync(fixtureSettingsPath, "utf-8")
-      settingsContent = settingsContent.replace(/\{\{configDir\}\}/g, configDir)
+      // Normalize path to use forward slashes (works on all platforms)
+      const normalizedConfigDir = configDir.replaceAll("\\", "/")
+      settingsContent = settingsContent.replace(/\{\{configDir\}\}/g, normalizedConfigDir)
       writeFileSync(configSettingsPath, settingsContent, "utf-8")
     }
   } catch (error) {
