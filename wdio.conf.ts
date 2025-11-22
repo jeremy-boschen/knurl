@@ -1,16 +1,7 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: OK */
 import type { ChildProcessByStdio } from "node:child_process"
 import { spawn, spawnSync } from "node:child_process"
-import {
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
 import { homedir, tmpdir } from "node:os"
 import * as path from "node:path"
 import type { Readable } from "node:stream"
@@ -40,33 +31,28 @@ const MOCK_ENDPOINT_PORT = 3000
 const MOCK_ENDPOINT_HOST = "127.0.0.1"
 
 /**
- * E2E Test Annotations Guide
+ * E2E Test Isolation Strategy
  * ===========================
  *
- * Use these annotations in test names to control test behavior:
+ * Per-File Isolation:
+ * - Each test file gets a fresh session with a new app instance
+ * - Config directory is reset at beforeSession (file start)
+ * - This provides natural isolation between files
  *
- * [STATE:PRESERVE]
- *   Description: Retains all config directory files and settings from the previous test
- *   Use case: Tests that need to verify persistent state across multiple operations
- *   Example: it("[STATE:PRESERVE] verifies collection persists after reload", async () => { ... })
- *   Effect: The beforeTest hook will NOT reset/clear the config directory
+ * Within-File State Sharing:
+ * - Tests within the same file share app state (in-memory and disk)
+ * - Tests MUST clean up after themselves via UI interactions
+ * - If a test needs a completely fresh app state, move it to its own file
  *
- * Default Behavior (without [STATE:PRESERVE]):
- *   - Config directory is completely wiped
- *   - Fresh settings.json is copied from test/fixtures/settings.json
- *   - Provides clean slate for each test
+ * Simulating App Reload:
+ * - Use simulateAppReload() helper to call browser.refresh()
+ * - This simulates a browser reload and triggers Zustand persistence restore
+ * - See test/support/ui.ts for the helper implementation
  */
 
 // ============================================================================
 // State Management Utilities
 // ============================================================================
-
-/**
- * Check if a test has the [STATE:PRESERVE] annotation
- */
-function shouldPreserveState(testTitle: string): boolean {
-  return testTitle.includes("[STATE:PRESERVE]")
-}
 
 /**
  * Prepare the settings.json file: read fixture, replace {{configDir}} placeholder, and write to config directory
@@ -84,27 +70,6 @@ function prepareSettingsFile(configDir: string): void {
     }
   } catch (error) {
     console.warn(`[prepareSettingsFile] Failed to prepare settings file:`, error)
-  }
-}
-
-/**
- * Reset the config directory: wipe all files and restore default settings
- */
-function resetConfigDirectory(configDir: string): void {
-  try {
-    // Remove all files in config directory
-    if (existsSync(configDir)) {
-      const files = readdirSync(configDir)
-      for (const file of files) {
-        const filePath = path.join(configDir, file)
-        rmSync(filePath, { recursive: true, force: true })
-      }
-    }
-
-    // Prepare fresh settings.json from fixtures
-    prepareSettingsFile(configDir)
-  } catch (error) {
-    console.warn(`[resetConfigDirectory] Failed to reset config directory at ${configDir}:`, error)
   }
 }
 
@@ -613,29 +578,17 @@ async function handleBeforeSession(config: any, capabilities: any, specs: any) {
 }
 
 /**
- * beforeTest - Per-test setup
+ * beforeTest - Per-test logging
  * Runs BEFORE each individual test
  *
  * Responsibilities:
- * - Detect [STATE:PRESERVE] annotation in test name
- * - Reset config directory (unless [STATE:PRESERVE] is present)
- * - Log test metadata
+ * - Log test metadata for debugging
+ * - NOTE: No state reset here. Tests must clean up via UI interactions.
+ *   State is only reset at file boundaries (beforeSession).
  */
 async function handleBeforeTest(test: any) {
-  const configDir = configDirsByCapability.get(process.pid)
-  const preserveState = shouldPreserveState(test.title)
-
   console.log(`\n[beforeTest] 📋 Starting test: "${test.title}"`)
   console.log(`  ${formatTestMetadata(test)}`)
-  console.log(`  state annotation: ${preserveState ? "[STATE:PRESERVE] 💾" : "reset to defaults"}`)
-
-  if (!preserveState && configDir) {
-    console.log(`  resetting config directory...`)
-    resetConfigDirectory(configDir)
-    console.log(`  ✓ Config directory reset`)
-  } else if (preserveState && configDir) {
-    console.log(`  ✓ Preserving config directory state from previous test`)
-  }
 }
 
 /**

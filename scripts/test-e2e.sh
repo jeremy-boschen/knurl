@@ -5,6 +5,7 @@
 #   yarn test:e2e                           # Run all E2E tests (no coverage)
 #   yarn test:e2e --spec <filename>         # Run specific test file
 #   yarn test:e2e --spec=<filename>         # Run specific test file
+#   yarn test:e2e --spec <f1> --spec <f2>   # Run multiple test files
 #   yarn test:e2e --test <test name>        # Run tests matching name (mocha -g)
 #   yarn test:e2e --test=<test name>        # Run tests matching name (mocha -g)
 #   yarn test:e2e --grep <test name>        # Alias for --test
@@ -14,22 +15,21 @@
 
 set -e
 
-spec_file=""
+declare -a spec_files
 test_name=""
 enable_coverage=0
 
-# Parse arguments to support both --spec <filename> and --spec=<filename>
-# and both --test <name> and --test=<name>, --grep as alias for --test
+# Parse arguments to support multiple --spec parameters and both formats
 for arg in "$@"; do
   if [[ "$arg" == "--spec="* ]]; then
     # Handle --spec=filename format
-    spec_file="${arg#--spec=}"
+    spec_files+=("${arg#--spec=}")
   elif [[ "$arg" == "--spec" ]]; then
     # Mark that we found --spec, next arg should be the filename
     spec_next=1
   elif [[ $spec_next == 1 ]]; then
     # This is the filename following --spec
-    spec_file="$arg"
+    spec_files+=("$arg")
     spec_next=0
   elif [[ "$arg" == "--test="* ]]; then
     # Handle --test=name format
@@ -60,19 +60,24 @@ done
 # Build wdio command with optional parameters
 wdio_cmd="yarn wdio run ./wdio.conf.ts"
 
-if [[ -n "$spec_file" ]]; then
+# Add all spec files (supporting multiple --spec parameters)
+for spec_file in "${spec_files[@]}"; do
   wdio_cmd="$wdio_cmd --spec \"$spec_file\""
-fi
+done
 
 if [[ -n "$test_name" ]]; then
   wdio_cmd="$wdio_cmd --mochaOpts.grep \"$test_name\""
 fi
 
-if [[ -n "$spec_file" ]] || [[ -n "$test_name" ]]; then
-  if [[ -n "$spec_file" && -n "$test_name" ]]; then
-    echo "Running E2E tests in $spec_file matching \"$test_name\""
-  elif [[ -n "$spec_file" ]]; then
-    echo "Running E2E tests from: $spec_file"
+if [[ ${#spec_files[@]} -gt 0 ]] || [[ -n "$test_name" ]]; then
+  if [[ ${#spec_files[@]} -gt 0 && -n "$test_name" ]]; then
+    echo "Running E2E tests matching \"$test_name\""
+  elif [[ ${#spec_files[@]} -gt 0 ]]; then
+    if [[ ${#spec_files[@]} -eq 1 ]]; then
+      echo "Running E2E tests from: ${spec_files[0]}"
+    else
+      echo "Running E2E tests from: ${#spec_files[@]} files"
+    fi
   else
     echo "Running E2E tests matching: $test_name"
   fi
