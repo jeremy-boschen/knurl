@@ -88,7 +88,7 @@ export default function RenameDialog<Context>({
                 Cancel
               </Button>
             </DialogClose>
-            <Button type="submit" variant="default">
+            <Button type="submit" variant="default" data-test-id="rename-dialog:rename-button">
               {submitLabel}
             </Button>
           </DialogFooter>

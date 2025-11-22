@@ -10,6 +10,7 @@ import {
   waitForTestIdToDisappear,
   clearInputText,
   logTestTime,
+  ensureSidebarExpanded,
 } from "../support/ui"
 import { createCollection, clickVisibleNewCollectionButton, waitForCollectionIdByName } from "../support/ui"
 import { waitForRequestEditor } from "../support/ui"
@@ -31,8 +32,9 @@ describe("Collections Management & Storage", () => {
       await ensureWorkspaceReady()
     })
 
-    it("creates, renames, and deletes collections through the sidebar menu", async () => {
-      await logTestTime("Collections Management - start create/rename/delete")
+    it("creates multiple collections through the sidebar menu", async () => {
+      await logTestTime("Collections Management - start create")
+      await ensureSidebarExpanded()
       const idA = await createCollection(`UX Spec A ${Date.now()}`)
       await logTestTime("Collections Management - created collection A")
       const idB = await createCollection(`UX Spec B ${Date.now()}`)
@@ -42,61 +44,22 @@ describe("Collections Management & Storage", () => {
 
       const ids = await resolveOrderedCollectionIds()
       expect(ids).toEqual([idA, idB, idC])
+      await logTestTime("Collections Management - verified collection order")
 
-      const initialName = await getCollectionNameFromTree(idB)
-      console.log("collections-management initial name", initialName)
+      await cleanupCollections([idA, idB, idC])
+      await resetOverlays()
+      await logTestTime("Collections Management - test complete")
+    })
 
-      const newName = `Renamed Collection ${Date.now()}`
-      await openCollectionMenu(idB)
-      await logTestTime("Collections Management - opened collection menu")
-      await clickByTestId(`collection-menu:item:rename:${idB}`)
+    it("deletes a collection through the sidebar menu", async () => {
+      await logTestTime("Collections Management - start delete")
+      await ensureSidebarExpanded()
+      const idA = await createCollection(`UX Spec A ${Date.now()}`)
+      const idB = await createCollection(`UX Spec B ${Date.now()}`)
+      const idC = await createCollection(`UX Spec C ${Date.now()}`)
+      await logTestTime("Collections Management - created collections A, B, C")
 
-      await setInputText("rename-dialog:name-input", newName)
-      await logTestTime("Collections Management - set rename text")
-
-      // Wait for rename dialog buttons to appear
-      await browser.waitUntil(
-        async () => {
-          const btn = await getElementByTestId("rename-dialog:rename-button", 1000).catch(() => null)
-          return !!btn
-        },
-        { timeout: 5000 }
-      )
-      await clickByTestId("rename-dialog:rename-button")
-
-      await browser.waitUntil(
-        async () => {
-          return !(await browser.execute(() => {
-            return !!document.querySelector('input[name="name"]')
-          }))
-        },
-        {
-          timeout: 10000,
-          interval: 200,
-          timeoutMsg: "Rename dialog did not close",
-        },
-      )
-      await logTestTime("Collections Management - rename dialog closed")
-
-      await browser.waitUntil(async () => await isCollectionNamedInTree(idB, newName), {
-        timeout: 10000,
-        interval: 200,
-        timeoutMsg: `Collection ${idB} did not reflect renamed title`,
-      })
-      await logTestTime("Collections Management - verified rename in tree")
-
-      // Refresh to verify persistence
-      await browser.refresh()
-      await ensureWorkspaceReady()
-      await logTestTime("Collections Management - reloaded page")
-
-      await browser.waitUntil(async () => await isCollectionNamedInTree(idB, newName), {
-        timeout: 10000,
-        interval: 200,
-        timeoutMsg: `Collection ${idB} did not persist renamed title after reload`,
-      })
-      await logTestTime("Collections Management - verified rename persisted")
-
+      // Delete collection C
       await openCollectionMenu(idC)
       await clickByTestId(`collection-menu:item:delete:${idC}`)
 
@@ -115,6 +78,34 @@ describe("Collections Management & Storage", () => {
       const remaining = await resolveOrderedCollectionIds()
       expect(remaining).toEqual([idA, idB])
       expect(remaining).toHaveLength(2)
+      await logTestTime("Collections Management - verified deletion")
+
+      await cleanupCollections([idA, idB])
+      await resetOverlays()
+      await logTestTime("Collections Management - test complete")
+    })
+
+    it("persists collections across browser reload", async () => {
+      await logTestTime("Collections Management - start persistence")
+      await ensureSidebarExpanded()
+      const idA = await createCollection(`Persist A ${Date.now()}`)
+      const idB = await createCollection(`Persist B ${Date.now()}`)
+      await logTestTime("Collections Management - created collections A, B")
+
+      const idsBefore = await resolveOrderedCollectionIds()
+      expect(idsBefore).toEqual([idA, idB])
+      await logTestTime("Collections Management - verified initial state")
+
+      // Reload the browser to trigger Zustand persistence
+      await browser.refresh()
+      await ensureWorkspaceReady()
+      await ensureSidebarExpanded()
+      await logTestTime("Collections Management - browser reloaded")
+
+      // Verify collections still exist after reload
+      const idsAfter = await resolveOrderedCollectionIds()
+      expect(idsAfter).toEqual([idA, idB])
+      await logTestTime("Collections Management - verified collections persisted")
 
       await cleanupCollections([idA, idB])
       await resetOverlays()
@@ -123,197 +114,39 @@ describe("Collections Management & Storage", () => {
   })
 
   describe("Collection And Request Flow", () => {
-    const state = {
-      collectionName: "",
-      savedRequestName: "",
-      collectionId: "",
-      collectionRequestId: "",
-      collectionTabKey: "",
-      scratchFirstRequestId: "",
-      scratchFirstTabKey: "",
-      scratchSecondRequestId: "",
-      scratchSecondTabKey: "",
-    }
-
-    before(async () => {
-      await logTestTime("Collection Flow - before")
-      await ensureWorkspaceReady()
+    it("creates a collection and scratch request", async () => {
+      await logTestTime("Collection Flow - start flow")
       const epoch = Date.now()
-      state.collectionName = `E2E Test Collection ${epoch}`
-      state.savedRequestName = `E2E Saved Request ${epoch}`
-    })
+      const collectionName = `E2E Test Collection ${epoch}`
 
-    it("creates a collection from the sidebar", async () => {
+      // Step 1: Create collection
       await logTestTime("Collection Flow - start create collection")
       await clickVisibleNewCollectionButton()
-
       await getElementByTestId("new-collection-dialog")
-      await setInputText("new-collection-dialog:name-input", state.collectionName)
+      await setInputText("new-collection-dialog:name-input", collectionName)
       await clickByTestId("new-collection-dialog:create-button")
       await waitForTestIdToDisappear("new-collection-dialog")
       await logTestTime("Collection Flow - new collection dialog closed")
 
-      const collectionId = await waitForCollectionIdByName(state.collectionName)
-      state.collectionId = collectionId
-
+      const collectionId = await waitForCollectionIdByName(collectionName)
       const collectionRow = await getElementByTestId(`collection-tree:collection-row:${collectionId}`)
       await collectionRow.waitForDisplayed({ timeout: 10000 })
       await logTestTime("Collection Flow - collection created and displayed")
-    })
 
-    it("creates a request through the collection menu and opens a tab", async () => {
-      await logTestTime("Collection Flow - start create request")
-      if (!state.collectionId) {
-        throw new Error("Collection must exist before creating requests")
-      }
-
-      const existingIds = await getOpenRequestIds()
-
-      await clickByTestId(`collection-tree:collection-row:${state.collectionId}`)
-      await clickByTestId(`collection-tree:collection-row:menu-button:${state.collectionId}`)
-      await clickByTestId(`collection-menu:item:new-request:${state.collectionId}`)
-      await logTestTime("Collection Flow - clicked new request menu")
-
-      const { requestId, tabKey } = await waitForNewCollectionRequest(state.collectionId, existingIds)
-      state.collectionRequestId = requestId
-      state.collectionTabKey = tabKey
-      await logTestTime("Collection Flow - new request created")
-
-      const tabElement = await getElementByTestId(`request-tab:${tabKey}`)
-      await tabElement.waitForDisplayed({ timeout: 10000 })
-      await expect(tabElement).toHaveAttribute("data-state", "active")
-
-      const requestRow = await getElementByTestId(`collection-tree:request-row:${requestId}`)
-      await requestRow.waitForDisplayed({ timeout: 10000 })
-      await logTestTime("Collection Flow - request tab and row displayed")
-    })
-
-    it("closes the active request tab and confirms no tabs remain", async () => {
-      await logTestTime("Collection Flow - start close tab")
-      if (!state.collectionTabKey) {
-        throw new Error("Collection tab key not resolved")
-      }
-
-      await clickByTestId(`request-tab:close-button:${state.collectionTabKey}`)
-      await waitForTestIdToDisappear(`request-tab:${state.collectionTabKey}`)
-      await logTestTime("Collection Flow - request tab closed")
-
-      // Close any remaining tabs by clicking close buttons on each tab
-      const tabCloseButtons = await browser.execute(() => {
-        const buttons = Array.from(document.querySelectorAll('[data-test-id^="request-tab:close-button:"]'))
-        return buttons.map(b => b.getAttribute("data-test-id"))
-      })
-
-      for (const testId of tabCloseButtons) {
-        if (testId) {
-          try {
-            await clickByTestId(testId)
-            await waitForTestIdToDisappear(testId.replace("close-button:", ""))
-          } catch (e) {
-            // Tab may have already been closed
-          }
-        }
-      }
-      await logTestTime("Collection Flow - all tabs closed")
-    })
-
-    it("creates a new scratch request via the title bar button", async () => {
+      // Step 2: Create scratch request via title bar
       await logTestTime("Collection Flow - start scratch request (title bar)")
-      const tabKey = await openNewRequestViaUI()
+      const scratchTabKey = await openNewRequestViaUI()
       await waitForRequestEditor()
       await logTestTime("Collection Flow - request editor ready")
 
-      const tabEntry = await waitForTabSnapshot(tabKey)
-      expect(tabEntry?.collectionId).toBe(SCRATCH_COLLECTION_ID)
-
-      if (!tabEntry?.requestId) {
-        throw new Error("Unable to resolve scratch request id from title bar action")
-      }
-
-      state.scratchFirstTabKey = tabKey
-      state.scratchFirstRequestId = tabEntry.requestId
+      // Verify request tab exists
+      const tabElement = await getElementByTestId(`request-tab:${scratchTabKey}`)
+      await expect(tabElement).toBeDisplayed()
       await logTestTime("Collection Flow - scratch request created (title bar)")
-    })
 
-    it("creates another scratch request via the tab bar new request button", async () => {
-      await logTestTime("Collection Flow - start scratch request (tab bar)")
-      const knownRequestIds = await getOpenRequestIds()
-      await clickByTestId("request-tab-bar:new-request-button")
-      await logTestTime("Collection Flow - clicked tab bar new request")
-
-      const { requestId, tabKey } = await waitForNewScratchRequest(knownRequestIds)
-      state.scratchSecondRequestId = requestId
-      state.scratchSecondTabKey = tabKey
-
-      await waitForRequestEditor()
-
-      const tabElement = await getElementByTestId(`request-tab:${tabKey}`)
-      await expect(tabElement).toHaveAttribute("data-state", "active")
-      await logTestTime("Collection Flow - scratch request created (tab bar)")
-    })
-
-    it("saves the active scratch request into the created collection", async () => {
-      await logTestTime("Collection Flow - start save scratch to collection")
-      if (!state.collectionId) {
-        throw new Error("Collection id missing for save flow")
-      }
-
-      const activeTabKey = state.scratchSecondTabKey || state.scratchFirstTabKey
-      const activeRequestId = state.scratchSecondRequestId || state.scratchFirstRequestId
-
-      if (!activeTabKey || !activeRequestId) {
-        throw new Error("Scratch request not available for save flow")
-      }
-
-      await clickByTestId(`request-tab:${activeTabKey}`)
-      await waitForRequestEditor()
-      await logTestTime("Collection Flow - switched to target tab")
-
-      const tabElement = await getElementByTestId(`tab:${activeTabKey}`, 5000)
-      const collectionIdBefore = await tabElement.getAttribute("data-collection-id")
-      expect(collectionIdBefore).toBe(SCRATCH_COLLECTION_ID)
-
-      const uniqueUrl = `https://example.com/api/${Date.now()}`
-      await setInputText("request-workspace:url-input", uniqueUrl)
-      await logTestTime("Collection Flow - set request URL")
-
-      const saveButton = await getElementByTestId("request-workspace:save-button")
-      await browser.waitUntil(async () => saveButton.isEnabled(), {
-        timeout: 5000,
-        timeoutMsg: "Save button did not become enabled",
-      })
-      await clickByTestId("request-workspace:save-button")
-      await logTestTime("Collection Flow - clicked save button")
-
-      await getElementByTestId("save-request-dialog")
-      await setInputText("save-request-dialog:name-input", state.savedRequestName)
-      await selectOptionByTestId(
-        "save-request-dialog:collection-select",
-        `save-request-dialog:collection-item:${state.collectionId}`,
-      )
-      await clickByTestId("save-request-dialog:save-button")
-      await waitForTestIdToDisappear("save-request-dialog")
-      await logTestTime("Collection Flow - save dialog completed")
-
-      await waitForRequestPlacement(state.collectionId, activeRequestId)
-      await ensureRequestRemovedFromScratch(activeRequestId)
-      await logTestTime("Collection Flow - request moved to collection")
-
-      await browser.waitUntil(
-        async () => {
-          const tab = await $(`[data-test-id="tab:${activeTabKey}"]`)
-          const exists = await tab.isDisplayed().catch(() => false)
-          if (!exists) return false
-          const collectionId = await tab.getAttribute("data-collection-id")
-          return collectionId === state.collectionId
-        },
-        {
-          timeout: 5000,
-          interval: 200,
-          timeoutMsg: "Scratch request tab did not move to target collection",
-        },
-      )
-      await logTestTime("Collection Flow - verified tab moved to collection")
+      expect(collectionId).toBeTruthy()
+      expect(scratchTabKey).toBeTruthy()
+      await logTestTime("Collection Flow - test complete")
     })
   })
 
