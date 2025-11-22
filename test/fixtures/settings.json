@@ -10,6 +10,7 @@
       "themeSource": "default"
     },
     "data": {
+      "appDataDir": "{{configDir}}"
     },
     "requests": {
       "autoSave": 0,
