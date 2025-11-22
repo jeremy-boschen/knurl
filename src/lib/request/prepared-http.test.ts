@@ -28,6 +28,49 @@ describe("prepareHttpRequest", () => {
     expect(prepared.method).toBe("POST")
   })
 
+  it("preserves existing auth headers and merges auth cookies", () => {
+    const request = createRequestFixture({
+      method: "GET",
+      url: "https://api.knurl.dev/profile",
+    })
+
+    request.headers = {
+      authorization: { id: "auth", name: "Authorization", value: "Bearer existing", enabled: true, secure: false },
+      cookie: { id: "cookie", name: "Cookie", value: "theme=dark", enabled: true, secure: false },
+    }
+
+    const prepared = prepareHttpRequest({
+      request,
+      authResult: {
+        headers: { authorization: "Bearer injected" },
+        cookies: { session: "abc" },
+      },
+    })
+
+    expect(prepared.headers.Authorization).toBe("Bearer existing")
+    expect(prepared.headers.Cookie).toContain("theme=dark")
+    expect(prepared.headers.Cookie).toContain("session=abc")
+  })
+
+  it("falls back to manual URL building and appends auth/query params", () => {
+    const request = createRequestFixture({ method: "GET", url: "api.knurl.dev/search" })
+    request.queryParams = {
+      q: { id: "q", name: "q", value: "knurl", enabled: true, secure: false },
+    }
+
+    const prepared = prepareHttpRequest({
+      request,
+      authResult: { query: { token: "t1" } },
+    })
+
+    expect(prepared.url).toBe("api.knurl.dev/search?q=knurl&token=t1")
+  })
+
+  it("throws on schemed URLs without a host", () => {
+    const request = createRequestFixture({ method: "GET", url: "http:///" })
+    expect(() => prepareHttpRequest({ request, authResult: undefined })).toThrow(/host is missing/i)
+  })
+
   it("merges headers, cookies, and text body content", () => {
     const request = createRequestFixture({ method: "POST" })
     request.headers = {
