@@ -80,6 +80,7 @@ export function assertPresent<T>(value: T | null | undefined, msg?: string): ass
     throw new Error(msg)
   }
 }
+
 export function assertAbsent<T>(value: T | null | undefined, msg?: string): asserts value is null | undefined {
   if (value != null) {
     throw new Error(msg)
