@@ -75,6 +75,15 @@ export function MainWindow() {
     }
   }, [])
 
+  // Ensure all state is saved before page unload (e.g., browser.refresh() in tests, navigation, etc.)
+  React.useEffect(() => {
+    const handleBeforeUnload = async () => {
+      await useApplication.saveAll()
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [])
+
   return (
     <ErrorBoundary>
       <TooltipProvider delayDuration={700} skipDelayDuration={0}>

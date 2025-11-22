@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: OK */
 import type { ChildProcessByStdio } from "node:child_process"
 import { spawn, spawnSync } from "node:child_process"
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs"
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import { homedir, tmpdir } from "node:os"
 import * as path from "node:path"
 import type { Readable } from "node:stream"
@@ -60,6 +60,23 @@ function shouldPreserveState(testTitle: string): boolean {
 }
 
 /**
+ * Prepare the settings.json file: read fixture, replace {{configDir}} placeholder, and write to config directory
+ */
+function prepareSettingsFile(configDir: string): void {
+  try {
+    const fixtureSettingsPath = path.join(__dirname, "test", "fixtures", "settings.json")
+    const configSettingsPath = path.join(configDir, "settings.json")
+    if (existsSync(fixtureSettingsPath)) {
+      let settingsContent = readFileSync(fixtureSettingsPath, "utf-8")
+      settingsContent = settingsContent.replace(/\{\{configDir\}\}/g, configDir)
+      writeFileSync(configSettingsPath, settingsContent, "utf-8")
+    }
+  } catch (error) {
+    console.warn(`[prepareSettingsFile] Failed to prepare settings file:`, error)
+  }
+}
+
+/**
  * Reset the config directory: wipe all files and restore default settings
  */
 function resetConfigDirectory(configDir: string): void {
@@ -73,12 +90,8 @@ function resetConfigDirectory(configDir: string): void {
       }
     }
 
-    // Copy fresh settings.json from fixtures
-    const fixtureSettingsPath = path.join(__dirname, "test", "fixtures", "settings.json")
-    const configSettingsPath = path.join(configDir, "settings.json")
-    if (existsSync(fixtureSettingsPath)) {
-      copyFileSync(fixtureSettingsPath, configSettingsPath)
-    }
+    // Prepare fresh settings.json from fixtures
+    prepareSettingsFile(configDir)
   } catch (error) {
     console.warn(`[resetConfigDirectory] Failed to reset config directory at ${configDir}:`, error)
   }
@@ -568,16 +581,8 @@ async function handleBeforeSession(config: any, capabilities: any, specs: any) {
   configDirsByCapability.set(process.pid, configDir)
   console.log(`  configDir: ${configDir}`)
 
-  try {
-    const fixtureSettingsPath = path.join(__dirname, "test", "fixtures", "settings.json")
-    const configSettingsPath = path.join(configDir, "settings.json")
-    if (existsSync(fixtureSettingsPath)) {
-      copyFileSync(fixtureSettingsPath, configSettingsPath)
-      console.log(`  ✓ Copied settings.json fixture to config directory`)
-    }
-  } catch (error) {
-    console.warn("[beforeSession] Failed to copy settings fixture:", error)
-  }
+  prepareSettingsFile(configDir)
+  console.log(`  ✓ Prepared settings.json fixture with dynamic config directory`)
 
   if (capabilities && typeof capabilities === "object" && "tauri:options" in capabilities) {
     const tauriOptions = capabilities["tauri:options"]
