@@ -10,9 +10,9 @@ pre-push:
   parallel: false
   commands:
     test-all:
-      run: yarn test:fe --run
+      run: yarn test:unit
     coverage:
-      run: yarn coverage:check
+      run: yarn test:coverage
 
 commit-msg:
   commands:
