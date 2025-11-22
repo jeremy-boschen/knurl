@@ -2,7 +2,17 @@
 
 export type { ApiKeyAuth, AuthConfig, AuthPlacementType, AuthType, BasicAuth, BearerAuth, OAuth2Auth } from "./auth"
 // Re-export auth types
-export { AuthTypes, zAuthConfig, zAuthPlacement, zAuthPlacementType, zAuthType, zAuthTypes } from "./auth"
+export {
+  AuthTypes,
+  zAuthConfig,
+  zAuthPlacement,
+  zAuthPlacementType,
+  zAuthType,
+  zAuthTypes,
+  zApiKeyAuth,
+  zBearerAuth,
+  zOauth2Auth,
+} from "./auth"
 export type { FormEncoding, FormField, RequestBodyData, RequestBodyGrammar, RequestBodyType } from "./body"
 // Re-export body types
 export {

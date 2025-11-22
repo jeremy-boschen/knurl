@@ -483,7 +483,7 @@ pub fn run() {
             if !self.collected.is_empty() {
                 self.collected.push_str(", ");
             }
-            self.collected.push_str(&format!("{}={}", key, value));
+            self.collected.push_str(&format!("{key}={value}"));
             Ok(())
         }
     }

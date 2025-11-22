@@ -557,6 +557,7 @@ async function main() {
     respondJson(res, 200, {
       method: 'GET',
       args: req.query,
+      cookies: req.cookies || {},
       headers: Object.fromEntries(
         Object.entries(req.headers)
           .filter(([k]) => !k.startsWith('host'))
@@ -573,6 +574,7 @@ async function main() {
       method: 'POST',
       args: req.query,
       form: req.body,
+      cookies: req.cookies || {},
       headers: Object.fromEntries(
         Object.entries(req.headers)
           .filter(([k]) => !k.startsWith('host'))

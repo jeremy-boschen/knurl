@@ -1,14 +1,11 @@
-import React, { type FC, type ReactNode, useId } from "react"
+import React, { type FC } from "react"
 
 import { useShallow } from "zustand/shallow"
 
 import { discoverOidc } from "@/bindings/knurl"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Input } from "@/components/ui/knurl/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { OAuth2Editor } from "@/components/auth/oauth2-editor"
+import { ApiKeyAuthForm, BasicAuthForm, BearerAuthForm } from "@/components/auth/auth-forms"
 import { SectionHeader } from "./section-header"
 import { credentialsCacheApi, useApplication } from "@/state/application"
 import { useCollections, useRequestTab } from "@/state"
@@ -19,341 +16,7 @@ export type RequestAuthPanelProps = {
   tabId: string
 }
 
-// --- Layout Components ---
-
-type AuthFieldProps = {
-  label: ReactNode
-  placement?: "left" | "right"
-  children: (id: string) => ReactNode
-  className?: string
-}
-
-function AuthField({ label, children, className, placement = "left" }: AuthFieldProps) {
-  const id = useId()
-  return (
-    <div
-      className={cn(
-        "grid items-center gap-x-4",
-        placement === "left" ? "grid-cols-[6rem_auto]" : "grid-cols-[6rem_auto]",
-        className,
-      )}
-    >
-      <Label htmlFor={id} className="text-sm text-muted-foreground">
-        {label}
-      </Label>
-      <div className="min-w-0">{children(id)}</div>
-    </div>
-  )
-}
-
 // --- Auth Type Forms ---
-
-type BasicAuthFormProps = {
-  auth: Partial<BasicAuth>
-  onUpdate: (updates: Record<string, unknown>) => void
-}
-
-const BasicAuthForm: FC<BasicAuthFormProps> = ({ auth, onUpdate }) => (
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-2" data-test-id="request-auth-panel:basic-auth-form">
-    <AuthField label="Username">
-      {(id) => (
-        <Input
-          id={id}
-          type="text"
-          value={auth.username ?? ""}
-          onChange={(e) => onUpdate({ username: e.target.value })}
-          className="w-full font-mono"
-          data-test-id="request-auth-panel:basic-auth-username-input"
-        />
-      )}
-    </AuthField>
-    <AuthField label="Password" placement="right">
-      {(id) => (
-        <Input
-          id={id}
-          type="password"
-          value={auth.password ?? ""}
-          onChange={(e) => onUpdate({ password: e.target.value })}
-          className="w-full font-mono"
-          data-test-id="request-auth-panel:basic-auth-password-input"
-        />
-      )}
-    </AuthField>
-  </div>
-)
-
-type BearerAuthFormProps = {
-  auth: Partial<BearerAuth>
-  onUpdate: (updates: Record<string, unknown>) => void
-  onPlacementUpdate: (updates: Record<string, unknown>) => void
-  canUseBodyPlacement: boolean
-}
-
-const BearerAuthForm: FC<BearerAuthFormProps> = ({ auth, onUpdate, onPlacementUpdate, canUseBodyPlacement }) => {
-  const placementType = auth.placement?.type ?? "header"
-  const scheme = auth.scheme ?? "Bearer"
-  const schemeMode: "Bearer" | "JWT" | "custom" =
-    scheme === "Bearer" || scheme === "JWT" ? (scheme as "Bearer" | "JWT") : "custom"
-  return (
-    <div className="max-w-2xl space-y-4" data-test-id="request-auth-panel:bearer-auth-form">
-      <AuthField label="Token">
-        {(id) => (
-          <Input
-            id={id}
-            type="password"
-            value={auth.token ?? ""}
-            onChange={(e) => onUpdate({ token: e.target.value })}
-            className="w-full font-mono"
-            data-test-id="request-auth-panel:bearer-auth-token-input"
-          />
-        )}
-      </AuthField>
-      {placementType === "header" && (
-        <>
-          <AuthField label="Scheme">
-            {(id) => (
-              <Select
-                value={schemeMode}
-                onValueChange={(value) => {
-                  if (value === "custom") {
-                    // Switch to custom: start blank so user can type
-                    return onUpdate({ scheme: "" })
-                  }
-                  onUpdate({ scheme: value })
-                }}
-              >
-                <SelectTrigger
-                  id={id}
-                  className="w-full text-sm"
-                  data-test-id="request-auth-panel:bearer-auth-scheme-select"
-                >
-                  <SelectValue placeholder="Select scheme" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Bearer" data-test-id="request-auth-panel:bearer-auth-scheme-bearer">
-                    Bearer
-                  </SelectItem>
-                  <SelectItem value="JWT" data-test-id="request-auth-panel:bearer-auth-scheme-jwt">
-                    JWT
-                  </SelectItem>
-                  <SelectItem value="custom" data-test-id="request-auth-panel:bearer-auth-scheme-custom">
-                    Custom…
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          </AuthField>
-          {schemeMode === "custom" && (
-            <AuthField label="Custom Scheme">
-              {(id) => (
-                <Input
-                  id={id}
-                  type="text"
-                  value={scheme}
-                  onChange={(e) => onUpdate({ scheme: e.target.value })}
-                  placeholder="e.g., Token"
-                  className="w-full font-mono"
-                  data-test-id="request-auth-panel:bearer-auth-custom-scheme-input"
-                />
-              )}
-            </AuthField>
-          )}
-        </>
-      )}
-      <AuthField label="Placement">
-        {(id) => (
-          <Select value={placementType} onValueChange={(value) => onPlacementUpdate({ type: value })}>
-            <SelectTrigger
-              id={id}
-              className="w-full text-sm"
-              data-test-id="request-auth-panel:bearer-auth-placement-select"
-            >
-              <SelectValue placeholder="Select placement" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="header">Header</SelectItem>
-              <SelectItem value="query">Query Param</SelectItem>
-              <SelectItem value="cookie">Cookie</SelectItem>
-              <SelectItem value="body" disabled={!canUseBodyPlacement}>
-                Body
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-      </AuthField>
-      {!canUseBodyPlacement && (
-        <div className="-mt-3 text-xs text-muted-foreground">
-          Body placement requires a Form body using URL-encoded or Multipart encoding.
-        </div>
-      )}
-
-      {(placementType === "header" || placementType === "query" || placementType === "cookie") && (
-        <AuthField label={placementType === "header" ? "Header Name" : "Name"}>
-          {(id) => (
-            <Input
-              id={id}
-              type="text"
-              value={auth.placement?.name ?? ""}
-              onChange={(e) => onPlacementUpdate({ name: e.target.value })}
-              className="w-full font-mono"
-              data-test-id="request-auth-panel:bearer-auth-placement-name-input"
-            />
-          )}
-        </AuthField>
-      )}
-
-      {placementType === "body" && (
-        <>
-          <AuthField label="Field Name">
-            {(id) => (
-              <Input
-                id={id}
-                type="text"
-                value={auth.placement?.fieldName ?? ""}
-                onChange={(e) => onPlacementUpdate({ fieldName: e.target.value })}
-                className="w-full font-mono"
-                data-test-id="request-auth-panel:bearer-auth-placement-field-name-input"
-              />
-            )}
-          </AuthField>
-          <AuthField label="Content-Type">
-            {(id) => (
-              <Input
-                id={id}
-                type="text"
-                value={auth.placement?.contentType ?? ""}
-                onChange={(e) => onPlacementUpdate({ contentType: e.target.value })}
-                className="w-full font-mono"
-                data-test-id="request-auth-panel:bearer-auth-placement-content-type-input"
-              />
-            )}
-          </AuthField>
-        </>
-      )}
-    </div>
-  )
-}
-
-type ApiKeyAuthFormProps = {
-  auth: Partial<ApiKeyAuth>
-  onUpdate: (updates: Record<string, unknown>) => void
-  onPlacementUpdate: (updates: Record<string, unknown>) => void
-  canUseBodyPlacement: boolean
-}
-
-const ApiKeyAuthForm: FC<ApiKeyAuthFormProps> = ({ auth, onUpdate, onPlacementUpdate, canUseBodyPlacement }) => {
-  const placementType = auth.placement?.type ?? "header"
-  return (
-    <div className="space-y-4" data-test-id="request-auth-panel:api-key-auth-form">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <AuthField label="Key">
-          {(id) => (
-            <Input
-              id={id}
-              type="text"
-              value={auth.key ?? ""}
-              onChange={(e) => onUpdate({ key: e.target.value })}
-              className="w-full font-mono"
-              data-test-id="request-auth-panel:api-key-auth-key-input"
-            />
-          )}
-        </AuthField>
-        <AuthField label="Value">
-          {(id) => (
-            <Input
-              id={id}
-              type="password"
-              value={auth.value ?? ""}
-              onChange={(e) => onUpdate({ value: e.target.value })}
-              className="w-full font-mono"
-              data-test-id="request-auth-panel:api-key-auth-value-input"
-            />
-          )}
-        </AuthField>
-      </div>
-      <AuthField label="Placement">
-        {(id) => (
-          <Select value={placementType} onValueChange={(value) => onPlacementUpdate({ type: value })}>
-            <SelectTrigger
-              id={id}
-              className="w-full text-sm"
-              data-test-id="request-auth-panel:api-key-auth-placement-select"
-            >
-              <SelectValue placeholder="Select placement" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="header" data-test-id="request-auth-panel:api-key-auth-placement-option:header">
-                Header
-              </SelectItem>
-              <SelectItem value="query" data-test-id="request-auth-panel:api-key-auth-placement-option:query">
-                Query Param
-              </SelectItem>
-              <SelectItem value="cookie" data-test-id="request-auth-panel:api-key-auth-placement-option:cookie">
-                Cookie
-              </SelectItem>
-              <SelectItem
-                value="body"
-                disabled={!canUseBodyPlacement}
-                data-test-id="request-auth-panel:api-key-auth-placement-option:body"
-              >
-                Body
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-      </AuthField>
-      {!canUseBodyPlacement && (
-        <div className="-mt-3 text-xs text-muted-foreground">
-          Body placement requires a Form body using URL-encoded or Multipart encoding.
-        </div>
-      )}
-
-      {(placementType === "header" || placementType === "query" || placementType === "cookie") && (
-        <AuthField label="Name">
-          {(id) => (
-            <Input
-              id={id}
-              type="text"
-              value={auth.placement?.name ?? ""}
-              onChange={(e) => onPlacementUpdate({ name: e.target.value })}
-              className="w-full font-mono"
-              data-test-id="request-auth-panel:api-key-auth-placement-name-input"
-            />
-          )}
-        </AuthField>
-      )}
-
-      {placementType === "body" && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <AuthField label="Field Name">
-            {(id) => (
-              <Input
-                id={id}
-                type="text"
-                value={auth.placement?.fieldName ?? ""}
-                onChange={(e) => onPlacementUpdate({ fieldName: e.target.value })}
-                className="w-full font-mono"
-                data-test-id="request-auth-panel:api-key-auth-placement-field-name-input"
-              />
-            )}
-          </AuthField>
-          <AuthField label="Content-Type">
-            {(id) => (
-              <Input
-                id={id}
-                type="text"
-                value={auth.placement?.contentType ?? ""}
-                onChange={(e) => onPlacementUpdate({ contentType: e.target.value })}
-                className="w-full font-mono"
-                data-test-id="request-auth-panel:api-key-auth-placement-content-type-input"
-              />
-            )}
-          </AuthField>
-        </div>
-      )}
-    </div>
-  )
-}
 
 type OAuth2AuthFormProps = {
   auth: Partial<OAuth2Auth>
@@ -449,6 +112,7 @@ export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
   const parentAuth = useApplication((state) =>
     request ? state.collectionsState.cache[request.collectionId]?.authentication : undefined,
   )
+  const [discoveryError, setDiscoveryError] = React.useState<string | null>(null)
 
   if (!request || !requestTab || !requestTabsApi) {
     return null
@@ -532,10 +196,11 @@ export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
     const oauth2 = authentication.oauth2 ?? {}
     const discoveryBase = oauth2.discoveryUrl || oauth2.authUrl
     if (!discoveryBase) {
-      alert("Please enter a Discovery URL or Auth URL before attempting auto-discovery")
+      setDiscoveryError("Please enter a Discovery URL or Auth URL before attempting auto-discovery")
       return
     }
     try {
+      setDiscoveryError(null)
       const normalized = discoveryBase.replace(/\/$/, "")
       const url = /\.well-known\//.test(normalized) ? normalized : `${normalized}/.well-known/openid-configuration`
       const result = await discoverOidc(url)
@@ -549,7 +214,7 @@ export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.error("OIDC Discovery failed:", error)
       // Show error alert to user - existing fields remain unchanged
-      alert(`Auto-discovery failed: ${errorMessage}\n\nPlease check the Discovery URL and try again.`)
+      setDiscoveryError(`Auto-discovery failed: ${errorMessage}`)
     }
   }
 
@@ -569,7 +234,13 @@ export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
   const renderAuthForm = () => {
     switch (authentication.type) {
       case "basic":
-        return <BasicAuthForm auth={authentication.basic ?? {}} onUpdate={handleInputChange} />
+        return (
+          <BasicAuthForm
+            auth={authentication.basic ?? {}}
+            onUpdate={handleInputChange}
+            testIdPrefix="request-auth-panel"
+          />
+        )
       case "bearer":
         return (
           <BearerAuthForm
@@ -577,6 +248,7 @@ export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
             onUpdate={handleInputChange}
             onPlacementUpdate={handlePlacementChange}
             canUseBodyPlacement={canUseBodyPlacement}
+            testIdPrefix="request-auth-panel"
           />
         )
       case "apiKey":
@@ -586,6 +258,7 @@ export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
             onUpdate={handleInputChange}
             onPlacementUpdate={handlePlacementChange}
             canUseBodyPlacement={canUseBodyPlacement}
+            testIdPrefix="request-auth-panel"
           />
         )
       case "oauth2": {
@@ -624,6 +297,13 @@ export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
               This request inherits authentication that uses Body placement, but the current body is not a Form with
               URL-encoded or Multipart encoding. Update the request body or change the inherited placement.
             </AlertDescription>
+          </Alert>
+        )}
+
+        {discoveryError && (
+          <Alert variant="destructive" data-test-id="request-auth-panel:discovery-error-alert">
+            <AlertTitle>Discovery Error</AlertTitle>
+            <AlertDescription>{discoveryError}</AlertDescription>
           </Alert>
         )}
 

@@ -39,22 +39,22 @@ const zBasicAuth = z.object({
 })
 export type BasicAuth = z.infer<typeof zBasicAuth>
 
-const zBearerAuth = z.object({
+export const zBearerAuth = z.object({
   token: z.string().optional(),
   // Optional scheme for Authorization header (e.g., "Bearer", "JWT", or custom)
   scheme: z.string().optional(),
-  placement: zAuthPlacement.optional(),
+  placement: zAuthPlacement.default({ type: "header", name: "Authorization" }),
 })
 export type BearerAuth = z.infer<typeof zBearerAuth>
 
-const zApiKeyAuth = z.object({
+export const zApiKeyAuth = z.object({
   key: z.string().optional(),
   value: z.string().optional(),
-  placement: zAuthPlacement.optional(),
+  placement: zAuthPlacement.default({ type: "header", name: "" }),
 })
 export type ApiKeyAuth = z.infer<typeof zApiKeyAuth>
 
-const zOauth2Auth = z.object({
+export const zOauth2Auth = z.object({
   grantType: z
     .enum(["client_credentials", "password", "refresh_token", "authorization_code", "device_code"])
     .default("client_credentials"),

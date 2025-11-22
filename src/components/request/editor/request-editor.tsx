@@ -18,12 +18,18 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
-import { assert } from "@/lib"
-import { useRequestTab, useCollections, useRequestParameters, useRequestHeaders, useRequestBody } from "@/state"
+import { assert, createDefaultAuthConfig } from "@/lib"
+import { useCollections, useRequestBody, useRequestHeaders, useRequestParameters, useRequestTab } from "@/state"
 import { generateUniqueId } from "@/lib/utils"
-import { CodeLanguages, type RequestBodyData, type RequestBodyGrammar, type RequestBodyType } from "@/types"
-import { type AuthConfig, type AuthType, AuthTypes } from "@/types/request"
-import { type RequestTabId, zRequestTabId } from "@/types"
+import {
+  CodeLanguages,
+  type RequestBodyData,
+  type RequestBodyGrammar,
+  type RequestBodyType,
+  type RequestTabId,
+  zRequestTabId,
+} from "@/types"
+import { type AuthType, AuthTypes } from "@/types/request"
 import { RequestAuthPanel } from "./request-auth-panel"
 import { RequestBodyPanel } from "./request-body-panel"
 import { RequestHeadersPanel } from "./request-headers-panel"
@@ -123,7 +129,7 @@ export function RequestEditor({ tabId }: RequestEditorProps) {
           </div>
         </div>
 
-        <div className="flex min-h-0 h-full">
+        <div className="flex min-h-0 h-full mr-2">
           <TabsContent value="params" className="m-0 h-full overflow-y-auto">
             <RequestParametersPanel tabId={tabId} />
           </TabsContent>
@@ -440,28 +446,7 @@ export function AuthTabMenu({ tabId, onActivate }: { tabId: string; onActivate?:
   const authType = request.authentication?.type ?? "none"
 
   const handleAuthTypeChange = (value: AuthType) => {
-    const base: AuthConfig = (() => {
-      switch (value) {
-        case "none":
-          return { type: "none" }
-        case "inherit":
-          return { type: "inherit" }
-        case "basic":
-          return { type: "basic", basic: {} }
-        case "bearer":
-          return { type: "bearer", bearer: { scheme: "Bearer", placement: { type: "header", name: "Authorization" } } }
-        case "apiKey":
-          return { type: "apiKey", apiKey: { placement: { type: "header", name: "" } } }
-        case "oauth2":
-          return {
-            type: "oauth2",
-            oauth2: { grantType: "client_credentials", tokenCaching: "always", clientAuth: "body" },
-          }
-        default:
-          return { type: "none" }
-      }
-    })()
-
+    const base = createDefaultAuthConfig(value as string)
     void collectionsApi().setRequestAuthentication(request.collectionId, request.id, base)
   }
 

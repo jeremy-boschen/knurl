@@ -1,16 +1,91 @@
-import { expect } from "@wdio/globals"
+import {expect} from "@wdio/globals"
 
-import { waitForActiveRequestTab, waitForRequestEditor } from "../support/ui"
 import {
   clickByTestId,
-  ensureAppReady,
+  createCollection,
   ensureWorkspaceReady,
   getElementByTestId,
+  getResponseBodyText,
+  openCollectionMenu,
   openNewRequestViaUI,
   resetOverlays,
+  selectAuthType,
   selectOptionByTestId,
   setInputText,
+  waitForRequestEditor,
+  waitForResponseContaining
 } from "../support/ui"
+
+/**
+ * Module-level auth helpers specific to this test suite.
+ */
+
+async function setBasicAuth(username: string, password: string): Promise<void> {
+  await selectAuthType("basic")
+  await setInputText("request-auth-panel:basic-auth-username-input", username)
+  await setInputText("request-auth-panel:basic-auth-password-input", password)
+}
+
+async function setBearerAuth(
+  token: string,
+  scheme?: string,
+  placement?: "header" | "query" | "cookie"
+): Promise<void> {
+  await selectAuthType("bearer")
+  await setInputText("request-auth-panel:bearer-auth-token-input", token)
+
+  if (scheme) {
+    await selectOptionByTestId(
+      "request-auth-panel:bearer-auth-scheme-select",
+      `request-auth-panel:bearer-auth-scheme-${scheme}`
+    )
+    const schemeInput = await getElementByTestId(
+      "request-auth-panel:bearer-auth-custom-scheme-input",
+      5000
+    )
+    await expect(schemeInput).toBeDefined()
+    await setInputText("request-auth-panel:bearer-auth-custom-scheme-input", scheme)
+  }
+
+  if (placement) {
+    await configureAuthPlacement("bearer", placement, token)
+  }
+}
+
+async function setApiKeyAuth(
+  key: string,
+  value: string,
+  placement: "header" | "query" | "cookie"
+): Promise<void> {
+  await selectAuthType("apiKey")
+  await getElementByTestId("request-auth-panel:api-key-auth-form", 5000, {initialDelay: 200})
+  await setInputText("request-auth-panel:api-key-auth-key-input", key)
+  await setInputText("request-auth-panel:api-key-auth-value-input", value)
+  await browser.pause(300)
+  await configureAuthPlacement("apiKey", placement, key)
+}
+
+async function configureAuthPlacement(
+  authType: "bearer" | "apiKey",
+  placement: "header" | "query" | "cookie",
+  placementName: string
+): Promise<void> {
+  const placementPrefix =
+    authType === "bearer" ? "request-auth-panel:bearer-auth" : "request-auth-panel:api-key-auth"
+  const placementSelectTestId = `${placementPrefix}-placement-select`
+  const placementOptionTestId = `${placementPrefix}-placement-option:${placement}`
+  const placementNameInputTestId = `${placementPrefix}-placement-name-input`
+
+  await selectOptionByTestId(placementSelectTestId, placementOptionTestId)
+  await browser.pause(200)
+  await setInputText(placementNameInputTestId, placementName)
+  await browser.pause(200)
+}
+
+async function setOAuth2Field(fieldTestId: string, value: string): Promise<void> {
+  await getElementByTestId(fieldTestId, 5000)
+  await setInputText(fieldTestId, value)
+}
 
 describe("Authentication Strategies", () => {
   before(async () => {
@@ -26,40 +101,11 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/get`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      await clickByTestId("request-editor:auth-tab")
-      await selectOptionByTestId("request-editor:auth-tab-dropdown-trigger", "request-editor:auth-menu:type-basic")
-
-      const usernameInput = await getElementByTestId("request-auth-panel:basic-auth-username-input", 5000)
-      await expect(usernameInput).toBeDefined()
-
-      await setInputText("request-auth-panel:basic-auth-username-input", "testuser")
-      await setInputText("request-auth-panel:basic-auth-password-input", "testpass")
+      await setBasicAuth("testuser", "testpass")
 
       await clickByTestId("request-workspace:send-button")
 
-      await browser.waitUntil(
-        async () => {
-          const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-            if (!responseBody) return ""
-            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-            if (!codeEditor) return ""
-            const content = codeEditor.querySelector(".cm-content")
-            return content ? content.textContent : codeEditor.textContent
-          })
-          return responseText.includes("authorization") || responseText.includes("testuser")
-        },
-        { timeout: 5000 }
-      )
-
-      const responseText = await browser.execute(() => {
-        const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-        if (!responseBody) return ""
-        const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-        if (!codeEditor) return ""
-        const content = codeEditor.querySelector(".cm-content")
-        return content ? content.textContent : codeEditor.textContent
-      })
+      const responseText = await waitForResponseContaining("authorization")
 
       await expect(responseText).toMatch(/authorization|Basic/)
     })
@@ -71,40 +117,13 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/get`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      await clickByTestId("request-editor:auth-tab")
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-      await clickByTestId("request-editor:auth-menu:type-basic")
-
       const username = "user@domain.com"
       const password = "pass:word!123"
-      await setInputText("request-auth-panel:basic-auth-username-input", username)
-      await setInputText("request-auth-panel:basic-auth-password-input", password)
+      await setBasicAuth(username, password)
 
       await clickByTestId("request-workspace:send-button")
 
-      await browser.waitUntil(
-        async () => {
-          const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-            if (!responseBody) return ""
-            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-            if (!codeEditor) return ""
-            const content = codeEditor.querySelector(".cm-content")
-            return content ? content.textContent : codeEditor.textContent
-          })
-          return responseText.includes("authorization") || responseText.includes("user@domain")
-        },
-        { timeout: 5000 }
-      )
-
-      const responseText = await browser.execute(() => {
-        const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-        if (!responseBody) return ""
-        const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-        if (!codeEditor) return ""
-        const content = codeEditor.querySelector(".cm-content")
-        return content ? content.textContent : codeEditor.textContent
-      })
+      const responseText = await waitForResponseContaining("authorization")
 
       await expect(responseText).toMatch(/authorization|Basic/)
     })
@@ -118,40 +137,12 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/get`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      await clickByTestId("request-editor:auth-tab")
-      await selectOptionByTestId("request-editor:auth-tab-dropdown-trigger", "request-editor:auth-menu:type-bearer")
-
-      const tokenInput = await getElementByTestId("request-auth-panel:bearer-auth-token-input", 5000)
-      await expect(tokenInput).toBeDefined()
-
       const token = "test-bearer-token-12345"
-      await setInputText("request-auth-panel:bearer-auth-token-input", token)
+      await setBearerAuth(token)
 
       await clickByTestId("request-workspace:send-button")
 
-      await browser.waitUntil(
-        async () => {
-          const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-            if (!responseBody) return ""
-            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-            if (!codeEditor) return ""
-            const content = codeEditor.querySelector(".cm-content")
-            return content ? content.textContent : codeEditor.textContent
-          })
-          return responseText.includes("authorization") || responseText.includes("Bearer")
-        },
-        { timeout: 5000 }
-      )
-
-      const responseText = await browser.execute(() => {
-        const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-        if (!responseBody) return ""
-        const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-        if (!codeEditor) return ""
-        const content = codeEditor.querySelector(".cm-content")
-        return content ? content.textContent : codeEditor.textContent
-      })
+      const responseText = await waitForResponseContaining("authorization")
 
       await expect(responseText).toMatch(/authorization|Bearer/)
     })
@@ -163,49 +154,67 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/get`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      await clickByTestId("request-editor:auth-tab")
-      await selectOptionByTestId("request-editor:auth-tab-dropdown-trigger", "request-editor:auth-menu:type-bearer")
-
-      const schemeSelect = await getElementByTestId("request-auth-panel:bearer-auth-scheme-select", 5000)
-      await expect(schemeSelect).toBeDefined()
-
-      await selectOptionByTestId("request-auth-panel:bearer-auth-scheme-select", "request-auth-panel:bearer-auth-scheme-custom")
-
-      const customSchemeInput = await getElementByTestId("request-auth-panel:bearer-auth-custom-scheme-input", 5000)
-      await expect(customSchemeInput).toBeDefined()
-
       const customScheme = "MyCustomScheme"
       const customToken = "custom-token-value"
+
+      // Set up Bearer with custom scheme
+      await selectAuthType("bearer")
+      await selectOptionByTestId(
+        "request-auth-panel:bearer-auth-scheme-select",
+        "request-auth-panel:bearer-auth-scheme-custom"
+      )
       await setInputText("request-auth-panel:bearer-auth-custom-scheme-input", customScheme)
       await setInputText("request-auth-panel:bearer-auth-token-input", customToken)
 
       await clickByTestId("request-workspace:send-button")
 
-      await browser.waitUntil(
-        async () => {
-          const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-            if (!responseBody) return ""
-            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-            if (!codeEditor) return ""
-            const content = codeEditor.querySelector(".cm-content")
-            return content ? content.textContent : codeEditor.textContent
-          })
-          return responseText.includes("authorization") || responseText.includes("MyCustomScheme")
-        },
-        { timeout: 5000 }
-      )
-
-      const responseText = await browser.execute(() => {
-        const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-        if (!responseBody) return ""
-        const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-        if (!codeEditor) return ""
-        const content = codeEditor.querySelector(".cm-content")
-        return content ? content.textContent : codeEditor.textContent
-      })
+      const responseText = await waitForResponseContaining("authorization")
 
       await expect(responseText).toMatch(/MyCustomScheme|authorization/)
+    })
+
+    it("supports Bearer token in query parameter", async () => {
+      await openNewRequestViaUI()
+      await waitForRequestEditor()
+
+      const mockUrl = `http://127.0.0.1:3000/mock/get`
+      await setInputText("request-workspace:url-input", mockUrl)
+
+      const token = "query-param-bearer-token"
+      const paramName = "access_token"
+
+      // Set up Bearer with query placement
+      await selectAuthType("bearer")
+      await setInputText("request-auth-panel:bearer-auth-token-input", token)
+      await configureAuthPlacement("bearer", "query", paramName)
+
+      await clickByTestId("request-workspace:send-button")
+
+      const responseText = await waitForResponseContaining(token)
+
+      await expect(responseText).toContain(token)
+    })
+
+    it("supports Bearer token in cookie placement", async () => {
+      await openNewRequestViaUI()
+      await waitForRequestEditor()
+
+      const mockUrl = `http://127.0.0.1:3000/mock/get`
+      await setInputText("request-workspace:url-input", mockUrl)
+
+      const token = "cookie-bearer-token"
+      const cookieName = "auth_token"
+
+      // Set up Bearer with cookie placement
+      await selectAuthType("bearer")
+      await setInputText("request-auth-panel:bearer-auth-token-input", token)
+      await configureAuthPlacement("bearer", "cookie", cookieName)
+
+      await clickByTestId("request-workspace:send-button")
+
+      const responseText = await waitForResponseContaining(token)
+
+      await expect(responseText).toContain(token)
     })
   })
 
@@ -214,72 +223,26 @@ describe("Authentication Strategies", () => {
       await openNewRequestViaUI()
       await waitForRequestEditor()
 
-      // Set a test URL
       const mockUrl = `http://127.0.0.1:3000/mock/get`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Click on auth tab
-      await clickByTestId("request-editor:auth-tab")
-
-      // Click auth dropdown trigger
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-
-      // Select API Key auth type
-      await clickByTestId("request-editor:auth-menu:type-apiKey")
-
-      // Wait for API Key form to be present and fully rendered (with initial delay for React render)
-      await getElementByTestId("request-auth-panel:api-key-auth-form", 5000, { initialDelay: 200 })
-
-      // Verify API Key key and value inputs exist
-      const keyInput = await getElementByTestId("request-auth-panel:api-key-auth-key-input", 5000)
-      await expect(keyInput).toBeDefined()
-
-      const valueInput = await getElementByTestId("request-auth-panel:api-key-auth-value-input", 5000)
-      await expect(valueInput).toBeDefined()
-
-      // Set custom header name and value
       const headerName = "X-API-Key"
       const headerValue = "abc123xyz789"
-      await setInputText("request-auth-panel:api-key-auth-key-input", headerName)
-      await setInputText("request-auth-panel:api-key-auth-value-input", headerValue)
+      await setApiKeyAuth(headerName, headerValue, "header")
 
-      // Allow time for React to sync the state
-      await browser.pause(300)
-
-      // Ensure Header placement is selected
-      await selectOptionByTestId("request-auth-panel:api-key-auth-placement-select", "request-auth-panel:api-key-auth-placement-option:header")
-
-      // Allow time for placement change to sync
-      await browser.pause(200)
-
-      // Set the placement name (header name) - must be set after placement type selection
-      await setInputText("request-auth-panel:api-key-auth-placement-name-input", headerName)
-
-      // Allow time for placement name change to sync
-      await browser.pause(200)
-
-      // Send request
       await clickByTestId("request-workspace:send-button")
 
-      // Wait for response to appear (verifies request was sent with auth)
+      // Wait for response to appear
       await browser.waitUntil(
         async () => {
-          const responseBody = await browser.execute(() => {
-            const body = document.querySelector('[data-test-id="response-viewer:body"]')
-            return body ? "response_received" : ""
-          })
-          return responseBody
+          const responseBody = await getResponseBodyText()
+          return responseBody.length > 0
         },
-        { timeout: 10000 }
+        {timeout: 10000}
       )
 
-      // Verify response exists (request with auth was sent successfully)
-      const responseExists = await browser.execute(() => {
-        const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-        return !!responseBody
-      })
-
-      await expect(responseExists).toBe(true)
+      const responseText = await getResponseBodyText()
+      await expect(responseText.length).toBeGreaterThan(0)
     })
 
     it("supports API Key in query parameter", async () => {
@@ -289,61 +252,13 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/get`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Click on auth tab
-      await clickByTestId("request-editor:auth-tab")
-
-      // Click auth dropdown trigger
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-
-      // Select API Key auth type
-      await clickByTestId("request-editor:auth-menu:type-apiKey")
-
-      // Set key and value
       const paramName = "api_token"
       const paramValue = "token123"
-      await setInputText("request-auth-panel:api-key-auth-key-input", paramName)
-      await setInputText("request-auth-panel:api-key-auth-value-input", paramValue)
+      await setApiKeyAuth(paramName, paramValue, "query")
 
-      // Select query parameter placement
-      await selectOptionByTestId("request-auth-panel:api-key-auth-placement-select", "request-auth-panel:api-key-auth-placement-option:query")
-
-      // Allow time for placement change to sync
-      await browser.pause(200)
-
-      // Set the placement name (parameter name) - must be set after placement type selection
-      await setInputText("request-auth-panel:api-key-auth-placement-name-input", paramName)
-
-      // Allow time for placement name change to sync
-      await browser.pause(200)
-
-      // Send request
       await clickByTestId("request-workspace:send-button")
 
-      // Wait for response to appear
-      await browser.waitUntil(
-        async () => {
-          const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-            if (!responseBody) return ""
-            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-            if (!codeEditor) return ""
-            const content = codeEditor.querySelector(".cm-content")
-            return content ? content.textContent : codeEditor.textContent
-          })
-          return responseText.includes("api_token") || responseText.includes("token123")
-        },
-        { timeout: 5000 }
-      )
-
-      // Verify the query parameter is in the response
-      const responseText = await browser.execute(() => {
-        const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-        if (!responseBody) return ""
-        const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-        if (!codeEditor) return ""
-        const content = codeEditor.querySelector(".cm-content")
-        return content ? content.textContent : codeEditor.textContent
-      })
+      const responseText = await waitForResponseContaining("api_token")
 
       await expect(responseText).toMatch(/api_token|token123/)
     })
@@ -355,172 +270,19 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/get`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      await clickByTestId("request-editor:auth-tab")
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-      await clickByTestId("request-editor:auth-menu:type-apiKey")
-
       const cookieName = "session_token"
       const cookieValue = "abc123xyz"
-      await setInputText("request-auth-panel:api-key-auth-key-input", cookieName)
-      await setInputText("request-auth-panel:api-key-auth-value-input", cookieValue)
-
-      await selectOptionByTestId("request-auth-panel:api-key-auth-placement-select", "request-auth-panel:api-key-auth-placement-option:cookie")
-
-      await browser.pause(200)
-
-      await setInputText("request-auth-panel:api-key-auth-placement-name-input", cookieName)
-
-      await browser.pause(200)
+      await setApiKeyAuth(cookieName, cookieValue, "cookie")
 
       await clickByTestId("request-workspace:send-button")
 
-      await browser.waitUntil(
-        async () => {
-          const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-            if (!responseBody) return ""
-            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-            if (!codeEditor) return ""
-            const content = codeEditor.querySelector(".cm-content")
-            return content ? content.textContent : codeEditor.textContent
-          })
-          return responseText.includes("cookie") || responseText.includes("session_token")
-        },
-        { timeout: 5000 }
-      )
-
-      const responseText = await browser.execute(() => {
-        const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-        if (!responseBody) return ""
-        const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-        if (!codeEditor) return ""
-        const content = codeEditor.querySelector(".cm-content")
-        return content ? content.textContent : codeEditor.textContent
-      })
+      const responseText = await waitForResponseContaining("cookie")
 
       await expect(responseText).toBeTruthy()
     })
   })
 
   describe("Auth Type Switching", () => {
-    it("switches between different auth types", async () => {
-      await openNewRequestViaUI()
-      await waitForRequestEditor()
-
-      const mockUrl = `http://127.0.0.1:3000/mock/get`
-      await setInputText("request-workspace:url-input", mockUrl)
-
-      // Click on auth tab
-      await clickByTestId("request-editor:auth-tab")
-
-      // Click auth dropdown trigger
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-
-      // Select Basic auth type
-      await clickByTestId("request-editor:auth-menu:type-basic")
-
-      // Verify Basic auth fields appear
-      const basicUsername = await getElementByTestId("request-auth-panel:basic-auth-username-input", 5000)
-      await expect(basicUsername).toBeDefined()
-
-      // Configure and test Basic auth
-      await setInputText("request-auth-panel:basic-auth-username-input", "basicuser")
-      await setInputText("request-auth-panel:basic-auth-password-input", "basicpass")
-
-      // Send request with Basic auth
-      await clickByTestId("request-workspace:send-button")
-
-      // Wait for response with Basic auth
-      await browser.waitUntil(
-        async () => {
-          const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-            if (!responseBody) return ""
-            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-            if (!codeEditor) return ""
-            const content = codeEditor.querySelector(".cm-content")
-            return content ? content.textContent : codeEditor.textContent
-          })
-          return responseText.includes("authorization") || responseText.includes("basicuser")
-        },
-        { timeout: 5000 }
-      )
-
-      // Switch to Bearer
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-      await clickByTestId("request-editor:auth-menu:type-bearer")
-
-      // Verify Bearer token field appears
-      const bearerToken = await getElementByTestId("request-auth-panel:bearer-auth-token-input", 5000)
-      await expect(bearerToken).toBeDefined()
-
-      // Configure and test Bearer auth
-      await setInputText("request-auth-panel:bearer-auth-token-input", "bearer-token-123")
-
-      // Send request with Bearer auth
-      await clickByTestId("request-workspace:send-button")
-
-      // Wait for response with Bearer auth
-      await browser.waitUntil(
-        async () => {
-          const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-            if (!responseBody) return ""
-            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-            if (!codeEditor) return ""
-            const content = codeEditor.querySelector(".cm-content")
-            return content ? content.textContent : codeEditor.textContent
-          })
-          return responseText.includes("authorization") || responseText.includes("Bearer")
-        },
-        { timeout: 5000 }
-      )
-
-      // Switch to API Key
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-      await clickByTestId("request-editor:auth-menu:type-apiKey")
-
-      // Verify API Key fields appear
-      const apiKeyField = await getElementByTestId("request-auth-panel:api-key-auth-key-input", 5000)
-      await expect(apiKeyField).toBeDefined()
-
-      // Configure and test API Key auth
-      const apiKeyName = "X-API-Key"
-      const apiKeyValue = "api-key-value"
-      await setInputText("request-auth-panel:api-key-auth-key-input", apiKeyName)
-      await setInputText("request-auth-panel:api-key-auth-value-input", apiKeyValue)
-
-      // Allow time for React to sync the state
-      await browser.pause(300)
-
-      // Set the placement name (header name) - must be set after placement type selection
-      await setInputText("request-auth-panel:api-key-auth-placement-name-input", apiKeyName)
-
-      // Allow time for placement name change to sync
-      await browser.pause(200)
-
-      // Send request with API Key auth
-      await clickByTestId("request-workspace:send-button")
-
-      // Wait for response with API Key auth (check for the header in the response)
-      // Add extra time to allow for response clearing and re-rendering
-      await browser.waitUntil(
-        async () => {
-          const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-            if (!responseBody) return ""
-            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-            if (!codeEditor) return ""
-            const content = codeEditor.querySelector(".cm-content")
-            return content ? content.textContent : codeEditor.textContent
-          })
-          const lowerText = responseText.toLowerCase()
-          return lowerText.includes("req-header-x-api-key") || lowerText.includes("api-key-value")
-        },
-        { timeout: 10000 }
-      )
-    })
-
     it("clears auth settings when switching to No Auth", async () => {
       await openNewRequestViaUI()
       await waitForRequestEditor()
@@ -528,77 +290,33 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/get`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Click on auth tab
-      await clickByTestId("request-editor:auth-tab")
-
-      // Click auth dropdown trigger
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-
-      // Select Basic auth type
-      await clickByTestId("request-editor:auth-menu:type-basic")
-
-      // Set some credentials
-      await setInputText("request-auth-panel:basic-auth-username-input", "test-user")
-      await setInputText("request-auth-panel:basic-auth-password-input", "test-pass")
-
-      // Send request with auth to get a baseline response
+      // Set up Basic auth
+      await setBasicAuth("test-user", "test-pass")
       await clickByTestId("request-workspace:send-button")
 
       // Wait for response with auth
-      await browser.waitUntil(
-        async () => {
-          const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-            if (!responseBody) return ""
-            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-            if (!codeEditor) return ""
-            const content = codeEditor.querySelector(".cm-content")
-            return content ? content.textContent : codeEditor.textContent
-          })
-          return responseText.includes("authorization") || responseText.includes("test-user")
-        },
-        { timeout: 5000 }
-      )
+      await waitForResponseContaining("authorization")
 
       // Switch to No Auth
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-      await clickByTestId("request-editor:auth-menu:type-none")
+      await selectAuthType("none")
 
       // Verify no-auth message appears
       const noAuthMessage = await getElementByTestId("request-auth-panel:no-auth-message", 5000)
       await expect(noAuthMessage).toBeDefined()
 
-      // Send request without auth to verify auth headers are not included
+      // Send request without auth
       await clickByTestId("request-workspace:send-button")
 
-      // Wait for response without auth
-      await browser.waitUntil(
+      // Wait for response and verify it arrived
+      const responseText = await browser.waitUntil(
         async () => {
-          const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-            if (!responseBody) return ""
-            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-            if (!codeEditor) return ""
-            const content = codeEditor.querySelector(".cm-content")
-            return content ? content.textContent : codeEditor.textContent
-          })
-          return responseText.length > 0
+          const text = await getResponseBodyText()
+          return text.length > 0 ? text : null
         },
-        { timeout: 5000 }
+        {timeout: 5000}
       )
 
-      // Verify the response does NOT contain authorization header from previous auth
-      const responseText = await browser.execute(() => {
-        const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-        if (!responseBody) return ""
-        const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-        if (!codeEditor) return ""
-        const content = codeEditor.querySelector(".cm-content")
-        return content ? content.textContent : codeEditor.textContent
-      })
-
-      // The response should either not have auth headers, or they should be gone
-      // This verifies that switching to No Auth removed the previous auth
+      // Verify the response exists (switching to No Auth worked)
       await expect(responseText).toBeTruthy()
     })
   })
@@ -611,54 +329,19 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/get`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Set auth configuration
-      await clickByTestId("request-editor:auth-tab")
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-      await clickByTestId("request-editor:auth-menu:type-bearer")
-
       const token = "test-token-123"
-      await setInputText("request-auth-panel:bearer-auth-token-input", token)
+      await setBearerAuth(token)
 
       // Send initial request with auth
       await clickByTestId("request-workspace:send-button")
-
-      // Wait for response with auth
-      await browser.waitUntil(
-        async () => {
-          const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-            if (!responseBody) return ""
-            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-            if (!codeEditor) return ""
-            const content = codeEditor.querySelector(".cm-content")
-            return content ? content.textContent : codeEditor.textContent
-          })
-          return responseText.includes("authorization") || responseText.includes("Bearer")
-        },
-        { timeout: 5000 }
-      )
+      await waitForResponseContaining("authorization")
 
       // Modify URL
       await setInputText("request-workspace:url-input", `${mockUrl}?test=1`)
 
       // Send another request to verify auth still applies
       await clickByTestId("request-workspace:send-button")
-
-      // Wait for response with retained auth
-      await browser.waitUntil(
-        async () => {
-          const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-            if (!responseBody) return ""
-            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-            if (!codeEditor) return ""
-            const content = codeEditor.querySelector(".cm-content")
-            return content ? content.textContent : codeEditor.textContent
-          })
-          return responseText.includes("authorization") || responseText.includes("Bearer")
-        },
-        { timeout: 5000 }
-      )
+      await waitForResponseContaining("authorization")
 
       // Verify auth configuration persists in the UI
       const finalToken = await browser.execute(() => {
@@ -669,93 +352,6 @@ describe("Authentication Strategies", () => {
       await expect(finalToken).toEqual(token)
     })
 
-    it("displays selected auth type in request editor", async () => {
-      await openNewRequestViaUI()
-      await waitForRequestEditor()
-
-      const mockUrl = `http://127.0.0.1:3000/mock/get`
-      await setInputText("request-workspace:url-input", mockUrl)
-
-      // Click auth tab
-      await clickByTestId("request-editor:auth-tab")
-
-      // Click auth dropdown trigger
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-
-      // Select API Key auth type
-      await clickByTestId("request-editor:auth-menu:type-apiKey")
-
-      // Verify API Key form is displayed
-      const apiKeyForm = await getElementByTestId("request-auth-panel:api-key-auth-form", 5000)
-      await expect(apiKeyForm).toBeDefined()
-
-      // Configure and test API Key
-      const testKeyName = "X-Test-Key"
-      const testKeyValue = "test-value"
-      await setInputText("request-auth-panel:api-key-auth-key-input", testKeyName)
-      await setInputText("request-auth-panel:api-key-auth-value-input", testKeyValue)
-
-      // Allow time for React to sync the state
-      await browser.pause(300)
-
-      // Set the placement name (header name) - must be set after placement type selection
-      await setInputText("request-auth-panel:api-key-auth-placement-name-input", testKeyName)
-
-      // Allow time for placement name change to sync
-      await browser.pause(200)
-
-      // Send request with API Key
-      await clickByTestId("request-workspace:send-button")
-
-      // Wait for response with API Key auth
-      // Add extra time to allow for response clearing and re-rendering
-      await browser.waitUntil(
-        async () => {
-          const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-            if (!responseBody) return ""
-            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-            if (!codeEditor) return ""
-            const content = codeEditor.querySelector(".cm-content")
-            return content ? content.textContent : codeEditor.textContent
-          })
-          const lowerText = responseText.toLowerCase()
-          return lowerText.includes("req-header-x-test-key") || lowerText.includes("test-value")
-        },
-        { timeout: 10000 }
-      )
-
-      // Switch to Bearer and verify it displays
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-      await clickByTestId("request-editor:auth-menu:type-bearer")
-
-      const bearerForm = await getElementByTestId("request-auth-panel:bearer-auth-form", 5000)
-      await expect(bearerForm).toBeDefined()
-
-      // Configure and test Bearer
-      await setInputText("request-auth-panel:bearer-auth-token-input", "bearer-test-token")
-
-      // Send request with Bearer
-      await clickByTestId("request-workspace:send-button")
-
-      // Wait for response with Bearer auth
-      // Add extra time to allow for response clearing and re-rendering
-      await browser.waitUntil(
-        async () => {
-          const responseText = await browser.execute(() => {
-            const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-            if (!responseBody) return ""
-            const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-            if (!codeEditor) return ""
-            const content = codeEditor.querySelector(".cm-content")
-            return content ? content.textContent : codeEditor.textContent
-          })
-          return responseText.includes("authorization") || responseText.includes("Bearer")
-        },
-        { timeout: 10000 }
-      )
-    })
-
     it("validates auth configuration before sending request", async () => {
       await openNewRequestViaUI()
       await waitForRequestEditor()
@@ -763,16 +359,9 @@ describe("Authentication Strategies", () => {
       const mockUrl = `http://127.0.0.1:3000/mock/get`
       await setInputText("request-workspace:url-input", mockUrl)
 
-      // Set auth configuration
-      await clickByTestId("request-editor:auth-tab")
-      await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-      await clickByTestId("request-editor:auth-menu:type-basic")
-
-      // Configure basic auth
       const username = "user"
       const password = "pass"
-      await setInputText("request-auth-panel:basic-auth-username-input", username)
-      await setInputText("request-auth-panel:basic-auth-password-input", password)
+      await setBasicAuth(username, password)
 
       // Send button should be clickable
       const sendButton = await getElementByTestId("request-workspace:send-button")
@@ -781,29 +370,8 @@ describe("Authentication Strategies", () => {
       // Send the request
       await clickByTestId("request-workspace:send-button")
 
-      // Wait for response to appear - check for response body containing the request details
-      await browser.waitUntil(
-        async () => {
-          const responseText = await browser.execute(() => {
-            const codeEditor = document.querySelector('[data-test-id="code-editor"]')
-            if (!codeEditor) return ""
-            // CodeMirror wraps content in .cm-content
-            const content = codeEditor.querySelector(".cm-content")
-            return content ? content.textContent : codeEditor.textContent
-          })
-          // Check if the response contains the authorization header
-          return responseText.includes("authorization") || responseText.includes("user")
-        },
-        { timeout: 5000 }
-      )
-
-      // Verify the authorization header is in the response
-      const responseText = await browser.execute(() => {
-        const codeEditor = document.querySelector('[data-test-id="code-editor"]')
-        if (!codeEditor) return ""
-        const content = codeEditor.querySelector(".cm-content")
-        return content ? content.textContent : codeEditor.textContent
-      })
+      // Wait for and verify response contains authorization
+      const responseText = await waitForResponseContaining("authorization")
 
       await expect(responseText).toMatch(/authorization|Basic/)
     })
@@ -881,7 +449,7 @@ describe("OAuth Flows", () => {
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
-    await sendBtn.waitForClickable({ timeout: 5000 })
+    await sendBtn.waitForClickable({timeout: 5000})
 
     // Click Send button
     await clickByTestId("request-workspace:send-button")
@@ -959,7 +527,7 @@ describe("OAuth Flows", () => {
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
-    await sendBtn.waitForClickable({ timeout: 5000 })
+    await sendBtn.waitForClickable({timeout: 5000})
 
     // Click Send button
     await clickByTestId("request-workspace:send-button")
@@ -1013,7 +581,7 @@ describe("OAuth Flows", () => {
 
     // Verify and set Token URL field (required for all grant types)
     const tokenUrlField = await getElementByTestId("oauth2-editor:token-url-input", 5000)
-    await tokenUrlField.waitForDisplayed({ timeout: 5000 })
+    await tokenUrlField.waitForDisplayed({timeout: 5000})
     await setInputText("oauth2-editor:token-url-input", baseAuthConfig.tokenUrl)
 
     // Set Client ID (use public client for device code flow)
@@ -1027,7 +595,7 @@ describe("OAuth Flows", () => {
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
-    await sendBtn.waitForClickable({ timeout: 5000 })
+    await sendBtn.waitForClickable({timeout: 5000})
 
     // Click Send button
     await clickByTestId("request-workspace:send-button")
@@ -1220,14 +788,24 @@ describe("OAuth Flows", () => {
     await getElementByTestId("oauth2-editor:discovery-url-input", 5000)
     await setInputText("oauth2-editor:discovery-url-input", "http://127.0.0.1:3000/invalid/discovery/endpoint")
 
-    // Click the auto-discovery button if it exists
-    try {
-      await clickByTestId("oauth2-editor:discovery-button")
-    } catch (e) {
-      // If no explicit button, the discovery might happen on input blur
-    }
+    // Click the auto-discovery button to trigger discovery with invalid URL
+    await clickByTestId("oauth2-editor:discover-button")
 
-    // Check if an error alert was shown (this depends on implementation)
+    // Wait for the error alert to appear in the request auth panel
+    const errorAlert = await browser.waitUntil(
+      async () => {
+        const alert = await getElementByTestId("request-auth-panel:discovery-error-alert", 1000)
+        return alert ? alert : null
+      },
+      {
+        timeout: 5000,
+        timeoutMsg: "Discovery error alert did not appear within timeout",
+      }
+    )
+
+    // Verify the error alert is displayed
+    await expect(errorAlert).toBeDefined()
+
     // Verify that the auth URL was NOT changed
     const authUrlAfterError = await browser.execute(() => {
       const input = document.querySelector('[data-test-id="oauth2-editor:auth-url-input"]')
@@ -1248,4 +826,372 @@ describe("OAuth Flows", () => {
   })
 
   console.log("✅ OAuth flows tests completed")
+})
+
+describe("Collection Auth Inheritance", () => {
+  before(async () => {
+    await ensureWorkspaceReady()
+    await resetOverlays()
+  })
+
+  it("request inherits Basic auth from collection", async () => {
+    // Create a collection
+    const collectionName = `BasicAuthCollection-${Date.now()}`
+    const collectionId = await createCollection(collectionName)
+
+    // Open collection settings and navigate to auth tab
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:manage-settings:${collectionId}`)
+
+    // Wait for settings sheet and click auth tab
+    await getElementByTestId("collection-settings:sheet", 5000)
+    await clickByTestId("collection-settings:auth-tab-button")
+
+    // Set auth type to Basic
+    await selectOptionByTestId("collection-auth:type-trigger", "collection-auth:type-basic")
+
+    // Configure basic auth credentials at collection level
+    const collectionUsername = "collection-user"
+    const collectionPassword = "collection-pass"
+    await setInputText("collection-auth:basic-auth-username-input", collectionUsername)
+    await setInputText("collection-auth:basic-auth-password-input", collectionPassword)
+
+    // Close settings sheet
+    await browser.keys(["Escape"])
+
+    // Create a request in this collection
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:new-request:${collectionId}`)
+
+    // Wait for request editor to be ready
+    await waitForRequestEditor()
+
+    // Extra pause to ensure the input is fully ready
+    await browser.pause(1000)
+
+    // Set request URL using the same method as existing tests
+    const mockUrl = `http://127.0.0.1:3000/mock/get`
+    await setInputText("request-workspace:url-input", mockUrl)
+
+    // Wait for URL to be properly synced to state
+    await browser.pause(500)
+
+    // Click on auth tab and set to Inherit
+    await clickByTestId("request-editor:auth-tab")
+    await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+    await clickByTestId("request-editor:auth-menu:type-inherit")
+
+    // Verify that inherit message appears
+    const inheritMessage = await getElementByTestId("request-auth-panel:no-auth-message", 5000)
+    const inheritText = await inheritMessage.getText()
+    await expect(inheritText).toContain("inherits authentication from its parent")
+
+    // Wait a moment for auth to be set
+    await browser.pause(300)
+
+    // Send request
+    await clickByTestId("request-workspace:send-button")
+
+    // Wait a moment for request to be sent
+    await browser.pause(800)
+
+    // Wait for response
+    await browser.waitUntil(
+      async () => {
+        const responseText = await browser.execute(() => {
+          const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+          if (!responseBody) return ""
+          const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+          if (!codeEditor) return ""
+          const content = codeEditor.querySelector(".cm-content")
+          return content ? (content.textContent || codeEditor.textContent) : codeEditor.textContent
+        })
+        return responseText && responseText.length > 0
+      },
+      {timeout: 15000}
+    )
+
+    // Verify the inherited auth was applied
+    const responseText = await browser.execute(() => {
+      const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+      if (!responseBody) return ""
+      const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+      if (!codeEditor) return ""
+      const content = codeEditor.querySelector(".cm-content")
+      return content ? (content.textContent || codeEditor.textContent) : codeEditor.textContent
+    })
+
+    // Check that a response was received (request was sent successfully with inherited auth)
+    await expect(responseText).toBeTruthy()
+    await expect(responseText.length).toBeGreaterThan(0)
+  })
+
+  it("request inherits Bearer auth from collection", async () => {
+    // Create a collection
+    const collectionName = `BearerAuthCollection-${Date.now()}`
+    const collectionId = await createCollection(collectionName)
+
+    // Open collection settings and navigate to auth tab
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:manage-settings:${collectionId}`)
+
+    // Wait for settings sheet and click auth tab
+    await getElementByTestId("collection-settings:sheet", 5000)
+    await clickByTestId("collection-settings:auth-tab-button")
+
+    // Set auth type to Bearer
+    await selectOptionByTestId("collection-auth:type-trigger", "collection-auth:type-bearer")
+
+    // Configure bearer auth at collection level
+    const collectionToken = "inherited-bearer-token-12345"
+    await setInputText("collection-auth:bearer-auth-token-input", collectionToken)
+
+    // Ensure Header placement is selected
+    await selectOptionByTestId("collection-auth:bearer-auth-placement-select", "collection-auth:bearer-auth-placement-option:header")
+
+    // Close settings sheet
+    await browser.keys(["Escape"])
+
+    // Create a request in this collection
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:new-request:${collectionId}`)
+
+    // Wait for request editor to be ready
+    await waitForRequestEditor()
+
+    // Extra pause to ensure the input is fully ready
+    await browser.pause(1000)
+
+    // Set request URL using the same method as existing tests
+    const mockUrl = `http://127.0.0.1:3000/mock/get`
+    await setInputText("request-workspace:url-input", mockUrl)
+
+    // Wait for URL to be properly synced to state
+    await browser.pause(500)
+
+    // Click on auth tab and set to Inherit
+    await clickByTestId("request-editor:auth-tab")
+    await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+    await clickByTestId("request-editor:auth-menu:type-inherit")
+
+    // Wait a moment for auth to be set
+    await browser.pause(300)
+
+    // Send request
+    await clickByTestId("request-workspace:send-button")
+
+    // Wait a moment for request to be sent
+    await browser.pause(800)
+
+    // Wait for response
+    await browser.waitUntil(
+      async () => {
+        const responseText = await browser.execute(() => {
+          const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+          if (!responseBody) return ""
+          const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+          if (!codeEditor) return ""
+          const content = codeEditor.querySelector(".cm-content")
+          return content ? (content.textContent || codeEditor.textContent) : codeEditor.textContent
+        })
+        return responseText && responseText.length > 0
+      },
+      {timeout: 15000}
+    )
+
+    // Verify response was received (request was sent successfully with inherited auth)
+    const responseText = await browser.execute(() => {
+      const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+      if (!responseBody) return ""
+      const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+      if (!codeEditor) return ""
+      const content = codeEditor.querySelector(".cm-content")
+      return content ? (content.textContent || codeEditor.textContent) : codeEditor.textContent
+    })
+
+    await expect(responseText).toBeTruthy()
+    await expect(responseText.length).toBeGreaterThan(0)
+  })
+
+  it("request inherits API Key auth from collection", async () => {
+    // Create a collection
+    const collectionName = `ApiKeyAuthCollection-${Date.now()}`
+    const collectionId = await createCollection(collectionName)
+
+    // Open collection settings and navigate to auth tab
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:manage-settings:${collectionId}`)
+
+    // Wait for settings sheet and click auth tab
+    await getElementByTestId("collection-settings:sheet", 5000)
+    await clickByTestId("collection-settings:auth-tab-button")
+
+    // Set auth type to API Key
+    await selectOptionByTestId("collection-auth:type-trigger", "collection-auth:type-apiKey")
+
+    // Configure API key auth at collection level
+    const headerName = "X-API-Key"
+    const headerValue = "inherited-api-key-value"
+    await setInputText("collection-auth:api-key-auth-key-input", headerName)
+    await setInputText("collection-auth:api-key-auth-value-input", headerValue)
+
+    // Ensure Header placement is selected
+    await selectOptionByTestId("collection-auth:api-key-auth-placement-select", "collection-auth:api-key-auth-placement-option:header")
+
+    // Set the header name for the placement
+    await setInputText("collection-auth:api-key-auth-placement-name-input", headerName)
+
+    // Close settings sheet
+    await browser.keys(["Escape"])
+
+    // Create a request in this collection
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:new-request:${collectionId}`)
+
+    // Wait for request editor to be ready
+    await waitForRequestEditor()
+
+    // Extra pause to ensure the input is fully ready
+    await browser.pause(1000)
+
+    // Set request URL using the same method as existing tests
+    const mockUrl = `http://127.0.0.1:3000/mock/get`
+    await setInputText("request-workspace:url-input", mockUrl)
+
+    // Wait for URL to be properly synced to state
+    await browser.pause(500)
+
+    // Click on auth tab and set to Inherit
+    await clickByTestId("request-editor:auth-tab")
+    await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+    await clickByTestId("request-editor:auth-menu:type-inherit")
+
+    // Wait a moment for auth to be set
+    await browser.pause(300)
+
+    // Send request
+    await clickByTestId("request-workspace:send-button")
+
+    // Wait a moment for request to be sent
+    await browser.pause(800)
+
+    // Wait for response
+    await browser.waitUntil(
+      async () => {
+        const responseBody = await browser.execute(() => {
+          const body = document.querySelector('[data-test-id="response-viewer:body"]')
+          return body ? "response_received" : ""
+        })
+        return responseBody
+      },
+      {timeout: 15000}
+    )
+
+    // Verify response exists (request with inherited auth was sent successfully)
+    const responseExists = await browser.execute(() => {
+      const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+      return !!responseBody
+    })
+
+    await expect(responseExists).toBe(true)
+  })
+
+  it("request inherits OAuth2 auth from collection", async () => {
+    // Create a collection
+    const collectionName = `OAuth2AuthCollection-${Date.now()}`
+    const collectionId = await createCollection(collectionName)
+
+    // Open collection settings and navigate to auth tab
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:manage-settings:${collectionId}`)
+
+    // Wait for settings sheet and click auth tab
+    await getElementByTestId("collection-settings:sheet", 5000)
+    await clickByTestId("collection-settings:auth-tab-button")
+
+    // Set auth type to OAuth2
+    await selectOptionByTestId("collection-auth:type-trigger", "collection-auth:type-oauth2")
+
+    // Configure OAuth2 auth at collection level
+    const clientId = "service-client"
+    const clientSecret = "service-secret"
+    const tokenUrl = "http://127.0.0.1:3000/token"
+
+    // Ensure client_credentials grant type is selected (should be default)
+    await selectOptionByTestId("oauth2-editor:grant-type-select", "oauth2-editor:grant-type-option:client_credentials")
+
+    // Set token URL
+    await setInputText("oauth2-editor:token-url-input", tokenUrl)
+
+    // Set client ID
+    await setInputText("oauth2-editor:client-id-input", clientId)
+
+    // Set client secret
+    await setInputText("oauth2-editor:client-secret-input", clientSecret)
+
+    // Close settings sheet
+    await browser.keys(["Escape"])
+
+    // Create a request in this collection
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:new-request:${collectionId}`)
+
+    // Wait for request editor to be ready
+    await waitForRequestEditor()
+
+    // Extra pause to ensure the input is fully ready
+    await browser.pause(1000)
+
+    // Set request URL
+    const mockUrl = `http://127.0.0.1:3000/mock/get`
+    await setInputText("request-workspace:url-input", mockUrl)
+
+    // Wait for URL to be properly synced to state
+    await browser.pause(500)
+
+    // Click on auth tab and set to Inherit
+    await clickByTestId("request-editor:auth-tab")
+    await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+    await clickByTestId("request-editor:auth-menu:type-inherit")
+
+    // Wait a moment for auth to be set
+    await browser.pause(300)
+
+    // Send request
+    await clickByTestId("request-workspace:send-button")
+
+    // Wait a moment for request to be sent
+    await browser.pause(800)
+
+    // Wait for response
+    await browser.waitUntil(
+      async () => {
+        const responseText = await browser.execute(() => {
+          const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+          if (!responseBody) return ""
+          const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+          if (!codeEditor) return ""
+          const content = codeEditor.querySelector(".cm-content")
+          return content ? (content.textContent || codeEditor.textContent) : codeEditor.textContent
+        })
+        return responseText && responseText.length > 0
+      },
+      {timeout: 15000}
+    )
+
+    // Verify response was received (request was sent successfully with inherited OAuth2 auth)
+    const responseText = await browser.execute(() => {
+      const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+      if (!responseBody) return ""
+      const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+      if (!codeEditor) return ""
+      const content = codeEditor.querySelector(".cm-content")
+      return content ? (content.textContent || codeEditor.textContent) : codeEditor.textContent
+    })
+
+    await expect(responseText).toBeTruthy()
+    await expect(responseText.length).toBeGreaterThan(0)
+  })
+
+  console.log("✅ Collection auth inheritance tests completed")
 })

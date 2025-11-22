@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run Knurl" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
-    <option name="buildProfileId" value="dev" />
-    <option name="command" value="run --no-default-features --features open_dev_tools --color always" />
+  <configuration default="false" name="Debug Knurl" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+    <option name="buildProfileId" value="test" />
+    <option name="command" value="tauri dev" />
     <option name="workingDirectory" value="file://$PROJECT_DIR$/src-tauri" />
     <envs>
       <env name="RUST_LOG" value="debug,keyring=info" />

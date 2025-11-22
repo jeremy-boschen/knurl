@@ -2,14 +2,18 @@
   "compilerOptions": {
     "composite": true,
     "target": "ES2022",
-    "lib": ["ES2022", "DOM"],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
-
-    "types": ["node", "@wdio/globals/types", "webdriverio/async"]
+    "types": [
+      "node"
+    ]
   },
   "include": [
     "vite.config.ts",

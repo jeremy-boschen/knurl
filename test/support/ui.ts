@@ -1,4 +1,4 @@
-import { expect } from "@wdio/globals"
+import {expect} from "@wdio/globals"
 
 const DEFAULT_TIMEOUT = 15000
 const ESCAPE_KEY = "Escape"
@@ -6,11 +6,12 @@ const ESCAPE_KEY = "Escape"
 /**
  * Default timing configuration for waitFor operations:
  * - initialDelay: time to wait before starting to poll (allows UI to render)
- * - pollingInterval: how frequently to check once polling starts (tight but not excessive)
+ * - pollingInterval: how frequently to check once polling starts
+ *   Note: 100ms is a good balance. Too aggressive (50ms) can starve the browser event loop.
  */
 const DEFAULT_WAIT_CONFIG = {
   initialDelay: 0,
-  pollingInterval: 50,
+  pollingInterval: 100,
 }
 
 /**
@@ -47,13 +48,14 @@ async function withFallbackClick(element: WebdriverIO.Element): Promise<void> {
   try {
     await element.click()
     return
-  } catch {}
+  } catch {
+  }
 
   await browser.execute((el: HTMLElement) => {
     const dispatchers = [
-      (e: HTMLElement) => e.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })),
-      (e: HTMLElement) => e.dispatchEvent(new PointerEvent("pointerup", { bubbles: true })),
-      (e: HTMLElement) => e.dispatchEvent(new MouseEvent("click", { bubbles: true })),
+      (e: HTMLElement) => e.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true})),
+      (e: HTMLElement) => e.dispatchEvent(new PointerEvent("pointerup", {bubbles: true})),
+      (e: HTMLElement) => e.dispatchEvent(new MouseEvent("click", {bubbles: true})),
     ]
     dispatchers.forEach((dispatch) => dispatch(el))
   }, element)
@@ -73,7 +75,7 @@ export async function getElementByTestId(
 
   const locator = `[data-test-id="${testId}"]`
   const element = await $(locator)
-  await element.waitForExist({ timeout, interval: pollingInterval })
+  await element.waitForExist({timeout, interval: pollingInterval})
   return element
 }
 
@@ -173,7 +175,7 @@ export async function ensureWorkspaceReady(): Promise<void> {
       const closeButton = await $('[data-test-id="title-bar:close-button"]')
       if (await closeButton.isExisting()) {
         try {
-          await closeButton.waitForDisplayed({ timeout: 200 })
+          await closeButton.waitForDisplayed({timeout: 200})
           return true
         } catch {
           return false
@@ -214,24 +216,21 @@ export async function resetAppState(): Promise<void> {
 export async function setInputText(testId: string, value: string): Promise<void> {
   const element = await getElementByTestId(testId)
   await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
-  // For controlled inputs in React, use keyboard events instead of direct DOM manipulation
-  // This ensures onChange events are triggered properly
   await element.click()
-  await browser.pause(100) // Give input time to receive focus
-  await browser.keys(['Control', 'a']) // Select all
+  await element.setValue(value)
+  // Small pause to allow React state updates to propagate
   await browser.pause(50)
-  await browser.keys(['Delete']) // Clear
-  await browser.pause(100) // Allow state update
-  // Only add value if not empty - WebdriverIO throws "invalid argument" for empty addValue
-  if (value.length > 0) {
-    await element.addValue(value) // Type the new value
-    await browser.pause(50) // Allow state update after typing
-  }
+}
+
+export async function getInputText(testId: string): Promise<string> {
+  const element = await getElementByTestId(testId)
+  await element.waitForDisplayed({timeout: DEFAULT_TIMEOUT})
+  return element.getValue()
 }
 
 export async function appendInputText(testId: string, value: string): Promise<void> {
   const element = await getElementByTestId(testId)
-  await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
+  await element.waitForDisplayed({timeout: DEFAULT_TIMEOUT})
   // addValue triggers onChange events, so this works correctly with controlled inputs
   await element.addValue(value)
 }
@@ -239,11 +238,25 @@ export async function appendInputText(testId: string, value: string): Promise<vo
 export async function clearInputText(testId: string): Promise<void> {
   const element = await getElementByTestId(testId)
   await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
-  // For controlled inputs, use keyboard events
-  await element.click()
-  await browser.keys(['Control', 'a'])
-  await browser.keys(['Delete'])
-  await browser.pause(50)
+  await element.clearValue()
+}
+
+export async function waitForSendButtonReady(timeout = DEFAULT_TIMEOUT): Promise<void> {
+  // Wait for the Send button to be visible and ready (Cancel button should disappear)
+  // This ensures any pending request has completed before we send a new one
+  await browser.waitUntil(
+    async () => {
+      const sendBtn = await $('[data-test-id="request-workspace:send-button"]')
+      const cancelBtn = await $('[data-test-id="request-workspace:cancel-button"]')
+      // Button is ready when Send exists and Cancel doesn't
+      return (await sendBtn.isExisting()) && !(await cancelBtn.isExisting())
+    },
+    {
+      timeout,
+      interval: 100,
+      timeoutMsg: "Send button did not become ready (request may still be pending)",
+    },
+  )
 }
 
 export async function clickByTestId(testId: string): Promise<void> {
@@ -308,11 +321,11 @@ export async function closeApplicationWindow(timeout = DEFAULT_TIMEOUT): Promise
     }
 
     const events: Array<() => void> = [
-      () => button.dispatchEvent(new PointerEvent("pointerover", { bubbles: true })),
-      () => button.dispatchEvent(new PointerEvent("pointerenter", { bubbles: true })),
-      () => button.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0 })),
-      () => button.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, button: 0 })),
-      () => button.dispatchEvent(new MouseEvent("click", { bubbles: true, button: 0 })),
+      () => button.dispatchEvent(new PointerEvent("pointerover", {bubbles: true})),
+      () => button.dispatchEvent(new PointerEvent("pointerenter", {bubbles: true})),
+      () => button.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true, button: 0})),
+      () => button.dispatchEvent(new PointerEvent("pointerup", {bubbles: true, button: 0})),
+      () => button.dispatchEvent(new MouseEvent("click", {bubbles: true, button: 0})),
     ]
 
     events.forEach((fire) => fire())
@@ -566,4 +579,68 @@ export async function waitForRequestEditor(timeout = 10000): Promise<WebdriverIO
   const urlInput = await $('[data-test-id="request-workspace:url-input"]')
   await urlInput.waitForDisplayed({ timeout })
   return urlInput
+}
+
+/**
+ * Extracts text content from the response viewer body (CodeMirror).
+ * Returns empty string if response body not found.
+ */
+export async function getResponseBodyText(): Promise<string> {
+  const responseText = await browser.execute(() => {
+    const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+    if (!responseBody) return ""
+    const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+    if (!codeEditor) return ""
+    const content = codeEditor.querySelector(".cm-content")
+    return content ? content.textContent : codeEditor.textContent
+  })
+  return responseText || ""
+}
+
+/**
+ * Waits for response body to appear, then extracts and verifies it contains specific text.
+ * Polls until response body exists, then returns the text (verifying search content in caller).
+ * More efficient than polling+extracting every iteration.
+ */
+export async function waitForResponseContaining(
+  searchText: string,
+  timeout = 5000
+): Promise<string> {
+  // First, poll until response body element exists
+  await browser.waitUntil(
+    async () => {
+      const text = await getResponseBodyText()
+      return text.length > 0
+    },
+    { timeout, interval: 100, timeoutMsg: `Response body did not appear within ${timeout}ms` }
+  )
+
+  // Then extract once and verify content
+  const responseText = await getResponseBodyText()
+  if (!responseText.includes(searchText)) {
+    throw new Error(
+      `Response body does not contain "${searchText}". Got: ${responseText.substring(0, 200)}`
+    )
+  }
+
+  return responseText
+}
+
+/**
+ * Selects an authentication type from the request editor auth dropdown.
+ * Handles both single-click and two-step selection patterns.
+ */
+export async function selectAuthType(
+  type: "basic" | "bearer" | "apiKey" | "oauth2" | "none" | "inherit"
+): Promise<void> {
+  await clickByTestId("request-editor:auth-tab")
+  const typeTestIds: Record<string, string> = {
+    basic: "request-editor:auth-menu:type-basic",
+    bearer: "request-editor:auth-menu:type-bearer",
+    apiKey: "request-editor:auth-menu:type-apiKey",
+    oauth2: "request-editor:auth-menu:type-oauth2",
+    none: "request-editor:auth-menu:type-none",
+    inherit: "request-editor:auth-menu:type-inherit",
+  }
+  await selectOptionByTestId("request-editor:auth-tab-dropdown-trigger", typeTestIds[type])
 }
