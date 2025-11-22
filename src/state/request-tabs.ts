@@ -298,6 +298,16 @@ export const requestTabsSliceCreator: StateCreator<
       requestTabsApi.setActiveTab(tabId)
     },
 
+    closeOthers(tabId: string) {
+      const ordered = Object.values(get().requestTabsState.openTabs).sort((a, b) => a.order - b.order)
+      const toClose = ordered.filter((tab) => tab.tabId !== tabId)
+      for (const tab of toClose) {
+        requestTabsApi.removeTab(tab.tabId)
+      }
+
+      requestTabsApi.setActiveTab(tabId)
+    },
+
     saveTab(tabId: string) {
       const tab = get().requestTabsState.openTabs[tabId]
       if (tab) {

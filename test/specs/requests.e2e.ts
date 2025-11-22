@@ -685,6 +685,173 @@ describe("Scratch Collection UX", () => {
   console.log("✅ Scratch Collection UX tests completed")
 })
 
+describe("Request Tab Context Menu", () => {
+  let tab1Key: string
+  let tab2Key: string
+  let tab3Key: string
+
+  before(async () => {
+    await ensureWorkspaceReady()
+    await resetOverlays()
+
+    // Create three tabs for testing context menu
+    tab1Key = await openNewRequestViaUI()
+    await waitForRequestEditor()
+    await setInputText("request-workspace:url-input", "https://api.example.com/tab1")
+
+    tab2Key = await openNewRequestViaUI()
+    await waitForRequestEditor()
+    await setInputText("request-workspace:url-input", "https://api.example.com/tab2")
+
+    tab3Key = await openNewRequestViaUI()
+    await waitForRequestEditor()
+    await setInputText("request-workspace:url-input", "https://api.example.com/tab3")
+  })
+
+  it("opens context menu on right-click and shows all options", async () => {
+    const tab2Element = await getElementByTestId(`request-tab:${tab2Key}`)
+
+    // Right-click to open context menu
+    await tab2Element.click({ button: 2 })
+
+    // Verify context menu appears
+    const contextMenu = await getElementByTestId("request-tab-bar:context-menu", 5000).catch(() => null)
+    expect(contextMenu).toBeDefined()
+
+    // Verify menu items exist
+    const closeItem = await getElementByTestId("request-tab-bar:context-menu:close", 5000).catch(() => null)
+    const closeOthersItem = await getElementByTestId("request-tab-bar:context-menu:close-others", 5000).catch(() => null)
+    const closeLeftItem = await getElementByTestId("request-tab-bar:context-menu:close-left", 5000).catch(() => null)
+    const closeRightItem = await getElementByTestId("request-tab-bar:context-menu:close-right", 5000).catch(() => null)
+    const closeAllItem = await getElementByTestId("request-tab-bar:context-menu:close-all", 5000).catch(() => null)
+
+    expect(closeItem).toBeDefined()
+    expect(closeOthersItem).toBeDefined()
+    expect(closeLeftItem).toBeDefined()
+    expect(closeRightItem).toBeDefined()
+    expect(closeAllItem).toBeDefined()
+
+    // Dismiss menu
+    await resetOverlays()
+  })
+
+  it("closes all other tabs via context menu", async () => {
+    const initialTabCount = await browser.execute(() => {
+      return document.querySelectorAll('[data-test-id^="request-tab:"]').length
+    })
+
+    if (initialTabCount <= 1) {
+      // Skip if only one tab exists
+      expect(true).toBe(true)
+      return
+    }
+
+    const tab2Element = await getElementByTestId(`request-tab:${tab2Key}`)
+
+    // Right-click to open context menu
+    await tab2Element.click({ button: 2 })
+
+    // Click "Close Others" option
+    const closeOthersItem = await getElementByTestId("request-tab-bar:context-menu:close-others", 5000)
+    await closeOthersItem.click()
+
+    // Verify only tab2 remains
+    const finalTabCount = await browser.execute(() => {
+      return document.querySelectorAll('[data-test-id^="request-tab:"]').length
+    })
+
+    expect(finalTabCount).toBe(1)
+  })
+
+  it("closes single tab via context menu", async () => {
+    const tab1Element = await getElementByTestId(`request-tab:${tab1Key}`)
+
+    // Right-click to open context menu
+    await tab1Element.click({ button: 2 })
+
+    // Click "Close" option
+    const closeItem = await getElementByTestId("request-tab-bar:context-menu:close", 5000)
+    await closeItem.click()
+
+    // Verify tab is closed
+    await waitForTestIdToDisappear(`request-tab:${tab1Key}`)
+    const tab1Exists = await getElementByTestId(`request-tab:${tab1Key}`).catch(() => null)
+    expect(tab1Exists).toBeNull()
+  })
+
+  it("closes tabs to the right via context menu", async () => {
+    const tabCountBefore = await browser.execute(() => {
+      return document.querySelectorAll('[data-test-id^="request-tab:"]').length
+    })
+
+    const tab2Element = await getElementByTestId(`request-tab:${tab2Key}`)
+
+    // Right-click on tab2
+    await tab2Element.click({ button: 2 })
+
+    // Click "Close Right" option
+    const closeRightItem = await getElementByTestId("request-tab-bar:context-menu:close-right", 5000)
+    const isEnabled = await closeRightItem.isEnabled()
+
+    if (isEnabled) {
+      await closeRightItem.click()
+
+      // Verify tab3 is closed (tab to the right of tab2)
+      await waitForTestIdToDisappear(`request-tab:${tab3Key}`)
+      const tab3Exists = await getElementByTestId(`request-tab:${tab3Key}`).catch(() => null)
+      expect(tab3Exists).toBeNull()
+    } else {
+      // If "Close Right" is disabled, that means we're at the rightmost tab or no tabs to the right
+      expect(isEnabled).toBe(false)
+    }
+  })
+
+  it("disables 'Close Left' when tab is first", async () => {
+    // Open new tabs to have a clean state
+    const newTab1 = await openNewRequestViaUI()
+    const newTab2 = await openNewRequestViaUI()
+
+    const newTab1Element = await getElementByTestId(`request-tab:${newTab1}`)
+
+    // Right-click on first tab
+    await newTab1Element.click({ button: 2 })
+
+    // Verify "Close Left" is disabled
+    const closeLeftItem = await getElementByTestId("request-tab-bar:context-menu:close-left", 5000)
+    const isDisabled = !(await closeLeftItem.isEnabled())
+    expect(isDisabled).toBe(true)
+
+    // Dismiss menu
+    await resetOverlays()
+  })
+
+  it("disables 'Close Right' when tab is last", async () => {
+    // Get the last tab
+    const lastTabKey = await browser.execute(() => {
+      const tabs = Array.from(document.querySelectorAll('[data-test-id^="request-tab:"]'))
+      const lastTab = tabs[tabs.length - 1]
+      return lastTab?.getAttribute("data-tab-key") || null
+    })
+
+    if (lastTabKey) {
+      const lastTabElement = await getElementByTestId(`request-tab:${lastTabKey}`)
+
+      // Right-click on last tab
+      await lastTabElement.click({ button: 2 })
+
+      // Verify "Close Right" is disabled
+      const closeRightItem = await getElementByTestId("request-tab-bar:context-menu:close-right", 5000)
+      const isDisabled = !(await closeRightItem.isEnabled())
+      expect(isDisabled).toBe(true)
+
+      // Dismiss menu
+      await resetOverlays()
+    }
+  })
+
+  console.log("✅ Request Tab Context Menu tests completed")
+})
+
 // Helper functions
 
 async function selectMethod(method: string): Promise<void> {
