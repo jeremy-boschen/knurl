@@ -652,6 +652,36 @@ async function main() {
     });
   });
 
+  app.post('/mock/multipart', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    respondJson(res, 200, {
+      method: 'POST',
+      contentType: req.get('content-type') || 'multipart/form-data',
+      message: 'Multipart form data received',
+      headers: Object.fromEntries(
+        Object.entries(req.headers)
+          .filter(([k]) => !k.startsWith('host'))
+          .map(([k, v]) => [`Req-Header-${k}`, v])
+      ),
+      url: `http://${req.hostname}${req.originalUrl}`,
+    });
+  });
+
+  app.post('/mock/xml-post', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    respondJson(res, 200, {
+      method: 'POST',
+      contentType: req.get('content-type') || 'application/xml',
+      message: 'XML request body received',
+      headers: Object.fromEntries(
+        Object.entries(req.headers)
+          .filter(([k]) => !k.startsWith('host'))
+          .map(([k, v]) => [`Req-Header-${k}`, v])
+      ),
+      url: `http://${req.hostname}${req.originalUrl}`,
+    });
+  });
+
   app.get('/mock/status/:code', (req, res) => {
     const statusCode = parseInt(req.params.code, 10) || 200;
     res.setHeader('Content-Type', 'application/json');
