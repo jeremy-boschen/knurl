@@ -31,6 +31,8 @@ function RequestTabContextMenuButton({ label, onClick, disabled }: ContextMenuBu
       )}
       onClick={onClick}
       disabled={disabled}
+      aria-disabled={disabled || undefined}
+      data-disabled={disabled ? "" : undefined}
       data-test-id={`request-tab-bar:context-menu:${label.toLowerCase().replace(" ", "-")}`}
     >
       {label}
@@ -95,6 +97,15 @@ export default function RequestTabBar() {
         return
       }
 
+      const targetIndex = openTabs.findIndex((tab) => tab.tabId === contextMenu.tabId)
+      const canCloseLeft = targetIndex > 0
+      const canCloseRight = targetIndex !== -1 && targetIndex < openTabs.length - 1
+
+      if ((action === "close-left" && !canCloseLeft) || (action === "close-right" && !canCloseRight)) {
+        dismissContextMenu()
+        return
+      }
+
       switch (action) {
         case "close": {
           void requestTabsApi.removeTab(contextMenu.tabId)
@@ -116,7 +127,7 @@ export default function RequestTabBar() {
 
       dismissContextMenu()
     },
-    [contextMenu, dismissContextMenu, requestTabsApi],
+    [contextMenu, dismissContextMenu, openTabs, requestTabsApi],
   )
 
   React.useEffect(() => {
