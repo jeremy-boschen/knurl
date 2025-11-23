@@ -64,10 +64,11 @@ const COOKIE_HEADER = "cookie"
 
 export function prepareHttpRequest({ request, authResult }: PrepareOptions): PreparedHttpRequest {
   if (!request.url) {
-    throw new Error("Request is missing a URL.")
+    throw new Error("Request is missing a URL. Enter a URL (e.g., https://api.example.com/users)")
   }
 
   const url = buildUrl(request, authResult)
+  validateUrl(url)
   const headers = buildHeaders(request, authResult)
   const body = buildBody(request, authResult, headers)
   const options = buildOptions(request)
@@ -95,6 +96,15 @@ function buildUrl(request: RequestState, authResult?: AuthResult): string {
     }
   }
 
+  // Check for unresolved environment variables in the URL
+  const unresolvedVars = extractUnresolvedVariables(urlValue)
+  if (unresolvedVars.length > 0) {
+    const varList = unresolvedVars.join(", ")
+    throw new Error(
+      `Unknown environment variable(s): ${varList}. Check your active environment or add these variables.`,
+    )
+  }
+
   try {
     const url = new URL(urlValue)
     if (request.queryParams) {
@@ -113,10 +123,13 @@ function buildUrl(request: RequestState, authResult?: AuthResult): string {
       }
     }
     return url.toString()
-  } catch {
+  } catch (_error) {
     const hasScheme = /^[a-zA-Z][\w+.-]*:\/\//.test(urlValue)
     if (hasScheme && !/^[a-zA-Z][\w+.-]*:\/\/[^/?#]+/.test(urlValue)) {
-      throw new Error(`Invalid URL: host is missing in "${urlValue}"`)
+      throw new Error(`Invalid URL: host is missing. Check your URL format (e.g., https://example.com)`)
+    }
+    if (!hasScheme) {
+      throw new Error(`Invalid URL: must start with http:// or https://. Got: "${urlValue}"`)
     }
     // Fallback to manual concatenation if URL constructor fails
     const parts: string[] = []
@@ -475,5 +488,20 @@ function parseHostOverride(value: string): HostOverrideParts {
   return {
     hostPort: segments.join(":"),
     ip,
+  }
+}
+
+function extractUnresolvedVariables(text: string): string[] {
+  const matches = text.match(/\{\{([^}]+)\}\}/g) ?? []
+  return matches.map((match) => match.slice(2, -2))
+}
+
+function validateUrl(url: string): void {
+  if (!url) {
+    throw new Error("Request is missing a URL. Enter a URL (e.g., https://api.example.com/users)")
+  }
+  const hasScheme = /^[a-zA-Z][\w+.-]*:\/\//.test(url)
+  if (!hasScheme) {
+    throw new Error(`Invalid URL: must start with http:// or https://. Got: "${url}"`)
   }
 }
