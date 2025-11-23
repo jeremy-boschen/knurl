@@ -14,12 +14,12 @@ import { expect } from "@wdio/globals"
 import { callBridgeReplacement } from "../../support/bridge-replacement"
 import { ensureWorkspaceReady } from "../../support/ui"
 
-describe("Tauri Backend Integration & Desktop Features", () => {
+describe("[SUPPLEMENTAL] Tauri Backend Integration & Desktop Features", () => {
   before(async () => {
     await ensureWorkspaceReady()
   })
 
-  describe("E2E Bridge Availability", () => {
+  describe("[SUPPLEMENTAL] E2E Bridge Availability", () => {
     it("ensures e2e bridge is available in test mode", async () => {
       // This verifies the test infrastructure is working
       const snapshot = await callBridgeReplacement("get_workspace_snapshot")
@@ -46,7 +46,7 @@ describe("Tauri Backend Integration & Desktop Features", () => {
     })
   })
 
-  describe("Tauri File System Commands", () => {
+  describe("[SUPPLEMENTAL] Tauri File System Commands", () => {
     it("bridge exposes getAppDataDir for platform-aware storage", async () => {
       const appDir = await callBridgeReplacement("get_app_data_dir")
 
@@ -115,7 +115,7 @@ describe("Tauri Backend Integration & Desktop Features", () => {
     })
   })
 
-  describe("Tauri Backend Command Routing", () => {
+  describe("[SUPPLEMENTAL] Tauri Backend Command Routing", () => {
     it("invokeAuth bridge method routes to getAuthenticationResult backend command", async () => {
       const basicAuthConfig = {
         type: "basic" as const,
@@ -188,7 +188,7 @@ describe("Tauri Backend Integration & Desktop Features", () => {
     })
   })
 
-  describe("Storage Synchronization via Bridge", () => {
+  describe("[SUPPLEMENTAL] Storage Synchronization via Bridge", () => {
     it("flushStorage persists all in-memory state to disk", async () => {
       // Create a collection
       const col = await callBridgeReplacement("create_collection", {
@@ -219,7 +219,7 @@ describe("Tauri Backend Integration & Desktop Features", () => {
     })
   })
 
-  describe("Authentication Result Caching", () => {
+  describe("[SUPPLEMENTAL] Authentication Result Caching", () => {
     it("bridge provides getAuthCacheEntry to inspect cached auth results", async () => {
       const basicAuthConfig = {
         type: "basic" as const,
@@ -246,7 +246,7 @@ describe("Tauri Backend Integration & Desktop Features", () => {
     })
   })
 
-  describe("Cross-Platform File Handling", () => {
+  describe("[SUPPLEMENTAL] Cross-Platform File Handling", () => {
     it("file dialog operations respect platform conventions", async () => {
       // While we can't actually open file dialogs in e2e tests,
       // verify that the bridge supports file operations
@@ -265,7 +265,7 @@ describe("Tauri Backend Integration & Desktop Features", () => {
     })
   })
 
-  describe("Error Propagation from Backend", () => {
+  describe("[SUPPLEMENTAL] Error Propagation from Backend", () => {
     it("bridge propagates AppError from backend getAuthenticationResult", async () => {
       // Invalid auth config should produce an error
       const invalidConfig = {
@@ -293,7 +293,7 @@ describe("Tauri Backend Integration & Desktop Features", () => {
     })
   })
 
-  describe("Workspace & Collection Management via Bridge", () => {
+  describe("[SUPPLEMENTAL] Workspace & Collection Management via Bridge", () => {
     it("workspace snapshot reflects collection creation", async () => {
       const initialSnapshot = await callBridgeReplacement("get_workspace_snapshot")
       const initialCount = initialSnapshot.collectionsIndex.length

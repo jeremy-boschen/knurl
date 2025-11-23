@@ -16,7 +16,7 @@ import {
   waitForRequestEditor,
 } from "../support/ui"
 
-describe("Refactored Input Helpers", () => {
+describe("[SUPPLEMENTAL] Refactored Input Helpers", () => {
   before(async () => {
     await ensureWorkspaceReady()
   })

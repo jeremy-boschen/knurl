@@ -42,7 +42,7 @@
 import { expect } from "@wdio/globals"
 import { ensureWorkspaceReady } from "../support/ui"
 
-describe("Tauri WebDriver Concurrency Bug", () => {
+describe("[SUPPLEMENTAL] Tauri WebDriver Concurrency Bug", () => {
   before(async () => {
     // Ensure the app is fully loaded so Tauri API is available
     await ensureWorkspaceReady()

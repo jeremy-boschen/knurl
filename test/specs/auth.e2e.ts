@@ -87,7 +87,7 @@ async function setOAuth2Field(fieldTestId: string, value: string): Promise<void>
   await setInputText(fieldTestId, value)
 }
 
-describe("Authentication Strategies", () => {
+describe("[CRITICAL] Authentication Strategies", () => {
   before(async () => {
     await ensureWorkspaceReady()
     await resetOverlays()
@@ -380,7 +380,7 @@ describe("Authentication Strategies", () => {
   console.log("✅ Authentication Strategies tests completed")
 })
 
-describe("OAuth Flows", () => {
+describe("[SUPPLEMENTAL] OAuth Flows", () => {
   const issuer = process.env.KNURL_E2E_OAUTH_ISSUER ?? "http://127.0.0.1:3000"
   const redirectUri = process.env.KNURL_E2E_OAUTH_REDIRECT_URI ?? "http://127.0.0.1:1420/oauth/callback"
   const clientId = process.env.KNURL_E2E_OAUTH_CLIENT_ID ?? "test-client"
@@ -828,7 +828,7 @@ describe("OAuth Flows", () => {
   console.log("✅ OAuth flows tests completed")
 })
 
-describe("Collection Auth Inheritance", () => {
+describe("[CRITICAL] Collection Auth Inheritance", () => {
   before(async () => {
     await ensureWorkspaceReady()
     await resetOverlays()

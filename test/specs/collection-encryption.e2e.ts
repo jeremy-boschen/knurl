@@ -1,6 +1,6 @@
 import { expect } from "@wdio/globals"
 
-describe("Collection Encryption & At-Rest Storage", () => {
+describe("[CRITICAL] Collection Encryption & At-Rest Storage", () => {
   it("placeholder - encryption tests pending refactor", async () => {
     // Placeholder: This test suite previously relied on the E2E bridge pattern
     // which has been removed. Tests need to be rewritten to:

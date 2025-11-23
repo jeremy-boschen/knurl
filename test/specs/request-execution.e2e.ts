@@ -8,7 +8,7 @@ import { clickByTestId, ensureWorkspaceReady, openNewRequestViaUI, setInputText,
  * Detailed testing of response viewer features, error handling, and HTTP methods
  * is covered in unit tests (response-viewer.test.tsx, error handling, etc).
  */
-describe("Request Execution & Responses: Smoke Tests", () => {
+describe("[CRITICAL] Request Execution & Responses: Smoke Tests", () => {
   let tabKey: string
 
   before(async () => {

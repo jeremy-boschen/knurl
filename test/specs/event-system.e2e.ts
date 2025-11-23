@@ -3,7 +3,7 @@ import { expect } from "@wdio/globals"
 import { openNewRequestViaUI, ensureWorkspaceReady } from "../support/ui"
 import { waitForTabOpened, waitForEvent } from "../support/events"
 
-describe("Event System", () => {
+describe("[SUPPLEMENTAL] Event System", () => {
   describe("RequestUi Events", () => {
     before(async () => {
       await ensureWorkspaceReady()

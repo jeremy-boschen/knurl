@@ -26,7 +26,7 @@ interface OpenTabSnapshot {
   collectionId: string
 }
 
-describe("Collections Management & Storage", () => {
+describe("[CRITICAL] Collections Management & Storage", () => {
   describe("Collections Management UX", () => {
     before(async () => {
       await logTestTime("Collections Management - before")

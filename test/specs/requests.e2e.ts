@@ -95,7 +95,7 @@ describe("Request Authoring Smoke", () => {
   console.log("✅ Request Authoring Smoke tests completed")
 })
 
-describe("Request Authoring Advanced", () => {
+describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
   const state: {
     collectionId: string
     requestId: string
@@ -375,7 +375,7 @@ describe("Request Authoring Advanced", () => {
 })
 
 
-describe("Multi-Tab Unsaved Edits Management", () => {
+describe("[CRITICAL] Multi-Tab Unsaved Edits Management", () => {
   let tab1Key: string
   let tab2Key: string
   let tab3Key: string
@@ -590,7 +590,7 @@ describe("Scratch Collection UX", () => {
   console.log("✅ Scratch Collection UX tests completed")
 })
 
-describe("Request Tab Context Menu", () => {
+describe("[CRITICAL] Request Tab Context Menu", () => {
   let tab1Key: string
   let tab2Key: string
   let tab3Key: string

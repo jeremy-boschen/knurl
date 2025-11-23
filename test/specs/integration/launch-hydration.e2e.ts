@@ -22,7 +22,7 @@ type WorkspaceSnapshot = Awaited<ReturnType<typeof callBridgeReplacement>>
 const INDEX_FILE = "collections/.index.json"
 const BAD_COLLECTION_FILE = "collections/bad.json"
 
-describe("Launch Hydration UX", () => {
+describe("[SUPPLEMENTAL] Launch Hydration UX", () => {
   before(async () => {
     await ensureWorkspaceReady()
     await resetCollectionsState()

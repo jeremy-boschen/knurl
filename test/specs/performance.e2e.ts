@@ -10,7 +10,7 @@ import {
 import { createCollection } from "../support/ui"
 import { waitForRequestEditor } from "../support/ui"
 
-describe("Large Collections Performance", () => {
+describe("[SUPPLEMENTAL] Large Collections Performance", () => {
   before(async () => {
     await ensureWorkspaceReady()
   })
@@ -193,7 +193,7 @@ describe("Large Collections Performance", () => {
   })
 })
 
-describe("Large Payload Handling", () => {
+describe("[SUPPLEMENTAL] Large Payload Handling", () => {
   let tabKey: string
 
   before(async () => {
