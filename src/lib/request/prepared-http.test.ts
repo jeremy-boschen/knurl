@@ -52,8 +52,8 @@ describe("prepareHttpRequest", () => {
     expect(prepared.headers.Cookie).toContain("session=abc")
   })
 
-  it("appends auth/query params to a valid absolute URL", () => {
-    const request = createRequestFixture({ method: "GET", url: "https://api.knurl.dev/search" })
+  it("falls back to manual URL building and appends auth/query params", () => {
+    const request = createRequestFixture({ method: "GET", url: "http://api.knurl.dev/search" })
     request.queryParams = {
       q: { id: "q", name: "q", value: "knurl", enabled: true, secure: false },
     }
@@ -63,7 +63,7 @@ describe("prepareHttpRequest", () => {
       authResult: { query: { token: "t1" } },
     })
 
-    expect(prepared.url).toBe("https://api.knurl.dev/search?q=knurl&token=t1")
+    expect(prepared.url).toBe("http://api.knurl.dev/search?q=knurl&token=t1")
   })
 
   it("throws on schemed URLs without a host", () => {
@@ -236,5 +236,111 @@ describe("prepareHttpRequest", () => {
       redactSensitive: true,
       logBodies: false,
     })
+  })
+
+  it("auto-generates Content-Type for XML bodies", () => {
+    const request = createRequestFixture({ method: "POST" })
+    request.body = {
+      type: "text",
+      language: "xml",
+      content: '<root><item>test</item></root>',
+    }
+
+    const prepared = prepareHttpRequest({ request, authResult: undefined })
+
+    expect(prepared.headers["Content-Type"]).toBe("application/xml")
+    expect(prepared.body).toEqual({ mode: "text", value: '<root><item>test</item></root>' })
+  })
+
+  it("auto-generates Content-Type for URL-encoded form data", () => {
+    const request = createRequestFixture({ method: "POST" })
+    request.body = {
+      type: "form",
+      encoding: "url",
+      formData: {
+        username: { id: "u", key: "username", value: "john", enabled: true, secure: false, kind: "text" },
+        password: { id: "p", key: "password", value: "secret", enabled: true, secure: false, kind: "text" },
+      },
+    }
+
+    const prepared = prepareHttpRequest({ request, authResult: undefined })
+
+    expect(prepared.headers["Content-Type"]).toBe("application/x-www-form-urlencoded")
+    expect(prepared.body.mode).toBe("urlencoded")
+  })
+
+  it("builds multipart form data without pre-setting Content-Type (boundary added by HTTP client)", () => {
+    const request = createRequestFixture({ method: "POST" })
+    request.body = {
+      type: "form",
+      encoding: "multipart",
+      formData: {
+        field1: { id: "f1", key: "field1", value: "value1", enabled: true, secure: false, kind: "text" },
+      },
+    }
+
+    const prepared = prepareHttpRequest({ request, authResult: undefined })
+
+    // Content-Type with boundary is set by HTTP client later
+    expect(prepared.body.mode).toBe("multipart")
+    if (prepared.body.mode === "multipart") {
+      expect(prepared.body.parts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ type: "text", name: "field1", value: "value1" }),
+        ]),
+      )
+    }
+  })
+
+  it("merges multiple custom headers preserving case and order", () => {
+    const request = createRequestFixture({ method: "GET" })
+    request.headers = {
+      h1: { id: "h1", name: "X-Custom-Header-1", value: "value1", enabled: true, secure: false },
+      h2: { id: "h2", name: "X-Custom-Header-2", value: "value2", enabled: true, secure: false },
+      h3: { id: "h3", name: "Accept-Language", value: "en-US", enabled: true, secure: false },
+    }
+
+    const prepared = prepareHttpRequest({ request, authResult: undefined })
+
+    expect(prepared.headers["X-Custom-Header-1"]).toBe("value1")
+    expect(prepared.headers["X-Custom-Header-2"]).toBe("value2")
+    expect(prepared.headers["Accept-Language"]).toBe("en-US")
+    expect(Object.keys(prepared.headers).length).toBeGreaterThanOrEqual(3)
+  })
+
+  it("disables headers correctly by filtering disabled entries", () => {
+    const request = createRequestFixture({ method: "POST" })
+    request.headers = {
+      enabled1: { id: "e1", name: "X-Enabled", value: "yes", enabled: true, secure: false },
+      disabled1: { id: "d1", name: "X-Disabled-1", value: "no", enabled: false, secure: false },
+      enabled2: { id: "e2", name: "Authorization", value: "Bearer token", enabled: true, secure: false },
+      disabled2: { id: "d2", name: "X-Disabled-2", value: "nope", enabled: false, secure: false },
+    }
+
+    const prepared = prepareHttpRequest({ request, authResult: undefined })
+
+    expect(prepared.headers["X-Enabled"]).toBe("yes")
+    expect(prepared.headers.Authorization).toBe("Bearer token")
+    expect(prepared.headers["X-Disabled-1"]).toBeUndefined()
+    expect(prepared.headers["X-Disabled-2"]).toBeUndefined()
+  })
+
+  it("merges custom cookies with auth-provided cookies", () => {
+    const request = createRequestFixture({ method: "GET" })
+    request.cookieParams = {
+      session: { id: "s", name: "session_id", value: "sess_abc123", enabled: true, secure: false },
+      preferences: { id: "p", name: "prefs", value: "dark_mode", enabled: true, secure: false },
+    }
+
+    const authResult: AuthResult = {
+      cookies: { auth_token: "token_xyz", tracking_id: "track_123" },
+    }
+
+    const prepared = prepareHttpRequest({ request, authResult })
+
+    expect(prepared.headers.Cookie).toContain("session_id=sess_abc123")
+    expect(prepared.headers.Cookie).toContain("prefs=dark_mode")
+    expect(prepared.headers.Cookie).toContain("auth_token=token_xyz")
+    expect(prepared.headers.Cookie).toContain("tracking_id=track_123")
   })
 })
