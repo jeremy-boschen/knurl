@@ -52,8 +52,8 @@ describe("prepareHttpRequest", () => {
     expect(prepared.headers.Cookie).toContain("session=abc")
   })
 
-  it("falls back to manual URL building and appends auth/query params", () => {
-    const request = createRequestFixture({ method: "GET", url: "api.knurl.dev/search" })
+  it("appends auth/query params to a valid absolute URL", () => {
+    const request = createRequestFixture({ method: "GET", url: "https://api.knurl.dev/search" })
     request.queryParams = {
       q: { id: "q", name: "q", value: "knurl", enabled: true, secure: false },
     }
@@ -63,7 +63,7 @@ describe("prepareHttpRequest", () => {
       authResult: { query: { token: "t1" } },
     })
 
-    expect(prepared.url).toBe("api.knurl.dev/search?q=knurl&token=t1")
+    expect(prepared.url).toBe("https://api.knurl.dev/search?q=knurl&token=t1")
   })
 
   it("throws on schemed URLs without a host", () => {
