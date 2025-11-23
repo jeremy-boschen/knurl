@@ -585,6 +585,73 @@ async function main() {
     });
   });
 
+  app.put('/mock/put', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    respondJson(res, 200, {
+      method: 'PUT',
+      args: req.query,
+      data: req.body,
+      cookies: req.cookies || {},
+      headers: Object.fromEntries(
+        Object.entries(req.headers)
+          .filter(([k]) => !k.startsWith('host'))
+          .map(([k, v]) => [`Req-Header-${k}`, v])
+      ),
+      origin: req.ip || '127.0.0.1',
+      url: `http://${req.hostname}${req.originalUrl}`,
+    });
+  });
+
+  app.patch('/mock/patch', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    respondJson(res, 200, {
+      method: 'PATCH',
+      args: req.query,
+      data: req.body,
+      cookies: req.cookies || {},
+      headers: Object.fromEntries(
+        Object.entries(req.headers)
+          .filter(([k]) => !k.startsWith('host'))
+          .map(([k, v]) => [`Req-Header-${k}`, v])
+      ),
+      origin: req.ip || '127.0.0.1',
+      url: `http://${req.hostname}${req.originalUrl}`,
+    });
+  });
+
+  app.delete('/mock/delete', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    respondJson(res, 200, {
+      method: 'DELETE',
+      args: req.query,
+      cookies: req.cookies || {},
+      headers: Object.fromEntries(
+        Object.entries(req.headers)
+          .filter(([k]) => !k.startsWith('host'))
+          .map(([k, v]) => [`Req-Header-${k}`, v])
+      ),
+      origin: req.ip || '127.0.0.1',
+      url: `http://${req.hostname}${req.originalUrl}`,
+      deleted: true,
+    });
+  });
+
+  app.head('/mock/head', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('X-Head-Method', 'confirmed');
+    res.status(200).end();
+  });
+
+  app.options('/mock/options', (req, res) => {
+    res.setHeader('Allow', 'GET, HEAD, OPTIONS, POST, PUT, PATCH, DELETE');
+    res.setHeader('Content-Type', 'application/json');
+    respondJson(res, 200, {
+      method: 'OPTIONS',
+      allowedMethods: ['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'],
+      url: `http://${req.hostname}${req.originalUrl}`,
+    });
+  });
+
   app.get('/mock/status/:code', (req, res) => {
     const statusCode = parseInt(req.params.code, 10) || 200;
     res.setHeader('Content-Type', 'application/json');
