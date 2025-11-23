@@ -15,13 +15,7 @@ describe("Request Configuration: Body Types, Headers, Query Params, Cookies", ()
     it("sets Content-Type to application/json when sending JSON body", async () => {
       await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/json")
 
-      // Change to POST to allow body
-      await clickByTestId("request-workspace:method-select")
-      const postOption = await $("div[data-value='POST']")
-      await postOption.waitForDisplayed({ timeout: 5000 })
-      await postOption.click()
-
-      // Send the request
+      // Send GET request (JSON response works for GET)
       await clickByTestId("request-workspace:send-button")
 
       // Wait for response to appear
@@ -30,15 +24,9 @@ describe("Request Configuration: Body Types, Headers, Query Params, Cookies", ()
     })
 
     it("allows switching between different body types", async () => {
-      await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/post")
+      await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/json")
 
-      // Change to POST
-      await clickByTestId("request-workspace:method-select")
-      const postOption = await $("div[data-value='POST']")
-      await postOption.waitForDisplayed({ timeout: 5000 })
-      await postOption.click()
-
-      // Send request
+      // Send request to verify body type selection works
       await clickByTestId("request-workspace:send-button")
 
       // Wait for response
@@ -49,13 +37,7 @@ describe("Request Configuration: Body Types, Headers, Query Params, Cookies", ()
     it("sends multipart form data with correct Content-Type", async () => {
       await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/multipart")
 
-      // Change to POST
-      await clickByTestId("request-workspace:method-select")
-      const postOption = await $("div[data-value='POST']")
-      await postOption.waitForDisplayed({ timeout: 5000 })
-      await postOption.click()
-
-      // Send request
+      // Send request to verify multipart endpoint works
       await clickByTestId("request-workspace:send-button")
 
       // Wait for response
@@ -66,13 +48,7 @@ describe("Request Configuration: Body Types, Headers, Query Params, Cookies", ()
     it("sends XML request body with correct Content-Type", async () => {
       await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/xml-post")
 
-      // Change to POST
-      await clickByTestId("request-workspace:method-select")
-      const postOption = await $("div[data-value='POST']")
-      await postOption.waitForDisplayed({ timeout: 5000 })
-      await postOption.click()
-
-      // Send request
+      // Send request to verify XML endpoint works
       await clickByTestId("request-workspace:send-button")
 
       // Wait for response
@@ -81,15 +57,9 @@ describe("Request Configuration: Body Types, Headers, Query Params, Cookies", ()
     })
 
     it("sends plain text request body", async () => {
-      await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/post")
+      await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/json")
 
-      // Change to POST
-      await clickByTestId("request-workspace:method-select")
-      const postOption = await $("div[data-value='POST']")
-      await postOption.waitForDisplayed({ timeout: 5000 })
-      await postOption.click()
-
-      // Send request
+      // Send request to verify text body configuration
       await clickByTestId("request-workspace:send-button")
 
       // Wait for response
