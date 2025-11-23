@@ -16,9 +16,9 @@ describe("Request Configuration: Body Types, Headers, Query Params, Cookies", ()
       await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/json")
 
       // Change to POST to allow body
-      const methodSelect = await getElementByTestId("request-workspace:method-select")
-      await methodSelect.click()
+      await clickByTestId("request-workspace:method-select")
       const postOption = await $("div[data-value='POST']")
+      await postOption.waitForDisplayed({ timeout: 5000 })
       await postOption.click()
 
       // Send the request
@@ -33,9 +33,9 @@ describe("Request Configuration: Body Types, Headers, Query Params, Cookies", ()
       await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/post")
 
       // Change to POST
-      const methodSelect = await getElementByTestId("request-workspace:method-select")
-      await methodSelect.click()
+      await clickByTestId("request-workspace:method-select")
       const postOption = await $("div[data-value='POST']")
+      await postOption.waitForDisplayed({ timeout: 5000 })
       await postOption.click()
 
       // Send request
@@ -50,9 +50,9 @@ describe("Request Configuration: Body Types, Headers, Query Params, Cookies", ()
       await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/multipart")
 
       // Change to POST
-      const methodSelect = await getElementByTestId("request-workspace:method-select")
-      await methodSelect.click()
+      await clickByTestId("request-workspace:method-select")
       const postOption = await $("div[data-value='POST']")
+      await postOption.waitForDisplayed({ timeout: 5000 })
       await postOption.click()
 
       // Send request
@@ -67,9 +67,9 @@ describe("Request Configuration: Body Types, Headers, Query Params, Cookies", ()
       await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/xml-post")
 
       // Change to POST
-      const methodSelect = await getElementByTestId("request-workspace:method-select")
-      await methodSelect.click()
+      await clickByTestId("request-workspace:method-select")
       const postOption = await $("div[data-value='POST']")
+      await postOption.waitForDisplayed({ timeout: 5000 })
       await postOption.click()
 
       // Send request
@@ -84,9 +84,9 @@ describe("Request Configuration: Body Types, Headers, Query Params, Cookies", ()
       await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/post")
 
       // Change to POST
-      const methodSelect = await getElementByTestId("request-workspace:method-select")
-      await methodSelect.click()
+      await clickByTestId("request-workspace:method-select")
       const postOption = await $("div[data-value='POST']")
+      await postOption.waitForDisplayed({ timeout: 5000 })
       await postOption.click()
 
       // Send request
