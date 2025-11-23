@@ -73,4 +73,293 @@ describe("HTTP Request Execution: Integration Tests (POC)", () => {
     expect(response.status).toBe(500)
     expect(response.statusText).toBeDefined()
   })
+
+  it("executes POST request with form body", async () => {
+    const request: Request = {
+      requestId: "intg-test-3",
+      url: "http://127.0.0.1:3000/mock/post",
+      method: "POST",
+      body: "key1=value1&key2=value2",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      disableSsl: undefined,
+      caPath: undefined,
+      hostOverride: undefined,
+      ipOverride: undefined,
+      timeoutSecs: undefined,
+      userAgent: undefined,
+      maxLogBytes: undefined,
+      redactSensitive: undefined,
+      logBodies: undefined,
+    }
+
+    const response = await sendRequest(request)
+
+    expect(response).toBeDefined()
+    expect(response.status).toBe(200)
+    expect(response.body).toBeDefined()
+    // Verify body contains form data
+    const bodyJson = JSON.parse(response.body)
+    expect(bodyJson.method).toBe("POST")
+    expect(bodyJson.form).toBeDefined()
+  })
+
+  it("executes PUT request", async () => {
+    const request: Request = {
+      requestId: "intg-test-4",
+      url: "http://127.0.0.1:3000/mock/put",
+      method: "PUT",
+      body: JSON.stringify({ name: "test", value: 123 }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      disableSsl: undefined,
+      caPath: undefined,
+      hostOverride: undefined,
+      ipOverride: undefined,
+      timeoutSecs: undefined,
+      userAgent: undefined,
+      maxLogBytes: undefined,
+      redactSensitive: undefined,
+      logBodies: undefined,
+    }
+
+    const response = await sendRequest(request)
+
+    expect(response).toBeDefined()
+    expect(response.status).toBe(200)
+    expect(response.body).toBeDefined()
+    const bodyJson = JSON.parse(response.body)
+    expect(bodyJson.method).toBe("PUT")
+  })
+
+  it("executes DELETE request", async () => {
+    const request: Request = {
+      requestId: "intg-test-5",
+      url: "http://127.0.0.1:3000/mock/delete",
+      method: "DELETE",
+      disableSsl: undefined,
+      caPath: undefined,
+      hostOverride: undefined,
+      ipOverride: undefined,
+      timeoutSecs: undefined,
+      userAgent: undefined,
+      maxLogBytes: undefined,
+      redactSensitive: undefined,
+      logBodies: undefined,
+    }
+
+    const response = await sendRequest(request)
+
+    expect(response).toBeDefined()
+    expect(response.status).toBe(200)
+    expect(response.body).toBeDefined()
+    const bodyJson = JSON.parse(response.body)
+    expect(bodyJson.deleted).toBe(true)
+  })
+
+  it("executes PATCH request", async () => {
+    const request: Request = {
+      requestId: "intg-test-6",
+      url: "http://127.0.0.1:3000/mock/patch",
+      method: "PATCH",
+      body: JSON.stringify({ status: "active" }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      disableSsl: undefined,
+      caPath: undefined,
+      hostOverride: undefined,
+      ipOverride: undefined,
+      timeoutSecs: undefined,
+      userAgent: undefined,
+      maxLogBytes: undefined,
+      redactSensitive: undefined,
+      logBodies: undefined,
+    }
+
+    const response = await sendRequest(request)
+
+    expect(response).toBeDefined()
+    expect(response.status).toBe(200)
+    const bodyJson = JSON.parse(response.body)
+    expect(bodyJson.method).toBe("PATCH")
+  })
+
+  it("handles XML response correctly", async () => {
+    const request: Request = {
+      requestId: "intg-test-7",
+      url: "http://127.0.0.1:3000/mock/xml",
+      method: "GET",
+      disableSsl: undefined,
+      caPath: undefined,
+      hostOverride: undefined,
+      ipOverride: undefined,
+      timeoutSecs: undefined,
+      userAgent: undefined,
+      maxLogBytes: undefined,
+      redactSensitive: undefined,
+      logBodies: undefined,
+    }
+
+    const response = await sendRequest(request)
+
+    expect(response).toBeDefined()
+    expect(response.status).toBe(200)
+    expect(response.body).toBeDefined()
+    expect(response.body).toContain("<?xml")
+    expect(response.body).toContain("<message>")
+  })
+
+  it("handles HTML response correctly", async () => {
+    const request: Request = {
+      requestId: "intg-test-8",
+      url: "http://127.0.0.1:3000/mock/html",
+      method: "GET",
+      disableSsl: undefined,
+      caPath: undefined,
+      hostOverride: undefined,
+      ipOverride: undefined,
+      timeoutSecs: undefined,
+      userAgent: undefined,
+      maxLogBytes: undefined,
+      redactSensitive: undefined,
+      logBodies: undefined,
+    }
+
+    const response = await sendRequest(request)
+
+    expect(response).toBeDefined()
+    expect(response.status).toBe(200)
+    expect(response.body).toBeDefined()
+    expect(response.body).toContain("<!DOCTYPE html")
+  })
+
+  it("handles plain text response correctly", async () => {
+    const request: Request = {
+      requestId: "intg-test-9",
+      url: "http://127.0.0.1:3000/mock/text",
+      method: "GET",
+      disableSsl: undefined,
+      caPath: undefined,
+      hostOverride: undefined,
+      ipOverride: undefined,
+      timeoutSecs: undefined,
+      userAgent: undefined,
+      maxLogBytes: undefined,
+      redactSensitive: undefined,
+      logBodies: undefined,
+    }
+
+    const response = await sendRequest(request)
+
+    expect(response).toBeDefined()
+    expect(response.status).toBe(200)
+    expect(response.body).toBeDefined()
+    expect(response.body).toContain("plain text")
+  })
+
+  it("handles 404 not found responses", async () => {
+    const request: Request = {
+      requestId: "intg-test-10",
+      url: "http://127.0.0.1:3000/mock/not-found",
+      method: "GET",
+      disableSsl: undefined,
+      caPath: undefined,
+      hostOverride: undefined,
+      ipOverride: undefined,
+      timeoutSecs: undefined,
+      userAgent: undefined,
+      maxLogBytes: undefined,
+      redactSensitive: undefined,
+      logBodies: undefined,
+    }
+
+    const response = await sendRequest(request)
+
+    expect(response).toBeDefined()
+    expect(response.status).toBe(404)
+    expect(response.body).toBeDefined()
+    const bodyJson = JSON.parse(response.body)
+    expect(bodyJson.error).toBe("Not Found")
+  })
+
+  it("includes custom headers in request", async () => {
+    const request: Request = {
+      requestId: "intg-test-11",
+      url: "http://127.0.0.1:3000/mock/response-headers",
+      method: "GET",
+      headers: {
+        "X-Custom-Header": "custom-value",
+        "X-Test-Header": "test-123",
+      },
+      disableSsl: undefined,
+      caPath: undefined,
+      hostOverride: undefined,
+      ipOverride: undefined,
+      timeoutSecs: undefined,
+      userAgent: undefined,
+      maxLogBytes: undefined,
+      redactSensitive: undefined,
+      logBodies: undefined,
+    }
+
+    const response = await sendRequest(request)
+
+    expect(response).toBeDefined()
+    expect(response.status).toBe(200)
+    expect(response.headers).toBeDefined()
+    // Response should include custom headers from request
+    expect(response.body).toBeDefined()
+  })
+
+  it("handles query parameters correctly", async () => {
+    const request: Request = {
+      requestId: "intg-test-12",
+      url: "http://127.0.0.1:3000/mock/get?param1=value1&param2=value2",
+      method: "GET",
+      disableSsl: undefined,
+      caPath: undefined,
+      hostOverride: undefined,
+      ipOverride: undefined,
+      timeoutSecs: undefined,
+      userAgent: undefined,
+      maxLogBytes: undefined,
+      redactSensitive: undefined,
+      logBodies: undefined,
+    }
+
+    const response = await sendRequest(request)
+
+    expect(response).toBeDefined()
+    expect(response.status).toBe(200)
+    expect(response.body).toBeDefined()
+    const bodyJson = JSON.parse(response.body)
+    expect(bodyJson.args).toBeDefined()
+  })
+
+  it("measures request duration", async () => {
+    const request: Request = {
+      requestId: "intg-test-13",
+      url: "http://127.0.0.1:3000/mock/delay/1",
+      method: "GET",
+      disableSsl: undefined,
+      caPath: undefined,
+      hostOverride: undefined,
+      ipOverride: undefined,
+      timeoutSecs: undefined,
+      userAgent: undefined,
+      maxLogBytes: undefined,
+      redactSensitive: undefined,
+      logBodies: undefined,
+    }
+
+    const response = await sendRequest(request)
+
+    expect(response).toBeDefined()
+    expect(response.status).toBe(200)
+    // Duration should be at least 1 second (1000ms) due to delay
+    expect(response.duration).toBeGreaterThanOrEqual(1000)
+  })
 })

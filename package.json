@@ -9,6 +9,7 @@
     "test:unit": "bash scripts/test-unit.sh",
     "test:e2e": "bash scripts/test-e2e.sh",
     "test:e2e:report": "bash scripts/test-e2e-report.sh",
+    "test:integration": "bash scripts/test-integration.sh",
     "test:coverage": "bash scripts/test-with-coverage.sh",
     "generate:knurl-icon": "node scripts/generate-knurl-icon.mjs",
     "build": "yarn generate:knurl-icon && tsc && vite build && cd src-tauri && cargo build --release",
