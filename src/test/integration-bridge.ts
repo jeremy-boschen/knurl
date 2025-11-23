@@ -9,22 +9,68 @@
  *   window.__KNURL_INTEGRATION_BRIDGE__
  *
  * Tests access it via:
- *   await browser.execute(() => window.__KNURL_INTEGRATION_BRIDGE__.sendRequest(...))
+ *   await browser.execute(() => window.__KNURL_INTEGRATION_BRIDGE__.executeRequest(...))
  */
 
-import { sendHttpRequest, loadAppData, saveAppData, deleteAppData, getAppDataDir } from "@/bindings/knurl"
+import { loadAppData, saveAppData, deleteAppData, getAppDataDir } from "@/bindings/knurl"
 import { useApplication, collectionsApi } from "@/state/application"
-import type { Request, Response } from "@/bindings/knurl"
+import {
+  runPipeline,
+  resolveVariablesPhase,
+  createAuthPhase,
+  protocolDispatchPhase,
+  type RequestContext,
+  type PipelineNotifier,
+} from "@/request/pipeline"
+import { generateUniqueId } from "@/lib/utils"
+import type { ResponseState, RequestState } from "@/types"
 
 /**
  * Integration Bridge API - all methods available to tests
  */
 export const integrationBridge = {
   /**
-   * Send HTTP request via Tauri backend
+   * Execute a request using the full RequestPipeline (same as the Send button)
+   *
+   * This invokes the complete request lifecycle:
+   * 1. Resolve variables (environment substitution)
+   * 2. Create auth (authentication injection)
+   * 3. Protocol dispatch (HTTP/WebSocket execution)
+   *
+   * Returns the response from the backend.
    */
-  async sendRequest(request: Request): Promise<Response> {
-    return sendHttpRequest(request)
+  async executeRequest(request: RequestState, environmentId?: string): Promise<ResponseState> {
+    return new Promise((resolve, reject) => {
+      const { get, set } = useApplication
+      const state = get()
+      const environment = environmentId
+        ? state.environmentsState?.environments?.[environmentId]
+        : state.environmentsState?.environments?.[state.environmentsState?.selectedEnvironmentId]
+
+      const correlationId = generateUniqueId()
+      const initialContext: RequestContext = {
+        request,
+        environment,
+        response: {},
+        correlationId,
+      }
+
+      const authPhase = createAuthPhase(get, set)
+      const phases = [resolveVariablesPhase, authPhase, protocolDispatchPhase]
+
+      const notifier: PipelineNotifier = {
+        onStart: () => {},
+        onSuccess: (response: ResponseState) => {
+          resolve(response)
+        },
+        onError: (error: Error) => {
+          reject(error)
+        },
+        onLog: () => {},
+      }
+
+      runPipeline(phases, initialContext, notifier).catch(reject)
+    })
   },
 
   /**

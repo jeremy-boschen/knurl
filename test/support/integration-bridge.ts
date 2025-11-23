@@ -5,19 +5,27 @@
  * The bridge is registered on window.__KNURL_INTEGRATION_BRIDGE__ when VITE_INTEGRATION_ENABLED is set.
  */
 
-import type { Request, Response } from "@src/bindings/knurl"
+import type { RequestState, ResponseState } from "@src/types"
 
 /**
- * Send an HTTP request via the backend (Tauri + Rust HTTP engine)
+ * Execute a request using the full RequestPipeline (same as the Send button)
+ *
+ * This invokes the complete request lifecycle:
+ * 1. Resolve variables (environment substitution)
+ * 2. Create auth (authentication injection)
+ * 3. Protocol dispatch (HTTP/WebSocket execution)
+ *
+ * Returns the response from the backend.
  */
-export async function sendRequest(request: Request): Promise<Response> {
+export async function executeRequest(request: RequestState, environmentId?: string): Promise<ResponseState> {
   return browser.execute(
-    async (req) => {
+    async (req, envId) => {
       const bridge = (window as any).__KNURL_INTEGRATION_BRIDGE__
       if (!bridge) throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
-      return bridge.sendRequest(req)
+      return bridge.executeRequest(req, envId)
     },
     request,
+    environmentId,
   )
 }
 
