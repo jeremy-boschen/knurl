@@ -69,6 +69,7 @@ describe("RequestTabBar", () => {
   const closeAllTabs = vi.fn()
   const closeTabsToLeft = vi.fn()
   const closeTabsToRight = vi.fn()
+  const closeOthers = vi.fn()
 
   const buildHook = (openTabs: any[]) => {
     const requestTabsApi = {
@@ -78,6 +79,7 @@ describe("RequestTabBar", () => {
       closeAllTabs,
       closeTabsToLeft,
       closeTabsToRight,
+      closeOthers,
     }
     hoisted.useOpenTabs.mockReturnValue({
       state: { openTabs },
@@ -134,6 +136,11 @@ describe("RequestTabBar", () => {
     const closeButton = getByDataId("request-tab-bar:context-menu:close")
     await userEvent.click(closeButton)
     expect(removeTab).toHaveBeenCalledWith("tab-2")
+
+    fireEvent.contextMenu(getByDataId("mock-tab:tab-2"))
+    const closeOthersButton = await findByDataId("request-tab-bar:context-menu:close-others")
+    await userEvent.click(closeOthersButton)
+    expect(closeOthers).toHaveBeenCalledWith("tab-2")
   })
 
   it("disables close-left and close-right appropriately", async () => {
@@ -142,9 +149,21 @@ describe("RequestTabBar", () => {
     const closeLeftFirst = await findByDataId("request-tab-bar:context-menu:close-left")
     expect(isMenuItemDisabled(closeLeftFirst)).toBe(true)
 
+    fireEvent.keyDown(document, { key: "Escape" })
+    await waitFor(() => expect(queryByDataId("request-tab-bar:context-menu")).toBeNull())
+
     fireEvent.contextMenu(getByDataId("mock-tab:tab-3"))
     const closeRightLast = await findByDataId("request-tab-bar:context-menu:close-right")
     expect(isMenuItemDisabled(closeRightLast)).toBe(true)
+  })
+
+  it("disables close-others when only one tab is open", async () => {
+    buildHook([{ tabId: "solo", requestId: "req-1", collectionId: "col-1" }])
+    render(<RequestTabBar />)
+
+    fireEvent.contextMenu(getByDataId("mock-tab:solo"))
+    const closeOthersButton = await findByDataId("request-tab-bar:context-menu:close-others")
+    expect(isMenuItemDisabled(closeOthersButton)).toBe(true)
   })
 
   it("runs bulk close actions for left/right/all", async () => {
@@ -182,9 +201,10 @@ describe("RequestTabBar", () => {
     return getByDataId(id)
   }
 
+  const queryByDataId = (id: string): HTMLElement | null => {
+    return document.querySelector(`[data-test-id="${id}"]`) as HTMLElement | null
+  }
+
   const isMenuItemDisabled = (element: HTMLElement): boolean => {
-    if ("disabled" in element && typeof element.disabled === "boolean") {
-      return element.disabled
-    }
     return element.getAttribute("aria-disabled") === "true" || element.getAttribute("data-disabled") !== null
   }
