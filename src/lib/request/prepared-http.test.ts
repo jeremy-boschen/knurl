@@ -28,6 +28,49 @@ describe("prepareHttpRequest", () => {
     expect(prepared.method).toBe("POST")
   })
 
+  it("preserves existing auth headers and merges auth cookies", () => {
+    const request = createRequestFixture({
+      method: "GET",
+      url: "https://api.knurl.dev/profile",
+    })
+
+    request.headers = {
+      authorization: { id: "auth", name: "Authorization", value: "Bearer existing", enabled: true, secure: false },
+      cookie: { id: "cookie", name: "Cookie", value: "theme=dark", enabled: true, secure: false },
+    }
+
+    const prepared = prepareHttpRequest({
+      request,
+      authResult: {
+        headers: { authorization: "Bearer injected" },
+        cookies: { session: "abc" },
+      },
+    })
+
+    expect(prepared.headers.Authorization).toBe("Bearer existing")
+    expect(prepared.headers.Cookie).toContain("theme=dark")
+    expect(prepared.headers.Cookie).toContain("session=abc")
+  })
+
+  it("falls back to manual URL building and appends auth/query params", () => {
+    const request = createRequestFixture({ method: "GET", url: "api.knurl.dev/search" })
+    request.queryParams = {
+      q: { id: "q", name: "q", value: "knurl", enabled: true, secure: false },
+    }
+
+    const prepared = prepareHttpRequest({
+      request,
+      authResult: { query: { token: "t1" } },
+    })
+
+    expect(prepared.url).toBe("api.knurl.dev/search?q=knurl&token=t1")
+  })
+
+  it("throws on schemed URLs without a host", () => {
+    const request = createRequestFixture({ method: "GET", url: "http:///" })
+    expect(() => prepareHttpRequest({ request, authResult: undefined })).toThrow(/host is missing/i)
+  })
+
   it("merges headers, cookies, and text body content", () => {
     const request = createRequestFixture({ method: "POST" })
     request.headers = {
@@ -109,6 +152,55 @@ describe("prepareHttpRequest", () => {
         ]),
       )
     }
+  })
+
+  it("throws when urlencoded form contains file fields", () => {
+    const request = createRequestFixture({ method: "POST" })
+    request.body = {
+      type: "form",
+      encoding: "url",
+      formData: {
+        fileField: {
+          id: "file",
+          key: "upload",
+          kind: "file",
+          enabled: true,
+          secure: false,
+          filePath: "/tmp/file.bin",
+        },
+      },
+    }
+
+    expect(() => prepareHttpRequest({ request, authResult: undefined })).toThrow(/File fields are not supported/)
+  })
+
+  it("throws when plain form encoding is combined with auth body placement", () => {
+    const request = createRequestFixture({ method: "POST" })
+    request.body = {
+      type: "form",
+      encoding: "plain",
+      formData: { a: { id: "a", key: "a", value: "1", enabled: true, secure: false, kind: "text" } },
+    }
+
+    expect(() =>
+      prepareHttpRequest({
+        request,
+        authResult: { body: { token: "x" } },
+      }),
+    ).toThrow(/text\/plain/i)
+  })
+
+  it("returns none body for binary without path and keeps headers untouched", () => {
+    const request = createRequestFixture({ method: "POST" })
+    request.body = { type: "binary", binaryPath: "" } as any
+    request.headers = {
+      foo: { id: "f", name: "Foo", value: "bar", enabled: true, secure: false },
+    }
+
+    const prepared = prepareHttpRequest({ request, authResult: undefined })
+    expect(prepared.body).toEqual({ mode: "none" })
+    expect(prepared.headers.Foo).toBe("bar")
+    expect(prepared.headers["Content-Type"]).toBeUndefined()
   })
 
   it("returns binary mode and builds options from overrides", () => {

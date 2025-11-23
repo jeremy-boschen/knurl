@@ -78,6 +78,82 @@ describe("openApiToNative", () => {
       expect(root?.requestIds).toContain(request.id)
     }
   })
+
+  it("creates environments from servers and variables", () => {
+    const spec = {
+      ...baseSpec,
+      servers: [
+        { url: "https://api.example.com", description: "Prod" },
+        { url: "https://staging.example.com", variables: { region: { default: "us-east-1" } } },
+      ],
+    }
+
+    const result = openApiToNative(spec)
+    const envs = Object.values(result.collection.environments ?? {})
+    expect(envs).toHaveLength(2)
+    const prod = envs.find((e) => e.name === "Prod")
+    const prodVars = Object.values(prod?.variables ?? {})
+    expect(prodVars.find((v) => v.name === "baseUrl")?.value).toBe("https://api.example.com")
+    const staging = envs.find((e) => e.name?.includes("Server 2"))
+    const vars = staging ? Object.values(staging.variables ?? {}) : []
+    expect(vars.map((v) => v.name)).toEqual(expect.arrayContaining(["baseUrl", "region"]))
+    expect(vars.find((v) => v.name === "region")?.value).toBe("us-east-1")
+  })
+
+  it("normalizes path templates, resolves param defaults/examples, and includes requestBody example", () => {
+    const spec = {
+      openapi: "3.1.0",
+      info: { title: "Param API", version: "1.0.0" },
+      paths: {
+        "/users/{id}": {
+          parameters: [
+            { name: "q", in: "query", schema: { default: "all" } },
+            { name: "id", in: "path", example: "99" },
+          ],
+          get: {
+            summary: "Get User",
+            responses: { default: { description: "ok" } },
+            requestBody: {
+              content: {
+                "application/json": {
+                  example: { a: 1 },
+                },
+              },
+            },
+          },
+        },
+      },
+    } as const
+
+    const result = openApiToNative(spec)
+    const req = Object.values(result.collection.requests ?? {})[0]
+    expect(req.url).toBe("{{baseUrl}}/users/{{id}}")
+    const qp = Object.values(req.queryParams ?? {})[0]
+    expect(qp?.value).toBe("all")
+    const pp = Object.values(req.pathParams ?? {})[0]
+    expect(pp?.value).toBe("99")
+    expect(req.body?.type).toBe("text")
+    expect(req.body?.content).toContain('"a": 1')
+  })
+
+  it("reuses tag folders instead of duplicating them", () => {
+    const spec = {
+      openapi: "3.1.0",
+      info: { title: "Tags API", version: "1.0.0" },
+      paths: {
+        "/a": { get: { tags: ["Shared"], responses: { default: { description: "ok" } } } },
+        "/b": { post: { tags: ["Shared"], responses: { default: { description: "ok" } } } },
+      },
+    } as const
+
+    const result = openApiToNative(spec)
+    const folders = result.collection.folders ?? {}
+    const root = folders[RootCollectionFolderId]
+    expect(root.childFolderIds.length).toBe(1)
+    const sharedId = root.childFolderIds[0]
+    const shared = folders[sharedId]
+    expect(shared.requestIds.length).toBe(2)
+  })
 })
 
 describe("postmanToNative", () => {

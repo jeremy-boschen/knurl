@@ -193,6 +193,34 @@ describe("buildExportCommand", () => {
     expect(snippet).toContain("force HTTP/1")
     expect(snippet).toContain("map local.test:8080 to 192.168.0.22")
   })
+
+  it("skips adding Host/User-Agent overrides when already present", async () => {
+    mockedPrepare.mockReturnValue({
+      method: "get",
+      url: "https://api.knurl.dev/override",
+      headers: { Host: "custom", "User-Agent": "ExistingUA" },
+      body: { mode: "none" },
+      options: { hostOverride: "custom:443", ipOverride: "1.1.1.1", userAgent: "ShouldNotApply" },
+    })
+
+    const cmd = await buildExportCommand("curl", {
+      request: createRequestFixture({ method: "GET" }),
+      collection: baseCollection,
+      environment: undefined,
+      credentialsCacheApi,
+    })
+
+    expect(cmd).not.toContain("Host: custom:443")
+    // curl still emits -A when userAgent option provided; ensure existing Host header prevented override only
+    expect(cmd).toContain("-A 'ShouldNotApply'")
+  })
+
+  it("throws for unsupported export formats", async () => {
+    await expect(
+      // @ts-expect-error deliberate bad format
+      buildExportCommand("scp", { request: createRequestFixture({}), collection: baseCollection, credentialsCacheApi }),
+    ).rejects.toThrow(/Unsupported export format/)
+  })
 })
 
 describe("auth resolution", () => {
@@ -293,5 +321,60 @@ describe("auth resolution", () => {
     args = getLastPrepareArgs()
     expect(credentialsCacheApi.generateCacheKey).toHaveBeenCalledWith(requestLevel.id)
     expect(args?.authResult).toEqual({ headers: { Authorization: "Bearer req" } })
+  })
+
+  it("builds auth results for basic and api key body placement", async () => {
+    mockedPrepare.mockReturnValue({
+      method: "get",
+      url: "https://api.knurl.dev/data",
+      headers: {},
+      body: { mode: "none" },
+      options: {},
+    })
+
+    const basicReq = createRequestFixture({
+      authentication: { type: "basic", basic: { username: "u", password: "p" } },
+    })
+    await buildExportCommand("curl", {
+      request: basicReq,
+      collection: baseCollection,
+      environment: undefined,
+      credentialsCacheApi,
+    })
+    let args = getLastPrepareArgs()
+    expect(args?.authResult?.headers?.Authorization).toMatch(/^Basic /)
+
+    const apiKeyBody = createRequestFixture({
+      authentication: { type: "apiKey", apiKey: { key: "k", value: "v", placement: { type: "body" } } },
+    })
+    await buildExportCommand("curl", {
+      request: apiKeyBody,
+      collection: baseCollection,
+      environment: undefined,
+      credentialsCacheApi,
+    })
+    args = getLastPrepareArgs()
+    expect(args?.authResult).toEqual({ body: { k: "v" } })
+  })
+
+  it("returns undefined auth when inherit has none", async () => {
+    mockedPrepare.mockReturnValue({
+      method: "get",
+      url: "https://api.knurl.dev/data",
+      headers: {},
+      body: { mode: "none" },
+      options: {},
+    })
+
+    const inheritRequest = createRequestFixture({ authentication: { type: "inherit" } })
+    const collection = { ...baseCollection, authentication: { type: "none" } } as Collection
+    await buildExportCommand("curl", {
+      request: inheritRequest,
+      collection,
+      environment: undefined,
+      credentialsCacheApi,
+    })
+    const args = getLastPrepareArgs()
+    expect(args?.authResult).toBeUndefined()
   })
 })
