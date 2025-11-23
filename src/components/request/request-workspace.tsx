@@ -204,6 +204,7 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
                     <Button
                       onClick={() => requestTabsApi.cancelRequest(activeTab.tabId)}
                       variant="destructive"
+                      className="transition-none"
                       data-test-id="request-workspace:cancel-button"
                     >
                       <Spinner className="mr-1 h-4 w-4" />
