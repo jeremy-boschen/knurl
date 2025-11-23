@@ -154,6 +154,55 @@ describe("prepareHttpRequest", () => {
     }
   })
 
+  it("throws when urlencoded form contains file fields", () => {
+    const request = createRequestFixture({ method: "POST" })
+    request.body = {
+      type: "form",
+      encoding: "url",
+      formData: {
+        fileField: {
+          id: "file",
+          key: "upload",
+          kind: "file",
+          enabled: true,
+          secure: false,
+          filePath: "/tmp/file.bin",
+        },
+      },
+    }
+
+    expect(() => prepareHttpRequest({ request, authResult: undefined })).toThrow(/File fields are not supported/)
+  })
+
+  it("throws when plain form encoding is combined with auth body placement", () => {
+    const request = createRequestFixture({ method: "POST" })
+    request.body = {
+      type: "form",
+      encoding: "plain",
+      formData: { a: { id: "a", key: "a", value: "1", enabled: true, secure: false, kind: "text" } },
+    }
+
+    expect(() =>
+      prepareHttpRequest({
+        request,
+        authResult: { body: { token: "x" } },
+      }),
+    ).toThrow(/text\/plain/i)
+  })
+
+  it("returns none body for binary without path and keeps headers untouched", () => {
+    const request = createRequestFixture({ method: "POST" })
+    request.body = { type: "binary", binaryPath: "" } as any
+    request.headers = {
+      foo: { id: "f", name: "Foo", value: "bar", enabled: true, secure: false },
+    }
+
+    const prepared = prepareHttpRequest({ request, authResult: undefined })
+    expect(prepared.body).toEqual({ mode: "none" })
+    expect(prepared.headers.Foo).toBe("bar")
+    expect(prepared.headers["Content-Type"]).toBeUndefined()
+  })
+
   it("returns binary mode and builds options from overrides", () => {
     const request = createRequestFixture({
       method: "POST",
