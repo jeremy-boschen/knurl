@@ -191,6 +191,22 @@ export async function ensureWorkspaceReady(): Promise<void> {
   )
 }
 
+/**
+ * Simulate an app reload by refreshing the browser
+ *
+ * This triggers:
+ * 1. Browser beforeunload event → app calls saveAll() to persist Zustand state
+ * 2. Page refresh → DOM clears
+ * 3. App remounts → Zustand restores state from disk
+ *
+ * Use this to verify that application state is properly persisted and restored.
+ * After calling this, you should call ensureWorkspaceReady() to wait for app hydration.
+ */
+export async function simulateAppReload(): Promise<void> {
+  console.log(`[SIMULATION] Simulating app reload via browser.refresh()`)
+  await browser.refresh()
+}
+
 export async function resetAppState(): Promise<void> {
   console.log(`[TEST] ${new Date().toISOString()} Resetting app state via page reload`)
 

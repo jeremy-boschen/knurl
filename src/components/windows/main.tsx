@@ -75,12 +75,8 @@ export function MainWindow() {
     }
   }, [])
 
-  // Ensure all state is saved before page unload (e.g., browser.refresh() in tests, navigation, etc.)
-  // Only enable in E2E mode where we want persistence across page reloads
+  // Ensure all state is saved before page unload (e.g., browser.refresh(), navigation, closing tab, etc.)
   React.useEffect(() => {
-    if (import.meta.env.MODE !== "e2e") {
-      return
-    }
     const handleBeforeUnload = async () => {
       await useApplication.saveAll()
     }

@@ -12,6 +12,7 @@ import {
   openNewRequestViaUI,
   resetOverlays,
   setInputText,
+  simulateAppReload,
   waitForCollectionIdByName,
   waitForRequestEditor,
   waitForTestIdToDisappear,
@@ -97,13 +98,11 @@ describe("Collections Management & Storage", () => {
       expect(idsBefore).toEqual([idA, idB])
       await logTestTime("Collections Management - verified initial state")
 
-      // Reload the browser to trigger Zustand persistence
-      await browser.refresh()
+      // Simulate app reload to verify state persistence
+      await simulateAppReload()
       await ensureWorkspaceReady()
       await ensureSidebarExpanded()
-      await logTestTime("Collections Management - browser reloaded")
-
-      browser.pause(60000)
+      await logTestTime("Collections Management - app reloaded")
 
       // Verify collections still exist after reload
       const idsAfter = await resolveOrderedCollectionIds()

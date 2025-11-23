@@ -70,8 +70,8 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
 
   const isDirty = state.isDirty
 
-  // Check if response has actual data (not just an empty partial response)
-  const hasCompleteResponse = Boolean(activeTab.response?.data)
+  // Show response panel if we have HTTP response data OR error logs
+  const hasResponse = Boolean(activeTab.response?.data || activeTab.response?.logs?.length)
 
   const handleMethodChange = (method: HttpMethod) => {
     requestTabsApi.updateTabRequest(activeTab.tabId, { method })
@@ -159,7 +159,7 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
         >
           <Panel
             key="request-editor"
-            minSize={hasCompleteResponse ? (isVerticalLayout ? "5%" : "200px") : undefined}
+            minSize={hasResponse ? (isVerticalLayout ? "5%" : "200px") : undefined}
             className="overflow-hidden"
           >
             <div className="flex h-full w-full flex-col">
@@ -298,7 +298,7 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
             </div>
           </Panel>
 
-          {hasCompleteResponse && (
+          {hasResponse && (
             <>
               <ResizeHandle
                 size={8}
