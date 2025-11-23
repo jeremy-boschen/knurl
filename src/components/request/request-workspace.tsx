@@ -4,12 +4,13 @@ import { useRef, useState } from "react"
 import { Panel, PanelGroup, ResizeHandle } from "@jeremy-boschen/react-adjustable-panels"
 import "@jeremy-boschen/react-adjustable-panels/style.css"
 
-import { ChevronDownIcon, LayoutPanelLeftIcon, LayoutPanelTopIcon, SaveIcon, SendIcon, SquareIcon } from "lucide-react"
+import { ChevronDownIcon, LayoutPanelLeftIcon, LayoutPanelTopIcon, SaveIcon, SendIcon } from "lucide-react"
 
 import ErrorBoundary from "@/components/error/error-boundary"
 import SaveRequestDialog from "@/components/request/save-request-dialog"
 import ResponseViewer from "@/components/response/response-viewer"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -205,7 +206,7 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
                       variant="destructive"
                       data-test-id="request-workspace:cancel-button"
                     >
-                      <SquareIcon className="mr-1 h-4 w-4" />
+                      <Spinner className="mr-1 h-4 w-4" />
                       Cancel
                     </Button>
                   ) : (
