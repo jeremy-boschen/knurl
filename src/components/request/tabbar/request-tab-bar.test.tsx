@@ -140,11 +140,11 @@ describe("RequestTabBar", () => {
     render(<RequestTabBar />)
     fireEvent.contextMenu(getByDataId("mock-tab:tab-1"))
     const closeLeftFirst = await findByDataId("request-tab-bar:context-menu:close-left")
-    expect(closeLeftFirst).toBeDisabled()
+    expect(isMenuItemDisabled(closeLeftFirst)).toBe(true)
 
     fireEvent.contextMenu(getByDataId("mock-tab:tab-3"))
     const closeRightLast = await findByDataId("request-tab-bar:context-menu:close-right")
-    expect(closeRightLast).toBeDisabled()
+    expect(isMenuItemDisabled(closeRightLast)).toBe(true)
   })
 
   it("runs bulk close actions for left/right/all", async () => {
@@ -180,4 +180,11 @@ describe("RequestTabBar", () => {
       }
     })
     return getByDataId(id)
+  }
+
+  const isMenuItemDisabled = (element: HTMLElement): boolean => {
+    if ("disabled" in element && typeof element.disabled === "boolean") {
+      return element.disabled
+    }
+    return element.getAttribute("aria-disabled") === "true" || element.getAttribute("data-disabled") !== null
   }
