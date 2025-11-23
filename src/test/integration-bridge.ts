@@ -41,7 +41,8 @@ export const integrationBridge = {
    */
   async executeRequest(request: RequestState, environmentId?: string): Promise<ResponseState> {
     return new Promise((resolve, reject) => {
-      const { get, set } = useApplication
+      const get = useApplication.getState
+      const set = useApplication.setState
       const state = get()
       const environment = environmentId
         ? state.environmentsState?.environments?.[environmentId]
@@ -55,8 +56,15 @@ export const integrationBridge = {
         correlationId,
       }
 
-      const authPhase = createAuthPhase(get, set)
-      const phases = [resolveVariablesPhase, authPhase, protocolDispatchPhase]
+      // Only include auth phase if the request has authentication configured
+      const phases: typeof resolveVariablesPhase[] = [resolveVariablesPhase]
+
+      if (request.authentication.type !== "none" && request.authentication.type !== "inherit") {
+        const authPhase = createAuthPhase(get, set)
+        phases.push(authPhase)
+      }
+
+      phases.push(protocolDispatchPhase)
 
       const notifier: PipelineNotifier = {
         onStart: () => {},
