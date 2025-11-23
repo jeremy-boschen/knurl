@@ -137,6 +137,8 @@ export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
     return "text-gray-500"
   }
 
+  const hasErrorLogs = response?.logs?.some((log) => log.level === "error") ?? false
+
   const formatBytes = (bytes: number) => {
     if (bytes === 0) {
       return "0 B"
@@ -231,7 +233,7 @@ export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
                 >
                   Logs
                   <Badge
-                    variant="outline"
+                    variant={hasErrorLogs ? "destructive" : "outline"}
                     className={cn(
                       "group-data-[state=inactive]/tab:text-muted-foreground",
                       "ml-1 rounded px-1.5 py-0.5 text-xs",
@@ -241,7 +243,7 @@ export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
                   </Badge>
                 </TabsTrigger>
               </TabsList>
-              {httpResponse && (
+              {httpResponse ? (
                 <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="text-muted-foreground">Status:</span>
@@ -262,67 +264,78 @@ export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
                       {formatBytes(response.responseSize ?? 0)}
                     </span>
                   </div>
+                </div>
+              ) : hasErrorLogs ? (
+                <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          const cd =
-                            httpResponse?.headers?.["content-disposition"] ||
-                            httpResponse?.headers?.["Content-Disposition"]
-                          const fnameMatch = cd?.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/)
-                          const inferredName = fnameMatch?.[1] || fnameMatch?.[2]
-                          const defaultExt = (() => {
-                            if (ct.startsWith("image/")) {
-                              return ct.split("/")[1] || "bin"
-                            }
-                            if (ct.includes("pdf")) {
-                              return "pdf"
-                            }
-                            if (ct.includes("csv")) {
-                              return "csv"
-                            }
-                            if (ct.includes("json")) {
-                              return "json"
-                            }
-                            if (ct.includes("xml")) {
-                              return "xml"
-                            }
-                            if (ct.includes("yaml")) {
-                              return "yml"
-                            }
-                            if (ct.startsWith("audio/")) {
-                              return ct.split("/")[1] || "audio"
-                            }
-                            if (ct.startsWith("video/")) {
-                              return ct.split("/")[1] || "video"
-                            }
-                            return "txt"
-                          })()
-                          const defaultPath = inferredName ? inferredName : `response.${defaultExt}`
-
-                          // For text-like, save raw body; for binary-like, save base64 with .b64 when bodyBase64 present
-                          if ((isImage || isPdf || isAudio || isVideo) && httpResponse?.bodyBase64) {
-                            await saveBinary(httpResponse.bodyBase64, {
-                              title: "Save Response",
-                              defaultPath: defaultPath,
-                            })
-                          } else {
-                            await saveFile(httpResponse?.body ?? "", {
-                              title: "Save Response",
-                              defaultPath: defaultPath,
-                            })
-                          }
-                        } catch (_e) {
-                          // ignore; user may have cancelled
-                        }
-                      }}
-                      data-test-id="response-viewer:save-button"
-                    >
-                      Save
-                    </Button>
+                    <span className="text-muted-foreground">Status:</span>
+                    <span className="font-mono font-medium text-red-500" data-test-id="response-panel:status-code">
+                      Error
+                    </span>
                   </div>
+                </div>
+              ) : null}
+              {httpResponse && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const cd =
+                          httpResponse?.headers?.["content-disposition"] ||
+                          httpResponse?.headers?.["Content-Disposition"]
+                        const fnameMatch = cd?.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/)
+                        const inferredName = fnameMatch?.[1] || fnameMatch?.[2]
+                        const defaultExt = (() => {
+                          if (ct.startsWith("image/")) {
+                            return ct.split("/")[1] || "bin"
+                          }
+                          if (ct.includes("pdf")) {
+                            return "pdf"
+                          }
+                          if (ct.includes("csv")) {
+                            return "csv"
+                          }
+                          if (ct.includes("json")) {
+                            return "json"
+                          }
+                          if (ct.includes("xml")) {
+                            return "xml"
+                          }
+                          if (ct.includes("yaml")) {
+                            return "yml"
+                          }
+                          if (ct.startsWith("audio/")) {
+                            return ct.split("/")[1] || "audio"
+                          }
+                          if (ct.startsWith("video/")) {
+                            return ct.split("/")[1] || "video"
+                          }
+                          return "txt"
+                        })()
+                        const defaultPath = inferredName ? inferredName : `response.${defaultExt}`
+
+                        // For text-like, save raw body; for binary-like, save base64 with .b64 when bodyBase64 present
+                        if ((isImage || isPdf || isAudio || isVideo) && httpResponse?.bodyBase64) {
+                          await saveBinary(httpResponse.bodyBase64, {
+                            title: "Save Response",
+                            defaultPath: defaultPath,
+                          })
+                        } else {
+                          await saveFile(httpResponse?.body ?? "", {
+                            title: "Save Response",
+                            defaultPath: defaultPath,
+                          })
+                        }
+                      } catch (_e) {
+                        // ignore; user may have cancelled
+                      }
+                    }}
+                    data-test-id="response-viewer:save-button"
+                  >
+                    Save
+                  </Button>
                 </div>
               )}
             </div>
