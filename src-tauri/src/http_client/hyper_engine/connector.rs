@@ -1062,3 +1062,306 @@ fn encode_pem_block(label: &str, der: &[u8]) -> String {
     pem.push_str(&format!("-----END {label}-----"));
     pem
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ========== sanitize_host_token tests ==========
+
+    #[test]
+    fn sanitize_host_token_simple_hostname() {
+        let result = sanitize_host_token("example.com").unwrap();
+        assert_eq!(result, "example.com");
+    }
+
+    #[test]
+    fn sanitize_host_token_hostname_with_port() {
+        let result = sanitize_host_token("example.com:8080").unwrap();
+        assert_eq!(result, "example.com");
+    }
+
+    #[test]
+    fn sanitize_host_token_ipv4_with_port() {
+        let result = sanitize_host_token("192.168.1.1:3000").unwrap();
+        assert_eq!(result, "192.168.1.1");
+    }
+
+    #[test]
+    fn sanitize_host_token_ipv6_literal() {
+        let result = sanitize_host_token("[::1]").unwrap();
+        assert_eq!(result, "[::1]");
+    }
+
+    #[test]
+    fn sanitize_host_token_ipv6_with_port() {
+        let result = sanitize_host_token("[::1]:8080").unwrap();
+        assert_eq!(result, "[::1]");
+    }
+
+    #[test]
+    fn sanitize_host_token_ipv6_full() {
+        let result = sanitize_host_token("[2001:0db8:85a3:0000:0000:8a2e:0370:7334]").unwrap();
+        assert_eq!(result, "[2001:0db8:85a3:0000:0000:8a2e:0370:7334]");
+    }
+
+    #[test]
+    fn sanitize_host_token_localhost() {
+        let result = sanitize_host_token("localhost:9000").unwrap();
+        assert_eq!(result, "localhost");
+    }
+
+    #[test]
+    fn sanitize_host_token_whitespace_trimmed() {
+        let result = sanitize_host_token("  example.com:443  ").unwrap();
+        assert_eq!(result, "example.com");
+    }
+
+    #[test]
+    fn sanitize_host_token_empty_string() {
+        let result = sanitize_host_token("").unwrap();
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn sanitize_host_token_whitespace_only() {
+        let result = sanitize_host_token("   ").unwrap();
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn sanitize_host_token_hostname_with_multiple_colons_ipv6() {
+        let result = sanitize_host_token("[2001:db8::1]:443").unwrap();
+        assert_eq!(result, "[2001:db8::1]");
+    }
+
+    #[test]
+    fn sanitize_host_token_no_port_with_colon_separator() {
+        let result = sanitize_host_token("host:notaport").unwrap();
+        // If port part is not all digits, treat whole thing as host
+        assert_eq!(result, "host:notaport");
+    }
+
+    // ========== default_port_for_scheme tests ==========
+
+    #[test]
+    fn default_port_for_scheme_https() {
+        let port = default_port_for_scheme(Some("https"));
+        assert_eq!(port, Some(443));
+    }
+
+    #[test]
+    fn default_port_for_scheme_http() {
+        let port = default_port_for_scheme(Some("http"));
+        assert_eq!(port, Some(80));
+    }
+
+    #[test]
+    fn default_port_for_scheme_ws() {
+        let port = default_port_for_scheme(Some("ws"));
+        assert_eq!(port, None);
+    }
+
+    #[test]
+    fn default_port_for_scheme_wss() {
+        let port = default_port_for_scheme(Some("wss"));
+        assert_eq!(port, None);
+    }
+
+    #[test]
+    fn default_port_for_scheme_ftp() {
+        let port = default_port_for_scheme(Some("ftp"));
+        assert_eq!(port, None);
+    }
+
+    #[test]
+    fn default_port_for_scheme_none() {
+        let port = default_port_for_scheme(None);
+        assert_eq!(port, None);
+    }
+
+    #[test]
+    fn default_port_for_scheme_empty() {
+        let port = default_port_for_scheme(Some(""));
+        assert_eq!(port, None);
+    }
+
+    // ========== compute_host_header tests ==========
+
+    #[test]
+    fn compute_host_header_with_override() {
+        let result = compute_host_header(Some("api.override.com"), Some("api.example.com"));
+        assert_eq!(result, Some("api.override.com".to_string()));
+    }
+
+    #[test]
+    fn compute_host_header_without_override_uses_uri() {
+        let result = compute_host_header(None, Some("api.example.com"));
+        assert_eq!(result, Some("api.example.com".to_string()));
+    }
+
+    #[test]
+    fn compute_host_header_empty_override_uses_uri() {
+        let result = compute_host_header(Some(""), Some("api.example.com"));
+        assert_eq!(result, Some("api.example.com".to_string()));
+    }
+
+    #[test]
+    fn compute_host_header_whitespace_override_uses_uri() {
+        let result = compute_host_header(Some("   "), Some("api.example.com"));
+        assert_eq!(result, Some("api.example.com".to_string()));
+    }
+
+    #[test]
+    fn compute_host_header_no_uri_host() {
+        let result = compute_host_header(Some("override.com"), None);
+        assert_eq!(result, Some("override.com".to_string()));
+    }
+
+    #[test]
+    fn compute_host_header_both_none() {
+        let result = compute_host_header(None, None);
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn compute_host_header_override_with_port() {
+        let result = compute_host_header(Some("example.com:8080"), Some("api.example.com"));
+        assert_eq!(result, Some("example.com".to_string()));
+    }
+
+    #[test]
+    fn compute_host_header_override_ipv6() {
+        let result = compute_host_header(Some("[::1]:8000"), Some("localhost"));
+        assert_eq!(result, Some("[::1]".to_string()));
+    }
+
+    // ========== strip_leading_zero tests ==========
+
+    #[test]
+    fn strip_leading_zero_no_zeros() {
+        let bytes = [1u8, 2, 3, 4];
+        let result = strip_leading_zero(&bytes);
+        assert_eq!(result, &[1u8, 2, 3, 4]);
+    }
+
+    #[test]
+    fn strip_leading_zero_single_leading_zero() {
+        let bytes = [0u8, 1, 2, 3];
+        let result = strip_leading_zero(&bytes);
+        assert_eq!(result, &[1u8, 2, 3]);
+    }
+
+    #[test]
+    fn strip_leading_zero_multiple_leading_zeros() {
+        let bytes = [0u8, 0, 0, 1, 2, 3];
+        let result = strip_leading_zero(&bytes);
+        assert_eq!(result, &[1u8, 2, 3]);
+    }
+
+    #[test]
+    fn strip_leading_zero_all_zeros() {
+        let bytes = [0u8, 0, 0, 0];
+        let result = strip_leading_zero(&bytes);
+        assert_eq!(result, &[] as &[u8]);
+    }
+
+    #[test]
+    fn strip_leading_zero_empty_bytes() {
+        let bytes: [u8; 0] = [];
+        let result = strip_leading_zero(&bytes);
+        assert_eq!(result, &[] as &[u8]);
+    }
+
+    // ========== calculate_key_bits tests ==========
+
+    #[test]
+    fn calculate_key_bits_empty() {
+        assert_eq!(calculate_key_bits(&[]), 0);
+    }
+
+    #[test]
+    fn calculate_key_bits_single_byte() {
+        // 0x80 = 10000000 in binary, leading zeros in first byte = 0
+        // 1 byte * 8 - 0 leading zeros = 8 bits
+        assert_eq!(calculate_key_bits(&[0x80]), 8);
+    }
+
+    #[test]
+    fn calculate_key_bits_single_byte_one() {
+        // 0x01 = 00000001 in binary, leading zeros = 7
+        // 1 byte * 8 - 7 = 1 bit
+        assert_eq!(calculate_key_bits(&[0x01]), 1);
+    }
+
+    #[test]
+    fn calculate_key_bits_two_bytes_full() {
+        // 0xFF 0xFF = all ones, leading zeros = 0
+        // 2 bytes * 8 - 0 = 16 bits
+        assert_eq!(calculate_key_bits(&[0xFF, 0xFF]), 16);
+    }
+
+    #[test]
+    fn calculate_key_bits_with_leading_zero_bytes() {
+        // 0x00 0x00 0xFF = first 0x00 bytes stripped, then 0xFF
+        // For 0xFF, leading zeros = 0, so 1 byte * 8 - 0 = 8 bits
+        assert_eq!(calculate_key_bits(&[0x00, 0x00, 0xFF]), 8);
+    }
+
+    #[test]
+    fn calculate_key_bits_high_bit() {
+        // 0x40 = 01000000 in binary, leading zeros = 1
+        // 1 byte * 8 - 1 = 7 bits
+        assert_eq!(calculate_key_bits(&[0x40]), 7);
+    }
+
+    // ========== encode_pem_block tests ==========
+
+    #[test]
+    fn encode_pem_block_simple() {
+        let data = b"test data";
+        let result = encode_pem_block("TEST", data);
+        assert!(result.starts_with("-----BEGIN TEST-----"));
+        assert!(result.ends_with("-----END TEST-----"));
+        assert!(result.contains("dGVzdCBkYXRh")); // base64 of "test data"
+    }
+
+    #[test]
+    fn encode_pem_block_empty_data() {
+        let result = encode_pem_block("EMPTY", b"");
+        assert!(result.starts_with("-----BEGIN EMPTY-----"));
+        assert!(result.ends_with("-----END EMPTY-----"));
+    }
+
+    #[test]
+    fn encode_pem_block_long_data() {
+        let data = vec![0u8; 200]; // 200 bytes will require multiple lines in PEM
+        let result = encode_pem_block("LONG", &data);
+        let lines: Vec<&str> = result.lines().collect();
+        // Should have: BEGIN, multiple data lines, END
+        assert!(lines.len() > 3);
+        assert_eq!(lines[0], "-----BEGIN LONG-----");
+        assert_eq!(lines[lines.len() - 1], "-----END LONG-----");
+    }
+
+    #[test]
+    fn encode_pem_block_with_special_label() {
+        let result = encode_pem_block("CERTIFICATE REQUEST", b"data");
+        assert!(result.starts_with("-----BEGIN CERTIFICATE REQUEST-----"));
+        assert!(result.ends_with("-----END CERTIFICATE REQUEST-----"));
+    }
+
+    // ========== build_tls_config tests ==========
+    // Note: build_tls_config tests are skipped as they require CryptoProvider initialization
+    // and are better tested via integration tests. The function behavior is verified through
+    // connector tests at a higher level.
+
+    #[test]
+    fn build_tls_config_invalid_ca_path() {
+        // Test that nonexistent CA path is properly rejected
+        let result = build_tls_config(false, Some("/nonexistent/path/to/ca.pem"));
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().message;
+        assert!(err_msg.contains("Failed to read CA bundle") || err_msg.contains("No such file"));
+    }
+}

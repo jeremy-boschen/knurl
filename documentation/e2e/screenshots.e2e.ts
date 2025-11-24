@@ -12,7 +12,6 @@ import { existsSync } from "fs"
 
 import { ensureWorkspaceReady, openNewRequestViaUI, setInputText, clickByTestId, getElementByTestId } from "../../test/support/ui"
 import { ensureBridgeReady, callBridge } from "../../test/support/e2e-bridge"
-import { resetCollectionsState } from "../../test/support/state"
 import { createCollection } from "../../test/support/collections"
 
 describe("Documentation Screenshots - Realistic API Workflow", () => {
@@ -29,7 +28,6 @@ describe("Documentation Screenshots - Realistic API Workflow", () => {
   beforeEach(async () => {
     await ensureWorkspaceReady()
     await ensureBridgeReady()
-    await resetCollectionsState()
     await browser.pause(800)
 
     // Enable dark mode for all documentation screenshots

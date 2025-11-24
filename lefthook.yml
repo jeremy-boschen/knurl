@@ -9,10 +9,8 @@ pre-commit:
 pre-push:
   parallel: false
   commands:
-    test-all:
+    test-unit:
       run: yarn test:unit
-    coverage:
-      run: yarn test:coverage
 
 commit-msg:
   commands:

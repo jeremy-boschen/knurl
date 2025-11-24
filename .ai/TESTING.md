@@ -317,11 +317,14 @@ fn encrypts_and_decrypts() {
 ### Coverage Commands
 
 ```bash
-# Check current coverage
-VITEST_COVERAGE=true yarn test:fe
+# Generate full coverage report (unit + E2E)
+yarn test
 
-# Generate HTML report
-yarn test:coverage
+# Unit tests with coverage only
+yarn test:unit
+
+# View coverage report
+open coverage/index.html
 ```
 
 ---
