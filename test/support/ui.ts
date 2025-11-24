@@ -502,11 +502,43 @@ export async function clickVisibleNewCollectionButton(): Promise<void> {
  */
 export async function createCollection(name: string): Promise<string> {
   const NEW_COLLECTION_DIALOG_TEST_ID = "new-collection-dialog"
+  await ensureSidebarExpanded()
+  await clearSidebarSearch().catch(() => {})
+  const beforeIds = await browser.execute(() => {
+    return Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'))
+      .map(el => el.getAttribute("data-test-id"))
+      .filter((id): id is string => Boolean(id))
+  })
+
   await clickVisibleNewCollectionButton()
   await getElementByTestId(NEW_COLLECTION_DIALOG_TEST_ID)
   await setInputText(`${NEW_COLLECTION_DIALOG_TEST_ID}:name-input`, name)
   await clickByTestId(`${NEW_COLLECTION_DIALOG_TEST_ID}:create-button`)
   await waitForTestIdToDisappear(NEW_COLLECTION_DIALOG_TEST_ID)
+
+  const newTestId = await browser.waitUntil(
+    async () => {
+      const ids = await browser.execute(() => {
+        return Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'))
+          .map(el => el.getAttribute("data-test-id"))
+          .filter((id): id is string => Boolean(id))
+      })
+      const diff = ids.filter(id => !beforeIds.includes(id))
+      return diff[0] ?? null
+    },
+    {
+      timeout: 20000,
+      interval: 150,
+      timeoutMsg: "New collection row did not appear in sidebar",
+    },
+  )
+
+  const match = newTestId?.match(/collection-tree:collection-row:(.+)$/)
+  if (match?.[1]) {
+    return match[1]
+  }
+
+  // Fallback to name search if diff strategy fails
   return await waitForCollectionIdByName(name)
 }
 
@@ -514,53 +546,127 @@ export async function createCollection(name: string): Promise<string> {
  * Finds a collection by name in the sidebar tree and returns its ID.
  * Throws if collection is not found.
  */
-export async function waitForCollectionIdByName(name: string, timeout = 15000): Promise<string> {
+export async function waitForCollectionIdByName(name: string, timeout = 25000): Promise<string> {
   // Ensure sidebar is expanded before searching for collections
   await ensureSidebarExpanded()
 
-  // Wait for the collection to appear in the sidebar tree (UI-only verification)
-  let collectionRow: WebdriverIO.Element | null = null
+  // Start from top of the list to ensure deterministic scan order
+  await browser.execute(() => {
+    const container = document.querySelector<HTMLElement>('[data-test-id="collection-tree"]')
+    if (container) {
+      container.scrollTop = 0
+    }
+  })
 
-  await browser.waitUntil(
-    async () => {
-      try {
-        // Look for collection in the sidebar tree by name
-        // Collections appear as clickable items with data-test-id="collection-tree:collection-row:ID"
-        const rows = await $$('[data-test-id^="collection-tree:collection-row:"]')
-
-        for (const row of rows) {
-          const text = await row.getText()
-          if (text.includes(name)) {
-            collectionRow = row
-            return true
-          }
-        }
-        return false
-      } catch {
-        return false
+  const start = Date.now()
+  const scrollAndFind = async (): Promise<string | null> => {
+    const result = await browser.execute((searchName: string) => {
+      const container = document.querySelector<HTMLElement>('[data-test-id="collection-tree"]')
+      if (!container) {
+        return { foundId: null, canScroll: false, scrollBy: 0 }
       }
-    },
-    {
-      timeout,
-      interval: 100, // Slightly longer polling interval to let app stabilize
-      timeoutMsg: `Collection "${name}" not found in sidebar tree`,
-    },
-  )
 
-  if (!collectionRow) {
-    throw new Error(`Failed to find collection "${name}" in sidebar`)
+      const rows = Array.from(
+        container.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'),
+      )
+      const hit = rows.find(row => row.textContent?.includes(searchName))
+      if (hit) {
+        return {
+          foundId: hit.getAttribute("data-test-id"),
+          canScroll: false,
+          scrollBy: 0,
+        }
+      }
+
+      // When search is active, search rows don't carry data-test-id. Use data-collection-id instead.
+      const searchRows = Array.from(
+        container.querySelectorAll<HTMLElement>('[data-collection-id][data-action-id][data-kind="collection"]'),
+      )
+      const searchHit = searchRows.find(row => row.textContent?.includes(searchName))
+      if (searchHit) {
+        const colId = searchHit.getAttribute("data-collection-id")
+        return {
+          foundId: colId ? `collection-tree:collection-row:${colId}` : null,
+          canScroll: false,
+          scrollBy: 0,
+        }
+      }
+
+      const canScroll = container.scrollTop + container.clientHeight < container.scrollHeight - 1
+      return {
+        foundId: null,
+        canScroll,
+        scrollBy: container.clientHeight || 200,
+      }
+    }, name)
+
+    if (result.foundId) {
+      return result.foundId
+    }
+
+    if (result.canScroll) {
+      await browser.execute((amount: number) => {
+        const container = document.querySelector<HTMLElement>('[data-test-id="collection-tree"]')
+        if (container) {
+          container.scrollBy({ top: amount })
+        }
+      }, result.scrollBy)
+    }
+    return null
   }
 
-  // Extract the collection ID from the data-test-id attribute
-  // Format: data-test-id="collection-tree:collection-row:COLLECTION_ID"
-  const testId = await collectionRow.getAttribute('data-test-id')
-  const match = testId?.match(/collection-tree:collection-row:(.+)$/)
+  let foundId: string | null = null
+  while (Date.now() - start < timeout) {
+    foundId = await scrollAndFind()
+    if (foundId) {
+      break
+    }
+    await browser.pause(150)
+  }
 
+  if (!foundId) {
+    throw new Error(`Collection "${name}" not found in sidebar tree`)
+  }
+
+  const match = foundId.match(/collection-tree:collection-row:(.+)$/)
   if (!match || !match[1]) {
-    throw new Error(`Could not extract collection ID from test ID: ${testId}`)
+    throw new Error(`Could not extract collection ID from test ID: ${foundId}`)
   }
-
   return match[1]
+}
+
+/**
+ * Clears the sidebar search input (if present) and waits for value to empty.
+ */
+export async function clearSidebarSearch(timeout = 3000): Promise<void> {
+  try {
+    const input = await $('[data-test-id="sidebar:search-input"]')
+    if (!(await input.isExisting())) {
+      return
+    }
+    const clearBtn = await $('[data-test-id="sidebar:clear-search-button"]')
+    if (await clearBtn.isExisting()) {
+      try {
+        await clearBtn.click()
+      } catch {
+        // fall back to manual clear
+      }
+    }
+    await input.clearValue()
+    await browser.waitUntil(
+      async () => {
+        try {
+          const val = await input.getValue()
+          return val === ""
+        } catch {
+          return true
+        }
+      },
+      { timeout, interval: 100, timeoutMsg: "Search input did not clear" },
+    )
+  } catch {
+    // swallow cleanup errors; not fatal
+  }
 }
 
 /**

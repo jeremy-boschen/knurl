@@ -6,6 +6,8 @@ import {
   getElementByTestId,
   setInputText,
   openNewRequestViaUI,
+  waitForCollectionIdByName,
+  clearSidebarSearch,
 } from "../support/ui"
 import { createCollection } from "../support/ui"
 import { waitForRequestEditor } from "../support/ui"
@@ -13,6 +15,10 @@ import { waitForRequestEditor } from "../support/ui"
 describe("Large Collections Performance", () => {
   before(async () => {
     await ensureWorkspaceReady()
+  })
+
+  afterEach(async () => {
+    await clearSidebarSearch()
   })
 
   it("displays sidebar with 50+ collections without lag", async () => {
@@ -36,14 +42,16 @@ describe("Large Collections Performance", () => {
   })
 
   it("handles rapid collection list scrolling with many items", async () => {
-    // Verify sidebar can be interacted with
-    const sidebar = await getElementByTestId("collection-tree", 5000).catch(() => null)
+    const sidebar = await getElementByTestId("collection-tree", 10000)
+    await sidebar.waitForDisplayed({ timeout: 10000 })
 
-    // Scroll down
-    await sidebar.scroll({ x: 0, y: 500 })
-
-    // Scroll back up
-    await sidebar.scroll({ x: 0, y: -500 })
+    // Scroll down and back up via the DOM element to avoid WebDriver scroll quirks
+    await browser.execute((el: HTMLElement) => {
+      el.scrollBy({ top: 500 })
+    }, sidebar)
+    await browser.execute((el: HTMLElement) => {
+      el.scrollBy({ top: -500 })
+    }, sidebar)
 
     expect(await sidebar.isDisplayed()).toBe(true)
   })
@@ -53,37 +61,31 @@ describe("Large Collections Performance", () => {
     const uniqueName = `Unique Searchable Collection ${Date.now()}`
     await createCollection(uniqueName)
 
-    // Try to find it via the collection tree UI (if search exists)
-    const searchInput = await getElementByTestId("collection-tree:search-input", 5000).catch(() => null)
-    if (await searchInput.isDisplayed()) {
-      await searchInput.clearValue()
-      await searchInput.setValue("Unique Searchable")
+    // Filter via sidebar search (single source of truth for collection filtering)
+    const searchInput = await getElementByTestId("sidebar:search-input", 10000)
+    await searchInput.waitForDisplayed({ timeout: 10000 })
+    await searchInput.clearValue()
 
-      // Should filter down the list
-      const visibleRowIds = await browser.execute(() => {
-        const rows = Array.from(document.querySelectorAll('[data-test-id^="collection-tree:collection-row:"]'))
-        return rows.map(el => el.getAttribute("data-test-id")).filter(Boolean)
-      })
-      expect(visibleRowIds.length).toBeGreaterThan(0)
+    try {
+      await searchInput.setValue(uniqueName)
+
+      // Should surface the matching collection row
+      await waitForCollectionIdByName(uniqueName, 10000)
+    } finally {
+      // Always clear search so subsequent tests see full tree even if assertion fails
+      await searchInput.clearValue()
     }
   })
 
   it("opens a collection from large list without delay", async () => {
-    // Get first visible collection from the sidebar
-    const collectionRowIds = await browser.execute(() => {
-      const rows = Array.from(document.querySelectorAll('[data-test-id^="collection-tree:collection-row:"]'))
-      return rows.map(el => el.getAttribute("data-test-id")).filter(Boolean)
-    })
-    expect(collectionRowIds.length).toBeGreaterThan(0)
+    // Ensure at least one collection exists
+    const name = `Open Perf ${Date.now()}`
+    const collectionId = await createCollection(name)
 
-    // Click the first collection in the list
     const startTime = Date.now()
-    if (collectionRowIds.length > 0) {
-      await clickByTestId(collectionRowIds[0])
-    }
+    await clickByTestId(`collection-tree:collection-row:${collectionId}`)
     const clickTime = Date.now() - startTime
 
-    // Response should be immediate
     expect(clickTime).toBeLessThan(1000)
   })
 
@@ -202,78 +204,76 @@ describe("Large Payload Handling", () => {
     await waitForRequestEditor()
   })
 
+  afterEach(async () => {
+    await clearSidebarSearch()
+  })
+
   it("handles large JSON response gracefully", async () => {
-    // Use httpbin to get a large JSON response
-    await setInputText("request-workspace:url-input", "http://httpbin.org/json")
+    await waitForRequestEditor()
+
+    // Use mock server to get a JSON response
+    await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/json")
 
     await clickByTestId("request-workspace:send-button")
-    await browser.waitUntil(
-      async () => {
-        const responsePanel = await getElementByTestId("response-panel:formatted-view", 5000).catch(() => null)
-        return await responsePanel.isDisplayed()
-      },
-      {
-        timeout: 10000,
-        timeoutMsg: "Response panel did not display",
-      },
-    )
 
-    // Verify response viewer is rendered and responsive
-    const formattedView = await getElementByTestId("response-panel:formatted-view", 5000).catch(() => null)
-    expect(await formattedView.isDisplayed()).toBe(true)
+    // Verify response viewer renders
+    const responseHeading = await getElementByTestId("response-viewer:heading", 15000)
+    expect(await responseHeading.isDisplayed()).toBe(true)
+
+    const bodyPanel = await getElementByTestId("response-viewer:body", 10000)
+    expect(await bodyPanel.isDisplayed()).toBe(true)
   })
 
   it("displays raw response for binary data instead of attempting parse", async () => {
+    await waitForRequestEditor()
+
     // Request binary data endpoint
-    await setInputText("request-workspace:url-input", "http://httpbin.org/image/png")
+    await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/image/png")
 
     await clickByTestId("request-workspace:send-button")
-    await browser.waitUntil(
-      async () => {
-        const responsePanel = await getElementByTestId("response-panel", 5000).catch(() => null)
-        return await responsePanel.isDisplayed()
-      },
-      {
-        timeout: 10000,
-        timeoutMsg: "Response did not appear",
-      },
-    )
 
-    // Verify raw view is used for binary (not crashing or trying to parse JSON)
-    const responsePanel = await getElementByTestId("response-panel", 5000).catch(() => null)
-    expect(await responsePanel.isDisplayed()).toBe(true)
+    const responseHeading = await getElementByTestId("response-viewer:heading", 15000)
+    expect(await responseHeading.isDisplayed()).toBe(true)
+
+    const bodyPanel = await getElementByTestId("response-viewer:body", 10000)
+    expect(await bodyPanel.isDisplayed()).toBe(true)
+
+    // Should not throw or attempt to format binary as JSON
+    const formatToggleExists = await $('[data-test-id="response-viewer:format-toggle-button"]').isExisting()
+    expect(formatToggleExists).toBe(false)
   })
 
   it("shows response size information", async () => {
+    await waitForRequestEditor()
+
     // Request with headers that include content-length
-    await setInputText("request-workspace:url-input", "http://httpbin.org/bytes/10000")
+    await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/bytes/10000")
 
     await clickByTestId("request-workspace:send-button")
-    await browser.waitUntil(
-      async () => {
-        const metadata = await getElementByTestId("response-panel:metadata", 5000).catch(() => null)
-        return await metadata.isDisplayed()
-      },
-      {
-        timeout: 10000,
-        timeoutMsg: "Response metadata did not appear",
-      },
-    )
 
-    const metadata = await getElementByTestId("response-panel:metadata", 5000).catch(() => null)
-    const metadataText = await metadata.getText()
-    // Should display size information
-    expect(metadataText).toBeDefined()
+    const responseHeading = await getElementByTestId("response-viewer:heading", 15000)
+    expect(await responseHeading.isDisplayed()).toBe(true)
+
+    const sizeText = await browser.execute(() => {
+      const label = Array.from(document.querySelectorAll("span")).find(
+        el => el.textContent?.trim() === "Size:",
+      )
+      const value = label?.nextElementSibling as HTMLElement | null
+      return value?.textContent ?? null
+    })
+
+    expect(sizeText).not.toBeNull()
+    expect(String(sizeText)).toMatch(/B/)
   })
 
   it("displays response status and headers for large payloads", async () => {
-    await setInputText("request-workspace:url-input", "http://httpbin.org/gzip")
+    await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/get")
 
     await clickByTestId("request-workspace:send-button")
     await browser.waitUntil(
       async () => {
         const statusCode = await getElementByTestId("response-panel:status-code", 5000).catch(() => null)
-        return await statusCode.isDisplayed()
+        return Boolean(statusCode && (await statusCode.isDisplayed()))
       },
       {
         timeout: 10000,
@@ -281,64 +281,58 @@ describe("Large Payload Handling", () => {
       },
     )
 
-    const statusElement = await getElementByTestId("response-panel:status-code")
+    const statusElement = await getElementByTestId("response-panel:status-code", 10000)
     const statusText = await statusElement.getText()
     expect(statusText).toMatch(/200|2\d{2}/)
   })
 
   it("allows switching between raw and formatted views", async () => {
-    await setInputText("request-workspace:url-input", "http://httpbin.org/json")
+    await waitForRequestEditor()
+    await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/json")
 
     await clickByTestId("request-workspace:send-button")
+    const responseHeading = await getElementByTestId("response-viewer:heading", 15000)
+    expect(await responseHeading.isDisplayed()).toBe(true)
+
+    const formatToggle = await getElementByTestId("response-viewer:format-toggle-button", 10000)
+    expect(await formatToggle.isDisplayed()).toBe(true)
+    await formatToggle.click()
+
     await browser.waitUntil(
       async () => {
-        const responsePanel = await getElementByTestId("response-panel", 5000).catch(() => null)
-        return await responsePanel.isDisplayed()
+        const label = await formatToggle.getText()
+        return /Restore/i.test(label)
       },
-      {
-        timeout: 10000,
-        timeoutMsg: "Response did not appear",
-      },
+      { timeout: 5000, interval: 150, timeoutMsg: "Formatted view did not activate" },
     )
 
-    // Try to find and click raw view button
-    const rawViewButton = await getElementByTestId("response-panel:raw-view-button", 5000).catch(() => null)
-    if (await rawViewButton.isDisplayed()) {
-      await rawViewButton.click()
+    const bodyPanel = await getElementByTestId("response-viewer:body", 5000)
+    expect(await bodyPanel.isDisplayed()).toBe(true)
 
-      const rawContent = await getElementByTestId("response-panel:raw-view", 5000).catch(() => null)
-      expect(await rawContent.isDisplayed()).toBe(true)
-    }
-
-    // Switch back to formatted
-    const formattedViewButton = await getElementByTestId("response-panel:formatted-view-button", 5000).catch(() => null)
-    if (await formattedViewButton.isDisplayed()) {
-      await formattedViewButton.click()
-
-      const formattedContent = await getElementByTestId("response-panel:formatted-view", 5000).catch(() => null)
-      if (await formattedContent.isDisplayed()) {
-        expect(await formattedContent.isDisplayed()).toBe(true)
-      }
-    }
+    await formatToggle.click()
+    await browser.waitUntil(
+      async () => {
+        const label = await formatToggle.getText()
+        return /Format/i.test(label)
+      },
+      { timeout: 5000, interval: 150, timeoutMsg: "Raw view did not restore" },
+    )
   })
 
   it("maintains request/response metadata after navigation", async () => {
-    await setInputText("request-workspace:url-input", "http://httpbin.org/delay/2")
+    await waitForRequestEditor()
+    await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/delay/2")
 
     await clickByTestId("request-workspace:send-button")
-    await browser.waitUntil(
-      async () => {
-        const responsePanel = await getElementByTestId("response-panel", 5000).catch(() => null)
-        return await responsePanel.isDisplayed()
-      },
-      {
-        timeout: 15000,
-        timeoutMsg: "Response did not appear",
-      },
-    )
+    const responseHeading = await getElementByTestId("response-viewer:heading", 20000)
+    expect(await responseHeading.isDisplayed()).toBe(true)
+
+    const statusBefore = await getElementByTestId("response-panel:status-code", 10000)
+    const statusTextBefore = await statusBefore.getText()
 
     // Navigate away (open new request)
     await clickByTestId("request-tab-bar:new-request-button")
+    await waitForRequestEditor()
 
     // Navigate back to original request
     const originalTab = await getElementByTestId(`request-tab:${tabKey}`, 5000).catch(() => null)
@@ -346,10 +340,8 @@ describe("Large Payload Handling", () => {
       await originalTab.click()
     }
 
-    // Metadata should still be there
-    const metadata = await getElementByTestId("response-panel:metadata", 5000).catch(() => null)
-    if (await metadata.isDisplayed()) {
-      expect(await metadata.getText()).toBeDefined()
-    }
+    const statusAfter = await getElementByTestId("response-panel:status-code", 10000)
+    const statusTextAfter = await statusAfter.getText()
+    expect(statusTextAfter).toContain(statusTextBefore.split(" ")[0] ?? statusTextBefore)
   })
 })
