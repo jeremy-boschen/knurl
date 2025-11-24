@@ -15,7 +15,13 @@ VITEST_COVERAGE=true node scripts/run-vitest-groups.mjs --run
 
 echo ""
 echo "2️⃣  Running backend unit tests with coverage..."
-cd src-tauri && cargo tarpaulin -o Lcov --output-dir ../coverage --lib --timeout 300 && mv ../coverage/lcov.info ../coverage/rust-lcov.info || true
+cd src-tauri
+if cargo llvm-cov --version &> /dev/null 2>&1; then
+  cargo llvm-cov --lib --lcov --output-path ../coverage/rust-lcov.info
+else
+  echo "  (cargo-llvm-cov not installed, run: cargo install cargo-llvm-cov)"
+  cargo test
+fi
 cd - > /dev/null
 
 echo ""
