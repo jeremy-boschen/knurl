@@ -739,6 +739,23 @@ async function main() {
     res.send('This is a plain text mock response\nWith multiple lines\nFor testing');
   });
 
+  app.get('/mock/bytes/:size', (req, res) => {
+    const size = Math.max(1, Math.min(1_000_000, Number(req.params.size) || 0));
+    const buffer = Buffer.alloc(size, 'a');
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Length', buffer.length.toString());
+    res.send(buffer);
+  });
+
+  app.get('/mock/image/png', (req, res) => {
+    // 1x1 transparent PNG
+    const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAuMB9oNn2pkAAAAASUVORK5CYII=';
+    const buffer = Buffer.from(base64, 'base64');
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Length', buffer.length.toString());
+    res.send(buffer);
+  });
+
   app.get('/mock/error', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.status(500);
