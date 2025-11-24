@@ -6,6 +6,7 @@ import { execSync, spawnSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { spawn } from 'child_process'
 
 const { createCoverageMap } = coverageLib
 const { createReporter } = istanbulApi
@@ -81,6 +82,18 @@ try {
     console.log(`\n📝 View coverage:`)
     console.log(`  Frontend: Open coverage/index.html in browser`)
     console.log(`  Rust: Use lcov tools or upload rust-lcov.info to online viewers`)
+  }
+
+  // Try to merge Cobertura files if both exist
+  const coberturaMergePath = path.join(projectRoot, 'coverage', 'cobertura-coverage.xml')
+  const coberturaRustPath = path.join(projectRoot, 'coverage', 'cobertura-rust.xml')
+  if (fs.existsSync(coberturaMergePath) && fs.existsSync(coberturaRustPath)) {
+    console.log(`\n📊 Attempting to merge Cobertura files...`)
+    try {
+      execSync(`node "${path.join(__dirname, 'merge-cobertura.mjs')}"`, { stdio: 'inherit' })
+    } catch (error) {
+      console.warn(`⚠ Cobertura merge skipped: ${error.message}`)
+    }
   }
 } catch (error) {
   console.error(`✗ Failed to generate merged coverage report: ${error.message}`)
