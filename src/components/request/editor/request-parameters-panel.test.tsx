@@ -24,7 +24,7 @@ describe("RequestParametersPanel", () => {
 
   beforeEach(() => vi.clearAllMocks())
 
-  const renderWith = (pathParams: any, queryParams: any, original: any, cookieParams: any = {}) => {
+  const renderWith = (pathParams: any, queryParams: any, original: any, cookieParams?: any) => {
     vi.mocked(useRequestParameters).mockReturnValue({
       state: { pathParams, queryParams, cookieParams, original },
       actions,
@@ -66,6 +66,48 @@ describe("RequestParametersPanel", () => {
     expect(screen.getByText(/No path parameters added yet/i)).toBeInTheDocument()
     expect(screen.getByText(/No query parameters added yet/i)).toBeInTheDocument()
     expect(screen.getByText(/No cookies added yet/i)).toBeInTheDocument()
+  })
+
+  it("hides cookies section when cookieParams is undefined", () => {
+    renderWith({}, {}, {}, undefined)
+    expect(screen.queryByRole("heading", { name: /cookies/i })).toBeNull()
+  })
+
+  it("marks unsaved fields and toggles secure for query params", async () => {
+    const user = userEvent.setup()
+    const qp = { id: "q1", name: "secret", value: "a", enabled: true, secure: false }
+    renderWith({}, { [qp.id]: qp }, { queryParams: { [qp.id]: { ...qp, value: "b" } } })
+
+    const valueInput = document.querySelector(
+      '[data-test-id="request-parameters-panel:query-param-value-input:q1"]',
+    ) as HTMLInputElement | null
+    expect(valueInput).not.toBeNull()
+    expect(valueInput!.className).toContain("unsaved-changes")
+
+    const row = valueInput!.closest('[data-test-id="field-row"]') as HTMLElement
+    const secureToggle = row.querySelector('[data-test-id="field-row:secure-toggle"]') as HTMLElement
+    await user.click(secureToggle)
+    expect(actions.updateQueryParam).toHaveBeenCalledWith("q1", { secure: true })
+  })
+
+  it("marks unsaved name and toggles secure for cookies", async () => {
+    const user = userEvent.setup()
+    const cookieParam = { id: "c1", name: "session", value: "abc", enabled: true, secure: false }
+    renderWith(
+      {},
+      {},
+      { cookieParams: { [cookieParam.id]: { ...cookieParam, name: "old-session" } } },
+      { [cookieParam.id]: cookieParam },
+    )
+
+    const nameInput = document.querySelector('[data-test-id="field-row:name-input"]') as HTMLInputElement | null
+    expect(nameInput).not.toBeNull()
+    expect(nameInput!.className).toContain("unsaved-changes")
+
+    const secureToggle = document.querySelector('[data-test-id="field-row:secure-toggle"]') as HTMLElement | null
+    expect(secureToggle).not.toBeNull()
+    await user.click(secureToggle as HTMLElement)
+    expect(actions.updateCookieParam).toHaveBeenCalledWith("c1", { secure: true })
   })
 
   it("toggles path params and updates cookies", async () => {

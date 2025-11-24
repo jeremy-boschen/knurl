@@ -5,9 +5,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { RequestBodyPanel, getBodyTypeLabel, guessContentTypeByExt } from "./request-body-panel"
 import { TooltipProvider } from "@/components/ui/knurl/tooltip"
+import { warmPrettier } from "@/lib/prettier"
 
 const formatMock = vi.fn()
 const useRequestBodyMock = vi.fn()
+vi.mock("@/lib/prettier", () => ({
+  warmPrettier: vi.fn(),
+}))
 
 vi.mock("@/components/editor/", () => ({
   CodeEditor: forwardRef(({ value, onChange, ...rest }: any, ref) => {
@@ -183,6 +187,103 @@ describe("RequestBodyPanel", () => {
 
     const warnings = getByDataId("request-body-panel:warnings")
     expect(warnings.textContent).toContain("Binary body conflicts")
+  })
+
+  it("pre-warms prettier for non-plain text bodies", () => {
+    const actions = { updateBodyContent: vi.fn(), updateBody: vi.fn(), updateFormItem: vi.fn(), removeFormItem: vi.fn() }
+    useRequestBodyMock.mockReturnValue({
+      state: {
+        body: { type: "text", content: "{ }", language: "json" },
+        original: { type: "text", content: "{ }", language: "json" },
+      },
+      actions,
+    })
+
+    renderPanel()
+
+    expect(warmPrettier).toHaveBeenCalledWith(["json"])
+  })
+
+  it("shows header conflict warning for text bodies with form content-type", () => {
+    applicationState.requestTabsState.openTabs = {
+      "tab-1": {
+        merged: {
+          headers: {
+            h1: { id: "h1", name: "Content-Type", value: "multipart/form-data", enabled: true },
+          },
+        },
+      },
+    }
+
+    const actions = { updateBodyContent: vi.fn(), updateBody: vi.fn(), updateFormItem: vi.fn(), removeFormItem: vi.fn() }
+    useRequestBodyMock.mockReturnValue({
+      state: {
+        body: { type: "text", content: "abc", language: "text" },
+        original: { type: "text", content: "abc", language: "text" },
+      },
+      actions,
+    })
+
+    renderPanel()
+
+    const warnings = getByDataId("request-body-panel:warnings")
+    expect(warnings.textContent).toContain("Text body conflicts")
+  })
+
+  it("drops files into form data and forces multipart with inferred mime", () => {
+    const actions = { updateBodyContent: vi.fn(), updateBody: vi.fn(), updateFormItem: vi.fn(), removeFormItem: vi.fn() }
+    useRequestBodyMock.mockReturnValue({
+      state: {
+        body: { type: "form", encoding: "url", formData: {} },
+        original: { type: "form", encoding: "url", formData: {} },
+      },
+      actions,
+    })
+
+    renderPanel()
+
+    const dropzone = getByDataId("request-body-panel:form-section")
+    fireEvent.drop(dropzone, {
+      dataTransfer: {
+        getData: () => "file:///tmp/demo.json\r\nfile:///tmp/image.png",
+      },
+      preventDefault: () => {},
+    })
+
+    expect(actions.updateBody).toHaveBeenCalledWith({ encoding: "multipart" })
+    expect(actions.updateFormItem).toHaveBeenCalledTimes(2)
+    const firstCall = actions.updateFormItem.mock.calls[0]?.[1]
+    expect(firstCall).toMatchObject({
+      kind: "file",
+      fileName: "demo.json",
+      filePath: "/tmp/demo.json",
+      contentType: "application/json",
+    })
+  })
+
+  it("sets binary content type when dropping a file onto binary section", () => {
+    const actions = { updateBodyContent: vi.fn(), updateBody: vi.fn(), updateFormItem: vi.fn(), removeFormItem: vi.fn() }
+    useRequestBodyMock.mockReturnValue({
+      state: {
+        body: { type: "binary", binaryPath: undefined, binaryFileName: undefined },
+        original: { type: "binary" },
+      },
+      actions,
+    })
+
+    renderPanel()
+
+    const dropzone = getByDataId("request-body-panel:binary-section")
+    fireEvent.drop(dropzone, {
+      dataTransfer: {
+        getData: () => "file:///tmp/archive.tgz",
+      },
+      preventDefault: () => {},
+    })
+
+    expect(actions.updateBody).toHaveBeenCalledWith(
+      expect.objectContaining({ binaryPath: "/tmp/archive.tgz", binaryContentType: "application/gzip" }),
+    )
   })
 })
 

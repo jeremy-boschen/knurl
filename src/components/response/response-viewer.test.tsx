@@ -266,4 +266,30 @@ describe("ResponseViewer", () => {
 
     await waitFor(() => expect(getByDataTestId("response-viewer:format-toggle-button").textContent).toMatch(/Format/))
   })
+
+  it("shows error status when logs contain errors and no http response", async () => {
+    renderViewer({
+      responseOverrides: {
+        data: { type: "error", data: null },
+        logs: [{ level: "error", message: "boom", timestamp: Date.now() }],
+      },
+      httpData: undefined,
+    })
+
+    const status = await waitFor(() => getByDataTestId("response-panel:status-code"))
+    expect(status.textContent).toContain("Error")
+    expect(screen.queryByTestId("response-viewer:save-button")).toBeNull()
+  })
+
+  it("disables preview for binary bodies without base64 content", () => {
+    renderViewer({
+      httpData: {
+        headers: { "content-type": "image/png" },
+        bodyBase64: undefined,
+      },
+    })
+
+    const bodyPanel = getByDataTestId("response-viewer:body")
+    expect(bodyPanel).toHaveTextContent(/Binary body; preview disabled/)
+  })
 })

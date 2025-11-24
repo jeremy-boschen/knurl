@@ -81,7 +81,10 @@ vi.mock("@/components/ui/knurl/folder-menu", () => ({
 }))
 
 vi.mock("@/components/ui/knurl/request-menu", () => ({
-  RequestMenuContent: () => <div data-test-id="mock-request-menu" />,
+  RequestMenuContent: ({ onAction, requestId }: any) => {
+    requestMenuHandlers[requestId] = onAction
+    return <div data-test-id={`mock-request-menu:${requestId}`} />
+  },
 }))
 
 const stateMocks = vi.hoisted(() => {
@@ -265,6 +268,13 @@ describe("CollectionTree", () => {
     mockDeleteDialog.mockClear()
     Object.keys(collectionMenuHandlers).forEach((key) => delete collectionMenuHandlers[key])
     Object.keys(folderMenuHandlers).forEach((key) => delete folderMenuHandlers[key])
+    Object.keys(requestMenuHandlers).forEach((key) => delete requestMenuHandlers[key])
+    // minimal clipboard stub for copy action
+    // @ts-expect-error test shim
+    global.navigator = {
+      ...(global.navigator ?? {}),
+      clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+    } as any
   })
 
   it("renders and captures DnD handlers", () => {
@@ -339,6 +349,13 @@ describe("CollectionTree", () => {
     await waitFor(() => expect(folderMenuHandlers[folderId]).toBeDefined())
     await act(async () => {
       folderMenuHandlers[folderId]?.(payload)
+    })
+  }
+
+  const triggerRequestAction = async (requestId: string, payload: any) => {
+    await waitFor(() => expect(requestMenuHandlers[requestId]).toBeDefined())
+    await act(async () => {
+      requestMenuHandlers[requestId]?.(payload)
     })
   }
 
@@ -632,5 +649,128 @@ describe("CollectionTree", () => {
     } as DragEndEvent)
 
     expect(stateMocks.mockCollectionsApi.moveRequestToFolder).toHaveBeenCalledWith("col-1", "req-1", RootCollectionFolderId)
+  })
+
+  it("opens manage settings sheet from collection menu action", async () => {
+    render(<CollectionTree searchTerm="" />)
+
+    await triggerCollectionAction("col-1", {
+      actionId: "manage-settings",
+      kind: "collection",
+      collectionId: "col-1",
+    })
+
+    expect(stateMocks.mockUtilitySheetsApi.openSheet).toHaveBeenCalledWith({
+      type: "collection-settings",
+      context: { collectionId: "col-1" },
+    })
+  })
+
+  it("copies request JSON to clipboard via request menu action", async () => {
+    stateMocks.mockCollectionsApi.getRequest.mockReturnValue({ id: "req-1", name: "List Users" })
+    render(<CollectionTree searchTerm="" />)
+
+    await triggerCollectionAction("col-1", {
+      actionId: "select",
+      kind: "collection",
+      collectionId: "col-1",
+    })
+
+    await triggerRequestAction("req-1", {
+      actionId: "copy",
+      kind: "request",
+      collectionId: "col-1",
+      requestId: "req-1",
+      name: "List Users",
+    })
+
+    expect(stateMocks.mockRequestTabsApi.loadTab).toHaveBeenCalledWith("col-1", "req-1")
+    expect(stateMocks.mockCollectionsApi.getRequest).toHaveBeenCalledWith("col-1", "req-1")
+    expect(global.navigator.clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining("List Users"))
+  })
+
+  it("creates a request in a folder via request:new action", async () => {
+    const user = userEvent.setup()
+    render(<CollectionTree searchTerm="" />)
+    await user.click(screen.getByRole("treeitem", { name: /Alpha/ }))
+
+    await triggerFolderAction("folder-1", {
+      actionId: "request:new",
+      kind: "folder",
+      collectionId: "col-1",
+      folderId: "folder-1",
+    })
+
+    expect(stateMocks.mockRequestTabsApi.createRequestTab).toHaveBeenCalledWith("col-1", { folderId: "folder-1" })
+  })
+
+  it("reorders a folder relative to a sibling using top indicator", async () => {
+    render(<CollectionTree searchTerm="" />)
+
+    await act(async () => {
+      dndHandlers.onDragOver?.({
+        active: {
+          id: "folder-2",
+          data: {
+            current: {
+              type: "folder-item",
+              collectionId: "col-1",
+              folderId: "folder-2",
+              parentId: "root",
+              siblings: ["folder-1", "folder-2"],
+              childFolderIds: [],
+            },
+          },
+          rect: { current: { translated: { top: 0, height: 10 } } },
+        },
+        over: {
+          id: "folder-1",
+          data: {
+            current: {
+              type: "folder-item",
+              collectionId: "col-1",
+              folderId: "folder-1",
+              parentId: "root",
+              siblings: ["folder-1", "folder-2"],
+              childFolderIds: [],
+            },
+          },
+          rect: { top: 0, height: 90 },
+        },
+      })
+    })
+
+    await act(async () => {
+      dndHandlers.onDragEnd?.({
+        active: {
+          id: "folder-2",
+          data: {
+            current: {
+              type: "folder-item",
+              collectionId: "col-1",
+              folderId: "folder-2",
+              parentId: "root",
+              siblings: ["folder-1", "folder-2"],
+              childFolderIds: [],
+            },
+          },
+        },
+        over: {
+          id: "folder-1",
+          data: {
+            current: {
+              type: "folder-item",
+              collectionId: "col-1",
+              folderId: "folder-1",
+              parentId: "root",
+              siblings: ["folder-1", "folder-2"],
+              childFolderIds: [],
+            },
+          },
+        },
+      } as DragEndEvent)
+    })
+
+    expect(stateMocks.mockCollectionsApi.moveFolder).toHaveBeenCalledWith("col-1", "folder-2", "root", 0)
   })
 })
