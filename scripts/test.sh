@@ -19,16 +19,24 @@ cd src-tauri && cargo test
 cd - > /dev/null
 
 echo ""
-echo "3️⃣  Consolidating unit test coverage..."
-node scripts/consolidate-coverage.mjs
+echo "3️⃣  Merging unit test coverage..."
+node scripts/merge-coverage.mjs
 
 echo ""
 echo "4️⃣  Running E2E tests with coverage..."
 yarn wdio run ./wdio.conf.ts
 
 echo ""
-echo "5️⃣  Consolidating all coverage reports..."
-node scripts/consolidate-coverage.mjs
+echo "5️⃣  Aggregating E2E coverage..."
+node scripts/aggregate-e2e-coverage.mjs
+
+echo ""
+echo "6️⃣  Merging unit + E2E coverage into final report..."
+node scripts/merge-coverage.mjs
+
+echo ""
+echo "7️⃣  Checking coverage thresholds..."
+node scripts/check-coverage.js
 
 echo ""
 echo "=========================================="
