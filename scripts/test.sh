@@ -38,11 +38,19 @@ echo "5️⃣  Aggregating E2E coverage..."
 node scripts/aggregate-e2e-coverage.mjs
 
 echo ""
-echo "6️⃣  Merging unit + E2E coverage into final report..."
+echo "6️⃣  Converting E2E coverage to Cobertura format..."
+node scripts/convert-e2e-to-cobertura.mjs
+
+echo ""
+echo "7️⃣  Merging unit + E2E coverage into final report..."
 node scripts/merge-coverage.mjs
 
 echo ""
-echo "7️⃣  Checking coverage thresholds..."
+echo "8️⃣  Merging all Cobertura coverage sources (frontend + Rust + E2E)..."
+node scripts/merge-cobertura.mjs
+
+echo ""
+echo "9️⃣  Checking coverage thresholds..."
 node scripts/check-coverage.js
 
 echo ""
