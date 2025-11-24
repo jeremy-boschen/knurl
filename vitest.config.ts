@@ -16,7 +16,7 @@ export default mergeConfig(viteConfig, defineConfig({
     include: ["src/**/*.test.{ts,tsx}"],
     coverage: {
       enabled: coverageEnabled,
-      provider: "v8",
+      provider: "istanbul",
       reporter: coverageEnabled ? ["html", "json", "cobertura"] : [],
       reportsDirectory: "coverage",
       // Only consider coverage for source files under src/
