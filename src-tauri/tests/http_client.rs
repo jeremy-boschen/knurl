@@ -139,7 +139,7 @@ fn basic_auth_header_format() {
     // Test Basic auth header generation: base64(user:pass)
     let username = "user";
     let password = "pass";
-    let credentials = format!("{}:{}", username, password);
+    let credentials = format!("{username}:{password}");
     let encoded = base64::engine::general_purpose::STANDARD.encode(&credentials);
     assert!(encoded.starts_with("dXNlcjpwYXNz"));
 }
@@ -156,7 +156,7 @@ fn basic_auth_empty_credentials() {
 fn bearer_token_header_format() {
     // Test Bearer token header format
     let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
-    let header = format!("Bearer {}", token);
+    let header = format!("Bearer {token}");
     assert_eq!(header, "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9");
 }
 
@@ -165,7 +165,7 @@ fn bearer_custom_scheme() {
     // Test Bearer with custom scheme
     let token = "mytoken123";
     let scheme = "MyScheme";
-    let header = format!("{} {}", scheme, token);
+    let header = format!("{scheme} {token}");
     assert_eq!(header, "MyScheme mytoken123");
 }
 
@@ -252,7 +252,7 @@ fn auth_with_special_characters() {
     let special_chars = "p@$$w0rd!#&";
     let username = "user@example.com";
 
-    let credentials = format!("{}:{}", username, special_chars);
+    let credentials = format!("{username}:{special_chars}");
     let encoded = base64::engine::general_purpose::STANDARD.encode(&credentials);
 
     // Verify it's properly encoded
