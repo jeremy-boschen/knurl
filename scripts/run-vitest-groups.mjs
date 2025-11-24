@@ -41,7 +41,7 @@ const rawCliArgs = process.argv.slice(2)
 // When collecting coverage, we need to disable inline coverage reporting
 // and only generate the final report after all tests complete
 const isCoverageMode = process.env.VITEST_COVERAGE === "true"
-const coverageArgs = isCoverageMode ? ["--coverage.reporter=json", "--coverage.reporter=lcov"] : []
+const coverageArgs = isCoverageMode ? ["--coverage.reporter=json", "--coverage.reporter=lcov", "--coverage.reporter=cobertura"] : []
 
 const args = [
   vitestBin,
