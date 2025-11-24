@@ -1991,7 +1991,8 @@ mod tests {
 
     #[test]
     fn require_value_accepts_non_empty_string() {
-        let value = Some(&"test_value".to_string());
+        let test_value = "test_value".to_string();
+        let value = Some(&test_value);
         let result = require_value(value, "error msg");
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "test_value");
@@ -2007,21 +2008,24 @@ mod tests {
 
     #[test]
     fn require_value_rejects_empty_string() {
-        let value = Some(&"".to_string());
+        let empty = "".to_string();
+        let value = Some(&empty);
         let result = require_value(value, "cannot be empty");
         assert!(result.is_err());
     }
 
     #[test]
     fn require_value_rejects_whitespace_only() {
-        let value = Some(&"   ".to_string());
+        let whitespace = "   ".to_string();
+        let value = Some(&whitespace);
         let result = require_value(value, "cannot be whitespace");
         assert!(result.is_err());
     }
 
     #[test]
     fn require_value_trims_whitespace() {
-        let value = Some(&"  test  ".to_string());
+        let padded = "  test  ".to_string();
+        let value = Some(&padded);
         let result = require_value(value, "error");
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "test");
@@ -2497,12 +2501,14 @@ mod tests {
             fn emit(&self, _entry: LogEntry) {}
         }
 
+        let client = "client".to_string();
+        let secret = "secret".to_string();
         let options = StubOauthOptions {
             auth_url: None,
             token_url: None, // Missing
             device_authorization_url: None,
-            client_id: Some(&"client".to_string()),
-            client_secret: Some(&"secret".to_string()),
+            client_id: Some(&client),
+            client_secret: Some(&secret),
             scope: None,
             refresh_token: None,
             redirect_uri: None,
@@ -2524,15 +2530,20 @@ mod tests {
             fn emit(&self, _entry: LogEntry) {}
         }
 
+        let auth_url = "https://auth.example.com".to_string();
+        let token_url = "https://token.example.com".to_string();
+        let client_id = "client123".to_string();
+        let scope = "read write".to_string();
+        let redirect_uri = "http://localhost".to_string();
         let options = StubOauthOptions {
-            auth_url: Some(&"https://auth.example.com".to_string()),
-            token_url: Some(&"https://token.example.com".to_string()),
+            auth_url: Some(&auth_url),
+            token_url: Some(&token_url),
             device_authorization_url: None,
-            client_id: Some(&"client123".to_string()),
+            client_id: Some(&client_id),
             client_secret: None,
-            scope: Some(&"read write".to_string()),
+            scope: Some(&scope),
             refresh_token: None,
-            redirect_uri: Some(&"http://localhost".to_string()),
+            redirect_uri: Some(&redirect_uri),
         };
         let emitter = NullEmitter;
         let result = stubbed_oauth_result(
@@ -2557,11 +2568,14 @@ mod tests {
             fn emit(&self, _entry: LogEntry) {}
         }
 
+        let token_url = "https://token.example.com".to_string();
+        let device_auth_url = "https://device.example.com".to_string();
+        let client_id = "device_client".to_string();
         let options = StubOauthOptions {
             auth_url: None,
-            token_url: Some(&"https://token.example.com".to_string()),
-            device_authorization_url: Some(&"https://device.example.com".to_string()),
-            client_id: Some(&"device_client".to_string()),
+            token_url: Some(&token_url),
+            device_authorization_url: Some(&device_auth_url),
+            client_id: Some(&client_id),
             client_secret: None,
             scope: None,
             refresh_token: None,
@@ -2579,14 +2593,16 @@ mod tests {
             fn emit(&self, _entry: LogEntry) {}
         }
 
+        let token_url = "https://token.example.com".to_string();
+        let refresh_token = "refresh_token_value".to_string();
         let options = StubOauthOptions {
             auth_url: None,
-            token_url: Some(&"https://token.example.com".to_string()),
+            token_url: Some(&token_url),
             device_authorization_url: None,
             client_id: None,
             client_secret: None,
             scope: None,
-            refresh_token: Some(&"refresh_token_value".to_string()),
+            refresh_token: Some(&refresh_token),
             redirect_uri: None,
         };
         let emitter = NullEmitter;
@@ -2601,12 +2617,15 @@ mod tests {
             fn emit(&self, _entry: LogEntry) {}
         }
 
+        let token_url = "https://token.example.com".to_string();
+        let client = "client".to_string();
+        let secret = "secret".to_string();
         let options = StubOauthOptions {
             auth_url: None,
-            token_url: Some(&"https://token.example.com".to_string()),
+            token_url: Some(&token_url),
             device_authorization_url: None,
-            client_id: Some(&"client".to_string()),
-            client_secret: Some(&"secret".to_string()),
+            client_id: Some(&client),
+            client_secret: Some(&secret),
             scope: None,
             refresh_token: None,
             redirect_uri: None,
