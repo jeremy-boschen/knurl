@@ -17,6 +17,7 @@ import {
   countCollectionRequests,
   createFolderNode,
   normalizeCollection,
+  sanitizeCollection,
 } from "@/state/collections-lib"
 import { createStorage, type MigrateContext } from "@/state/middleware/storage"
 import type {
@@ -173,7 +174,6 @@ export function setupCollectionStorage(
 
       for (const collection of Object.values(state.cache)) {
         if (force || timestamps[collection.id] !== collection.updated) {
-          const { sanitizeCollection } = await import("@/state/collections-lib")
           promises.push(CollectionStorage.save(CollectionFileName(collection.id), sanitizeCollection(collection)))
           timestamps[collection.id] = collection.updated
         }
