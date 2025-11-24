@@ -28,8 +28,11 @@ function mergeCobertura() {
 
     // Extract Rust packages and rewrite paths from src/ to src-tauri/src/
     const rustPackages = (rustXml.match(/<package(?:\s|>)[^>]*>[\s\S]*?<\/package>/g) || []).map(pkg => {
-      // Rewrite package name: src.foo -> src-tauri.src.foo
-      let rewritten = pkg.replace(/name="src\./g, 'name="src-tauri.src.')
+      // Rewrite package name:
+      //   - name="src" -> name="src-tauri.src"
+      //   - name="src.foo" -> name="src-tauri.src.foo"
+      let rewritten = pkg.replace(/name="src"/g, 'name="src-tauri.src"')
+      rewritten = rewritten.replace(/name="src\./g, 'name="src-tauri.src.')
       // Rewrite filename paths: src/foo -> src-tauri/src/foo
       rewritten = rewritten.replace(/filename="src\//g, 'filename="src-tauri/src/')
       // Handle Windows backslashes: src\ -> src-tauri/src/
