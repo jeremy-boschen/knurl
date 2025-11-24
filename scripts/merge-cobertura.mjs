@@ -27,9 +27,15 @@ function mergeCobertura() {
     const frontendPackages = frontendXml.match(/<package(?:\s|>)[^>]*>[\s\S]*?<\/package>/g) || []
 
     // Extract Rust packages and rewrite paths from src/ to src-tauri/src/
-    const rustPackages = (rustXml.match(/<package(?:\s|>)[^>]*>[\s\S]*?<\/package>/g) || []).map(pkg =>
-      pkg.replace(/name="src\//g, 'name="src-tauri/src/')
-    )
+    const rustPackages = (rustXml.match(/<package(?:\s|>)[^>]*>[\s\S]*?<\/package>/g) || []).map(pkg => {
+      // Rewrite package name: src.foo -> src-tauri.src.foo
+      let rewritten = pkg.replace(/name="src\./g, 'name="src-tauri.src.')
+      // Rewrite filename paths: src/foo -> src-tauri/src/foo
+      rewritten = rewritten.replace(/filename="src\//g, 'filename="src-tauri/src/')
+      // Handle Windows backslashes: src\ -> src-tauri/src/
+      rewritten = rewritten.replace(/filename="src\\/g, 'filename="src-tauri/src/')
+      return rewritten
+    })
 
     // Combine packages
     const allPackages = [...frontendPackages, ...rustPackages]
