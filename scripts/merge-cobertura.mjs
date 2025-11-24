@@ -26,7 +26,7 @@ function mergeCobertura() {
     e2e: fs.existsSync(e2ePath),
   }
 
-  console.log('⚠ Cobertura sources available:')
+  console.log('ℹ Cobertura sources available:')
   console.log(`  Frontend: ${available.frontend ? '✓' : '✗'}`)
   console.log(`  Rust:     ${available.rust ? '✓' : '✗'}`)
   console.log(`  E2E:      ${available.e2e ? '✓' : '✗'}`)
