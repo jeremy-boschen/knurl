@@ -17,7 +17,7 @@ export default mergeConfig(viteConfig, defineConfig({
     coverage: {
       enabled: coverageEnabled,
       provider: "v8",
-      reporter: coverageEnabled ? ["html", "json"] : [],
+      reporter: coverageEnabled ? ["html", "json", "cobertura"] : [],
       reportsDirectory: "coverage",
       // Only consider coverage for source files under src/
       all: false,
