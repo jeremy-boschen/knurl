@@ -8,7 +8,7 @@ echo "Running backend unit tests with coverage..."
 cd src-tauri
 if cargo llvm-cov --version &> /dev/null 2>&1; then
   cargo llvm-cov --lib --lcov --output-path ../coverage/rust-lcov.info
-  cargo llvm-cov --lib --cobertura-xml --output-path ../coverage/cobertura-rust.xml
+  cargo llvm-cov --lib --cobertura --output-path ../coverage/cobertura-rust.xml
 else
   echo "  (cargo-llvm-cov not installed, run: cargo install cargo-llvm-cov)"
   cargo test
