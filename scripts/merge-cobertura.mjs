@@ -38,14 +38,14 @@ function mergeCobertura() {
 
     // Extract packages from frontend (match <package ...> but not <packages>)
     const frontendPackages = (frontendXml.match(/<package(?:\s|>)[^>]*>[\s\S]*?<\/package>/g) || []).map(pkg => {
-      // Normalize Windows backslashes to forward slashes in filenames
-      return pkg.replace(/filename="([^"]*)\\/g, 'filename="$1/')
+      // Normalize all Windows backslashes to forward slashes globally
+      return pkg.replace(/\\/g, '/')
     })
 
     // Extract Rust packages and rewrite paths from src/ to src-tauri/src/
     const rustPackages = rustXml ? (rustXml.match(/<package(?:\s|>)[^>]*>[\s\S]*?<\/package>/g) || []).map(pkg => {
-      // Normalize Windows backslashes to forward slashes in filenames
-      let rewritten = pkg.replace(/filename="([^"]*)\\/g, 'filename="$1/')
+      // Normalize all Windows backslashes to forward slashes globally
+      let rewritten = pkg.replace(/\\/g, '/')
 
       // Rewrite package name:
       //   - name="src" -> name="src-tauri.src"
@@ -61,8 +61,8 @@ function mergeCobertura() {
 
     // Extract E2E packages (no special path rewriting needed, already has correct paths)
     const e2ePackages = e2eXml ? (e2eXml.match(/<package(?:\s|>)[^>]*>[\s\S]*?<\/package>/g) || []).map(pkg => {
-      // Normalize Windows backslashes to forward slashes in filenames
-      return pkg.replace(/filename="([^"]*)\\/g, 'filename="$1/')
+      // Normalize all Windows backslashes to forward slashes globally
+      return pkg.replace(/\\/g, '/')
     }) : []
 
     // Combine packages from all available sources
