@@ -94,7 +94,7 @@ describe("[CRITICAL] Authentication Strategies", () => {
   })
 
   describe("Basic Authentication", () => {
-    it("configures and sends Basic auth request", async () => {
+    it("[CRITICAL] configures and sends Basic auth request", async () => {
       await openNewRequestViaUI()
       await waitForRequestEditor()
 

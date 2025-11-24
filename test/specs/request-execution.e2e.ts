@@ -17,7 +17,7 @@ describe("[CRITICAL] Request Execution & Responses: Smoke Tests", () => {
     await waitForRequestEditor()
   })
 
-  it("sends a GET request and displays response", async () => {
+  it("[CRITICAL] sends a GET request and displays response", async () => {
     // Critical user flow: enter URL → click send → verify response displays
     await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/json")
     await clickByTestId("request-workspace:send-button")
@@ -31,7 +31,7 @@ describe("[CRITICAL] Request Execution & Responses: Smoke Tests", () => {
     expect(bodyTab).toBeDefined()
   })
 
-  it("handles HTTP error responses without crashing", async () => {
+  it("[CRITICAL] handles HTTP error responses without crashing", async () => {
     // Critical error path: server returns error, app handles gracefully
     await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/status/500")
     await clickByTestId("request-workspace:send-button")
@@ -45,7 +45,7 @@ describe("[CRITICAL] Request Execution & Responses: Smoke Tests", () => {
     expect(headingText.length).toBeGreaterThan(0)
   })
 
-  it("allows retrying requests", async () => {
+  it("[CRITICAL] allows retrying requests", async () => {
     // Critical workflow: send request, then send again without manual reset
     await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/json")
 

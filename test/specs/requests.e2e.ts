@@ -13,7 +13,7 @@ import {
   waitForTestIdToDisappear,
 } from "../support/ui"
 
-describe("Request Authoring Smoke", () => {
+describe("[SUPPLEMENTAL] Request Tab Management", () => {
   const state: {
     tabKey: string
     requestId: string

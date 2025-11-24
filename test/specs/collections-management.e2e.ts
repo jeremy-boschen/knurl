@@ -20,7 +20,7 @@ describe("[CRITICAL] Collections Management UX", () => {
     await ensureWorkspaceReady()
   })
 
-  it("creates, renames, and deletes collections through the sidebar menu", async () => {
+  it("[CRITICAL] creates, renames, and deletes collections through the sidebar menu", async () => {
     const idA = await createCollection(`UX Spec A ${Date.now()}`)
     const idB = await createCollection(`UX Spec B ${Date.now()}`)
     const idC = await createCollection(`UX Spec C ${Date.now()}`)

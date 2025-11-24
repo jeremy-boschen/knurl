@@ -15,7 +15,7 @@ import {
   getElementByTestId,
 } from "../support/ui"
 
-describe("[SUPPLEMENTAL] Settings describe("Settings & UI Customization" UI Customization", () => {
+describe("[SUPPLEMENTAL] Settings & UI Customization", () => {
   describe("[SUPPLEMENTAL] Theme Settings", () => {
     before(async () => {
       await ensureAppReady()
