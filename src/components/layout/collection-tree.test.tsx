@@ -17,6 +17,7 @@ const mockRenameDialog = vi.fn()
 const mockDeleteDialog = vi.fn()
 const collectionMenuHandlers: Record<string, (payload: any) => void> = {}
 const folderMenuHandlers: Record<string, (payload: any) => void> = {}
+const requestMenuHandlers: Record<string, (payload: any) => void> = {}
 
 vi.mock("@dnd-kit/core", async () => {
   const actual = await vi.importActual<typeof import("@dnd-kit/core")>("@dnd-kit/core")
