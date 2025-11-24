@@ -34,7 +34,7 @@ describe("[CRITICAL] Collections Management & Storage", () => {
       await ensureWorkspaceReady()
     })
 
-    it("creates multiple collections through the sidebar menu", async () => {
+    it("[CRITICAL] creates multiple collections through the sidebar menu", async () => {
       await logTestTime("Collections Management - start create")
       await ensureSidebarExpanded()
       const idA = await createCollection(`UX Spec A ${Date.now()}`)
@@ -87,7 +87,7 @@ describe("[CRITICAL] Collections Management & Storage", () => {
       await logTestTime("Collections Management - test complete")
     })
 
-    it("persists collections across browser reload", async () => {
+    it("[CRITICAL] persists collections across browser reload", async () => {
       await logTestTime("Collections Management - start persistence")
       await ensureSidebarExpanded()
       const idA = await createCollection(`Persist A ${Date.now()}`)

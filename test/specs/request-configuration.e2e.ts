@@ -57,7 +57,7 @@ async function getResponseBody(): Promise<unknown> {
   }
 }
 
-describe("[CRITICAL] Request Configuration: Smoke Tests", () => {
+describe("[SUPPLEMENTAL] Request Configuration", () => {
   /**
    * These are minimal smoke tests for critical user workflows.
    * Detailed permutation testing of query params, headers, cookies, body types,
