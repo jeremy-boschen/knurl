@@ -46,9 +46,10 @@ yarn check            # Format, lint, typecheck, tests
 yarn format           # Biome + cargo fmt
 yarn lint             # Biome + cargo clippy -D warnings
 yarn typecheck        # TypeScript only
-yarn test:unit        # All unit tests (frontend + backend)
-yarn test:e2e         # WebDriver.io E2E tests
-yarn test:coverage    # Coverage report
+yarn test:unit        # All unit tests with coverage (frontend + backend)
+yarn test:e2e         # All E2E tests (WebDriver.io)
+yarn test             # Full test suite with coverage (unit + E2E)
+yarn test:check       # Quick test check: unit + E2E [CRITICAL] only
 yarn portal:package   # Distribution bundle
 yarn security         # gitleaks, cargo-deny, cargo-audit
 ```
@@ -128,10 +129,11 @@ types; use Zod for validation.
 
 Commands:
 
-- `yarn test:unit` — All unit tests (Vitest + cargo test)
+- `yarn test:unit` — All unit tests with coverage (Vitest + cargo test)
 - `yarn test:e2e` — All E2E tests (WebDriver.io)
 - `yarn test:e2e --spec="path/to/test.e2e.ts"` — Single E2E file
-- `yarn test:coverage` — Coverage report
+- `yarn test` — Full test suite with coverage (unit + E2E)
+- `yarn test:check` — Quick check: unit tests + E2E [CRITICAL] tests only
 
 Patterns:
 
@@ -141,17 +143,12 @@ Patterns:
 - **E2E tests** (WebDriver.io):
     - **Golden rule:** Only test user-visible behavior via UI interactions. Create test state **exclusively** through UI
       actions (clicking, typing, etc.). Verify outcomes **only** what the UI displays.
-    - **No plumbing:** Never access internal app state, `__vite_ssr_modules__`, call `browser.execute()` to inspect
-      state, filesystem, or invoke Tauri commands. If you can't create or verify via the UI, use a unit or integration
-      test.
+    - **No plumbing:** Never access internal app state, `__vite_ssr_modules__`, or call `browser.execute()` to inspect
+      state or filesystem. If you can't create or verify via the UI, use a unit test.
     - **UI helpers only:** Use only shared helpers from `test/support/ui.ts`. Extend that library instead of
       hand-rolling selectors.
     - **See:** `test/support/E2E_GUIDELINES.md` for comprehensive patterns, helper functions, common patterns, and
       troubleshooting.
-- **Integration tests** (WebDriver.io + backend access): Cross-layer behavior verification (encryption at rest, file
-  persistence, state synchronization). **Requires explicit approval.** Setup via UI where possible; use backend access
-  only for verification. Store in `test/specs/integration/`.
-  See [Integration Test Criteria](#integration-test-approval-criteria) below.
 - **Rust tests**: Inline `#[cfg(test)]` modules for units; `src-tauri/tests/` for integration. No real network/OS calls.
 - **Network mocking:** Avoid hitting real networks/OS services in all tests; rely on mocks. E2E tests use the mock
   server at `http://127.0.0.1:3000`. Add endpoints to `scripts/mock-endpoint-server.mjs` if needed, do not call external
@@ -214,83 +211,6 @@ always `http(s)://localhost` (Tauri handles browser). Test with `yarn oauth-serv
 **Work with collections:** Read via `useCollection(id)` hook (handles loading). Persist via
 `collectionsApi().saveCollection()`. JSON imports validate via `importCollection`. Reordering uses `dnd-kit`; call
 `reorderFolders` or `reorderRequestsInFolder`.
-
-## Integration Test Approval Criteria
-
-Integration tests verify cross-layer behavior and require **explicit approval** before implementation. Use this decision
-tree:
-
-### When to Use Integration Tests
-
-Integration tests are appropriate when **ALL** of the following are true:
-
-1. **Backend verification is essential**
-    - The behavior depends on correct backend implementation (file I/O, encryption, Tauri commands)
-    - The implementation details are NOT exposed through the normal UI
-    - You cannot verify the behavior by inspecting the DOM after user interactions
-
-2. **Cannot test via E2E alone**
-    - State cannot be created exclusively through UI interactions
-    - Outcome cannot be verified by inspecting the UI (DOM queries, visual elements)
-    - Bridge/backend access is required for verification
-
-3. **Cannot test via unit tests**
-    - The behavior requires real app state (not mocked)
-    - The behavior requires actual file system access
-    - The behavior requires Tauri backend integration
-
-### Before Writing an Integration Test
-
-Ask yourself:
-
-- Can I create this state through UI interactions? → **Use E2E test**
-- Can I verify the outcome by inspecting the DOM? → **Use E2E test**
-- Can I test the logic with mocked dependencies? → **Use unit test**
-- Do I need to verify backend behavior not exposed in the UI? → **Integrate test (with justification)**
-
-### Integration Test Template
-
-```typescript
-/**
- * Integration Test: [One-line description of what behavior is tested]
- *
- * This test verifies [specific cross-layer behavior]. [Explain why this
- * cannot be tested via E2E or unit tests]. This requires [list bridge methods
- * used] for verification, as [explain why backend verification is necessary].
- *
- * See CLAUDE.md for integration test approval criteria.
- */
-
-describe('[Feature] Integration', () => {
-  // Test implementation
-})
-```
-
-### Current Approved Integration Tests
-
-See `test/specs/integration/README.md` for:
-
-- Detailed rationale for each approved test
-- Bridge method usage guidelines
-- Instructions for running integration tests
-
-### Examples
-
-**✅ Justified integration test:**
-
-```typescript
-// Persists collections to disk and restores on reload
-// Cannot verify file persistence through UI alone
-// Requires loadAppData() bridge method for verification
-```
-
-**❌ Not justified:**
-
-```typescript
-// Tests that UI correctly displays collection name
-// Can be tested via E2E - create via UI, inspect DOM for name
-// Bridge access not needed
-```
 
 ## Context7 Documentation
 

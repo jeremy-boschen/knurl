@@ -46,9 +46,10 @@ yarn check            # Format, lint, typecheck, tests
 yarn format           # Biome + cargo fmt
 yarn lint             # Biome + cargo clippy -D warnings
 yarn typecheck        # TypeScript only
-yarn test:unit        # All unit tests (frontend + backend)
+yarn test:unit        # All unit tests with coverage (frontend + backend)
 yarn test:e2e         # WebDriver.io E2E tests
-yarn test:coverage    # Coverage report
+yarn test             # Full test suite with coverage (unit + E2E)
+yarn test:check       # Quick test check: unit + E2E [CRITICAL] only
 yarn portal:package   # Distribution bundle
 yarn security         # gitleaks, cargo-deny, cargo-audit
 ```
@@ -128,10 +129,11 @@ types; use Zod for validation.
 
 Commands:
 
-- `yarn test:unit` — All unit tests (Vitest + cargo test)
+- `yarn test:unit` — All unit tests with coverage (Vitest + cargo test)
 - `yarn test:e2e` — All E2E tests (WebDriver.io)
 - `yarn test:e2e --spec="path/to/test.e2e.ts"` — Single E2E file
-- `yarn test:coverage` — Coverage report
+- `yarn test` — Full test suite with coverage (unit + E2E)
+- `yarn test:check` — Quick check: unit + E2E [CRITICAL] tests only
 
 Patterns:
 

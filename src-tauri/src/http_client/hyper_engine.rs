@@ -1221,3 +1221,580 @@ impl HyperEngine {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hyper::http::HeaderValue;
+
+    // ========== format_http_version tests ==========
+
+    #[test]
+    fn format_http_version_http_09() {
+        let version = hyper::Version::HTTP_09;
+        assert_eq!(format_http_version(version), "HTTP/0.9");
+    }
+
+    #[test]
+    fn format_http_version_http_10() {
+        let version = hyper::Version::HTTP_10;
+        assert_eq!(format_http_version(version), "HTTP/1.0");
+    }
+
+    #[test]
+    fn format_http_version_http_11() {
+        let version = hyper::Version::HTTP_11;
+        assert_eq!(format_http_version(version), "HTTP/1.1");
+    }
+
+    #[test]
+    fn format_http_version_http_2() {
+        let version = hyper::Version::HTTP_2;
+        assert_eq!(format_http_version(version), "HTTP/2");
+    }
+
+    #[test]
+    fn format_http_version_http_3() {
+        let version = hyper::Version::HTTP_3;
+        assert_eq!(format_http_version(version), "HTTP/3");
+    }
+
+    // ========== HyperEngine::build_uri tests ==========
+
+    #[test]
+    fn build_uri_valid_url() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com/api".to_string(),
+            ..Default::default()
+        };
+        let result = HyperEngine::build_uri(&request);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().to_string(), "https://example.com/api");
+    }
+
+    #[test]
+    fn build_uri_with_query_params() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com/api?key=value&foo=bar".to_string(),
+            ..Default::default()
+        };
+        let result = HyperEngine::build_uri(&request);
+        assert!(result.is_ok());
+        let uri = result.unwrap();
+        assert_eq!(uri.query(), Some("key=value&foo=bar"));
+    }
+
+    #[test]
+    fn build_uri_invalid_url() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "not a valid url ¥".to_string(),
+            ..Default::default()
+        };
+        let result = HyperEngine::build_uri(&request);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn build_uri_localhost() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "http://localhost:8080/path".to_string(),
+            ..Default::default()
+        };
+        let result = HyperEngine::build_uri(&request);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn build_uri_with_port() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://api.example.com:3000/endpoint".to_string(),
+            ..Default::default()
+        };
+        let result = HyperEngine::build_uri(&request);
+        assert!(result.is_ok());
+        let uri = result.unwrap();
+        assert_eq!(uri.port_u16(), Some(3000));
+    }
+
+    // ========== HyperEngine::parse_method tests ==========
+
+    #[test]
+    fn parse_method_get() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "GET".to_string(),
+            ..Default::default()
+        };
+        let result = HyperEngine::parse_method(&request);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Method::GET);
+    }
+
+    #[test]
+    fn parse_method_post() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "POST".to_string(),
+            ..Default::default()
+        };
+        let result = HyperEngine::parse_method(&request);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Method::POST);
+    }
+
+    #[test]
+    fn parse_method_put() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "PUT".to_string(),
+            ..Default::default()
+        };
+        let result = HyperEngine::parse_method(&request);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Method::PUT);
+    }
+
+    #[test]
+    fn parse_method_delete() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "DELETE".to_string(),
+            ..Default::default()
+        };
+        let result = HyperEngine::parse_method(&request);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Method::DELETE);
+    }
+
+    #[test]
+    fn parse_method_patch() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "PATCH".to_string(),
+            ..Default::default()
+        };
+        let result = HyperEngine::parse_method(&request);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Method::PATCH);
+    }
+
+    #[test]
+    fn parse_method_head() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "HEAD".to_string(),
+            ..Default::default()
+        };
+        let result = HyperEngine::parse_method(&request);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Method::HEAD);
+    }
+
+    #[test]
+    fn parse_method_options() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "OPTIONS".to_string(),
+            ..Default::default()
+        };
+        let result = HyperEngine::parse_method(&request);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Method::OPTIONS);
+    }
+
+    #[test]
+    fn parse_method_extension_method() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "CUSTOM".to_string(),
+            ..Default::default()
+        };
+        let result = HyperEngine::parse_method(&request);
+        // Hyper accepts extension methods per RFC
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn parse_method_get_lowercase() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "get".to_string(),
+            ..Default::default()
+        };
+        let result = HyperEngine::parse_method(&request);
+        // Hyper's Method parser accepts lowercase as extension method
+        assert!(result.is_ok());
+    }
+
+    // ========== HyperEngine::build_headers tests ==========
+
+    #[test]
+    fn build_headers_empty() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "GET".to_string(),
+            headers: None,
+            user_agent: None,
+            ..Default::default()
+        };
+        let result = HyperEngine::build_headers(&request);
+        assert!(result.is_ok());
+        let headers = result.unwrap();
+        assert!(headers.contains_key(hyper::header::USER_AGENT));
+    }
+
+    #[test]
+    fn build_headers_with_custom_headers() {
+        let mut custom_headers = std::collections::HashMap::new();
+        custom_headers.insert("X-Custom-Header".to_string(), "value123".to_string());
+        custom_headers.insert("Content-Type".to_string(), "application/json".to_string());
+
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "POST".to_string(),
+            headers: Some(custom_headers),
+            user_agent: None,
+            ..Default::default()
+        };
+        let result = HyperEngine::build_headers(&request);
+        assert!(result.is_ok());
+        let headers = result.unwrap();
+        assert!(headers.contains_key("x-custom-header")); // Header names are case-insensitive
+        assert!(headers.contains_key(hyper::header::CONTENT_TYPE));
+    }
+
+    #[test]
+    fn build_headers_with_custom_user_agent() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "GET".to_string(),
+            headers: None,
+            user_agent: Some("MyAgent/1.0".to_string()),
+            ..Default::default()
+        };
+        let result = HyperEngine::build_headers(&request);
+        assert!(result.is_ok());
+        let headers = result.unwrap();
+        let ua = headers.get(hyper::header::USER_AGENT).unwrap();
+        assert_eq!(ua.to_str().unwrap(), "MyAgent/1.0");
+    }
+
+    #[test]
+    fn build_headers_invalid_header_name() {
+        let mut custom_headers = std::collections::HashMap::new();
+        custom_headers.insert("Invalid\r\nHeader".to_string(), "value".to_string());
+
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "GET".to_string(),
+            headers: Some(custom_headers),
+            user_agent: None,
+            ..Default::default()
+        };
+        let result = HyperEngine::build_headers(&request);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn build_headers_default_user_agent_format() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "GET".to_string(),
+            headers: None,
+            user_agent: None,
+            ..Default::default()
+        };
+        let result = HyperEngine::build_headers(&request);
+        assert!(result.is_ok());
+        let headers = result.unwrap();
+        let ua = headers.get(hyper::header::USER_AGENT).unwrap();
+        let ua_str = ua.to_str().unwrap();
+        assert!(ua_str.starts_with("Knurl/"));
+    }
+
+    // ========== HyperEngine::sanitize_headers_for_h2 tests ==========
+
+    #[test]
+    fn sanitize_headers_for_h2_removes_connection_headers() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            hyper::header::CONNECTION,
+            HeaderValue::from_static("keep-alive"),
+        );
+        headers.insert(
+            hyper::header::TRANSFER_ENCODING,
+            HeaderValue::from_static("chunked"),
+        );
+
+        HyperEngine::sanitize_headers_for_h2(&mut headers, true, false);
+
+        assert!(!headers.contains_key(hyper::header::CONNECTION));
+        assert!(!headers.contains_key(hyper::header::TRANSFER_ENCODING));
+    }
+
+    #[test]
+    fn sanitize_headers_for_h2_preserves_non_h2_incompatible() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            hyper::header::CONTENT_TYPE,
+            HeaderValue::from_static("application/json"),
+        );
+        headers.insert(
+            hyper::header::ACCEPT,
+            HeaderValue::from_static("application/json"),
+        );
+
+        HyperEngine::sanitize_headers_for_h2(&mut headers, true, false);
+
+        assert!(headers.contains_key(hyper::header::CONTENT_TYPE));
+        assert!(headers.contains_key(hyper::header::ACCEPT));
+    }
+
+    #[test]
+    fn sanitize_headers_for_h2_disabled_when_prefer_h2_false() {
+        let mut headers = HeaderMap::new();
+        headers.insert(hyper::header::CONNECTION, HeaderValue::from_static("close"));
+
+        HyperEngine::sanitize_headers_for_h2(&mut headers, false, false);
+
+        // Headers should not be modified when prefer_h2 is false
+        assert!(headers.contains_key(hyper::header::CONNECTION));
+    }
+
+    #[test]
+    fn sanitize_headers_for_h2_removes_host_when_not_allowed() {
+        let mut headers = HeaderMap::new();
+        headers.insert(hyper::header::HOST, HeaderValue::from_static("example.com"));
+
+        HyperEngine::sanitize_headers_for_h2(&mut headers, true, false);
+
+        assert!(!headers.contains_key(hyper::header::HOST));
+    }
+
+    #[test]
+    fn sanitize_headers_for_h2_keeps_host_when_allowed() {
+        let mut headers = HeaderMap::new();
+        headers.insert(hyper::header::HOST, HeaderValue::from_static("example.com"));
+
+        HyperEngine::sanitize_headers_for_h2(&mut headers, true, true);
+
+        assert!(headers.contains_key(hyper::header::HOST));
+    }
+
+    // ========== HyperEngine::header_to_string tests ==========
+
+    #[test]
+    fn header_to_string_valid_utf8() {
+        let name = HeaderName::from_static("content-type");
+        let value = HeaderValue::from_static("application/json");
+        let result = HyperEngine::header_to_string(&name, &value);
+        assert_eq!(result, "content-type: application/json");
+    }
+
+    #[test]
+    fn header_to_string_empty_value() {
+        let name = HeaderName::from_static("x-empty");
+        let value = HeaderValue::from_static("");
+        let result = HyperEngine::header_to_string(&name, &value);
+        assert_eq!(result, "x-empty: ");
+    }
+
+    // ========== HyperEngine::cookies_from_headers tests ==========
+
+    #[test]
+    fn cookies_from_headers_no_cookies() {
+        let headers = HeaderMap::new();
+        let cookies = HyperEngine::cookies_from_headers(&headers);
+        assert_eq!(cookies.len(), 0);
+    }
+
+    #[test]
+    fn cookies_from_headers_single_cookie() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            hyper::header::SET_COOKIE,
+            HeaderValue::from_static("sessionId=abc123; Path=/; Domain=example.com"),
+        );
+        let cookies = HyperEngine::cookies_from_headers(&headers);
+        assert_eq!(cookies.len(), 1);
+        assert_eq!(cookies[0].name, "sessionId");
+        assert_eq!(cookies[0].value, "abc123");
+    }
+
+    #[test]
+    fn cookies_from_headers_multiple_cookies() {
+        let mut headers = HeaderMap::new();
+        headers.append(
+            hyper::header::SET_COOKIE,
+            HeaderValue::from_static("cookie1=value1"),
+        );
+        headers.append(
+            hyper::header::SET_COOKIE,
+            HeaderValue::from_static("cookie2=value2; Secure"),
+        );
+        let cookies = HyperEngine::cookies_from_headers(&headers);
+        assert_eq!(cookies.len(), 2);
+        assert_eq!(cookies[0].name, "cookie1");
+        assert_eq!(cookies[1].name, "cookie2");
+    }
+
+    // ========== HyperEngine::max_log_bytes tests ==========
+
+    #[test]
+    fn max_log_bytes_uses_provided_value() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "GET".to_string(),
+            max_log_bytes: Some(256 * 1024),
+            ..Default::default()
+        };
+        assert_eq!(HyperEngine::max_log_bytes(&request), 256 * 1024);
+    }
+
+    #[test]
+    fn max_log_bytes_uses_default_when_none() {
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "GET".to_string(),
+            max_log_bytes: None,
+            ..Default::default()
+        };
+        assert_eq!(HyperEngine::max_log_bytes(&request), DEFAULT_MAX_LOG_BYTES);
+    }
+
+    // ========== HyperEngine::build_body tests ==========
+
+    #[test]
+    fn build_body_empty() {
+        let mut headers = HeaderMap::new();
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "GET".to_string(),
+            body: None,
+            multipart_parts: None,
+            body_file_path: None,
+            ..Default::default()
+        };
+        let result = HyperEngine::build_body(&request, &mut headers);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[test]
+    fn build_body_with_bytes() {
+        let mut headers = HeaderMap::new();
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "POST".to_string(),
+            body: Some(b"test body".to_vec()),
+            multipart_parts: None,
+            body_file_path: None,
+            ..Default::default()
+        };
+        let result = HyperEngine::build_body(&request, &mut headers);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().as_ref(), b"test body");
+    }
+
+    #[test]
+    fn build_body_multipart_sets_content_type() {
+        let mut headers = HeaderMap::new();
+        let parts = vec![MultipartPart::Text {
+            name: "field".to_string(),
+            value: "value".to_string(),
+        }];
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "POST".to_string(),
+            body: None,
+            multipart_parts: Some(parts),
+            body_file_path: None,
+            ..Default::default()
+        };
+        let result = HyperEngine::build_body(&request, &mut headers);
+        assert!(result.is_ok());
+        assert!(headers.contains_key(hyper::header::CONTENT_TYPE));
+        let ct = headers
+            .get(hyper::header::CONTENT_TYPE)
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert!(ct.contains("multipart/form-data"));
+    }
+
+    #[test]
+    fn build_body_multipart_text_part() {
+        let mut headers = HeaderMap::new();
+        let parts = vec![MultipartPart::Text {
+            name: "username".to_string(),
+            value: "john".to_string(),
+        }];
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "POST".to_string(),
+            body: None,
+            multipart_parts: Some(parts),
+            body_file_path: None,
+            ..Default::default()
+        };
+        let result = HyperEngine::build_body(&request, &mut headers);
+        assert!(result.is_ok());
+        let body_bytes = result.unwrap();
+        let body_str = String::from_utf8(body_bytes.to_vec()).unwrap();
+        assert!(body_str.contains("username"));
+        assert!(body_str.contains("john"));
+    }
+
+    #[test]
+    fn build_body_multipart_with_existing_boundary() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            hyper::header::CONTENT_TYPE,
+            HeaderValue::from_static("multipart/form-data; boundary=myboundary"),
+        );
+
+        let parts = vec![MultipartPart::Text {
+            name: "field".to_string(),
+            value: "value".to_string(),
+        }];
+        let request = Request {
+            request_id: "test".to_string(),
+            url: "https://example.com".to_string(),
+            method: "POST".to_string(),
+            body: None,
+            multipart_parts: Some(parts),
+            body_file_path: None,
+            ..Default::default()
+        };
+        let result = HyperEngine::build_body(&request, &mut headers);
+        assert!(result.is_ok());
+        let body_bytes = result.unwrap();
+        let body_str = String::from_utf8(body_bytes.to_vec()).unwrap();
+        assert!(body_str.contains("--myboundary"));
+    }
+}

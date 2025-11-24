@@ -179,4 +179,143 @@ mod tests {
         let c2 = parse_set_cookie_header("a=b; SameSite=lAx").unwrap();
         assert_eq!(c2.same_site.as_deref(), Some("Lax"));
     }
+
+    // ========== RFC 6265 compliance tests ==========
+
+    #[test]
+    fn cookie_value_with_spaces() {
+        // Values with spaces (RFC allows them in double quotes)
+        let header = "name=value with spaces";
+        let c = parse_set_cookie_header(header).unwrap();
+        assert_eq!(c.name, "name");
+        assert_eq!(c.value, "value with spaces");
+    }
+
+    #[test]
+    fn cookie_value_with_special_characters() {
+        let header = "token=abc123!@#$%^&*()";
+        let c = parse_set_cookie_header(header).unwrap();
+        assert_eq!(c.name, "token");
+        assert_eq!(c.value, "abc123!@#$%^&*()");
+    }
+
+    #[test]
+    fn cookie_domain_case_insensitive_matching() {
+        // Domain attribute is case-insensitive per RFC 6265
+        let header = "name=value; Domain=EXAMPLE.COM";
+        let c = parse_set_cookie_header(header).unwrap();
+        assert_eq!(c.domain.as_deref(), Some("EXAMPLE.COM"));
+    }
+
+    #[test]
+    fn cookie_path_exact_matching() {
+        // Path matching should be exact per RFC 6265
+        let header = "name=value; Path=/api/v1";
+        let c = parse_set_cookie_header(header).unwrap();
+        assert_eq!(c.path.as_deref(), Some("/api/v1"));
+    }
+
+    #[test]
+    fn cookie_max_age_zero_expires_immediately() {
+        let header = "name=value; Max-Age=0";
+        let c = parse_set_cookie_header(header).unwrap();
+        assert_eq!(c.max_age, Some(0));
+    }
+
+    #[test]
+    fn cookie_secure_flag_only() {
+        let header = "name=value; Secure";
+        let c = parse_set_cookie_header(header).unwrap();
+        assert_eq!(c.secure, Some(true));
+        assert_eq!(c.http_only, None);
+    }
+
+    #[test]
+    fn cookie_httponly_flag_only() {
+        let header = "name=value; HttpOnly";
+        let c = parse_set_cookie_header(header).unwrap();
+        assert_eq!(c.http_only, Some(true));
+        assert_eq!(c.secure, None);
+    }
+
+    #[test]
+    fn cookie_both_secure_and_httponly() {
+        let header = "name=value; Secure; HttpOnly";
+        let c = parse_set_cookie_header(header).unwrap();
+        assert_eq!(c.secure, Some(true));
+        assert_eq!(c.http_only, Some(true));
+    }
+
+    #[test]
+    fn cookie_samesite_strict() {
+        let header = "name=value; SameSite=Strict";
+        let c = parse_set_cookie_header(header).unwrap();
+        assert_eq!(c.same_site.as_deref(), Some("Strict"));
+    }
+
+    #[test]
+    fn cookie_samesite_none_requires_secure() {
+        // Per RFC, SameSite=None requires Secure flag
+        let header = "name=value; SameSite=None; Secure";
+        let c = parse_set_cookie_header(header).unwrap();
+        assert_eq!(c.same_site.as_deref(), Some("None"));
+        assert_eq!(c.secure, Some(true));
+    }
+
+    #[test]
+    fn cookie_empty_value() {
+        let header = "name=";
+        let c = parse_set_cookie_header(header).unwrap();
+        assert_eq!(c.name, "name");
+        assert_eq!(c.value, "");
+    }
+
+    #[test]
+    fn cookie_quoted_value() {
+        let header = "name=\"quoted value\"";
+        let c = parse_set_cookie_header(header).unwrap();
+        assert_eq!(c.name, "name");
+        // Parser doesn't strip quotes, so value includes them
+        assert!(c.value.contains("quoted value"));
+    }
+
+    #[test]
+    fn cookie_multiple_attributes_order_independent() {
+        let h1 = "name=value; Path=/; Domain=example.com; Max-Age=3600";
+        let h2 = "name=value; Domain=example.com; Max-Age=3600; Path=/";
+        let c1 = parse_set_cookie_header(h1).unwrap();
+        let c2 = parse_set_cookie_header(h2).unwrap();
+        assert_eq!(c1.domain, c2.domain);
+        assert_eq!(c1.path, c2.path);
+        assert_eq!(c1.max_age, c2.max_age);
+    }
+
+    #[test]
+    fn cookie_negative_max_age() {
+        // Negative Max-Age should be treated as immediate expiry
+        let header = "name=value; Max-Age=-1";
+        let c = parse_set_cookie_header(header).unwrap();
+        assert_eq!(c.max_age, Some(-1));
+    }
+
+    #[test]
+    fn cookie_large_max_age() {
+        // Test with very large Max-Age value
+        let header = "name=value; Max-Age=2147483647";
+        let c = parse_set_cookie_header(header).unwrap();
+        assert_eq!(c.max_age, Some(2147483647));
+    }
+
+    #[test]
+    fn cookie_expires_time_zones() {
+        // Test Expires with different time zone formats
+        let headers = [
+            "name=value; Expires=Wed, 21 Oct 2015 07:28:00 GMT",
+            "name=value; Expires=2015-10-21T07:28:00Z",
+        ];
+        for header in headers {
+            let c = parse_set_cookie_header(header).unwrap();
+            assert!(c.expires.is_some(), "Failed to parse: {header}");
+        }
+    }
 }

@@ -41,14 +41,17 @@ yarn check
 ### Test Suites
 
 ```bash
-# All unit tests (frontend + backend, fast)
+# All unit tests with coverage (frontend + backend, fast)
 yarn test:unit
 
-# E2E tests (WebDriver.io, slow)
+# All E2E tests (WebDriver.io, slow)
 yarn test:e2e
 
-# Coverage report (HTML in target/coverage/)
-yarn test:coverage
+# Full test suite with coverage (unit + E2E, slowest)
+yarn test
+
+# Quick check: unit + E2E [CRITICAL] tests only (faster for CI/CD)
+yarn test:check
 ```
 
 ### E2E Targeted Execution
@@ -62,9 +65,6 @@ yarn test:e2e --spec="test/specs/requests.e2e.ts" --test="creates a new request"
 
 # Run multiple files
 yarn test:e2e --spec="test/specs/{app,auth,requests}.e2e.ts"
-
-# View test report (after running tests)
-yarn test:e2e:report
 ```
 
 **Note:** WebDriver.io uses Mocha, so `--test` filters by describe/it names.
@@ -72,11 +72,14 @@ yarn test:e2e:report
 ### Test Coverage
 
 ```bash
-# Frontend coverage only
-yarn test:coverage
+# Full test suite with coverage (unit + E2E)
+yarn test
 
-# Generate HTML coverage report (check target/coverage/index.html)
-VITEST_COVERAGE=true yarn test:fe
+# Unit tests only with coverage
+yarn test:unit
+
+# View coverage report (opens coverage/index.html after test runs)
+open coverage/index.html
 ```
 
 ## Build & Distribution
@@ -187,12 +190,6 @@ node scripts/feature-manifest.mjs
 
 # Update version
 node scripts/update-version.mjs
-
-# Parse E2E test results
-python3 scripts/parse-e2e-results.py
-
-# Run specific E2E suites
-node scripts/run-e2e-suites.mjs
 
 # Filter user-facing features
 node scripts/filter-user-features.mjs
@@ -319,9 +316,12 @@ cd src-tauri && cargo test --lib
 These are **not** entry points (internal helpers only):
 
 - `scripts/check-local.sh` — Called by `yarn check`
-- `scripts/test-unit.sh` — Called by `yarn test:fe`
+- `scripts/test-unit.sh` — Called by `yarn test:unit`
 - `scripts/test-e2e.sh` — Called by `yarn test:e2e`
-- `scripts/test-with-coverage.sh` — Called by `yarn test:coverage`
+- `scripts/test.sh` — Called by `yarn test`
+- `scripts/test-check.sh` — Called by `yarn test:check`
+- `scripts/test-with-coverage.sh` — Legacy coverage script (consolidated into `yarn test`)
+- `scripts/consolidate-coverage.mjs` — Coverage consolidation helper
 
 Always use `yarn` aliases, not scripts directly.
 

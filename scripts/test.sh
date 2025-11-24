@@ -1,13 +1,8 @@
 #!/bin/bash
-
-# Combined unit + E2E coverage script (Legacy - see test.sh)
-# Runs both unit tests with coverage and E2E tests, then consolidates with nyc
-# Note: This script is now called by test.sh and kept for reference
-
 set -e
 
 echo "=========================================="
-echo "Running comprehensive test coverage"
+echo "Running comprehensive test suite with coverage"
 echo "=========================================="
 
 # Clean coverage directories
@@ -24,8 +19,8 @@ cd src-tauri && cargo test
 cd - > /dev/null
 
 echo ""
-echo "3️⃣  Merging frontend and backend unit test coverage..."
-node scripts/merge-coverage.mjs
+echo "3️⃣  Consolidating unit test coverage..."
+node scripts/consolidate-coverage.mjs
 
 echo ""
 echo "4️⃣  Running E2E tests with coverage..."
@@ -36,5 +31,7 @@ echo "5️⃣  Consolidating all coverage reports..."
 node scripts/consolidate-coverage.mjs
 
 echo ""
-echo "✅ Coverage report complete!"
-echo "📊 Open coverage/index.html to view detailed coverage report"
+echo "=========================================="
+echo "✅ All tests passed with coverage!"
+echo "📊 Open coverage/index.html to view coverage report"
+echo "=========================================="

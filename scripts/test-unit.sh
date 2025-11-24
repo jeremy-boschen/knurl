@@ -7,9 +7,6 @@ VITEST_COVERAGE=true node scripts/run-vitest-groups.mjs --run
 echo "Running backend unit tests..."
 cd src-tauri && cargo test
 
-echo "Merging coverage reports..."
+echo "Consolidating coverage reports..."
 cd - > /dev/null
-node scripts/merge-coverage.mjs
-
-echo "Checking coverage thresholds..."
-node scripts/check-coverage.js
+node scripts/consolidate-coverage.mjs

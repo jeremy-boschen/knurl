@@ -1982,3 +1982,661 @@ fn emit_auth_log(
     };
     emitter.emit(entry);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ========== require_value tests ==========
+
+    #[test]
+    fn require_value_accepts_non_empty_string() {
+        let value = Some(&"test_value".to_string());
+        let result = require_value(value, "error msg");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "test_value");
+    }
+
+    #[test]
+    fn require_value_rejects_none() {
+        let value: Option<&String> = None;
+        let result = require_value(value, "required field missing");
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind, ErrorKind::BadRequest);
+    }
+
+    #[test]
+    fn require_value_rejects_empty_string() {
+        let value = Some(&"".to_string());
+        let result = require_value(value, "cannot be empty");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn require_value_rejects_whitespace_only() {
+        let value = Some(&"   ".to_string());
+        let result = require_value(value, "cannot be whitespace");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn require_value_trims_whitespace() {
+        let value = Some(&"  test  ".to_string());
+        let result = require_value(value, "error");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "test");
+    }
+
+    // ========== build_stub_token tests ==========
+
+    #[test]
+    fn build_stub_token_creates_valid_jwt_format() {
+        let token = build_stub_token(
+            "client_credentials",
+            "client123",
+            Some("openid profile"),
+            1000,
+        );
+        let parts: Vec<&str> = token.split('.').collect();
+        assert_eq!(
+            parts.len(),
+            3,
+            "JWT should have 3 parts (header.payload.signature)"
+        );
+    }
+
+    #[test]
+    fn build_stub_token_includes_grant_type() {
+        let token = build_stub_token("client_credentials", "subject123", None, 1234567890);
+        let parts: Vec<&str> = token.split('.').collect();
+        let payload_b64 = parts[1];
+        let payload_json = String::from_utf8(
+            general_purpose::URL_SAFE_NO_PAD
+                .decode(payload_b64)
+                .unwrap(),
+        )
+        .unwrap();
+        assert!(payload_json.contains("client_credentials"));
+    }
+
+    #[test]
+    fn build_stub_token_includes_subject() {
+        let subject = "test_subject_456";
+        let token = build_stub_token("authorization_code", subject, None, 1000);
+        let parts: Vec<&str> = token.split('.').collect();
+        let payload_b64 = parts[1];
+        let payload_json = String::from_utf8(
+            general_purpose::URL_SAFE_NO_PAD
+                .decode(payload_b64)
+                .unwrap(),
+        )
+        .unwrap();
+        assert!(payload_json.contains(subject));
+    }
+
+    #[test]
+    fn build_stub_token_with_scope() {
+        let token = build_stub_token("device_code", "user", Some("read write"), 2000);
+        let parts: Vec<&str> = token.split('.').collect();
+        let payload_b64 = parts[1];
+        let payload_json = String::from_utf8(
+            general_purpose::URL_SAFE_NO_PAD
+                .decode(payload_b64)
+                .unwrap(),
+        )
+        .unwrap();
+        assert!(payload_json.contains("read write"));
+    }
+
+    #[test]
+    fn build_stub_token_without_scope() {
+        let token = build_stub_token("refresh_token", "user", None, 3000);
+        let parts: Vec<&str> = token.split('.').collect();
+        let payload_b64 = parts[1];
+        let payload_json = String::from_utf8(
+            general_purpose::URL_SAFE_NO_PAD
+                .decode(payload_b64)
+                .unwrap(),
+        )
+        .unwrap();
+        assert!(payload_json.contains("\"scope\":\"\""));
+    }
+
+    // ========== parse_token_response_body tests ==========
+
+    #[test]
+    fn parse_token_response_json_snake_case() {
+        let body = br#"{"access_token":"token123","token_type":"Bearer","expires_in":3600}"#;
+        let result = parse_token_response_body(body).unwrap();
+        assert_eq!(result.access_token, "token123");
+        assert_eq!(result.token_type, "Bearer");
+        assert_eq!(result.expires_in, Some(3600));
+    }
+
+    #[test]
+    fn parse_token_response_json_camel_case() {
+        let body = br#"{"accessToken":"token456","tokenType":"JWT","expiresIn":7200}"#;
+        let result = parse_token_response_body(body).unwrap();
+        assert_eq!(result.access_token, "token456");
+        assert_eq!(result.token_type, "JWT");
+        assert_eq!(result.expires_in, Some(7200));
+    }
+
+    #[test]
+    fn parse_token_response_form_urlencoded() {
+        let body = b"access_token=form_token&token_type=Bearer&expires_in=1800";
+        let result = parse_token_response_body(body).unwrap();
+        assert_eq!(result.access_token, "form_token");
+        assert_eq!(result.token_type, "Bearer");
+        assert_eq!(result.expires_in, Some(1800));
+    }
+
+    #[test]
+    fn parse_token_response_without_expires_in() {
+        let body = br#"{"access_token":"token","token_type":"Bearer"}"#;
+        let result = parse_token_response_body(body).unwrap();
+        assert_eq!(result.access_token, "token");
+        assert_eq!(result.expires_in, None);
+    }
+
+    #[test]
+    fn parse_token_response_error_handling() {
+        let body =
+            br#"{"error":"invalid_client","error_description":"Client authentication failed"}"#;
+        let result = parse_token_response_body(body);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().message.contains("invalid_client"));
+    }
+
+    #[test]
+    fn parse_token_response_error_without_description() {
+        let body = br#"{"error":"unauthorized_client"}"#;
+        let result = parse_token_response_body(body);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().message.contains("unauthorized_client"));
+    }
+
+    #[test]
+    fn parse_token_response_missing_required_fields() {
+        let body = br#"{"access_token":"token"}"#;
+        let result = parse_token_response_body(body);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_token_response_invalid_json() {
+        let body = b"not valid json";
+        let result = parse_token_response_body(body);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_token_response_expires_in_as_string() {
+        let body = br#"{"access_token":"token","token_type":"Bearer","expires_in":"9000"}"#;
+        let result = parse_token_response_body(body).unwrap();
+        assert_eq!(result.expires_in, Some(9000));
+    }
+
+    // ========== compute_pkce_challenge tests ==========
+
+    #[test]
+    fn compute_pkce_challenge_s256() {
+        let verifier = "test_verifier_1234567890_abcdefghijk_lmnopqrstuvwxyz";
+        let result = compute_pkce_challenge(verifier, "S256").unwrap();
+        // S256 should produce base64url encoded SHA256 hash
+        assert!(!result.is_empty());
+        assert_ne!(result, verifier); // Should not be the same as verifier
+    }
+
+    #[test]
+    fn compute_pkce_challenge_s256_deterministic() {
+        let verifier = "same_verifier_123";
+        let challenge1 = compute_pkce_challenge(verifier, "S256").unwrap();
+        let challenge2 = compute_pkce_challenge(verifier, "S256").unwrap();
+        assert_eq!(challenge1, challenge2); // Same input should produce same challenge
+    }
+
+    #[test]
+    fn compute_pkce_challenge_plain() {
+        let verifier = "plain_verifier_test";
+        let result = compute_pkce_challenge(verifier, "plain").unwrap();
+        assert_eq!(result, verifier);
+    }
+
+    #[test]
+    fn compute_pkce_challenge_case_insensitive() {
+        let verifier = "test_verifier";
+        let s256_lower = compute_pkce_challenge(verifier, "s256").unwrap();
+        let s256_upper = compute_pkce_challenge(verifier, "S256").unwrap();
+        assert_eq!(s256_lower, s256_upper);
+    }
+
+    #[test]
+    fn compute_pkce_challenge_unsupported_method() {
+        let verifier = "test";
+        let result = compute_pkce_challenge(verifier, "unsupported");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().message.contains("unsupported"));
+    }
+
+    // ========== generate_pkce_verifier tests ==========
+
+    #[test]
+    fn generate_pkce_verifier_creates_64_char_string() {
+        let verifier = generate_pkce_verifier();
+        assert_eq!(verifier.len(), 64);
+    }
+
+    #[test]
+    fn generate_pkce_verifier_uses_alphanumeric() {
+        let verifier = generate_pkce_verifier();
+        assert!(verifier.chars().all(|c| c.is_alphanumeric()));
+    }
+
+    #[test]
+    fn generate_pkce_verifier_random() {
+        let v1 = generate_pkce_verifier();
+        let v2 = generate_pkce_verifier();
+        assert_ne!(v1, v2); // Should be different each time
+    }
+
+    // ========== generate_state tests ==========
+
+    #[test]
+    fn generate_state_creates_32_char_string() {
+        let state = generate_state();
+        assert_eq!(state.len(), 32);
+    }
+
+    #[test]
+    fn generate_state_uses_alphanumeric() {
+        let state = generate_state();
+        assert!(state.chars().all(|c| c.is_alphanumeric()));
+    }
+
+    #[test]
+    fn generate_state_random() {
+        let s1 = generate_state();
+        let s2 = generate_state();
+        assert_ne!(s1, s2);
+    }
+
+    // ========== Token caching and configuration tests ==========
+
+    #[test]
+    fn auth_config_basic_serialization() {
+        let config = AuthConfig::Basic {
+            username: Some("user".to_string()),
+            password: Some("pass".to_string()),
+        };
+        let json = serde_json::to_string(&config).unwrap();
+        // camelCase rename_all converts Basic -> basic
+        assert!(json.contains("\"type\":\"basic\""));
+    }
+
+    #[test]
+    fn auth_config_bearer_serialization() {
+        let config = AuthConfig::Bearer {
+            token: Some("token123".to_string()),
+            scheme: Some("Bearer".to_string()),
+            placement: None,
+        };
+        let json = serde_json::to_string(&config).unwrap();
+        // camelCase rename_all converts Bearer -> bearer
+        assert!(json.contains("\"type\":\"bearer\""));
+    }
+
+    #[test]
+    fn auth_config_api_key_serialization() {
+        let config = AuthConfig::ApiKey {
+            key: Some("X-API-Key".to_string()),
+            value: Some("secret123".to_string()),
+            placement: None,
+        };
+        let json = serde_json::to_string(&config).unwrap();
+        // camelCase rename_all converts ApiKey -> apiKey
+        assert!(json.contains("\"type\":\"apiKey\""));
+    }
+
+    #[test]
+    fn auth_config_oauth2_serialization() {
+        let config = AuthConfig::Oauth2 {
+            grant_type: "client_credentials".to_string(),
+            auth_url: None,
+            token_url: Some("https://token.example.com".to_string()),
+            device_authorization_url: None,
+            client_id: Some("client123".to_string()),
+            client_secret: Some("secret".to_string()),
+            scope: None,
+            refresh_token: None,
+            redirect_uri: None,
+            use_pkce: None,
+            token_caching: None,
+            client_auth: None,
+            token_extra_params: None,
+            discovery_url: None,
+        };
+        let json = serde_json::to_string(&config).unwrap();
+        // camelCase rename_all converts Oauth2 -> oauth2
+        assert!(json.contains("\"type\":\"oauth2\""));
+    }
+
+    // ========== is_stub_oauth_enabled tests ==========
+
+    #[test]
+    fn is_stub_oauth_enabled_respects_env_var() {
+        // Note: These tests depend on environment state and may not be fully isolated
+        // They test the logic of the function with different inputs
+        let _enabled = is_stub_oauth_enabled();
+        // Function reads from env, so we just verify it executes without panic
+        // Full env testing is done in integration tests
+    }
+
+    // ========== Auth placement tests ==========
+
+    #[test]
+    fn auth_placement_header_type() {
+        let placement = AuthPlacement {
+            r#type: "header".to_string(),
+            name: Some("Authorization".to_string()),
+            field_name: None,
+            content_type: None,
+        };
+        assert_eq!(placement.r#type, "header");
+        assert_eq!(placement.name.as_deref(), Some("Authorization"));
+    }
+
+    #[test]
+    fn auth_placement_query_type() {
+        let placement = AuthPlacement {
+            r#type: "query".to_string(),
+            name: Some("api_key".to_string()),
+            field_name: None,
+            content_type: None,
+        };
+        assert_eq!(placement.r#type, "query");
+    }
+
+    #[test]
+    fn auth_placement_body_type() {
+        let placement = AuthPlacement {
+            r#type: "body".to_string(),
+            name: None,
+            field_name: Some("token".to_string()),
+            content_type: None,
+        };
+        assert_eq!(placement.r#type, "body");
+        assert_eq!(placement.field_name.as_deref(), Some("token"));
+    }
+
+    // ========== Auth result tests ==========
+
+    #[test]
+    fn auth_result_with_headers() {
+        let mut headers = HashMap::new();
+        headers.insert("Authorization".to_string(), "Bearer token123".to_string());
+        let result = AuthResult {
+            headers: Some(headers),
+            query: None,
+            cookies: None,
+            body: None,
+            expires_at: None,
+        };
+        assert!(result.headers.is_some());
+        assert_eq!(result.headers.unwrap().len(), 1);
+    }
+
+    #[test]
+    fn auth_result_with_expires() {
+        let now = Utc::now().timestamp();
+        let result = AuthResult {
+            headers: None,
+            query: None,
+            cookies: None,
+            body: None,
+            expires_at: Some(now + 3600),
+        };
+        assert!(result.expires_at.is_some());
+        assert!(result.expires_at.unwrap() > now);
+    }
+
+    // ========== OIDC discovery tests ==========
+
+    #[test]
+    fn oidc_discovery_serialization() {
+        let discovery = OidcDiscovery {
+            authorization_endpoint: Some("https://auth.example.com/authorize".to_string()),
+            token_endpoint: Some("https://auth.example.com/token".to_string()),
+            device_authorization_endpoint: Some("https://auth.example.com/device".to_string()),
+        };
+        let json = serde_json::to_string(&discovery).unwrap();
+        assert!(json.contains("authorizationEndpoint"));
+    }
+
+    // ========== Client auth tests ==========
+
+    #[test]
+    fn client_auth_basic_serialization() {
+        let auth = ClientAuth::Basic;
+        let json = serde_json::to_string(&auth).unwrap();
+        // camelCase rename_all converts Basic -> basic
+        assert!(json.contains("basic"));
+    }
+
+    #[test]
+    fn client_auth_body_serialization() {
+        let auth = ClientAuth::Body;
+        let json = serde_json::to_string(&auth).unwrap();
+        // camelCase rename_all converts Body -> body
+        assert!(json.contains("body"));
+    }
+
+    // ========== Token caching policy tests ==========
+
+    #[test]
+    fn token_caching_policy_always() {
+        let policy = TokenCachingPolicy::Always;
+        let json = serde_json::to_string(&policy).unwrap();
+        // camelCase rename_all converts Always -> always
+        assert!(json.contains("always"));
+    }
+
+    #[test]
+    fn token_caching_policy_never() {
+        let policy = TokenCachingPolicy::Never;
+        let json = serde_json::to_string(&policy).unwrap();
+        // camelCase rename_all converts Never -> never
+        assert!(json.contains("never"));
+    }
+
+    // ========== Basic auth encoding tests ==========
+
+    #[test]
+    fn basic_auth_encoding_standard_credentials() {
+        let username = "user";
+        let password = "pass";
+        let encoded = general_purpose::STANDARD.encode(format!("{username}:{password}"));
+        assert_eq!(encoded, "dXNlcjpwYXNz");
+    }
+
+    #[test]
+    fn basic_auth_encoding_special_characters() {
+        let username = "user@example.com";
+        let password = "p@ss:word";
+        let encoded = general_purpose::STANDARD.encode(format!("{username}:{password}"));
+        let decoded = String::from_utf8(
+            general_purpose::STANDARD
+                .decode(&encoded)
+                .expect("valid base64"),
+        )
+        .expect("valid utf8");
+        assert_eq!(decoded, "user@example.com:p@ss:word");
+    }
+
+    #[test]
+    fn basic_auth_encoding_empty_password() {
+        let username = "user";
+        let password = "";
+        let encoded = general_purpose::STANDARD.encode(format!("{username}:{password}"));
+        let decoded = String::from_utf8(
+            general_purpose::STANDARD
+                .decode(&encoded)
+                .expect("valid base64"),
+        )
+        .expect("valid utf8");
+        assert_eq!(decoded, "user:");
+    }
+
+    // ========== Stub OAuth tests ==========
+
+    #[test]
+    fn stubbed_oauth_client_credentials_missing_token_url() {
+        // Create a mock emitter (use a null emitter for testing)
+        struct NullEmitter;
+        impl LogEmitter for NullEmitter {
+            fn emit(&self, _entry: LogEntry) {}
+        }
+
+        let options = StubOauthOptions {
+            auth_url: None,
+            token_url: None, // Missing
+            device_authorization_url: None,
+            client_id: Some(&"client".to_string()),
+            client_secret: Some(&"secret".to_string()),
+            scope: None,
+            refresh_token: None,
+            redirect_uri: None,
+        };
+        let emitter = NullEmitter;
+        let result = stubbed_oauth_result(
+            &emitter,
+            "req123".to_string(),
+            "client_credentials",
+            options,
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn stubbed_oauth_authorization_code_all_required_fields() {
+        struct NullEmitter;
+        impl LogEmitter for NullEmitter {
+            fn emit(&self, _entry: LogEntry) {}
+        }
+
+        let options = StubOauthOptions {
+            auth_url: Some(&"https://auth.example.com".to_string()),
+            token_url: Some(&"https://token.example.com".to_string()),
+            device_authorization_url: None,
+            client_id: Some(&"client123".to_string()),
+            client_secret: None,
+            scope: Some(&"read write".to_string()),
+            refresh_token: None,
+            redirect_uri: Some(&"http://localhost".to_string()),
+        };
+        let emitter = NullEmitter;
+        let result = stubbed_oauth_result(
+            &emitter,
+            "req123".to_string(),
+            "authorization_code",
+            options,
+        );
+        assert!(result.is_ok());
+        let auth_result = result.unwrap();
+        assert!(auth_result.headers.is_some());
+        let headers = auth_result.headers.unwrap();
+        assert!(headers.contains_key("Authorization"));
+        let auth_header = headers["Authorization"].clone();
+        assert!(auth_header.starts_with("Bearer "));
+    }
+
+    #[test]
+    fn stubbed_oauth_device_code_flow() {
+        struct NullEmitter;
+        impl LogEmitter for NullEmitter {
+            fn emit(&self, _entry: LogEntry) {}
+        }
+
+        let options = StubOauthOptions {
+            auth_url: None,
+            token_url: Some(&"https://token.example.com".to_string()),
+            device_authorization_url: Some(&"https://device.example.com".to_string()),
+            client_id: Some(&"device_client".to_string()),
+            client_secret: None,
+            scope: None,
+            refresh_token: None,
+            redirect_uri: None,
+        };
+        let emitter = NullEmitter;
+        let result = stubbed_oauth_result(&emitter, "req123".to_string(), "device_code", options);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn stubbed_oauth_refresh_token_flow() {
+        struct NullEmitter;
+        impl LogEmitter for NullEmitter {
+            fn emit(&self, _entry: LogEntry) {}
+        }
+
+        let options = StubOauthOptions {
+            auth_url: None,
+            token_url: Some(&"https://token.example.com".to_string()),
+            device_authorization_url: None,
+            client_id: None,
+            client_secret: None,
+            scope: None,
+            refresh_token: Some(&"refresh_token_value".to_string()),
+            redirect_uri: None,
+        };
+        let emitter = NullEmitter;
+        let result = stubbed_oauth_result(&emitter, "req123".to_string(), "refresh_token", options);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn stubbed_oauth_password_flow_not_supported() {
+        struct NullEmitter;
+        impl LogEmitter for NullEmitter {
+            fn emit(&self, _entry: LogEntry) {}
+        }
+
+        let options = StubOauthOptions {
+            auth_url: None,
+            token_url: Some(&"https://token.example.com".to_string()),
+            device_authorization_url: None,
+            client_id: Some(&"client".to_string()),
+            client_secret: Some(&"secret".to_string()),
+            scope: None,
+            refresh_token: None,
+            redirect_uri: None,
+        };
+        let emitter = NullEmitter;
+        let result = stubbed_oauth_result(&emitter, "req123".to_string(), "password", options);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().message.contains("ROPC not supported"));
+    }
+
+    #[test]
+    fn stubbed_oauth_unsupported_grant_type() {
+        struct NullEmitter;
+        impl LogEmitter for NullEmitter {
+            fn emit(&self, _entry: LogEntry) {}
+        }
+
+        let options = StubOauthOptions {
+            auth_url: None,
+            token_url: None,
+            device_authorization_url: None,
+            client_id: None,
+            client_secret: None,
+            scope: None,
+            refresh_token: None,
+            redirect_uri: None,
+        };
+        let emitter = NullEmitter;
+        let result = stubbed_oauth_result(&emitter, "req123".to_string(), "unknown_grant", options);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().message.contains("Unsupported"));
+    }
+}

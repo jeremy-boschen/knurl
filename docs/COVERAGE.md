@@ -18,7 +18,7 @@ The project now includes a comprehensive test coverage script that:
 Run all tests with consolidated coverage:
 
 ```bash
-yarn test:coverage
+yarn test
 ```
 
 This produces:
@@ -76,7 +76,7 @@ The most comprehensive report. Open `coverage/index.html` in your browser to:
 
 ### Terminal Summary
 
-`yarn test:coverage` outputs a summary table with:
+`yarn test` outputs a summary table with:
 - **Statements**: Code statements covered
 - **Branches**: Conditional branches covered
 - **Functions**: Function definitions covered
@@ -98,13 +98,13 @@ Coverage reports can be uploaded to services like Codecov:
 
 ```bash
 # In CI pipeline
-yarn test:coverage
+yarn test
 yarn codecov --file=coverage/lcov.info
 ```
 
 ## Tips
 
-- Run `yarn test:coverage` before submitting PRs to check coverage
+- Run `yarn test` before submitting PRs to check full coverage (unit + E2E)
 - Use HTML report to identify untested code paths
 - E2E tests supplement unit tests; focus on user-visible behavior
 - Backend tests validate logic not exposed through UI
