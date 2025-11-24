@@ -42,7 +42,7 @@ if (fs.existsSync(e2eCoveragePath)) {
   }
 }
 
-// Note: Rust coverage from tarpaulin is kept in rust-lcov.info file separately
+// Note: Rust coverage from cargo-llvm-cov is kept in rust-lcov.info file separately
 // Both frontend (lcov.info) and backend (rust-lcov.info) LCOV files are available in coverage/
 const rustLcovPath = path.join(projectRoot, 'coverage', 'rust-lcov.info')
 if (fs.existsSync(rustLcovPath)) {
