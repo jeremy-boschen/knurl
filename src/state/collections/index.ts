@@ -17,6 +17,7 @@ import {
   countCollectionRequests,
   findRequestInCollection,
   insertRequestIntoFolder,
+  sanitizeCollection,
 } from "@/state/collections-lib"
 import type { Application, CollectionsApi, CollectionsSlice, CollectionsState, RequestState } from "@/types"
 import type { StorageProvider } from "@/types/middleware/storage-manager"
@@ -61,8 +62,6 @@ export const createCollectionsSlice: StateCreator<
         // Always save the index
         promises.push(CollectionIndexStorage.save(CollectionIndexFileName(), state.index))
 
-        // Import sanitizeCollection here to avoid circular dependency
-        const { sanitizeCollection } = await import("@/state/collections-lib")
         for (const collection of Object.values(state.cache)) {
           if (force || timestamps[collection.id] !== collection.updated) {
             promises.push(CollectionStorage.save(CollectionFileName(collection.id), sanitizeCollection(collection)))
