@@ -14,8 +14,8 @@ echo "1️⃣  Running frontend unit tests with coverage..."
 VITEST_COVERAGE=true node scripts/run-vitest-groups.mjs --run
 
 echo ""
-echo "2️⃣  Running backend unit tests..."
-cd src-tauri && cargo test
+echo "2️⃣  Running backend unit tests with coverage..."
+cd src-tauri && cargo tarpaulin -o Lcov --output-dir ../coverage --lib --timeout 300 && mv ../coverage/lcov.info ../coverage/rust-lcov.info || true
 cd - > /dev/null
 
 echo ""
