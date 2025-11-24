@@ -2,7 +2,7 @@ import { expect } from "@wdio/globals"
 
 import { createCollection, waitForRequestEditor, clickByTestId, ensureWorkspaceReady, getElementByTestId, resetOverlays, setInputText, waitForActiveRequestTab } from "../support/ui"
 
-describe("Environment Manager Smoke", () => {
+describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
   const state: {
     collectionId: string
     environmentId: string | null

@@ -29,7 +29,7 @@ import {
 type WorkspaceSnapshot = Awaited<ReturnType<typeof callBridgeReplacement>>
 type WorkspaceTab = WorkspaceSnapshot["openTabs"][number]
 
-describe("Workspace Restore UX", () => {
+describe("[SUPPLEMENTAL] Workspace Restore UX", () => {
   before(async () => {
     await ensureWorkspaceReady()
     await resetWorkspaceTabs()

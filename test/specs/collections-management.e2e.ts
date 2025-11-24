@@ -14,7 +14,7 @@ import { createCollection, clickVisibleNewCollectionButton, waitForCollectionIdB
 
 const SCRATCH_COLLECTION_ID = "scratch"
 
-describe("Collections Management UX", () => {
+describe("[CRITICAL] Collections Management UX", () => {
   before(async () => {
     await browser.refresh()
     await ensureWorkspaceReady()
