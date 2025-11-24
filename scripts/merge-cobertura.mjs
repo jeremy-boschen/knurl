@@ -23,18 +23,22 @@ function mergeCobertura() {
     const frontendXml = fs.readFileSync(frontendPath, 'utf-8')
     const rustXml = fs.readFileSync(rustPath, 'utf-8')
 
-    // Extract packages from both files (basic XML regex)
-    const frontendPackages = frontendXml.match(/<package[^>]*>[\s\S]*?<\/package>/g) || []
-    const rustPackages = rustXml.match(/<package[^>]*>[\s\S]*?<\/package>/g) || []
+    // Extract packages from both files (match <package ...> but not <packages>)
+    const frontendPackages = frontendXml.match(/<package(?:\s|>)[^>]*>[\s\S]*?<\/package>/g) || []
+
+    // Extract Rust packages and rewrite paths from src/ to src-tauri/src/
+    const rustPackages = (rustXml.match(/<package(?:\s|>)[^>]*>[\s\S]*?<\/package>/g) || []).map(pkg =>
+      pkg.replace(/name="src\//g, 'name="src-tauri/src/')
+    )
 
     // Combine packages
-    const allPackages = [...frontendPackages, ...rustPackages].join('\n')
+    const allPackages = [...frontendPackages, ...rustPackages]
 
     // Create merged coverage with combined packages
     const merged = `<?xml version="1.0" ?>
 <coverage version="1.9" timestamp="${Date.now()}">
   <packages>
-${allPackages.split('\n').map(p => p ? '    ' + p : '').join('\n')}
+${allPackages.map(p => '    ' + p).join('\n')}
   </packages>
 </coverage>`
 
