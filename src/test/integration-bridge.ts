@@ -57,7 +57,7 @@ export const integrationBridge = {
       }
 
       // Only include auth phase if the request has authentication configured
-      const phases: typeof resolveVariablesPhase[] = [resolveVariablesPhase]
+      const phases: (typeof resolveVariablesPhase)[] = [resolveVariablesPhase]
 
       if (request.authentication.type !== "none" && request.authentication.type !== "inherit") {
         const authPhase = createAuthPhase(get, set)
