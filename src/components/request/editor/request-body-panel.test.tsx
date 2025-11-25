@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { RequestBodyPanel, getBodyTypeLabel, guessContentTypeByExt } from "./request-body-panel"
 import { TooltipProvider } from "@/components/ui/knurl/tooltip"
+import { warmPrettier } from "@/lib/prettier"
 import { useRequestTab } from "@/state"
 
 const formatMock = vi.fn()
