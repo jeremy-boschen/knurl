@@ -255,6 +255,10 @@ vi.mock("@/state", () => ({
   useCollection: (collectionId: string) => ({
     state: { collection: stateMocks.collectionsById[collectionId as keyof typeof stateMocks.collectionsById] },
   }),
+  useCollectionFromCache: (collectionId: string) => ({
+    state: { collection: stateMocks.collectionsById[collectionId as keyof typeof stateMocks.collectionsById] },
+    actions: { collectionsApi: () => stateMocks.mockCollectionsApi },
+  }),
   useApplication: stateMocks.mockUseApplication,
   isScratchCollection: () => false,
 }))

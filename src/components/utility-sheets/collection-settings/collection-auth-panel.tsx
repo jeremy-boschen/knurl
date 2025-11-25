@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { createDefaultAuthConfig } from "@/lib"
-import { credentialsCacheApi, useApplication, useCollection } from "@/state"
+import { credentialsCacheApi, useCollection, useCredentialsCacheEntry } from "@/state"
 import type { Collection } from "@/types"
 import type { OAuth2Auth } from "@/types/request"
 import { type AuthType, AuthTypes } from "@/types/request"
@@ -38,7 +38,9 @@ type OAuth2AuthFormProps = {
 const OAuth2AuthFormShared: FC<OAuth2AuthFormProps> = ({ auth, onUpdate, onDiscover, collectionId }) => {
   const grantType = auth.grantType ?? "client_credentials"
   const cacheKey = React.useMemo(() => `collection-auth-${collectionId}`, [collectionId])
-  const _cacheEntry = useApplication((state) => state.credentialsCacheState?.cache?.[cacheKey])
+  const {
+    state: { cacheEntry: _cacheEntry },
+  } = useCredentialsCacheEntry(cacheKey)
 
   const [cachedToken, setCachedToken] = React.useState<string>("")
   const [tokenType, setTokenType] = React.useState<string>("")

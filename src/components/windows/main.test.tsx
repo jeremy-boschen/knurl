@@ -41,6 +41,10 @@ const useApplicationMock: any = Object.assign(
 
 vi.mock("@/state", () => ({
   useApplication: useApplicationMock,
+  useSettings: () => ({
+    state: appState.settingsState,
+    actions: { settingsApi: () => ({}) },
+  }),
 }))
 
 vi.mock("wouter", () => ({

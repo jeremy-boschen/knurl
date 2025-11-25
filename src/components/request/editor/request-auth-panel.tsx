@@ -1,14 +1,12 @@
 import React, { type FC } from "react"
 
-import { useShallow } from "zustand/shallow"
-
 import { discoverOidc } from "@/bindings/knurl"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { OAuth2Editor } from "@/components/auth/oauth2-editor"
 import { ApiKeyAuthForm, BasicAuthForm, BearerAuthForm } from "@/components/auth/auth-forms"
 import { SectionHeader } from "./section-header"
-import { credentialsCacheApi, useApplication } from "@/state/application"
-import { useCollections, useRequestTab } from "@/state"
+import { credentialsCacheApi } from "@/state/application"
+import { useCollections, useCollectionFromCache, useCredentialsCacheEntry, useRequestTab } from "@/state"
 import type { ApiKeyAuth, AuthConfig, AuthType, BasicAuth, BearerAuth, OAuth2Auth } from "@/types/request"
 import { AuthTypes } from "@/types/request"
 
@@ -19,31 +17,24 @@ export type RequestAuthPanelProps = {
 // --- Auth Type Forms ---
 
 type OAuth2AuthFormProps = {
+  requestId: string
   auth: Partial<OAuth2Auth>
   onUpdate: (updates: Record<string, unknown>) => void
   onDiscover: () => void
   onFetch: () => void
 }
 
-const OAuth2AuthForm: FC<OAuth2AuthFormProps> = ({ auth, onUpdate, onDiscover, onFetch }) => {
-  const { activeRequest } = useApplication(
-    useShallow((state) => {
-      const active = state.requestTabsState.activeTab
-      return { activeRequest: active ? state.requestTabsState.openTabs[active]?.merged : undefined }
-    }),
-  )
-
+const OAuth2AuthForm: FC<OAuth2AuthFormProps> = ({ requestId, auth, onUpdate, onDiscover, onFetch }) => {
   // Track cached token for this request (session only; not persisted)
   const [cachedToken, setCachedToken] = React.useState<string>("")
   const [tokenType, setTokenType] = React.useState<string>("")
   const [expiresAtSec, setExpiresAtSec] = React.useState<number | undefined>(undefined)
-  const cacheKey = React.useMemo(
-    () => (activeRequest ? `request-auth-${activeRequest.id}` : undefined),
-    [activeRequest],
-  )
+  const cacheKey = React.useMemo(() => `request-auth-${requestId}`, [requestId])
 
   // Observe cache entry changes and resolve to plaintext token for display
-  const _cacheEntry = useApplication((state) => (cacheKey ? state.credentialsCacheState.cache[cacheKey] : undefined))
+  const {
+    state: { cacheEntry: _cacheEntry },
+  } = useCredentialsCacheEntry(cacheKey)
 
   // Re-run when the cache entry changes so the UI reflects freshly fetched tokens
   // biome-ignore lint/correctness/useExhaustiveDependencies: We intentionally depend on _cacheEntry to refresh token display
@@ -109,9 +100,10 @@ export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
   const request = requestTab?.state.request
   const requestTabsApi = requestTab?.actions.requestTabsApi
   // Read parent auth for inheritance checks; keep hooks at top-level
-  const parentAuth = useApplication((state) =>
-    request ? state.collectionsState.cache[request.collectionId]?.authentication : undefined,
-  )
+  const {
+    state: { collection },
+  } = useCollectionFromCache(request?.collectionId ?? "")
+  const parentAuth = collection?.authentication
   const [discoveryError, setDiscoveryError] = React.useState<string | null>(null)
 
   if (!request || !requestTab || !requestTabsApi) {
@@ -264,6 +256,7 @@ export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
       case "oauth2": {
         return (
           <OAuth2AuthForm
+            requestId={request.id}
             auth={authentication.oauth2 ?? {}}
             onUpdate={handleInputChange}
             onDiscover={handleDiscover}

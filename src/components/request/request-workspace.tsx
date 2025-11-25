@@ -211,7 +211,11 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
                       Cancel
                     </Button>
                   ) : (
-                    <Button onClick={handleSendRequest} data-test-id="request-workspace:send-button">
+                    <Button
+                      onClick={handleSendRequest}
+                      className="transition-none"
+                      data-test-id="request-workspace:send-button"
+                    >
                       <SendIcon className="mr-1 h-4 w-4" />
                       Send
                     </Button>
