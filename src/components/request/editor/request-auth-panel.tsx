@@ -29,13 +29,12 @@ const OAuth2AuthForm: FC<OAuth2AuthFormProps> = ({ requestId, auth, onUpdate, on
   const [cachedToken, setCachedToken] = React.useState<string>("")
   const [tokenType, setTokenType] = React.useState<string>("")
   const [expiresAtSec, setExpiresAtSec] = React.useState<number | undefined>(undefined)
-  const cacheKey = React.useMemo(
-    () => `request-auth-${requestId}`,
-    [requestId],
-  )
+  const cacheKey = React.useMemo(() => `request-auth-${requestId}`, [requestId])
 
   // Observe cache entry changes and resolve to plaintext token for display
-  const { state: { cacheEntry: _cacheEntry } } = useCredentialsCacheEntry(cacheKey)
+  const {
+    state: { cacheEntry: _cacheEntry },
+  } = useCredentialsCacheEntry(cacheKey)
 
   // Re-run when the cache entry changes so the UI reflects freshly fetched tokens
   // biome-ignore lint/correctness/useExhaustiveDependencies: We intentionally depend on _cacheEntry to refresh token display
@@ -101,7 +100,9 @@ export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
   const request = requestTab?.state.request
   const requestTabsApi = requestTab?.actions.requestTabsApi
   // Read parent auth for inheritance checks; keep hooks at top-level
-  const { state: { collection } } = useCollectionFromCache(request?.collectionId ?? "")
+  const {
+    state: { collection },
+  } = useCollectionFromCache(request?.collectionId ?? "")
   const parentAuth = collection?.authentication
   const [discoveryError, setDiscoveryError] = React.useState<string | null>(null)
 

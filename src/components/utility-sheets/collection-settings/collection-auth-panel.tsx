@@ -38,7 +38,9 @@ type OAuth2AuthFormProps = {
 const OAuth2AuthFormShared: FC<OAuth2AuthFormProps> = ({ auth, onUpdate, onDiscover, collectionId }) => {
   const grantType = auth.grantType ?? "client_credentials"
   const cacheKey = React.useMemo(() => `collection-auth-${collectionId}`, [collectionId])
-  const { state: { cacheEntry: _cacheEntry } } = useCredentialsCacheEntry(cacheKey)
+  const {
+    state: { cacheEntry: _cacheEntry },
+  } = useCredentialsCacheEntry(cacheKey)
 
   const [cachedToken, setCachedToken] = React.useState<string>("")
   const [tokenType, setTokenType] = React.useState<string>("")

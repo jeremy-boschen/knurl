@@ -741,7 +741,9 @@ type CollectionCacheActions = {
  * Read a collection from cache without forcing load.
  * Returns undefined if not loaded. Use useCollection() if you need to ensure loading.
  */
-export const useCollectionFromCache = (collectionId: string): HookResult<CollectionCacheState, CollectionCacheActions> => {
+export const useCollectionFromCache = (
+  collectionId: string,
+): HookResult<CollectionCacheState, CollectionCacheActions> => {
   const collection = useApplication((app) => app.collectionsState.cache[collectionId])
 
   return {
@@ -766,7 +768,9 @@ type CredentialsCacheEntryActions = {
  * Observe a credentials cache entry. Useful for reactivity when tokens are fetched/cached.
  * To retrieve the actual AuthResult, use credentialsCacheApi().get(cacheKey).
  */
-export const useCredentialsCacheEntry = (cacheKey: string | undefined): HookResult<CredentialsCacheEntryState, CredentialsCacheEntryActions> => {
+export const useCredentialsCacheEntry = (
+  cacheKey: string | undefined,
+): HookResult<CredentialsCacheEntryState, CredentialsCacheEntryActions> => {
   const cacheEntry = useApplication((state) => (cacheKey ? state.credentialsCacheState.cache[cacheKey] : undefined))
 
   return {

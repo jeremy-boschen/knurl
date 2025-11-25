@@ -1032,7 +1032,9 @@ type CollectionRowSearchableProps = {
 }
 
 function CollectionRowSearchable({ collectionId, collectionName, query, onAction }: CollectionRowSearchableProps) {
-  const { state: { collection } } = useCollectionFromCache(collectionId)
+  const {
+    state: { collection },
+  } = useCollectionFromCache(collectionId)
 
   React.useEffect(() => {
     if (!collection) {

@@ -43,7 +43,9 @@ function Router() {
 }
 
 export function MainWindow() {
-  const { state: { requests } } = useSettings()
+  const {
+    state: { requests },
+  } = useSettings()
   const interval = requests.autoSave
 
   const saveAll = React.useCallback(async () => {
