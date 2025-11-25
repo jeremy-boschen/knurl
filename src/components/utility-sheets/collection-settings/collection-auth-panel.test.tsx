@@ -23,6 +23,10 @@ vi.mock("@/state", () => ({
     state: stateMocks,
     actions: { collectionsApi: () => ({ updateCollection: updateCollectionMock }) },
   })),
+  useCredentialsCacheEntry: vi.fn(() => ({
+    state: { cacheEntry: undefined },
+    actions: { credentialsCacheApi: () => credentialsCacheMock },
+  })),
   useApplication: vi.fn((selector?: (state: any) => any) =>
     selector ? selector({ requestTabsState: { openTabs: {} }, credentialsCacheState: { cache: {} } }) : {},
   ),

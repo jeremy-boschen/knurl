@@ -724,3 +724,89 @@ export const useRequestOptions = (tabId: string): HookResult<RequestOptionsState
     },
   }
 }
+
+//
+// Cache Access Helpers
+//
+
+type CollectionCacheState = {
+  collection: CollectionCache | undefined
+}
+
+type CollectionCacheActions = {
+  collectionsApi: typeof collectionsApi
+}
+
+/**
+ * Read a collection from cache without forcing load.
+ * Returns undefined if not loaded. Use useCollection() if you need to ensure loading.
+ */
+export const useCollectionFromCache = (collectionId: string): HookResult<CollectionCacheState, CollectionCacheActions> => {
+  const collection = useApplication((app) => app.collectionsState.cache[collectionId])
+
+  return {
+    state: {
+      collection,
+    },
+    actions: {
+      collectionsApi,
+    },
+  }
+}
+
+type CredentialsCacheEntryState = {
+  cacheEntry: string | undefined // Encrypted cache entry
+}
+
+type CredentialsCacheEntryActions = {
+  credentialsCacheApi: CredentialsCacheApi
+}
+
+/**
+ * Observe a credentials cache entry. Useful for reactivity when tokens are fetched/cached.
+ * To retrieve the actual AuthResult, use credentialsCacheApi().get(cacheKey).
+ */
+export const useCredentialsCacheEntry = (cacheKey: string | undefined): HookResult<CredentialsCacheEntryState, CredentialsCacheEntryActions> => {
+  const cacheEntry = useApplication((state) => (cacheKey ? state.credentialsCacheState.cache[cacheKey] : undefined))
+
+  return {
+    state: {
+      cacheEntry,
+    },
+    actions: {
+      credentialsCacheApi: credentialsCacheApi(),
+    },
+  }
+}
+
+type ActiveRequestState = {
+  request: RequestState
+  activeTab: RequestTabState | undefined
+}
+
+type ActiveRequestActions = {
+  requestTabsApi: RequestTabsApi
+}
+
+/**
+ * Get the merged request for the currently active tab.
+ * Returns null if no active tab.
+ */
+export const useActiveRequest = (): HookResult<ActiveRequestState, ActiveRequestActions> | null => {
+  const activeTabId = useActiveTabId()
+  const result = useRequestTab(activeTabId)
+
+  if (!result) {
+    return null
+  }
+
+  return {
+    state: {
+      request: result.state.request,
+      activeTab: result.state.activeTab,
+    },
+    actions: {
+      requestTabsApi: getRequestTabsApi(),
+    },
+  }
+}

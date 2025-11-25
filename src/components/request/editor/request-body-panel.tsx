@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react"
 
 import { CodeIcon } from "lucide-react"
-import { useShallow } from "zustand/shallow"
 
 import { CodeEditor } from "@/components/editor/"
 import type { CodeEditorHandle } from "@/components/editor/code-editor"
@@ -11,8 +10,7 @@ import { Input } from "@/components/ui/knurl/input"
 import { cn } from "@/lib"
 import { warmPrettier } from "@/lib/prettier"
 import { generateUniqueId } from "@/lib/utils"
-import { useRequestBody } from "@/state"
-import { useApplication } from "@/state/application"
+import { useRequestBody, useRequestTab } from "@/state"
 import { CodeLanguages, type FormField, type RequestBodyData, type RequestHeader, type RequestState } from "@/types"
 import { EmptyState } from "./empty-state"
 import { FieldRow } from "./field-row"
@@ -102,9 +100,8 @@ export function RequestBodyPanel({ tabId }: RequestBodyPanelProps) {
   const request = { body } as RequestState
 
   // Access merged request to read user-provided headers for warnings
-  const { mergedRequest } = useApplication(
-    useShallow((state) => ({ mergedRequest: state.requestTabsState.openTabs[tabId]?.merged })),
-  )
+  const requestTab = useRequestTab(tabId)
+  const mergedRequest = requestTab?.state.request
 
   const headerValue = useCallback(
     (name: string): string | undefined => {

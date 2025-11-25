@@ -9,7 +9,7 @@ import { KnurlIcon } from "@/components/icons/knurl-icon"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { useInterval } from "@/hooks/use-interval"
-import { useApplication } from "@/state"
+import { useApplication, useSettings } from "@/state"
 
 const combinedPromise = Promise.all([import("@/pages/home"), new Promise((resolve) => setTimeout(resolve, 1500))]).then(
   ([homeModule]) => homeModule,
@@ -43,7 +43,8 @@ function Router() {
 }
 
 export function MainWindow() {
-  const interval = useApplication((app) => app.settingsState.requests.autoSave)
+  const { state: { requests } } = useSettings()
+  const interval = requests.autoSave
 
   const saveAll = React.useCallback(async () => {
     await useApplication.saveAll()

@@ -11,7 +11,7 @@ vi.mock("@/bindings/knurl", () => ({
 }))
 const { discoverOidc } = await import("@/bindings/knurl")
 import { RequestAuthPanel } from "./request-auth-panel"
-import { useCollections, useRequestTab } from "@/state"
+import { useCollections, useRequestTab, useCollectionFromCache, useCredentialsCacheEntry } from "@/state"
 
 // Mock the state hooks
 vi.mock("@/state/application", async (importOriginal) => {
@@ -25,6 +25,8 @@ vi.mock("@/state/application", async (importOriginal) => {
 vi.mock("@/state", () => ({
   useRequestTab: vi.fn(),
   useCollections: vi.fn(),
+  useCollectionFromCache: vi.fn(),
+  useCredentialsCacheEntry: vi.fn(),
 }))
 
 const mockSetRequestAuthentication = vi.fn()
@@ -85,6 +87,16 @@ describe("RequestAuthPanel", () => {
     vi.mocked(useCollections).mockReturnValue({
       state: { collectionsIndex: [] },
       actions: { collectionsApi: () => ({ setRequestAuthentication: mockSetRequestAuthentication }) },
+    } as any)
+
+    vi.mocked(useCollectionFromCache).mockReturnValue({
+      state: { collection: undefined },
+      actions: { collectionsApi: () => ({}) },
+    } as any)
+
+    vi.mocked(useCredentialsCacheEntry).mockReturnValue({
+      state: { cacheEntry: undefined },
+      actions: { credentialsCacheApi: () => ({}) },
     } as any)
 
     vi.mocked(applicationState.useApplication).mockImplementation((selector?: any) => {
@@ -292,24 +304,19 @@ describe("RequestAuthPanel", () => {
       },
     )
 
-    vi.mocked(applicationState.useApplication).mockImplementation((selector?: any) => {
-      const base: any = {
-        collectionsState: {
-          cache: {
-            "col-1": {
-              authentication: {
-                type: "bearer",
-                bearer: {
-                  placement: { type: "body", fieldName: "token", contentType: "application/x-www-form-urlencoded" },
-                },
-              },
-            },
-          },
+    const parentCollection = {
+      authentication: {
+        type: "bearer",
+        bearer: {
+          placement: { type: "body", fieldName: "token", contentType: "application/x-www-form-urlencoded" },
         },
-        credentialsCacheApi: { remove: mockRemoveToken, get: vi.fn().mockResolvedValue(null) },
-      }
-      return typeof selector === "function" ? selector(base) : base
-    })
+      },
+    }
+
+    vi.mocked(useCollectionFromCache).mockReturnValue({
+      state: { collection: parentCollection as any },
+      actions: { collectionsApi: () => ({}) },
+    } as any)
 
     render(<RequestAuthPanel tabId="tab-1" />)
 
