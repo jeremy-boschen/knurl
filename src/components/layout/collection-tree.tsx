@@ -52,6 +52,7 @@ import {
   isScratchCollection,
   useApplication,
   useCollection,
+  useCollectionFromCache,
   useCollections,
   useOpenTabs,
   useSidebar,
@@ -1031,7 +1032,7 @@ type CollectionRowSearchableProps = {
 }
 
 function CollectionRowSearchable({ collectionId, collectionName, query, onAction }: CollectionRowSearchableProps) {
-  const collection = useApplication((app) => app.collectionsState.cache[collectionId])
+  const { state: { collection } } = useCollectionFromCache(collectionId)
 
   React.useEffect(() => {
     if (!collection) {

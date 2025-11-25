@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { RequestBodyPanel, getBodyTypeLabel, guessContentTypeByExt } from "./request-body-panel"
 import { TooltipProvider } from "@/components/ui/knurl/tooltip"
+import { useRequestTab } from "@/state"
 
 const formatMock = vi.fn()
 const useRequestBodyMock = vi.fn()
@@ -34,6 +35,7 @@ vi.mock("@/components/ui/knurl", async (importOriginal) => {
 
 vi.mock("@/state", () => ({
   useRequestBody: (tabId: string) => useRequestBodyMock(tabId),
+  useRequestTab: vi.fn(),
 }))
 
 const applicationState = {
@@ -59,6 +61,18 @@ describe("RequestBodyPanel", () => {
     formatMock.mockClear()
     useRequestBodyMock.mockReset()
     applicationState.requestTabsState.openTabs = {}
+    vi.mocked(useRequestTab).mockImplementation(() => {
+      const tab = applicationState.requestTabsState.openTabs["tab-1"]
+      return {
+        state: {
+          request: tab?.merged ?? { headers: {} },
+          activeTab: {},
+          original: { headers: {} },
+          isDirty: false,
+        },
+        actions: { requestTabsApi: {} },
+      } as any
+    })
   })
 
   it("formats text bodies and updates content", async () => {
