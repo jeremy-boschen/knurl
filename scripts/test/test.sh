@@ -5,6 +5,8 @@ set -e
 RUN_UNIT=false
 RUN_E2E=false
 RUN_PERF=false
+RUN_CHECK=false
+RUN_INTEGRATION=false
 
 # Default reports
 REPORTS=()
@@ -13,6 +15,9 @@ REPORTS=()
 MODE_ARGS=()
 REPORT_ARGS=()
 WDIO_ARGS=()
+
+# Env flags
+INTEGRATION_MODE=false
 
 # -----------------------------------------------------------------------------
 # Helper: Parse Arguments
@@ -73,9 +78,11 @@ if [[ ${#MODE_ARGS[@]} -eq 0 ]]; then
 else
   for mode in "${MODE_ARGS[@]}"; do
     case $mode in
-      unit) RUN_UNIT=true ;;
-      e2e)  RUN_E2E=true ;;
-      perf) RUN_PERF=true ;;
+      unit)        RUN_UNIT=true ;;
+      e2e)         RUN_E2E=true ;;
+      perf)        RUN_PERF=true ;;
+      check)       RUN_CHECK=true ;;
+      integration) RUN_INTEGRATION=true ;;
       *) echo "Unknown mode: $mode"; exit 1 ;;
     esac
   done
@@ -179,7 +186,7 @@ if [ "$RUN_PERF" = true ]; then
   # Note: If user provided --spec args, they might conflict or append. 
   # Perf usually targets specific scenarios.
   
-  CMD="yarn wdio run ./wdio.conf.ts --spec='test/specs/performance-benchmark.e2e.ts'"
+  CMD="yarn wdio run ./wdio.conf.ts --spec='src-common/e2e/specs/performance.e2e.ts'"
   # We still respect other args like grep if useful, but mostly perf is specific.
   
   echo "   > $CMD"
@@ -187,6 +194,50 @@ if [ "$RUN_PERF" = true ]; then
   
   echo "Generating Performance Report..."
   node scripts/test/generate-performance-report.mjs
+fi
+
+# -----------------------------------------------------------------------------
+# Execution: Check (Quick Critical Tests)
+# -----------------------------------------------------------------------------
+if [ "$RUN_CHECK" = true ]; then
+  echo ""
+  echo "⚡ Running quick critical test check..."
+
+  echo "  1️⃣ Frontend unit tests..."
+  node scripts/test/run-vitest-groups.mjs --run
+
+  echo "  2️⃣ Backend unit tests..."
+  cd src-tauri && cargo test
+  cd - > /dev/null
+
+  echo "  3️⃣ E2E critical tests only..."
+  yarn wdio run ./wdio.conf.ts --mochaOpts.grep "\[CRITICAL\]"
+
+  echo "✅ Critical test suite passed!"
+fi
+
+# -----------------------------------------------------------------------------
+# Execution: Integration Tests
+# -----------------------------------------------------------------------------
+if [ "$RUN_INTEGRATION" = true ]; then
+  echo ""
+  echo "🔗 Running integration tests..."
+
+  # Build wdio command with integration env var
+  CMD="VITE_INTEGRATION_ENABLED=true yarn wdio run ./wdio.conf.ts"
+
+  # Add any wdio args that were passed through
+  for arg in "${WDIO_ARGS[@]}"; do
+    CMD="$CMD $arg"
+  done
+
+  # If no specific args, run all integration tests
+  if [[ ${#WDIO_ARGS[@]} -eq 0 ]]; then
+    CMD="$CMD --spec 'src-common/e2e/specs/integration/**/*.intg.ts'"
+  fi
+
+  echo "   > $CMD"
+  eval "$CMD"
 fi
 
 # -----------------------------------------------------------------------------
