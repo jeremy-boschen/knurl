@@ -56,6 +56,8 @@ export default defineConfig(({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Use React profiling build for accurate performance metrics
+      'react-dom/client': 'react-dom/profiling',
       // This is needed for recent codemirror styling. No idea why
       '@codemirror/state': path.resolve(__dirname, './node_modules/@codemirror/state/dist/index.cjs'),
       '@codemirror/view': path.resolve(__dirname, './node_modules/@codemirror/view/dist/index.cjs'),
