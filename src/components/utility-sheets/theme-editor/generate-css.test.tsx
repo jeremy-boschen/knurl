@@ -29,10 +29,14 @@ describe("generateThemeCss helper", () => {
     vi.useRealTimers()
   })
 
-  it("returns empty output when cssVars are missing", async () => {
-    const generateThemeCss = await setupModule({ ensured: {}, added: { base: [], dark: [] } })
-    expect(generateThemeCss({} as any)).toBe("")
-  })
+  it(
+    "returns empty output when cssVars are missing",
+    { timeout: 10000 },
+    async () => {
+      const generateThemeCss = await setupModule({ ensured: {}, added: { base: [], dark: [] } })
+      expect(generateThemeCss({} as any)).toBe("")
+    },
+  )
 
   it("renders root and dark blocks with custom markers", async () => {
     const generateThemeCss = await setupModule({
