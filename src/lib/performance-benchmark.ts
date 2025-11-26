@@ -7,7 +7,7 @@ export interface PerformanceMetric {
   name: string
   duration: number
   timestamp: number
-  phase: 'mount' | 'update'
+  phase: "mount" | "update"
 }
 
 export interface BenchmarkResult {
@@ -36,7 +36,7 @@ const DEFAULT_CONFIG: Required<BenchmarkConfig> = {
  * Collects all profiler metrics from React Profiler bridge
  */
 export function getAllProfilerMetrics(): PerformanceMetric[] {
-  if (typeof window === 'undefined' || !window.__REACT_PROFILER__) {
+  if (typeof window === "undefined" || !window.__REACT_PROFILER__) {
     return []
   }
   try {
@@ -56,16 +56,18 @@ export function getComponentStats(componentName: string): {
   minDuration: number
   maxDuration: number
 } {
-  if (typeof window === 'undefined' || !window.__REACT_PROFILER__) {
+  if (typeof window === "undefined" || !window.__REACT_PROFILER__) {
     return { renders: 0, avgDuration: 0, minDuration: 0, maxDuration: 0 }
   }
   try {
-    return window.__REACT_PROFILER__.getStats(componentName) || {
-      renders: 0,
-      avgDuration: 0,
-      minDuration: 0,
-      maxDuration: 0,
-    }
+    return (
+      window.__REACT_PROFILER__.getStats(componentName) || {
+        renders: 0,
+        avgDuration: 0,
+        minDuration: 0,
+        maxDuration: 0,
+      }
+    )
   } catch {
     return { renders: 0, avgDuration: 0, minDuration: 0, maxDuration: 0 }
   }
@@ -75,7 +77,7 @@ export function getComponentStats(componentName: string): {
  * Clears profiler metrics
  */
 export function clearProfilerMetrics(): void {
-  if (typeof window === 'undefined' || !window.__REACT_PROFILER__) {
+  if (typeof window === "undefined" || !window.__REACT_PROFILER__) {
     return
   }
   try {
@@ -112,8 +114,7 @@ export function analyzeBenchmarkResults(results: BenchmarkResult[]): {
 
   const passCount = metrics.filter((m) => m.passed).length
   const failCount = metrics.filter((m) => !m.passed).length
-  const averageDuration =
-    results.reduce((sum, r) => sum + r.averageDuration, 0) / results.length
+  const averageDuration = results.reduce((sum, r) => sum + r.averageDuration, 0) / results.length
   const maxDuration = Math.max(...results.map((r) => r.maxDuration))
 
   return {
@@ -130,25 +131,25 @@ export function analyzeBenchmarkResults(results: BenchmarkResult[]): {
  */
 export function formatBenchmarkResults(analysis: ReturnType<typeof analyzeBenchmarkResults>): string {
   const lines: string[] = [
-    '\n╔════════════════════════════════════════════╗',
-    '║        PERFORMANCE BENCHMARK RESULTS       ║',
-    '╚════════════════════════════════════════════╝\n',
+    "\n╔════════════════════════════════════════════╗",
+    "║        PERFORMANCE BENCHMARK RESULTS       ║",
+    "╚════════════════════════════════════════════╝\n",
     `✅ Passed: ${analysis.passCount}`,
     `❌ Failed: ${analysis.failCount}`,
     `📊 Average Duration: ${analysis.averageDuration.toFixed(2)}ms`,
     `⚡ Max Duration: ${analysis.maxDuration.toFixed(2)}ms\n`,
-    '┌─ Individual Results ─────────────────────────┐',
+    "┌─ Individual Results ─────────────────────────┐",
   ]
 
   analysis.metrics.forEach((metric) => {
-    const status = metric.passed ? '✅' : '❌'
+    const status = metric.passed ? "✅" : "❌"
     const line = `│ ${status} ${metric.testName.padEnd(25)} ${metric.duration.toFixed(2)}ms (${metric.variance})`
     lines.push(line)
   })
 
-  lines.push('└─────────────────────────────────────────────┘\n')
+  lines.push("└─────────────────────────────────────────────┘\n")
 
-  return lines.join('\n')
+  return lines.join("\n")
 }
 
 /**

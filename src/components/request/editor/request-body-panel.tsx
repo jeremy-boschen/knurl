@@ -1,4 +1,4 @@
-import React, { Profiler, useCallback, useEffect, useMemo, useRef } from "react"
+import React, { Profiler, useCallback, useEffect, useMemo, useRef, useOptimistic } from "react"
 
 import { CodeIcon } from "lucide-react"
 
@@ -97,8 +97,14 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
   } = useRequestBody(tabId)
   const editorRef = useRef<CodeEditorHandle | null>(null)
 
+  // Optimistic updates for instant feedback
+  const [optimisticBody, updateBodyOptimistic] = useOptimistic(body, (state, changes: Record<string, unknown>) => ({
+    ...state,
+    ...changes,
+  }))
+
   // Create a temporary request object for type checking functions
-  const request = { body } as RequestState
+  const request = { body: optimisticBody } as RequestState
 
   // Access merged request to read user-provided headers for warnings
   const requestTab = useRequestTab(tabId)
@@ -194,12 +200,15 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
             <div className="relative h-full min-h-0 flex-1 bg-card">
               <CodeEditor
                 ref={editorRef}
-                className={cn("h-full w-full", original.content !== body.content && "unsaved-changes")}
+                className={cn("h-full w-full", original.content !== optimisticBody.content && "unsaved-changes")}
                 mode="edit"
-                value={body.content ?? ""}
-                language={body.language ?? "text"}
-                onChange={actions.updateBodyContent}
-                lineNumbers={(body.content?.length ?? 0) > 0}
+                value={optimisticBody.content ?? ""}
+                language={optimisticBody.language ?? "text"}
+                onChange={(content) => {
+                  updateBodyOptimistic({ content })
+                  actions.updateBodyContent(content)
+                }}
+                lineNumbers={(optimisticBody.content?.length ?? 0) > 0}
                 placeholder="Enter request body (JSON, YAML, GraphQL, XML, etc.)"
                 data-test-id="request-body-panel:text-editor"
               />

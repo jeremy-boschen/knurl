@@ -1,4 +1,4 @@
-import { cloneElement, type ReactElement, type ReactNode, Profiler } from "react"
+import React, { cloneElement, type ReactElement, type ReactNode, Profiler } from "react"
 
 import { ChevronDownIcon, FilePlus2Icon, PlusIcon, TriangleAlertIcon, TypeIcon, UndoIcon } from "lucide-react"
 
@@ -41,7 +41,7 @@ export type RequestEditorProps = {
   tabId: string
 }
 
-export function RequestEditor({ tabId }: RequestEditorProps) {
+function RequestEditorComponent({ tabId }: RequestEditorProps) {
   const {
     state: { activeTab, isDirty },
     actions: { requestTabsApi },
@@ -157,6 +157,8 @@ export function RequestEditor({ tabId }: RequestEditorProps) {
     </Profiler>
   )
 }
+
+export const RequestEditor = React.memo(RequestEditorComponent)
 
 type RequestTabTriggerProps = {
   value: string

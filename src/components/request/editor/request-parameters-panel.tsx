@@ -1,4 +1,4 @@
-import React, { Profiler, useCallback } from "react"
+import React, { Profiler, useCallback, useOptimistic } from "react"
 
 import { Input } from "@/components/ui/knurl/input"
 import { cn } from "@/lib"
@@ -19,41 +19,88 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
     actions,
   } = useRequestParameters(tabId)
 
+  // Optimistic updates for instant feedback
+  const [optimisticPathParams, updatePathParamOptimistic] = useOptimistic(
+    pathParams,
+    (state, { paramId, changes }: { paramId: string; changes: Record<string, unknown> }) => ({
+      ...state,
+      [paramId]: { ...state[paramId], ...changes },
+    }),
+  )
+  const [optimisticQueryParams, updateQueryParamOptimistic] = useOptimistic(
+    queryParams,
+    (state, { paramId, changes }: { paramId: string; changes: Record<string, unknown> }) => ({
+      ...state,
+      [paramId]: { ...state[paramId], ...changes },
+    }),
+  )
+  const [optimisticCookieParams, updateCookieParamOptimistic] = useOptimistic(
+    cookieParams,
+    (state, { paramId, changes }: { paramId: string; changes: Record<string, unknown> }) => ({
+      ...state,
+      [paramId]: { ...state[paramId], ...changes },
+    }),
+  )
+
   // Path parameter handlers
   const handlePathParamEnabledChange = useCallback(
-    (pathParamId: string, enabled: boolean) => actions.updatePathParam(pathParamId, { enabled }),
-    [actions],
+    (pathParamId: string, enabled: boolean) => {
+      updatePathParamOptimistic({ paramId: pathParamId, changes: { enabled } })
+      actions.updatePathParam(pathParamId, { enabled })
+    },
+    [actions, updatePathParamOptimistic],
   )
   const handlePathParamNameChange = useCallback(
-    (pathParamId: string, name: string) => actions.updatePathParam(pathParamId, { name }),
-    [actions],
+    (pathParamId: string, name: string) => {
+      updatePathParamOptimistic({ paramId: pathParamId, changes: { name } })
+      actions.updatePathParam(pathParamId, { name })
+    },
+    [actions, updatePathParamOptimistic],
   )
   const handlePathParamValueChange = useCallback(
-    (pathParamId: string, value: string) => actions.updatePathParam(pathParamId, { value }),
-    [actions],
+    (pathParamId: string, value: string) => {
+      updatePathParamOptimistic({ paramId: pathParamId, changes: { value } })
+      actions.updatePathParam(pathParamId, { value })
+    },
+    [actions, updatePathParamOptimistic],
   )
   const handlePathParamSecureChange = useCallback(
-    (pathParamId: string, secure: boolean) => actions.updatePathParam(pathParamId, { secure }),
-    [actions],
+    (pathParamId: string, secure: boolean) => {
+      updatePathParamOptimistic({ paramId: pathParamId, changes: { secure } })
+      actions.updatePathParam(pathParamId, { secure })
+    },
+    [actions, updatePathParamOptimistic],
   )
   const handlePathParamDelete = useCallback((pathParamId: string) => actions.removePathParam(pathParamId), [actions])
 
   // Query parameter handlers
   const handleQueryParamEnabledChange = useCallback(
-    (queryParamId: string, enabled: boolean) => actions.updateQueryParam(queryParamId, { enabled }),
-    [actions],
+    (queryParamId: string, enabled: boolean) => {
+      updateQueryParamOptimistic({ paramId: queryParamId, changes: { enabled } })
+      actions.updateQueryParam(queryParamId, { enabled })
+    },
+    [actions, updateQueryParamOptimistic],
   )
   const handleQueryParamNameChange = useCallback(
-    (queryParamId: string, name: string) => actions.updateQueryParam(queryParamId, { name }),
-    [actions],
+    (queryParamId: string, name: string) => {
+      updateQueryParamOptimistic({ paramId: queryParamId, changes: { name } })
+      actions.updateQueryParam(queryParamId, { name })
+    },
+    [actions, updateQueryParamOptimistic],
   )
   const handleQueryParamValueChange = useCallback(
-    (queryParamId: string, value: string) => actions.updateQueryParam(queryParamId, { value }),
-    [actions],
+    (queryParamId: string, value: string) => {
+      updateQueryParamOptimistic({ paramId: queryParamId, changes: { value } })
+      actions.updateQueryParam(queryParamId, { value })
+    },
+    [actions, updateQueryParamOptimistic],
   )
   const handleQueryParamSecureChange = useCallback(
-    (queryParamId: string, secure: boolean) => actions.updateQueryParam(queryParamId, { secure }),
-    [actions],
+    (queryParamId: string, secure: boolean) => {
+      updateQueryParamOptimistic({ paramId: queryParamId, changes: { secure } })
+      actions.updateQueryParam(queryParamId, { secure })
+    },
+    [actions, updateQueryParamOptimistic],
   )
   const handleQueryParamDelete = useCallback(
     (queryParamId: string) => actions.removeQueryParam(queryParamId),
@@ -62,20 +109,32 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
 
   // Cookie parameter handlers
   const handleCookieParamEnabledChange = useCallback(
-    (cookieParamId: string, enabled: boolean) => actions.updateCookieParam(cookieParamId, { enabled }),
-    [actions],
+    (cookieParamId: string, enabled: boolean) => {
+      updateCookieParamOptimistic({ paramId: cookieParamId, changes: { enabled } })
+      actions.updateCookieParam(cookieParamId, { enabled })
+    },
+    [actions, updateCookieParamOptimistic],
   )
   const handleCookieParamNameChange = useCallback(
-    (cookieParamId: string, name: string) => actions.updateCookieParam(cookieParamId, { name }),
-    [actions],
+    (cookieParamId: string, name: string) => {
+      updateCookieParamOptimistic({ paramId: cookieParamId, changes: { name } })
+      actions.updateCookieParam(cookieParamId, { name })
+    },
+    [actions, updateCookieParamOptimistic],
   )
   const handleCookieParamValueChange = useCallback(
-    (cookieParamId: string, value: string) => actions.updateCookieParam(cookieParamId, { value }),
-    [actions],
+    (cookieParamId: string, value: string) => {
+      updateCookieParamOptimistic({ paramId: cookieParamId, changes: { value } })
+      actions.updateCookieParam(cookieParamId, { value })
+    },
+    [actions, updateCookieParamOptimistic],
   )
   const handleCookieParamSecureChange = useCallback(
-    (cookieParamId: string, secure: boolean) => actions.updateCookieParam(cookieParamId, { secure }),
-    [actions],
+    (cookieParamId: string, secure: boolean) => {
+      updateCookieParamOptimistic({ paramId: cookieParamId, changes: { secure } })
+      actions.updateCookieParam(cookieParamId, { secure })
+    },
+    [actions, updateCookieParamOptimistic],
   )
   const handleCookieParamDelete = useCallback(
     (cookieParamId: string) => actions.removeCookieParam(cookieParamId),
@@ -90,7 +149,7 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
           <SectionHeader title="Path Parameters" />
 
           <div className="flex flex-col gap-3 divide-y divide-border/10">
-            {Object.values(pathParams ?? {}).map((pathParam) => (
+            {Object.values(optimisticPathParams ?? {}).map((pathParam) => (
               <FieldRow
                 key={pathParam.id}
                 enabled={pathParam.enabled}
@@ -120,7 +179,7 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
               />
             ))}
 
-            {Object.keys(pathParams ?? {}).length === 0 && (
+            {Object.keys(optimisticPathParams ?? {}).length === 0 && (
               <EmptyState message="No path parameters added yet. Path parameters replace placeholders in the URL (e.g., /users/:id)." />
             )}
           </div>
@@ -131,7 +190,7 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
           <SectionHeader title="Query Parameters" />
 
           <div className="flex flex-col gap-3 divide-y divide-border/10">
-            {Object.values(queryParams ?? {}).map((param) => (
+            {Object.values(optimisticQueryParams ?? {}).map((param) => (
               <FieldRow
                 key={param.id}
                 enabled={param.enabled}
@@ -161,7 +220,7 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
               />
             ))}
 
-            {Object.keys(queryParams ?? {}).length === 0 && (
+            {Object.keys(optimisticQueryParams ?? {}).length === 0 && (
               <EmptyState message="No query parameters added yet. Query parameters are appended to the URL (e.g., ?name=value)." />
             )}
           </div>
@@ -173,7 +232,7 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
             <SectionHeader title="Cookies" />
 
             <div className="flex flex-col gap-3 divide-y divide-border/10">
-              {Object.values((cookieParams ?? {}) as Record<string, RequestCookieParam>).map((param) => (
+              {Object.values((optimisticCookieParams ?? {}) as Record<string, RequestCookieParam>).map((param) => (
                 <FieldRow
                   key={param.id}
                   enabled={param.enabled}
@@ -203,7 +262,7 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
                 />
               ))}
 
-              {Object.keys((cookieParams ?? {}) as Record<string, RequestCookieParam>).length === 0 && (
+              {Object.keys((optimisticCookieParams ?? {}) as Record<string, RequestCookieParam>).length === 0 && (
                 <EmptyState message="No cookies added yet." />
               )}
             </div>
