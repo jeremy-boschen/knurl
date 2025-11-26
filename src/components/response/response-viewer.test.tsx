@@ -297,6 +297,53 @@ describe("ResponseViewer", () => {
     expect(statusAfter.className).toContain("text-red-500")
   })
 
+  it("uses content-disposition filename when saving binary responses", async () => {
+    const user = userEvent.setup()
+    renderViewer({
+      httpData: {
+        headers: {
+          "content-type": "video/mp4",
+          "content-disposition": "attachment; filename*=UTF-8''clip.mp4",
+        },
+        bodyBase64: "Zm9v",
+      },
+    })
+
+    await user.click(screen.getByRole("button", { name: /save/i }))
+    expect(saveBinary).toHaveBeenCalledWith("Zm9v", expect.objectContaining({ defaultPath: "clip.mp4" }))
+  })
+
+  it("falls back to content-type extension when filename missing", async () => {
+    const user = userEvent.setup()
+    renderViewer({
+      httpData: {
+        headers: { "content-type": "application/octet-stream" },
+        bodyBase64: "YWJj",
+      },
+    })
+
+    await user.click(screen.getByRole("button", { name: /save/i }))
+    expect(saveFile).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ defaultPath: "response.txt" }))
+  })
+
+  it("disables previews for large PDFs or media without base64 payloads", async () => {
+    const user = userEvent.setup()
+    renderViewer({
+      httpData: { headers: { "content-type": "application/pdf" }, bodyBase64: undefined },
+    })
+
+    await user.click(screen.getByRole("tab", { name: /Preview/i }))
+    expect(screen.getByText(/Preview disabled for large PDFs/i)).toBeInTheDocument()
+
+    cleanup()
+    renderViewer({
+      httpData: { headers: { "content-type": "video/mp4" }, bodyBase64: undefined },
+    })
+
+    await user.click(screen.getByRole("tab", { name: /Preview/i }))
+    expect(screen.getByText(/Preview disabled for large media files/i)).toBeInTheDocument()
+  })
+
   it("shows error status when logs contain errors and no http response", async () => {
     renderViewer({
       responseOverrides: {
