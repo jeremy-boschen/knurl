@@ -1,4 +1,4 @@
-import React from "react"
+import React, { Profiler } from "react"
 
 import { CopyIcon, WrapTextIcon } from "lucide-react"
 
@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { onProfilerRender } from "@/lib/profiler-bridge"
 import { DEFAULT_LOG_LEVELS, type LogLevel } from "@/types"
 
 const ALL_LEVELS = ["info", "debug", "warning", "error"] as const
@@ -145,154 +146,158 @@ export const LogsList = ({ logs, sending, selectedLevels, onSelectedLevelsChange
 
   if (!logs || logs.length === 0) {
     return (
-      <div className="flex h-full flex-col" data-test-id="logs-list:empty-state">
-        <div className="flex flex-1 items-center justify-center py-4">
-          <div className="text-center text-foreground">
-            <div className="mb-2 text-4xl">📋</div>
-            <div className="text-lg font-medium">{sending ? "Waiting for Logs" : "No Logs Available"}</div>
-            <div className="text-sm">{sending ? "Request logs will appear here" : "Send a request to see logs"}</div>
+      <Profiler id="LogsList" onRender={onProfilerRender}>
+        <div className="flex h-full flex-col" data-test-id="logs-list:empty-state">
+          <div className="flex flex-1 items-center justify-center py-4">
+            <div className="text-center text-foreground">
+              <div className="mb-2 text-4xl">📋</div>
+              <div className="text-lg font-medium">{sending ? "Waiting for Logs" : "No Logs Available"}</div>
+              <div className="text-sm">{sending ? "Request logs will appear here" : "Send a request to see logs"}</div>
+            </div>
           </div>
         </div>
-      </div>
+      </Profiler>
     )
   }
 
   return (
-    <div className="flex h-full flex-col" data-test-id="logs-list">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b bg-background p-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" data-test-id="logs-list:levels-popover-trigger">
-                <span className="mr-2">Levels</span>
-                <span className="text-muted-foreground/75">
-                  {(() => {
-                    if (allSelected) {
-                      return "All"
-                    }
-                    const items = Array.from(selectedLevelSet)
-                    if (items.length <= 2) {
-                      return items.map((l) => l.toUpperCase()).join(", ")
-                    }
-                    return `${items.length} selected`
-                  })()}
-                </span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64" data-test-id="logs-list:levels-popover-content">
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    checked={allSelected ? true : someSelected ? "indeterminate" : false}
-                    onCheckedChange={handleToggleAll}
-                    aria-label="All levels"
-                    data-test-id="logs-list:toggle-all-levels-checkbox"
-                  />
-                  <span className={cn("text-sm", !allSelected && "text-foreground/75")}>All</span>
-                </div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                  {ALL_LEVELS.map((lvl) => (
-                    <div key={lvl} className="flex items-center space-x-2">
-                      <Checkbox
-                        checked={selectedLevelSet.has(lvl)}
-                        onCheckedChange={(v) => handleToggleLevel(lvl, v)}
-                        aria-label={lvl}
-                        data-test-id={`logs-list:toggle-level-checkbox:${lvl}`}
-                      />
-                      <span className={cn("text-sm capitalize", !selectedLevelSet.has(lvl) && "text-foreground/75")}>
-                        {lvl}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-          <div className="flex items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={lineWrap ? "secondary" : "outline"}
-                  size="icon"
-                  onClick={() => setLineWrap(!lineWrap)}
-                  aria-pressed={lineWrap}
-                  title="Toggle line wrapping"
-                  data-test-id="logs-list:line-wrap-button"
-                >
-                  <WrapTextIcon className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Toggle line wrapping</p>
-              </TooltipContent>
-            </Tooltip>
-            <span className="text-xs">
-              {getFilteredLogs().length} of {logs.length} logs
-            </span>
-          </div>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={copyAllLogs}
-          disabled={getFilteredLogs().length === 0}
-          data-test-id="logs-list:copy-all-button"
-        >
-          <CopyIcon className="mr-1 h-4 w-4" />
-          Copy Logs
-        </Button>
-      </div>
-      <div className="flex-1 overflow-auto font-mono text-sm">
-        <DataTable columnTemplate="auto auto 1fr auto">
-          {getFilteredLogs().map((log, index) => {
-            const metaLabel = buildMetaLabel(log)
-            return (
-              // biome-ignore lint/suspicious/noArrayIndexKey: index is stable
-              <DataTableRow key={index} className="group/log-entry" data-test-id={`logs-list:log-row:${index}`}>
-                <DataTableCell
-                  type="cell"
-                  className="py-1 pr-3 text-xs text-muted-foreground whitespace-nowrap"
-                  title={new Date(log.timestamp).toISOString()}
-                >
-                  {formatLocalTimeWithMs(log.timestamp)}
-                </DataTableCell>
-                <DataTableCell type="cell" className="py-1 pr-3">
-                  <span
-                    className={cn(
-                      "inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium",
-                      LOG_LEVEL_CSS[log.level],
-                    )}
-                  >
-                    {log.level.toUpperCase()}
+    <Profiler id="LogsList" onRender={onProfilerRender}>
+      <div className="flex h-full flex-col" data-test-id="logs-list">
+        <div className="sticky top-0 z-20 flex items-center justify-between border-b bg-background p-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" data-test-id="logs-list:levels-popover-trigger">
+                  <span className="mr-2">Levels</span>
+                  <span className="text-muted-foreground/75">
+                    {(() => {
+                      if (allSelected) {
+                        return "All"
+                      }
+                      const items = Array.from(selectedLevelSet)
+                      if (items.length <= 2) {
+                        return items.map((l) => l.toUpperCase()).join(", ")
+                      }
+                      return `${items.length} selected`
+                    })()}
                   </span>
-                </DataTableCell>
-                <DataTableCell
-                  type="cell"
-                  className={cn("py-1 pr-3 min-w-0", lineWrap ? "break-all" : "whitespace-pre-wrap")}
-                >
-                  {ENABLE_STRUCTURED_LOG_META && metaLabel && (
-                    <span className="mr-2 text-[10px] uppercase tracking-wide text-muted-foreground/80">
-                      {metaLabel}
-                    </span>
-                  )}
-                  <span>{log.message}</span>
-                </DataTableCell>
-                <DataTableCell type="cell" className="py-1">
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64" data-test-id="logs-list:levels-popover-content">
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                      onCheckedChange={handleToggleAll}
+                      aria-label="All levels"
+                      data-test-id="logs-list:toggle-all-levels-checkbox"
+                    />
+                    <span className={cn("text-sm", !allSelected && "text-foreground/75")}>All</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                    {ALL_LEVELS.map((lvl) => (
+                      <div key={lvl} className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={selectedLevelSet.has(lvl)}
+                          onCheckedChange={(v) => handleToggleLevel(lvl, v)}
+                          aria-label={lvl}
+                          data-test-id={`logs-list:toggle-level-checkbox:${lvl}`}
+                        />
+                        <span className={cn("text-sm capitalize", !selectedLevelSet.has(lvl) && "text-foreground/75")}>
+                          {lvl}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+            <div className="flex items-center gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <Button
-                    variant="ghost"
+                    variant={lineWrap ? "secondary" : "outline"}
                     size="icon"
-                    className="h-5 w-5 opacity-0 group-hover/log-entry:opacity-100"
-                    onClick={() => copyToClipboard(log.message)}
-                    data-test-id={`logs-list:copy-log-button:${index}`}
+                    onClick={() => setLineWrap(!lineWrap)}
+                    aria-pressed={lineWrap}
+                    title="Toggle line wrapping"
+                    data-test-id="logs-list:line-wrap-button"
                   >
-                    <CopyIcon className="h-3 w-3" />
+                    <WrapTextIcon className="h-4 w-4" />
                   </Button>
-                </DataTableCell>
-              </DataTableRow>
-            )
-          })}
-        </DataTable>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Toggle line wrapping</p>
+                </TooltipContent>
+              </Tooltip>
+              <span className="text-xs">
+                {getFilteredLogs().length} of {logs.length} logs
+              </span>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={copyAllLogs}
+            disabled={getFilteredLogs().length === 0}
+            data-test-id="logs-list:copy-all-button"
+          >
+            <CopyIcon className="mr-1 h-4 w-4" />
+            Copy Logs
+          </Button>
+        </div>
+        <div className="flex-1 overflow-auto font-mono text-sm">
+          <DataTable columnTemplate="auto auto 1fr auto">
+            {getFilteredLogs().map((log, index) => {
+              const metaLabel = buildMetaLabel(log)
+              return (
+                // biome-ignore lint/suspicious/noArrayIndexKey: index is stable
+                <DataTableRow key={index} className="group/log-entry" data-test-id={`logs-list:log-row:${index}`}>
+                  <DataTableCell
+                    type="cell"
+                    className="py-1 pr-3 text-xs text-muted-foreground whitespace-nowrap"
+                    title={new Date(log.timestamp).toISOString()}
+                  >
+                    {formatLocalTimeWithMs(log.timestamp)}
+                  </DataTableCell>
+                  <DataTableCell type="cell" className="py-1 pr-3">
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium",
+                        LOG_LEVEL_CSS[log.level],
+                      )}
+                    >
+                      {log.level.toUpperCase()}
+                    </span>
+                  </DataTableCell>
+                  <DataTableCell
+                    type="cell"
+                    className={cn("py-1 pr-3 min-w-0", lineWrap ? "break-all" : "whitespace-pre-wrap")}
+                  >
+                    {ENABLE_STRUCTURED_LOG_META && metaLabel && (
+                      <span className="mr-2 text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                        {metaLabel}
+                      </span>
+                    )}
+                    <span>{log.message}</span>
+                  </DataTableCell>
+                  <DataTableCell type="cell" className="py-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 opacity-0 group-hover/log-entry:opacity-100"
+                      onClick={() => copyToClipboard(log.message)}
+                      data-test-id={`logs-list:copy-log-button:${index}`}
+                    >
+                      <CopyIcon className="h-3 w-3" />
+                    </Button>
+                  </DataTableCell>
+                </DataTableRow>
+              )
+            })}
+          </DataTable>
+        </div>
       </div>
-    </div>
+    </Profiler>
   )
 }

@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { Profiler, useState } from "react"
 
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener"
 import { CodeIcon, CopyIcon, ExternalLinkIcon, FolderOpenIcon, ListRestartIcon } from "lucide-react"
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useEvent } from "@/hooks/use-event"
 import { warmPrettier } from "@/lib/prettier"
+import { onProfilerRender } from "@/lib/profiler-bridge"
 import { cn, isNotEmpty } from "@/lib/utils"
 import { useRequestTab } from "@/state"
 import { type CodeLanguage, CodeLanguages, DEFAULT_LOG_LEVELS, type ResponseState } from "@/types"
@@ -165,391 +166,393 @@ export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
   }
 
   return (
-    <div className={cn("flex flex-col h-full w-full", className)}>
-      {isNotEmpty(response) ? (
-        <Tabs
-          value={activeResponseTab}
-          onValueChange={setActiveResponseTab}
-          className="flex flex-1 flex-col overflow-auto gap-0"
-        >
-          <div className="sticky top-0 z-20 bg-muted">
-            <div className="flex items-center justify-between border-b px-2">
-              <TabsList className="h-10 p-0 rounded-none space-x-2">
-                <h2 className="text-lg font-medium mr-2 text-foreground" data-test-id="response-viewer:heading">
-                  Response
-                </h2>
-                <TabsTrigger
-                  value="response-body"
-                  className="knurl-tab group/tab"
-                  data-test-id="response-viewer:tab-body"
-                >
-                  Body
-                </TabsTrigger>
-                {isPreviewable && (
+    <Profiler id="ResponseViewer" onRender={onProfilerRender}>
+      <div className={cn("flex flex-col h-full w-full", className)}>
+        {isNotEmpty(response) ? (
+          <Tabs
+            value={activeResponseTab}
+            onValueChange={setActiveResponseTab}
+            className="flex flex-1 flex-col overflow-auto gap-0"
+          >
+            <div className="sticky top-0 z-20 bg-muted">
+              <div className="flex items-center justify-between border-b px-2">
+                <TabsList className="h-10 p-0 rounded-none space-x-2">
+                  <h2 className="text-lg font-medium mr-2 text-foreground" data-test-id="response-viewer:heading">
+                    Response
+                  </h2>
                   <TabsTrigger
-                    value="response-preview"
+                    value="response-body"
                     className="knurl-tab group/tab"
-                    data-test-id="response-viewer:tab-preview"
+                    data-test-id="response-viewer:tab-body"
                   >
-                    Preview
+                    Body
                   </TabsTrigger>
-                )}
-                <TabsTrigger
-                  value="response-headers"
-                  className="knurl-tab group/tab"
-                  data-test-id="response-viewer:tab-headers"
-                >
-                  Headers
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "group-data-[state=inactive]/tab:text-muted-foreground",
-                      "ml-1 rounded px-1.5 py-0.5 text-xs",
-                    )}
-                  >
-                    {Object.keys(httpResponse?.headers ?? {}).length}
-                  </Badge>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="response-cookies"
-                  className="knurl-tab group/tab"
-                  data-test-id="response-viewer:tab-cookies"
-                >
-                  Cookies
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "group-data-[state=inactive]/tab:text-muted-foreground",
-                      "ml-1 rounded px-1.5 py-0.5 text-xs",
-                    )}
-                  >
-                    {Object.keys(httpResponse?.cookies ?? {}).length}
-                  </Badge>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="response-logs"
-                  className="knurl-tab group/tab"
-                  data-test-id="response-viewer:tab-logs"
-                >
-                  Logs
-                  <Badge
-                    variant={hasErrorLogs ? "destructive" : "outline"}
-                    className={cn(
-                      "group-data-[state=inactive]/tab:text-muted-foreground",
-                      "ml-1 rounded px-1.5 py-0.5 text-xs",
-                    )}
-                  >
-                    {response.logs?.length ?? 0}
-                  </Badge>
-                </TabsTrigger>
-              </TabsList>
-              {httpResponse ? (
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Status:</span>
-                    <span
-                      className={cn("font-mono font-medium", getStatusColor(httpResponse.status ?? -1))}
-                      data-test-id="response-panel:status-code"
+                  {isPreviewable && (
+                    <TabsTrigger
+                      value="response-preview"
+                      className="knurl-tab group/tab"
+                      data-test-id="response-viewer:tab-preview"
                     >
-                      {httpResponse.status} {httpResponse.statusText}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Time:</span>
-                    <span className="font-mono text-muted-foreground/75">{response.responseTime}ms</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Size:</span>
-                    <span className="font-mono text-muted-foreground/75">
-                      {formatBytes(response.responseSize ?? 0)}
-                    </span>
-                  </div>
-                </div>
-              ) : hasErrorLogs ? (
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Status:</span>
-                    <span className="font-mono font-medium text-red-500" data-test-id="response-panel:status-code">
-                      Error
-                    </span>
-                  </div>
-                </div>
-              ) : null}
-              {httpResponse && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={async () => {
-                      try {
-                        const cd =
-                          httpResponse?.headers?.["content-disposition"] ||
-                          httpResponse?.headers?.["Content-Disposition"]
-                        const fnameMatch = cd?.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/)
-                        const inferredName = fnameMatch?.[1] || fnameMatch?.[2]
-                        const defaultExt = (() => {
-                          if (ct.startsWith("image/")) {
-                            return ct.split("/")[1] || "bin"
-                          }
-                          if (ct.includes("pdf")) {
-                            return "pdf"
-                          }
-                          if (ct.includes("csv")) {
-                            return "csv"
-                          }
-                          if (ct.includes("json")) {
-                            return "json"
-                          }
-                          if (ct.includes("xml")) {
-                            return "xml"
-                          }
-                          if (ct.includes("yaml")) {
-                            return "yml"
-                          }
-                          if (ct.startsWith("audio/")) {
-                            return ct.split("/")[1] || "audio"
-                          }
-                          if (ct.startsWith("video/")) {
-                            return ct.split("/")[1] || "video"
-                          }
-                          return "txt"
-                        })()
-                        const defaultPath = inferredName ? inferredName : `response.${defaultExt}`
-
-                        // For text-like, save raw body; for binary-like, save base64 with .b64 when bodyBase64 present
-                        if ((isImage || isPdf || isAudio || isVideo) && httpResponse?.bodyBase64) {
-                          await saveBinary(httpResponse.bodyBase64, {
-                            title: "Save Response",
-                            defaultPath: defaultPath,
-                          })
-                        } else {
-                          await saveFile(httpResponse?.body ?? "", {
-                            title: "Save Response",
-                            defaultPath: defaultPath,
-                          })
-                        }
-                      } catch (_e) {
-                        // ignore; user may have cancelled
-                      }
-                    }}
-                    data-test-id="response-viewer:save-button"
-                  >
-                    Save
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            <TabsContent value="response-body" className="m-0 h-full" data-test-id="response-viewer:body">
-              <div className="flex h-full flex-col">
-                <div className="flex items-center justify-between bg-background/80 backdrop-blur-sm py-3 px-4 sticky top-0 z-20 border-b border-border/10">
-                  <div className="flex items-center space-x-3">
-                    {isBinary ? (
-                      <Badge variant="outline">Base64</Badge>
-                    ) : (
-                      <>
-                        <Select value={responseLanguage} onValueChange={handleLanguageChange}>
-                          <SelectTrigger className="w-32" data-test-id="response-viewer:language-select">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {CodeLanguages.map((lang) => (
-                              <SelectItem key={lang.language} value={lang.language}>
-                                {lang.title}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={responseLanguage === "text"}
-                          onClick={toggleFormatted}
-                          className="text-muted-foreground"
-                          data-test-id="response-viewer:format-toggle-button"
-                        >
-                          {formattedView ? (
-                            <>
-                              <ListRestartIcon className="mr-1 h-4 w-4" /> Restore
-                            </>
-                          ) : (
-                            <>
-                              <CodeIcon className="mr-1 h-4 w-4" /> Format
-                            </>
-                          )}
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      copyToClipboard(isBinary ? httpResponse?.bodyBase64 || "" : httpResponse?.body || "")
-                    }
-                    className="text-muted-foreground"
-                    data-test-id="response-viewer:copy-body-button"
-                  >
-                    <CopyIcon className="mr-1 h-4 w-4" />
-                    Copy
-                  </Button>
-                </div>
-                {httpResponse?.filePath ? (
-                  <div className="flex items-center gap-2 px-4 pb-2 text-xs text-muted-foreground">
-                    {(() => {
-                      const f = httpResponse?.filePath
-                      return (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2"
-                            onClick={() => f && openPath(f)}
-                            title="Open saved response file"
-                            data-test-id="response-viewer:body-open-file-button"
-                          >
-                            <ExternalLinkIcon className="mr-1 h-3.5 w-3.5" /> Open
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2"
-                            onClick={() => f && revealItemInDir(f)}
-                            title="Reveal in file manager"
-                            data-test-id="response-viewer:body-reveal-file-button"
-                          >
-                            <FolderOpenIcon className="mr-1 h-3.5 w-3.5" /> Reveal
-                          </Button>
-                        </>
-                      )
-                    })()}
-                  </div>
-                ) : null}
-                <div className="flex-1 overflow-auto p-4 pt-0">
-                  {isBinary ? (
-                    httpResponse?.bodyBase64 ? (
-                      <div className="h-full w-full font-mono text-sm whitespace-pre-wrap break-all select-text">
-                        {httpResponse.bodyBase64}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground">Binary body; preview disabled due to size.</div>
-                    )
-                  ) : (
-                    <CodeViewer
-                      className="h-full w-full"
-                      height="100%"
-                      value={httpResponse?.body ?? ""}
-                      language={responseLanguage as CodeLanguage}
-                      formatted={formattedView}
-                    />
+                      Preview
+                    </TabsTrigger>
                   )}
-                </div>
-              </div>
-            </TabsContent>
-
-            {isPreviewable && (
-              <TabsContent value="response-preview" className="m-0 h-full p-4">
-                {httpResponse?.filePath ? (
-                  <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-                    {(() => {
-                      const f = httpResponse?.filePath
-                      return (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2"
-                            onClick={() => f && openPath(f)}
-                            title="Open saved response file"
-                            data-test-id="response-viewer:preview-open-file-button"
-                          >
-                            <ExternalLinkIcon className="mr-1 h-3.5 w-3.5" /> Open
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2"
-                            onClick={() => f && revealItemInDir(f)}
-                            title="Reveal in file manager"
-                            data-test-id="response-viewer:preview-reveal-file-button"
-                          >
-                            <FolderOpenIcon className="mr-1 h-3.5 w-3.5" /> Reveal
-                          </Button>
-                        </>
-                      )
-                    })()}
-                  </div>
-                ) : null}
-                {isImage && httpResponse?.bodyBase64 ? (
-                  <div className="flex h-full items-center justify-center">
-                    <img
-                      alt="Response"
-                      className="max-w-full max-h-full object-contain"
-                      src={`data:${contentType};base64,${httpResponse.bodyBase64}`}
-                    />
-                  </div>
-                ) : isPdf && httpResponse?.bodyBase64 ? (
-                  <iframe
-                    title="PDF preview"
-                    className="h-full w-full rounded border"
-                    src={`data:application/pdf;base64,${httpResponse.bodyBase64}`}
-                  />
-                ) : isPdf && !httpResponse?.bodyBase64 ? (
-                  <div className="text-sm text-muted-foreground">Preview disabled for large PDFs.</div>
-                ) : isCsv ? (
-                  <CsvPreview csv={httpResponse?.body ?? ""} />
-                ) : isAudio && httpResponse?.bodyBase64 ? (
-                  <audio controls className="w-full">
-                    <source src={`data:${contentType};base64,${httpResponse.bodyBase64}`} />
-                    <track kind="captions" srcLang="en" label="captions" />
-                  </audio>
-                ) : isVideo && httpResponse?.bodyBase64 ? (
-                  <video controls className="w-full max-h-full">
-                    <source src={`data:${contentType};base64,${httpResponse.bodyBase64}`} />
-                    <track kind="captions" srcLang="en" label="captions" />
-                  </video>
-                ) : (isAudio || isVideo) && !httpResponse?.bodyBase64 ? (
-                  <div className="text-sm text-muted-foreground">Preview disabled for large media files.</div>
-                ) : (
-                  <div className="text-sm text-muted-foreground">No preview available.</div>
-                )}
-              </TabsContent>
-            )}
-
-            <TabsContent value="response-headers" className="m-0 h-full p-4">
-              <HeadersList headers={httpResponse?.headers ?? {}} />
-            </TabsContent>
-
-            <TabsContent value="response-cookies" className="m-0 h-full p-4">
-              <div className="flex h-full flex-col">
-                {httpResponse?.cookies && httpResponse.cookies.length > 0 ? (
-                  <CookieList tabId={tabId} cookies={httpResponse.cookies} />
-                ) : (
-                  <div className="flex flex-1 items-center justify-center py-4">
-                    <div className="text-center text-muted-foreground">
-                      <div className="mb-2 text-4xl">🍪</div>
-                      <div className="text-lg font-medium">No Cookies</div>
-                      <div className="text-sm">Response cookies will appear here</div>
+                  <TabsTrigger
+                    value="response-headers"
+                    className="knurl-tab group/tab"
+                    data-test-id="response-viewer:tab-headers"
+                  >
+                    Headers
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "group-data-[state=inactive]/tab:text-muted-foreground",
+                        "ml-1 rounded px-1.5 py-0.5 text-xs",
+                      )}
+                    >
+                      {Object.keys(httpResponse?.headers ?? {}).length}
+                    </Badge>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="response-cookies"
+                    className="knurl-tab group/tab"
+                    data-test-id="response-viewer:tab-cookies"
+                  >
+                    Cookies
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "group-data-[state=inactive]/tab:text-muted-foreground",
+                        "ml-1 rounded px-1.5 py-0.5 text-xs",
+                      )}
+                    >
+                      {Object.keys(httpResponse?.cookies ?? {}).length}
+                    </Badge>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="response-logs"
+                    className="knurl-tab group/tab"
+                    data-test-id="response-viewer:tab-logs"
+                  >
+                    Logs
+                    <Badge
+                      variant={hasErrorLogs ? "destructive" : "outline"}
+                      className={cn(
+                        "group-data-[state=inactive]/tab:text-muted-foreground",
+                        "ml-1 rounded px-1.5 py-0.5 text-xs",
+                      )}
+                    >
+                      {response.logs?.length ?? 0}
+                    </Badge>
+                  </TabsTrigger>
+                </TabsList>
+                {httpResponse ? (
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Status:</span>
+                      <span
+                        className={cn("font-mono font-medium", getStatusColor(httpResponse.status ?? -1))}
+                        data-test-id="response-panel:status-code"
+                      >
+                        {httpResponse.status} {httpResponse.statusText}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Time:</span>
+                      <span className="font-mono text-muted-foreground/75">{response.responseTime}ms</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Size:</span>
+                      <span className="font-mono text-muted-foreground/75">
+                        {formatBytes(response.responseSize ?? 0)}
+                      </span>
                     </div>
                   </div>
+                ) : hasErrorLogs ? (
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Status:</span>
+                      <span className="font-mono font-medium text-red-500" data-test-id="response-panel:status-code">
+                        Error
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
+                {httpResponse && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const cd =
+                            httpResponse?.headers?.["content-disposition"] ||
+                            httpResponse?.headers?.["Content-Disposition"]
+                          const fnameMatch = cd?.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/)
+                          const inferredName = fnameMatch?.[1] || fnameMatch?.[2]
+                          const defaultExt = (() => {
+                            if (ct.startsWith("image/")) {
+                              return ct.split("/")[1] || "bin"
+                            }
+                            if (ct.includes("pdf")) {
+                              return "pdf"
+                            }
+                            if (ct.includes("csv")) {
+                              return "csv"
+                            }
+                            if (ct.includes("json")) {
+                              return "json"
+                            }
+                            if (ct.includes("xml")) {
+                              return "xml"
+                            }
+                            if (ct.includes("yaml")) {
+                              return "yml"
+                            }
+                            if (ct.startsWith("audio/")) {
+                              return ct.split("/")[1] || "audio"
+                            }
+                            if (ct.startsWith("video/")) {
+                              return ct.split("/")[1] || "video"
+                            }
+                            return "txt"
+                          })()
+                          const defaultPath = inferredName ? inferredName : `response.${defaultExt}`
+
+                          // For text-like, save raw body; for binary-like, save base64 with .b64 when bodyBase64 present
+                          if ((isImage || isPdf || isAudio || isVideo) && httpResponse?.bodyBase64) {
+                            await saveBinary(httpResponse.bodyBase64, {
+                              title: "Save Response",
+                              defaultPath: defaultPath,
+                            })
+                          } else {
+                            await saveFile(httpResponse?.body ?? "", {
+                              title: "Save Response",
+                              defaultPath: defaultPath,
+                            })
+                          }
+                        } catch (_e) {
+                          // ignore; user may have cancelled
+                        }
+                      }}
+                      data-test-id="response-viewer:save-button"
+                    >
+                      Save
+                    </Button>
+                  </div>
                 )}
               </div>
-            </TabsContent>
+            </div>
 
-            <TabsContent value="response-logs" className="m-0 h-full p-4">
-              <LogsList
-                logs={response?.logs ?? []}
-                sending={activeTab?.sending}
-                selectedLevels={response.logFilterLevels ?? DEFAULT_LOG_LEVELS}
-                onSelectedLevelsChange={(levels) => requestTabsApi.setResponseLogFilter(tabId, levels)}
-              />
-            </TabsContent>
-          </div>
-        </Tabs>
-      ) : null}
-    </div>
+            <div className="flex-1 overflow-y-auto">
+              <TabsContent value="response-body" className="m-0 h-full" data-test-id="response-viewer:body">
+                <div className="flex h-full flex-col">
+                  <div className="flex items-center justify-between bg-background/80 backdrop-blur-sm py-3 px-4 sticky top-0 z-20 border-b border-border/10">
+                    <div className="flex items-center space-x-3">
+                      {isBinary ? (
+                        <Badge variant="outline">Base64</Badge>
+                      ) : (
+                        <>
+                          <Select value={responseLanguage} onValueChange={handleLanguageChange}>
+                            <SelectTrigger className="w-32" data-test-id="response-viewer:language-select">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CodeLanguages.map((lang) => (
+                                <SelectItem key={lang.language} value={lang.language}>
+                                  {lang.title}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={responseLanguage === "text"}
+                            onClick={toggleFormatted}
+                            className="text-muted-foreground"
+                            data-test-id="response-viewer:format-toggle-button"
+                          >
+                            {formattedView ? (
+                              <>
+                                <ListRestartIcon className="mr-1 h-4 w-4" /> Restore
+                              </>
+                            ) : (
+                              <>
+                                <CodeIcon className="mr-1 h-4 w-4" /> Format
+                              </>
+                            )}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        copyToClipboard(isBinary ? httpResponse?.bodyBase64 || "" : httpResponse?.body || "")
+                      }
+                      className="text-muted-foreground"
+                      data-test-id="response-viewer:copy-body-button"
+                    >
+                      <CopyIcon className="mr-1 h-4 w-4" />
+                      Copy
+                    </Button>
+                  </div>
+                  {httpResponse?.filePath ? (
+                    <div className="flex items-center gap-2 px-4 pb-2 text-xs text-muted-foreground">
+                      {(() => {
+                        const f = httpResponse?.filePath
+                        return (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2"
+                              onClick={() => f && openPath(f)}
+                              title="Open saved response file"
+                              data-test-id="response-viewer:body-open-file-button"
+                            >
+                              <ExternalLinkIcon className="mr-1 h-3.5 w-3.5" /> Open
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2"
+                              onClick={() => f && revealItemInDir(f)}
+                              title="Reveal in file manager"
+                              data-test-id="response-viewer:body-reveal-file-button"
+                            >
+                              <FolderOpenIcon className="mr-1 h-3.5 w-3.5" /> Reveal
+                            </Button>
+                          </>
+                        )
+                      })()}
+                    </div>
+                  ) : null}
+                  <div className="flex-1 overflow-auto p-4 pt-0">
+                    {isBinary ? (
+                      httpResponse?.bodyBase64 ? (
+                        <div className="h-full w-full font-mono text-sm whitespace-pre-wrap break-all select-text">
+                          {httpResponse.bodyBase64}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">Binary body; preview disabled due to size.</div>
+                      )
+                    ) : (
+                      <CodeViewer
+                        className="h-full w-full"
+                        height="100%"
+                        value={httpResponse?.body ?? ""}
+                        language={responseLanguage as CodeLanguage}
+                        formatted={formattedView}
+                      />
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              {isPreviewable && (
+                <TabsContent value="response-preview" className="m-0 h-full p-4">
+                  {httpResponse?.filePath ? (
+                    <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+                      {(() => {
+                        const f = httpResponse?.filePath
+                        return (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2"
+                              onClick={() => f && openPath(f)}
+                              title="Open saved response file"
+                              data-test-id="response-viewer:preview-open-file-button"
+                            >
+                              <ExternalLinkIcon className="mr-1 h-3.5 w-3.5" /> Open
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2"
+                              onClick={() => f && revealItemInDir(f)}
+                              title="Reveal in file manager"
+                              data-test-id="response-viewer:preview-reveal-file-button"
+                            >
+                              <FolderOpenIcon className="mr-1 h-3.5 w-3.5" /> Reveal
+                            </Button>
+                          </>
+                        )
+                      })()}
+                    </div>
+                  ) : null}
+                  {isImage && httpResponse?.bodyBase64 ? (
+                    <div className="flex h-full items-center justify-center">
+                      <img
+                        alt="Response"
+                        className="max-w-full max-h-full object-contain"
+                        src={`data:${contentType};base64,${httpResponse.bodyBase64}`}
+                      />
+                    </div>
+                  ) : isPdf && httpResponse?.bodyBase64 ? (
+                    <iframe
+                      title="PDF preview"
+                      className="h-full w-full rounded border"
+                      src={`data:application/pdf;base64,${httpResponse.bodyBase64}`}
+                    />
+                  ) : isPdf && !httpResponse?.bodyBase64 ? (
+                    <div className="text-sm text-muted-foreground">Preview disabled for large PDFs.</div>
+                  ) : isCsv ? (
+                    <CsvPreview csv={httpResponse?.body ?? ""} />
+                  ) : isAudio && httpResponse?.bodyBase64 ? (
+                    <audio controls className="w-full">
+                      <source src={`data:${contentType};base64,${httpResponse.bodyBase64}`} />
+                      <track kind="captions" srcLang="en" label="captions" />
+                    </audio>
+                  ) : isVideo && httpResponse?.bodyBase64 ? (
+                    <video controls className="w-full max-h-full">
+                      <source src={`data:${contentType};base64,${httpResponse.bodyBase64}`} />
+                      <track kind="captions" srcLang="en" label="captions" />
+                    </video>
+                  ) : (isAudio || isVideo) && !httpResponse?.bodyBase64 ? (
+                    <div className="text-sm text-muted-foreground">Preview disabled for large media files.</div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">No preview available.</div>
+                  )}
+                </TabsContent>
+              )}
+
+              <TabsContent value="response-headers" className="m-0 h-full p-4">
+                <HeadersList headers={httpResponse?.headers ?? {}} />
+              </TabsContent>
+
+              <TabsContent value="response-cookies" className="m-0 h-full p-4">
+                <div className="flex h-full flex-col">
+                  {httpResponse?.cookies && httpResponse.cookies.length > 0 ? (
+                    <CookieList tabId={tabId} cookies={httpResponse.cookies} />
+                  ) : (
+                    <div className="flex flex-1 items-center justify-center py-4">
+                      <div className="text-center text-muted-foreground">
+                        <div className="mb-2 text-4xl">🍪</div>
+                        <div className="text-lg font-medium">No Cookies</div>
+                        <div className="text-sm">Response cookies will appear here</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="response-logs" className="m-0 h-full p-4">
+                <LogsList
+                  logs={response?.logs ?? []}
+                  sending={activeTab?.sending}
+                  selectedLevels={response.logFilterLevels ?? DEFAULT_LOG_LEVELS}
+                  onSelectedLevelsChange={(levels) => requestTabsApi.setResponseLogFilter(tabId, levels)}
+                />
+              </TabsContent>
+            </div>
+          </Tabs>
+        ) : null}
+      </div>
+    </Profiler>
   )
 }
 

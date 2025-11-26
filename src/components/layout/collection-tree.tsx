@@ -1,4 +1,4 @@
-import React, { Suspense, useCallback } from "react"
+import React, { Profiler, Suspense, useCallback } from "react"
 
 import {
   closestCenter,
@@ -46,6 +46,7 @@ import { FolderMenuContent } from "@/components/ui/knurl/folder-menu"
 import RenameDialog from "@/components/ui/knurl/rename-dialog"
 import { RequestMenuContent } from "@/components/ui/knurl/request-menu"
 import { buildFolderOptions, type FolderOption } from "@/lib/collections/folder-options"
+import { onProfilerRender } from "@/lib/profiler-bridge"
 import { cn, isNotEmpty } from "@/lib/utils"
 import {
   collectionsApi,
@@ -906,7 +907,11 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
     </>
   )
 
-  return isCollapsed ? collapsedContent : expandedContent
+  return (
+    <Profiler id="CollectionTree" onRender={onProfilerRender}>
+      {isCollapsed ? collapsedContent : expandedContent}
+    </Profiler>
+  )
 }
 
 type CollectionRowProps = {

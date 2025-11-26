@@ -1,8 +1,9 @@
-import { cloneElement, type ReactElement, type ReactNode } from "react"
+import { cloneElement, type ReactElement, type ReactNode, Profiler } from "react"
 
 import { ChevronDownIcon, FilePlus2Icon, PlusIcon, TriangleAlertIcon, TypeIcon, UndoIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { onProfilerRender } from "@/lib/profiler-bridge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,97 +62,99 @@ export function RequestEditor({ tabId }: RequestEditorProps) {
   }
 
   return (
-    <div className="flex h-full flex-1 min-h-0 flex-col" data-test-id="request-editor">
-      <Tabs
-        value={activeTab.activeTab as string}
-        onValueChange={setActiveRequestTab}
-        className="flex flex-1 min-h-0 flex-col gap-0"
-      >
-        <div className="sticky top-0 z-20 flex justify-between items-center px-2 bg-muted flex-nowra">
-          <TabsList className="h-10 p-0 rounded-none space-x-2">
-            <h2 className="text-lg font-medium mr-2 text-foreground">Request</h2>
-            <div className="flex space-x-2">
-              <RequestTabTrigger
-                value="params"
-                label="Params"
-                onActivate={() => setActiveRequestTab("params")}
-                menu={<ParamsTabMenu tabId={tabId} />}
-              />
-              <RequestTabTrigger
-                value="headers"
-                label="Headers"
-                onActivate={() => setActiveRequestTab("headers")}
-                menu={<HeadersTabMenu tabId={tabId} />}
-              />
-              <RequestTabTrigger
-                value="body"
-                label="Body"
-                onActivate={() => setActiveRequestTab("body")}
-                menu={<BodyTabMenu tabId={tabId} />}
-              />
-              <RequestTabTrigger
-                value="auth"
-                label="Authentication"
-                onActivate={() => setActiveRequestTab("auth")}
-                menu={<AuthTabMenu tabId={tabId} />}
-              />
-              <TabsTrigger value="options" data-test-id="request-editor:options-tab">
-                Options
-              </TabsTrigger>
-            </div>
-          </TabsList>
-          <div className="flex items-center gap-0">
-            {isDirty && (
-              <div
-                className="flex items-center space-x-2 text-xs text-warning"
-                data-test-id="request-editor:dirty-indicator"
-              >
-                <TriangleAlertIcon className="w-4 h-4 mr-1" /> MODIFIED
+    <Profiler id="RequestEditor" onRender={onProfilerRender}>
+      <div className="flex h-full flex-1 min-h-0 flex-col" data-test-id="request-editor">
+        <Tabs
+          value={activeTab.activeTab as string}
+          onValueChange={setActiveRequestTab}
+          className="flex flex-1 min-h-0 flex-col gap-0"
+        >
+          <div className="sticky top-0 z-20 flex justify-between items-center px-2 bg-muted flex-nowra">
+            <TabsList className="h-10 p-0 rounded-none space-x-2">
+              <h2 className="text-lg font-medium mr-2 text-foreground">Request</h2>
+              <div className="flex space-x-2">
+                <RequestTabTrigger
+                  value="params"
+                  label="Params"
+                  onActivate={() => setActiveRequestTab("params")}
+                  menu={<ParamsTabMenu tabId={tabId} />}
+                />
+                <RequestTabTrigger
+                  value="headers"
+                  label="Headers"
+                  onActivate={() => setActiveRequestTab("headers")}
+                  menu={<HeadersTabMenu tabId={tabId} />}
+                />
+                <RequestTabTrigger
+                  value="body"
+                  label="Body"
+                  onActivate={() => setActiveRequestTab("body")}
+                  menu={<BodyTabMenu tabId={tabId} />}
+                />
+                <RequestTabTrigger
+                  value="auth"
+                  label="Authentication"
+                  onActivate={() => setActiveRequestTab("auth")}
+                  menu={<AuthTabMenu tabId={tabId} />}
+                />
+                <TabsTrigger value="options" data-test-id="request-editor:options-tab">
+                  Options
+                </TabsTrigger>
               </div>
-            )}
-            {isDirty && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    aria-label="Discard changes"
-                    onClick={handleDiscardPatch}
-                    className="ml-2"
-                    data-test-id="request-editor:discard-changes-button"
-                  >
-                    <UndoIcon className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Discard Changes</TooltipContent>
-              </Tooltip>
-            )}
+            </TabsList>
+            <div className="flex items-center gap-0">
+              {isDirty && (
+                <div
+                  className="flex items-center space-x-2 text-xs text-warning"
+                  data-test-id="request-editor:dirty-indicator"
+                >
+                  <TriangleAlertIcon className="w-4 h-4 mr-1" /> MODIFIED
+                </div>
+              )}
+              {isDirty && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label="Discard changes"
+                      onClick={handleDiscardPatch}
+                      className="ml-2"
+                      data-test-id="request-editor:discard-changes-button"
+                    >
+                      <UndoIcon className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Discard Changes</TooltipContent>
+                </Tooltip>
+              )}
+            </div>
           </div>
-        </div>
 
-        <div className="flex min-h-0 h-full mr-2">
-          <TabsContent value="params" className="m-0 h-full overflow-y-auto">
-            <RequestParametersPanel tabId={tabId} />
-          </TabsContent>
+          <div className="flex min-h-0 h-full mr-2">
+            <TabsContent value="params" className="m-0 h-full overflow-y-auto">
+              <RequestParametersPanel tabId={tabId} />
+            </TabsContent>
 
-          <TabsContent value="headers" className="m-0 h-full overflow-y-auto">
-            <RequestHeadersPanel tabId={tabId} />
-          </TabsContent>
+            <TabsContent value="headers" className="m-0 h-full overflow-y-auto">
+              <RequestHeadersPanel tabId={tabId} />
+            </TabsContent>
 
-          <TabsContent value="body" className="m-0 h-full overflow-y-auto">
-            <RequestBodyPanel tabId={tabId} />
-          </TabsContent>
+            <TabsContent value="body" className="m-0 h-full overflow-y-auto">
+              <RequestBodyPanel tabId={tabId} />
+            </TabsContent>
 
-          <TabsContent value="auth" className="m-0 h-full overflow-y-auto">
-            <RequestAuthPanel tabId={tabId} />
-          </TabsContent>
+            <TabsContent value="auth" className="m-0 h-full overflow-y-auto">
+              <RequestAuthPanel tabId={tabId} />
+            </TabsContent>
 
-          <TabsContent value="options" className="m-0 h-full overflow-y-auto">
-            <RequestOptionsPanel tabId={tabId} />
-          </TabsContent>
-        </div>
-      </Tabs>
-    </div>
+            <TabsContent value="options" className="m-0 h-full overflow-y-auto">
+              <RequestOptionsPanel tabId={tabId} />
+            </TabsContent>
+          </div>
+        </Tabs>
+      </div>
+    </Profiler>
   )
 }
 

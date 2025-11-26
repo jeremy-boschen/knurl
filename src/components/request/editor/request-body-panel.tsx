@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react"
+import { Profiler, useCallback, useEffect, useMemo, useRef } from "react"
 
 import { CodeIcon } from "lucide-react"
 
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { FileInput } from "@/components/ui/knurl"
 import { Input } from "@/components/ui/knurl/input"
 import { cn } from "@/lib"
+import { onProfilerRender } from "@/lib/profiler-bridge"
 import { warmPrettier } from "@/lib/prettier"
 import { generateUniqueId } from "@/lib/utils"
 import { useRequestBody, useRequestTab } from "@/state"
@@ -152,249 +153,251 @@ export function RequestBodyPanel({ tabId }: RequestBodyPanelProps) {
   }, [body.type, body.language])
 
   return (
-    <div className="flex flex-col gap-3 p-2 h-full overflow-y-auto min-h-0" data-test-id="request-body-panel">
-      <div className="flex h-full min-h-0 flex-col gap-3">
-        {warnings.length > 0 && (
-          <div
-            className="rounded-sm border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-800"
-            data-test-id="request-body-panel:warnings"
+    <Profiler id="RequestBodyPanel" onRender={onProfilerRender}>
+      <div className="flex flex-col gap-3 p-2 h-full overflow-y-auto min-h-0" data-test-id="request-body-panel">
+        <div className="flex h-full min-h-0 flex-col gap-3">
+          {warnings.length > 0 && (
+            <div
+              className="rounded-sm border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+              data-test-id="request-body-panel:warnings"
+            >
+              {warnings.map((w) => (
+                <div key={w}>• {w}</div>
+              ))}
+            </div>
+          )}
+          <SectionHeader
+            title="Request Body"
+            actions={
+              body.type === "text" ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={(body.language ?? "text") === "text"}
+                  onClick={() => editorRef.current?.format()}
+                  data-test-id="request-body-panel:format-button"
+                >
+                  <CodeIcon className="mr-1 h-4 w-4" />
+                  Format
+                </Button>
+              ) : undefined
+            }
           >
-            {warnings.map((w) => (
-              <div key={w}>• {w}</div>
-            ))}
-          </div>
-        )}
-        <SectionHeader
-          title="Request Body"
-          actions={
-            body.type === "text" ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={(body.language ?? "text") === "text"}
-                onClick={() => editorRef.current?.format()}
-                data-test-id="request-body-panel:format-button"
-              >
-                <CodeIcon className="mr-1 h-4 w-4" />
-                Format
-              </Button>
-            ) : undefined
-          }
-        >
-          <span className={cn("text-xs text-muted-foreground/80", isDirty(original, body) && "unsaved-changes")}>
-            {getBodyTypeLabel(body)}
-          </span>
-        </SectionHeader>
+            <span className={cn("text-xs text-muted-foreground/80", isDirty(original, body) && "unsaved-changes")}>
+              {getBodyTypeLabel(body)}
+            </span>
+          </SectionHeader>
 
-        {request.body.type === "none" && <EmptyState message="This request does not have a body." height="tall" />}
+          {request.body.type === "none" && <EmptyState message="This request does not have a body." height="tall" />}
 
-        {request.body.type === "text" && (
-          <div className="relative h-full min-h-0 flex-1 bg-card">
-            <CodeEditor
-              ref={editorRef}
-              className={cn("h-full w-full", original.content !== body.content && "unsaved-changes")}
-              mode="edit"
-              value={body.content ?? ""}
-              language={body.language ?? "text"}
-              onChange={actions.updateBodyContent}
-              lineNumbers={(body.content?.length ?? 0) > 0}
-              placeholder="Enter request body (JSON, YAML, GraphQL, XML, etc.)"
-              data-test-id="request-body-panel:text-editor"
-            />
-          </div>
-        )}
+          {request.body.type === "text" && (
+            <div className="relative h-full min-h-0 flex-1 bg-card">
+              <CodeEditor
+                ref={editorRef}
+                className={cn("h-full w-full", original.content !== body.content && "unsaved-changes")}
+                mode="edit"
+                value={body.content ?? ""}
+                language={body.language ?? "text"}
+                onChange={actions.updateBodyContent}
+                lineNumbers={(body.content?.length ?? 0) > 0}
+                placeholder="Enter request body (JSON, YAML, GraphQL, XML, etc.)"
+                data-test-id="request-body-panel:text-editor"
+              />
+            </div>
+          )}
 
-        {request.body.type === "form" && (
-          <div className="flex h-full min-h-0 flex-col gap-3">
-            <section
-              className="flex flex-col gap-3 divide-y divide-border/10 mt-2"
-              aria-label="Form fields dropzone"
-              onDragOver={(e) => {
-                if (e.dataTransfer) {
-                  e.preventDefault()
-                }
-              }}
-              onDrop={(e) => {
-                try {
-                  e.preventDefault()
-                  const uris = e.dataTransfer?.getData("text/uri-list") || ""
-                  const paths = uris
-                    .split(/\r?\n/)
-                    .map((l) => l.trim())
-                    .filter((l) => l.startsWith("file:"))
-                    .map((u) => {
-                      try {
-                        const url = new URL(u)
-                        let p = decodeURIComponent(url.pathname)
-                        // Windows: strip leading '/'
-                        if (/^\/[A-Za-z]:\//.test(p)) {
-                          p = p.slice(1)
-                        }
-                        return p
-                      } catch {
-                        return ""
-                      }
-                    })
-                    .filter(Boolean)
-                  if (paths.length === 0) {
-                    return
+          {request.body.type === "form" && (
+            <div className="flex h-full min-h-0 flex-col gap-3">
+              <section
+                className="flex flex-col gap-3 divide-y divide-border/10 mt-2"
+                aria-label="Form fields dropzone"
+                onDragOver={(e) => {
+                  if (e.dataTransfer) {
+                    e.preventDefault()
                   }
-                  // Ensure multipart encoding
-                  actions.updateBody({ encoding: "multipart" })
-                  for (const p of paths) {
-                    const id = generateUniqueId(8)
+                }}
+                onDrop={(e) => {
+                  try {
+                    e.preventDefault()
+                    const uris = e.dataTransfer?.getData("text/uri-list") || ""
+                    const paths = uris
+                      .split(/\r?\n/)
+                      .map((l) => l.trim())
+                      .filter((l) => l.startsWith("file:"))
+                      .map((u) => {
+                        try {
+                          const url = new URL(u)
+                          let p = decodeURIComponent(url.pathname)
+                          // Windows: strip leading '/'
+                          if (/^\/[A-Za-z]:\//.test(p)) {
+                            p = p.slice(1)
+                          }
+                          return p
+                        } catch {
+                          return ""
+                        }
+                      })
+                      .filter(Boolean)
+                    if (paths.length === 0) {
+                      return
+                    }
+                    // Ensure multipart encoding
+                    actions.updateBody({ encoding: "multipart" })
+                    for (const p of paths) {
+                      const id = generateUniqueId(8)
+                      const name = p.split(/[/\\]/).pop() || "file"
+                      const inferred = guessContentTypeByExt(name)
+                      actions.updateFormItem(id, {
+                        id,
+                        key: name,
+                        value: "",
+                        enabled: true,
+                        secure: false,
+                        kind: "file",
+                        fileName: name,
+                        filePath: p,
+                        contentType: inferred,
+                      })
+                    }
+                  } catch {
+                    // noop
+                  }
+                }}
+                data-test-id="request-body-panel:form-section"
+              >
+                {Object.values(body.formData ?? {}).map((item) => (
+                  <FieldRow
+                    key={item.id}
+                    enabled={item.enabled}
+                    onEnabledChange={(enabled) => actions.updateFormItem(item.id, { enabled })}
+                    nameValue={item.key}
+                    onNameChange={(key) => actions.updateFormItem(item.id, { key })}
+                    valueSlot={
+                      item.kind === "file" ? (
+                        <FileInput
+                          fileName={item.fileName ?? ""}
+                          contentType={item.contentType ?? ""}
+                          onFileChange={(path, name, mimeType) => {
+                            const detected = mimeType ?? guessContentTypeByExt(name)
+                            actions.updateFormItem(item.id, {
+                              kind: "file",
+                              fileName: name,
+                              filePath: path,
+                              contentType: detected,
+                              value: "",
+                            })
+                          }}
+                          onContentTypeChange={(ct) => actions.updateFormItem(item.id, { contentType: ct })}
+                          onClear={() =>
+                            actions.updateFormItem(item.id, {
+                              kind: "file",
+                              fileName: "",
+                              filePath: undefined,
+                              contentType: "",
+                              value: "",
+                            })
+                          }
+                          data-test-id={`request-body-panel:form-file-input:${item.id}`}
+                        />
+                      ) : (
+                        <Input
+                          type={item.secure ? "password" : "text"}
+                          placeholder="Value"
+                          value={item.value}
+                          onChange={(e) => actions.updateFormItem(item.id, { value: e.target.value })}
+                          className={cn(
+                            "font-mono",
+                            original?.formData?.[item.id]?.value !== body?.formData?.[item.id]?.value &&
+                              "unsaved-changes",
+                          )}
+                          data-test-id={`request-body-panel:form-value-input:${item.id}`}
+                        />
+                      )
+                    }
+                    onDelete={() => actions.removeFormItem(item.id)}
+                    secure={item.kind === "text" ? item.secure : undefined}
+                    onSecureChange={
+                      item.kind === "text" ? (secure) => actions.updateFormItem(item.id, { secure }) : undefined
+                    }
+                    deleteTooltip="Delete Form Field"
+                    hasUnsavedEnabled={original?.formData?.[item.id]?.enabled !== body?.formData?.[item.id]?.enabled}
+                    hasUnsavedName={original?.formData?.[item.id]?.key !== body?.formData?.[item.id]?.key}
+                    hasUnsavedSecure={original?.formData?.[item.id]?.secure !== body?.formData?.[item.id]?.secure}
+                  />
+                ))}
+
+                {Object.keys(body.formData ?? {}).length === 0 && (
+                  <EmptyState message="No form items added yet. Click 'Add Form Item' to get started." />
+                )}
+              </section>
+            </div>
+          )}
+
+          {request.body.type === "binary" && (
+            <div className="flex flex-col gap-3">
+              <section
+                className="mt-2"
+                aria-label="Binary body dropzone"
+                onDragOver={(e) => {
+                  if (e.dataTransfer) {
+                    e.preventDefault()
+                  }
+                }}
+                onDrop={(e) => {
+                  try {
+                    e.preventDefault()
+                    const uri = (e.dataTransfer?.getData("text/uri-list") || "")
+                      .split(/\r?\n/)
+                      .find((l) => l.startsWith("file:"))
+                    if (!uri) {
+                      return
+                    }
+                    const url = new URL(uri)
+                    let p = decodeURIComponent(url.pathname)
+                    if (/^\/[A-Za-z]:\//.test(p)) {
+                      p = p.slice(1)
+                    }
                     const name = p.split(/[/\\]/).pop() || "file"
                     const inferred = guessContentTypeByExt(name)
-                    actions.updateFormItem(id, {
-                      id,
-                      key: name,
-                      value: "",
-                      enabled: true,
-                      secure: false,
-                      kind: "file",
-                      fileName: name,
-                      filePath: p,
-                      contentType: inferred,
+                    const next: Partial<RequestBodyData> = { binaryPath: p, binaryFileName: name }
+                    if (inferred) {
+                      next.binaryContentType = inferred
+                    }
+                    actions.updateBody(next)
+                  } catch {
+                    // noop
+                  }
+                }}
+                data-test-id="request-body-panel:binary-section"
+              >
+                <FileInput
+                  fileName={body.binaryFileName ?? ""}
+                  contentType={body.binaryContentType ?? ""}
+                  onFileChange={(path, name, mimeType) => {
+                    const detected = mimeType ?? guessContentTypeByExt(name)
+                    const next: Partial<RequestBodyData> = { binaryPath: path, binaryFileName: name }
+                    if (detected) {
+                      next.binaryContentType = detected
+                    }
+                    actions.updateBody(next)
+                  }}
+                  onContentTypeChange={(ct) => actions.updateBody({ binaryContentType: ct })}
+                  onClear={() =>
+                    actions.updateBody({
+                      binaryPath: undefined,
+                      binaryFileName: undefined,
+                      binaryContentType: undefined,
                     })
                   }
-                } catch {
-                  // noop
-                }
-              }}
-              data-test-id="request-body-panel:form-section"
-            >
-              {Object.values(body.formData ?? {}).map((item) => (
-                <FieldRow
-                  key={item.id}
-                  enabled={item.enabled}
-                  onEnabledChange={(enabled) => actions.updateFormItem(item.id, { enabled })}
-                  nameValue={item.key}
-                  onNameChange={(key) => actions.updateFormItem(item.id, { key })}
-                  valueSlot={
-                    item.kind === "file" ? (
-                      <FileInput
-                        fileName={item.fileName ?? ""}
-                        contentType={item.contentType ?? ""}
-                        onFileChange={(path, name, mimeType) => {
-                          const detected = mimeType ?? guessContentTypeByExt(name)
-                          actions.updateFormItem(item.id, {
-                            kind: "file",
-                            fileName: name,
-                            filePath: path,
-                            contentType: detected,
-                            value: "",
-                          })
-                        }}
-                        onContentTypeChange={(ct) => actions.updateFormItem(item.id, { contentType: ct })}
-                        onClear={() =>
-                          actions.updateFormItem(item.id, {
-                            kind: "file",
-                            fileName: "",
-                            filePath: undefined,
-                            contentType: "",
-                            value: "",
-                          })
-                        }
-                        data-test-id={`request-body-panel:form-file-input:${item.id}`}
-                      />
-                    ) : (
-                      <Input
-                        type={item.secure ? "password" : "text"}
-                        placeholder="Value"
-                        value={item.value}
-                        onChange={(e) => actions.updateFormItem(item.id, { value: e.target.value })}
-                        className={cn(
-                          "font-mono",
-                          original?.formData?.[item.id]?.value !== body?.formData?.[item.id]?.value &&
-                            "unsaved-changes",
-                        )}
-                        data-test-id={`request-body-panel:form-value-input:${item.id}`}
-                      />
-                    )
-                  }
-                  onDelete={() => actions.removeFormItem(item.id)}
-                  secure={item.kind === "text" ? item.secure : undefined}
-                  onSecureChange={
-                    item.kind === "text" ? (secure) => actions.updateFormItem(item.id, { secure }) : undefined
-                  }
-                  deleteTooltip="Delete Form Field"
-                  hasUnsavedEnabled={original?.formData?.[item.id]?.enabled !== body?.formData?.[item.id]?.enabled}
-                  hasUnsavedName={original?.formData?.[item.id]?.key !== body?.formData?.[item.id]?.key}
-                  hasUnsavedSecure={original?.formData?.[item.id]?.secure !== body?.formData?.[item.id]?.secure}
+                  data-test-id="request-body-panel:binary-file-input"
                 />
-              ))}
-
-              {Object.keys(body.formData ?? {}).length === 0 && (
-                <EmptyState message="No form items added yet. Click 'Add Form Item' to get started." />
-              )}
-            </section>
-          </div>
-        )}
-
-        {request.body.type === "binary" && (
-          <div className="flex flex-col gap-3">
-            <section
-              className="mt-2"
-              aria-label="Binary body dropzone"
-              onDragOver={(e) => {
-                if (e.dataTransfer) {
-                  e.preventDefault()
-                }
-              }}
-              onDrop={(e) => {
-                try {
-                  e.preventDefault()
-                  const uri = (e.dataTransfer?.getData("text/uri-list") || "")
-                    .split(/\r?\n/)
-                    .find((l) => l.startsWith("file:"))
-                  if (!uri) {
-                    return
-                  }
-                  const url = new URL(uri)
-                  let p = decodeURIComponent(url.pathname)
-                  if (/^\/[A-Za-z]:\//.test(p)) {
-                    p = p.slice(1)
-                  }
-                  const name = p.split(/[/\\]/).pop() || "file"
-                  const inferred = guessContentTypeByExt(name)
-                  const next: Partial<RequestBodyData> = { binaryPath: p, binaryFileName: name }
-                  if (inferred) {
-                    next.binaryContentType = inferred
-                  }
-                  actions.updateBody(next)
-                } catch {
-                  // noop
-                }
-              }}
-              data-test-id="request-body-panel:binary-section"
-            >
-              <FileInput
-                fileName={body.binaryFileName ?? ""}
-                contentType={body.binaryContentType ?? ""}
-                onFileChange={(path, name, mimeType) => {
-                  const detected = mimeType ?? guessContentTypeByExt(name)
-                  const next: Partial<RequestBodyData> = { binaryPath: path, binaryFileName: name }
-                  if (detected) {
-                    next.binaryContentType = detected
-                  }
-                  actions.updateBody(next)
-                }}
-                onContentTypeChange={(ct) => actions.updateBody({ binaryContentType: ct })}
-                onClear={() =>
-                  actions.updateBody({
-                    binaryPath: undefined,
-                    binaryFileName: undefined,
-                    binaryContentType: undefined,
-                  })
-                }
-                data-test-id="request-body-panel:binary-file-input"
-              />
-            </section>
-            {!body.binaryPath && <EmptyState message="No file selected." />}
-          </div>
-        )}
+              </section>
+              {!body.binaryPath && <EmptyState message="No file selected." />}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </Profiler>
   )
 }
 

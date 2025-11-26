@@ -12,6 +12,63 @@ import {
 import { createCollection } from "../support/ui"
 import { waitForRequestEditor } from "../support/ui"
 
+/**
+ * React Profiler metric types matching src/lib/profiler-bridge.ts
+ */
+interface ProfilerMetric {
+  id: string
+  phase: "mount" | "update"
+  actualDuration: number
+  baseDuration: number
+  startTime: number
+  commitTime: number
+  timestamp: number
+}
+
+interface ProfilerStats {
+  count: number
+  totalDuration: number
+  avgDuration: number
+  maxDuration: number
+  minDuration: number
+}
+
+/**
+ * Collect React Profiler metrics for a component
+ */
+async function getProfilerMetrics(componentId: string): Promise<ProfilerMetric[]> {
+  return browser.execute((id: string) => {
+    return (window as any).__REACT_PROFILER__?.getMetricsFor(id) ?? []
+  }, componentId)
+}
+
+/**
+ * Get aggregated stats for a component's render performance
+ */
+async function getProfilerStats(componentId: string): Promise<ProfilerStats | null> {
+  return browser.execute((id: string) => {
+    return (window as any).__REACT_PROFILER__?.getStats(id) ?? null
+  }, componentId)
+}
+
+/**
+ * Clear profiler metrics before measuring
+ */
+async function clearProfilerMetrics(): Promise<void> {
+  return browser.execute(() => {
+    ;(window as any).__REACT_PROFILER__?.clear()
+  })
+}
+
+/**
+ * Export all profiler metrics
+ */
+async function exportAllProfilerMetrics(): Promise<ProfilerMetric[]> {
+  return browser.execute(() => {
+    return (window as any).__REACT_PROFILER__?.export() ?? []
+  })
+}
+
 describe("Large Collections Performance", () => {
   before(async () => {
     await ensureWorkspaceReady()
@@ -343,5 +400,182 @@ describe("Large Payload Handling", () => {
     const statusAfter = await getElementByTestId("response-panel:status-code", 10000)
     const statusTextAfter = await statusAfter.getText()
     expect(statusTextAfter).toContain(statusTextBefore.split(" ")[0] ?? statusTextBefore)
+  })
+})
+
+describe("React Profiler Metrics", () => {
+  before(async () => {
+    await ensureWorkspaceReady()
+  })
+
+  afterEach(async () => {
+    await clearSidebarSearch()
+  })
+
+  it("collects CollectionTree render metrics when sidebar loads", async () => {
+    await clearProfilerMetrics()
+
+    // Ensure collection tree is visible
+    const sidebar = await getElementByTestId("collection-tree", 10000)
+    expect(await sidebar.isDisplayed()).toBe(true)
+
+    // Collect initial metrics
+    const metrics = await getProfilerMetrics("CollectionTree")
+    expect(metrics.length).toBeGreaterThan(0)
+
+    // Should have at least one mount phase
+    const mounts = metrics.filter(m => m.phase === "mount")
+    expect(mounts.length).toBeGreaterThan(0)
+
+    // Initial mount should be reasonably fast (< 500ms)
+    const firstMount = mounts[0]
+    expect(firstMount.actualDuration).toBeLessThan(500)
+  })
+
+  it("measures RequestHeadersPanel render time on field edits", async () => {
+    const tabKey = await openNewRequestViaUI()
+    await waitForRequestEditor()
+    await clearProfilerMetrics()
+
+    // Add a header to trigger renders
+    await clickByTestId("request-tab-bar:add-header-button")
+    await browser.pause(200)
+
+    const stats = await getProfilerStats("RequestHeadersPanel")
+    expect(stats).not.toBeNull()
+    expect(stats!.count).toBeGreaterThan(0)
+
+    // Average render time should be < 100ms per update
+    expect(stats!.avgDuration).toBeLessThan(100)
+  })
+
+  it("measures ResponseViewer render time for JSON responses", async () => {
+    const tabKey = await openNewRequestViaUI()
+    await waitForRequestEditor()
+    await clearProfilerMetrics()
+
+    // Send request to get response
+    await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/json")
+    await clickByTestId("request-workspace:send-button")
+
+    // Wait for response to render
+    const responseHeading = await getElementByTestId("response-viewer:heading", 10000)
+    expect(await responseHeading.isDisplayed()).toBe(true)
+
+    const stats = await getProfilerStats("ResponseViewer")
+    expect(stats).not.toBeNull()
+    expect(stats!.count).toBeGreaterThan(0)
+
+    // Response viewer should render in reasonable time
+    expect(stats!.avgDuration).toBeLessThan(200)
+  })
+
+  it("measures RequestParametersPanel render time on parameter changes", async () => {
+    const tabKey = await openNewRequestViaUI()
+    await waitForRequestEditor()
+    await clearProfilerMetrics()
+
+    // Click on parameters tab to ensure it's visible
+    const paramsTab = await getElementByTestId("request-editor:params-tab", 5000).catch(() => null)
+    if (paramsTab) {
+      await paramsTab.click()
+    }
+
+    // Add a query parameter
+    await clickByTestId("request-tab-bar:add-query-param-button").catch(() => null)
+    await browser.pause(200)
+
+    const stats = await getProfilerStats("RequestParametersPanel")
+    if (stats) {
+      // Average render should be < 100ms
+      expect(stats.avgDuration).toBeLessThan(100)
+    }
+  })
+
+  it("measures RequestBodyPanel render time when changing body type", async () => {
+    const tabKey = await openNewRequestViaUI()
+    await waitForRequestEditor()
+    await clearProfilerMetrics()
+
+    // Click on body tab
+    const bodyTab = await getElementByTestId("request-editor:body-tab", 5000).catch(() => null)
+    if (bodyTab) {
+      await bodyTab.click()
+    }
+
+    await browser.pause(200)
+
+    const stats = await getProfilerStats("RequestBodyPanel")
+    expect(stats).not.toBeNull()
+    expect(stats!.count).toBeGreaterThan(0)
+
+    // Body panel renders should be < 150ms on average
+    expect(stats!.avgDuration).toBeLessThan(150)
+  })
+
+  it("measures LogsList render time for response logs", async () => {
+    const tabKey = await openNewRequestViaUI()
+    await waitForRequestEditor()
+    await clearProfilerMetrics()
+
+    // Send request to generate logs
+    await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/get")
+    await clickByTestId("request-workspace:send-button")
+
+    // Wait for response
+    const responseHeading = await getElementByTestId("response-viewer:heading", 10000)
+    expect(await responseHeading.isDisplayed()).toBe(true)
+
+    // Click logs tab
+    const logsTab = await getElementByTestId("response-viewer:tab-logs", 5000).catch(() => null)
+    if (logsTab) {
+      await logsTab.click()
+    }
+
+    const stats = await getProfilerStats("LogsList")
+    if (stats) {
+      // Logs list renders should be < 100ms
+      expect(stats.avgDuration).toBeLessThan(100)
+    }
+  })
+
+  it("profiles entire request cycle (collection tree + editor + response viewer)", async () => {
+    // Create a collection
+    const collectionName = `Profile Test ${Date.now()}`
+    const collectionId = await createCollection(collectionName)
+
+    await clearProfilerMetrics()
+
+    // Open the collection
+    await clickByTestId(`collection-tree:collection-row:${collectionId}`)
+    await waitForRequestEditor()
+
+    // Send a request
+    await setInputText("request-workspace:url-input", "http://127.0.0.1:3000/mock/json")
+    await clickByTestId("request-workspace:send-button")
+
+    // Wait for response
+    const responseHeading = await getElementByTestId("response-viewer:heading", 10000)
+    expect(await responseHeading.isDisplayed()).toBe(true)
+
+    // Export all metrics collected during this cycle
+    const allMetrics = await exportAllProfilerMetrics()
+    expect(allMetrics.length).toBeGreaterThan(0)
+
+    // Collect stats for key components
+    const componentIds = ["CollectionTree", "RequestEditor", "ResponseViewer"]
+    const componentStats: Record<string, ProfilerStats | null> = {}
+
+    for (const componentId of componentIds) {
+      const stats = await getProfilerStats(componentId)
+      componentStats[componentId] = stats
+    }
+
+    // Verify we got metrics for the visible components
+    const metricsCollected = Object.entries(componentStats)
+      .filter(([_, stats]) => stats !== null)
+      .map(([name, _]) => name)
+
+    expect(metricsCollected.length).toBeGreaterThan(0)
   })
 })
