@@ -111,8 +111,8 @@ function generateExtracted(root: string, opts: Required<Options>) {
 
 export function cssVarsExportPlugin(options: Options = {}) {
   const opts: Required<Options> = {
-    cssFiles: options.cssFiles ?? ["src/index.css", "src/App.css"],
-    outFile: options.outFile ?? "src/lib/theme/extracted-css-vars.json",
+    cssFiles: options.cssFiles ?? ["src-ui/src/index.css", "src-ui/src/App.css"],
+    outFile: options.outFile ?? "src-ui/src/lib/theme/extracted-css-vars.json",
   }
 
   let rootDir = process.cwd()
