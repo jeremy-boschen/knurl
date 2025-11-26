@@ -1,8 +1,52 @@
 # React Performance Audit & Optimization Plan
 
 **Date:** 2025-11-25
-**Status:** Planning
+**Status:** Phase 0 Complete - Profiler Instrumentation Live ✅
 **Priority:** High (Frontend responsiveness is critical UX issue)
+
+## 🚀 Progress Summary
+
+### ✅ COMPLETED: Phase 0 - React Profiler Infrastructure (2025-11-26)
+
+**Profiler Bridge Created:**
+- `src/lib/profiler-bridge.ts` - React Profiler metrics collection library
+  - `ProfilerMetric` interface for render phase tracking
+  - `onProfilerRender()` callback for React.Profiler integration
+  - `window.__REACT_PROFILER__` API with metrics export/stats functions
+  - Only initialized in dev mode
+
+**Components Instrumented:**
+- ✅ ResponseViewer (response display panel)
+- ✅ CollectionTree (sidebar collection tree)
+- ✅ RequestHeadersPanel (request headers editing)
+- ✅ RequestParametersPanel (URL/query/cookie parameters)
+- ✅ RequestBodyPanel (request body - text/form/binary)
+- ✅ LogsList (response logs display)
+
+**E2E Performance Tests Added:**
+- Helper functions: `getProfilerMetrics()`, `getProfilerStats()`, `clearProfilerMetrics()`, `exportAllProfilerMetrics()`
+- 6 new test cases measuring component render times
+- Full request cycle profiling test
+- Expected thresholds: Headers/Parameters < 100ms, Body < 150ms, Response < 200ms
+
+**Data-Driven Approach Enabled:**
+- No assumptions about React Compiler behavior
+- Real measurements will identify actual bottlenecks
+- Ready for baseline collection in next phase
+
+### 📊 Measurement Ready
+
+Run E2E tests to collect baseline metrics:
+```bash
+yarn test:e2e --spec="test/specs/performance.e2e.ts"
+```
+
+Access profiler data in browser console:
+```javascript
+window.__REACT_PROFILER__.export()                  // All metrics
+window.__REACT_PROFILER__.getStats('RequestEditor') // Component stats
+window.__REACT_PROFILER__.clear()                   // Reset for new test
+```
 
 ---
 
