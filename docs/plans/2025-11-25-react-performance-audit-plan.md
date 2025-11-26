@@ -50,9 +50,105 @@ window.__REACT_PROFILER__.clear()                   // Reset for new test
 
 ---
 
+## Modern React 19.2 Hooks Strategy
+
+React 19.2 introduces specialized hooks beyond useMemo/useCallback. We should leverage these for the right use cases:
+
+### Hook Selection Matrix
+
+| Hook | Use Case | Knurl Application | Priority |
+|------|----------|-------------------|----------|
+| **useTransition** | Non-blocking state updates | Tab switching, collection opening, request navigation | HIGH |
+| **useDeferredValue** | Defer non-critical UI updates | CollectionTree search, LogsList filtering, response body search | HIGH |
+| **useOptimistic** | Immediate UI feedback during async ops | Form edits (headers, params, body), collection actions, request operations | HIGH |
+| **useEffectEvent** | Read latest state in Effects without over-triggering | Analytics, notifications, logging in Effects | MEDIUM |
+| **useActionState** | Form action state management | Dialog forms (rename, create), import/export, settings | LOW* |
+| **useCallback** | Memoize function definitions | Event handlers passed to memoized children | MEDIUM |
+| **useMemo** | Cache expensive calculations | Complex selectors, filtered lists, derived data | MEDIUM |
+| **React.memo** | Skip re-renders for unchanged props | List items, panels with stable props | HIGH |
+
+*useActionState is designed for server-side forms; less relevant for Tauri desktop app
+
+### Specific Hook Recommendations by Component
+
+**HIGH PRIORITY - Use useTransition:**
+1. **RequestTabBar (Tab Switching)**
+   - File: `src/components/request/tabbar/request-tab-bar.tsx`
+   - Current: Click tab → immediate state change
+   - Better: `useTransition` for background tab content loading
+   - Benefit: UI remains responsive while new tab content renders
+
+2. **CollectionTree (Collection Opening)**
+   - File: `src/components/layout/collection-tree.tsx`
+   - Current: Click collection → entire tree may re-render
+   - Better: Wrap `setOpenTabs()` in `startTransition()`
+   - Benefit: Sidebar stays interactive while request editor loads
+
+3. **RequestWorkspace (Request Switching)**
+   - File: `src/components/request/request-workspace.tsx`
+   - Current: Switch requests → may freeze on heavy state changes
+   - Better: Wrap tab selection in `startTransition()`
+   - Benefit: Non-blocking UI transitions between requests
+
+**HIGH PRIORITY - Use useDeferredValue:**
+1. **CollectionTree Search (CRITICAL BOTTLENECK)**
+   - File: `src/components/layout/collection-tree.tsx` (line 1046)
+   - Current: Every keystroke filters entire collection tree
+   - Better: `const deferredSearchTerm = useDeferredValue(searchTerm)`
+   - Benefit: Search input stays responsive; filtering happens in background
+   - Expected improvement: 50-100ms lag → instant typing feedback
+
+2. **LogsList Filtering**
+   - File: `src/components/response/components/logs-list.tsx`
+   - Current: Clicking log level filters trigger re-render of 1000+ items
+   - Better: `useDeferredValue` on `selectedLevels` state
+   - Benefit: Filter buttons respond instantly; list updates in background
+
+3. **ResponseViewer Search**
+   - File: `src/components/response/response-viewer.tsx`
+   - Current: Searching large responses blocks UI
+   - Better: Defer response body search queries
+   - Benefit: Search input stays snappy
+
+**HIGH PRIORITY - Use useOptimistic:**
+1. **Form Field Edits (All Panels)**
+   - Files: RequestHeadersPanel, RequestParametersPanel, RequestBodyPanel
+   - Current: Type value → network round-trip before UI updates
+   - Better: Show edited value immediately; sync in background
+   - Pattern: `const [optimisticHeaders, updateHeader] = useOptimistic(headers, (state, newValue) => ({...state, [id]: newValue}))`
+   - Benefit: Instant feedback on field edits (5-10ms perceived latency vs 20-50ms)
+
+2. **Collection/Request Actions**
+   - Files: CollectionTree (rename, delete), new collection dialog
+   - Current: User clicks delete → waits for confirmation → state updates
+   - Better: Show "deleting..." state immediately; revert if fails
+   - Benefit: Perceived instant response to user actions
+
+3. **Request Body Changes**
+   - File: `src/components/request/editor/request-body-panel.tsx`
+   - Current: Change body type → state update delay
+   - Better: Show new body type immediately
+   - Benefit: Smooth body type switching
+
+**MEDIUM PRIORITY - Use useEffectEvent:**
+1. **Analytics/Logging in Effects**
+   - Pattern: Analytics events triggered by navigation
+   - Current: If all accessed values in dependency array → over-triggering
+   - Better: Use `useEffectEvent` for analytics callback
+   - Benefit: Cleaner Effect logic; fires only when truly needed
+
+**MEDIUM PRIORITY - useCallback Patterns:**
+- After adding `useTransition`/`useDeferredValue`, use `useCallback` to stabilize handlers
+- Combine with `React.memo` on child components
+- Don't use alone; pair with memoization of consuming components
+
+---
+
 ## Executive Summary
 
 The codebase has **strong state management optimization** (hook layer uses Zustand with selectors + useMemo) but **weak component-level optimization** (almost zero React.memo usage, inline handler functions prevent memoization).
+
+**Key insight from React 19.2:** Modern hooks solve specific problems. The right tool for each job beats generic memoization patterns.
 
 **Current State:** Grade C+ (Partial optimization)
 **Bottlenecks Identified:** 9 critical areas
@@ -135,9 +231,117 @@ Enable with: `localStorage.setItem('REACT_PROFILER', '1')` in browser console.
 
 ---
 
-## Part 2: Phase 1 - Quick Wins (1-2 hours)
+## Part 2: Phase 1 - Quick Wins with Modern Hooks (3-4 hours)
 
-### Task 1.1: Memoize RequestTab Component
+**Strategy:** Focus on highest-impact modern hooks first (useTransition, useDeferredValue, useOptimistic), then fill in with memoization patterns.
+
+### Task 1.0: Add useTransition to RequestTabBar (Tab Switching)
+**File:** `src/components/request/tabbar/request-tab-bar.tsx`
+**Effort:** 20 min | **Impact:** High (5-20ms per tab switch)
+
+```tsx
+function RequestTabBar() {
+  const [isPending, startTransition] = useTransition()
+
+  const handleSelectTab = (tabId: string) => {
+    startTransition(() => {
+      // Tab selection state update
+      selectTab(tabId)
+    })
+  }
+
+  return (
+    <div>
+      {tabs.map(tab => (
+        <Tab
+          key={tab.id}
+          disabled={isPending}
+          onClick={() => handleSelectTab(tab.id)}
+        >
+          {tab.name}
+        </Tab>
+      ))}
+    </div>
+  )
+}
+```
+
+**Expected Result:** Tab switching button disables during transition; other UI stays interactive.
+
+---
+
+### Task 1.1: Add useDeferredValue to CollectionTree Search (CRITICAL)
+**File:** `src/components/layout/collection-tree.tsx`
+**Effort:** 15 min | **Impact:** CRITICAL (50-100ms lag → instant)
+
+```tsx
+function CollectionTree({ searchTerm }: CollectionTreeProps) {
+  const deferredSearchTerm = useDeferredValue(searchTerm)
+
+  // Use deferredSearchTerm in filtering logic instead of searchTerm
+  const matchingCollections = useMemo(() => {
+    if (!deferredSearchTerm) return collections
+    return collections.filter(c =>
+      c.name.toLowerCase().includes(deferredSearchTerm.toLowerCase())
+    )
+  }, [deferredSearchTerm, collections])
+
+  return (
+    <div>
+      <input value={searchTerm} onChange={handleSearchChange} /> {/* Uses fresh searchTerm */}
+      <CollectionList collections={matchingCollections} /> {/* Uses deferred term */}
+    </div>
+  )
+}
+```
+
+**Expected Result:** Search input responds instantly to typing; filtering happens in background without blocking input.
+
+**This is the #1 performance bottleneck.** useDeferredValue is the perfect tool.
+
+---
+
+### Task 1.2: Add useOptimistic to RequestHeadersPanel
+**File:** `src/components/request/editor/request-headers-panel.tsx`
+**Effort:** 25 min | **Impact:** High (instant field feedback)
+
+```tsx
+function RequestHeadersPanel({ tabId }: RequestHeadersPanelProps) {
+  const { state: { headers, original }, actions } = useRequestHeaders(tabId)
+  const [optimisticHeaders, updateOptimisticHeader] = useOptimistic(
+    headers,
+    (state, { headerId, changes }: { headerId: string; changes: any }) => ({
+      ...state,
+      [headerId]: { ...state[headerId], ...changes }
+    })
+  )
+
+  const handleHeaderChange = (headerId: string, changes: any) => {
+    // Optimistically update UI immediately
+    updateOptimisticHeader({ headerId, changes })
+    // Then persist to state (happens in background)
+    actions.updateHeader(headerId, changes)
+  }
+
+  return (
+    <div>
+      {Object.values(optimisticHeaders ?? {}).map(header => (
+        <Input
+          key={header.id}
+          value={header.value}
+          onChange={(e) => handleHeaderChange(header.id, { value: e.target.value })}
+        />
+      ))}
+    </div>
+  )
+}
+```
+
+**Expected Result:** Header values appear in input immediately as you type; state persists in background.
+
+---
+
+### Task 1.3: Memoize RequestTab Component
 **File:** `src/components/request/tabbar/request-tab.tsx`
 **Effort:** 5 min | **Impact:** High (fixes 5-10ms per tab)
 
@@ -249,23 +453,125 @@ export const RequestBodyPanel = React.memo(function RequestBodyPanel({ tabId }: 
 
 ---
 
-### Phase 1 Checklist
-- [ ] Task 1.1: Memoize RequestTab
-- [ ] Task 1.2: Extract ModeToggle
-- [ ] Task 1.3: Memoize FieldRow
-- [ ] Task 1.4: Add useCallback to handlers (all panel files)
-- [ ] Task 1.5: Memoize panel components
-- [ ] Task 1.6: Memoize RequestBodyPanel
+### Phase 1 Checklist - Modern Hooks First
+- [ ] Task 1.0: Add useTransition to RequestTabBar
+- [ ] Task 1.1: Add useDeferredValue to CollectionTree search (CRITICAL)
+- [ ] Task 1.2: Add useOptimistic to RequestHeadersPanel
+- [ ] Task 1.3: Memoize RequestTab (React.memo)
+- [ ] Task 1.4: Extract ModeToggle
+- [ ] Task 1.5: Memoize FieldRow (React.memo)
+- [ ] Task 1.6: Add useCallback to handlers in panel files
+- [ ] Task 1.7: Memoize panel components (React.memo)
+- [ ] Task 1.8: Memoize RequestBodyPanel (React.memo)
 - [ ] Test: All tests pass
-- [ ] Profiler: RequestTab tab switching < 5ms, RequestHeaders typing < 15ms
+- [ ] Profiler: Search typing instant, tab switching < 5ms, headers typing < 15ms
 
-**Expected Total Impact:** 30-40% reduction in editor panel re-renders
+**Expected Total Impact:** 40-50% reduction in editor panel re-renders + instant search response
+
+**Modern hook wins:**
+- CollectionTree search: 50-100ms → <10ms (instantly responsive)
+- Header/parameter edits: 20-50ms → <5ms (optimistic feedback)
+- Tab switching: 15-30ms → <5ms (non-blocking)
 
 ---
 
-## Part 3: Phase 2 - Medium Effort Optimizations (3-4 hours)
+## Part 3: Phase 2 - Medium Effort Optimizations with Modern Hooks (5-6 hours)
 
-### Task 2.1: Memoize RequestEditor & RequestWorkspace
+**Strategy:** Extend modern hooks to more components, then apply structural memoization.
+
+### Task 2.0: Add useTransition to RequestWorkspace (Request Switching)
+**File:** `src/components/request/request-workspace.tsx`
+**Effort:** 20 min | **Impact:** High (5-20ms per request switch)
+
+```tsx
+function RequestWorkspace() {
+  const [isPending, startTransition] = useTransition()
+  const [activeTabId, setActiveTabId] = useState<string | null>(null)
+
+  const handleSwitchRequest = (tabId: string) => {
+    startTransition(() => {
+      setActiveTabId(tabId)
+    })
+  }
+
+  return (
+    <div>
+      <RequestEditor tabId={activeTabId} disabled={isPending} />
+      {isPending && <LoadingIndicator />}
+    </div>
+  )
+}
+```
+
+**Expected Result:** Switching between requests doesn't freeze UI during editor render.
+
+---
+
+### Task 2.1: Add useDeferredValue to LogsList Filtering
+**File:** `src/components/response/components/logs-list.tsx`
+**Effort:** 15 min | **Impact:** High (1000+ log items)
+
+```tsx
+function LogsList({ logs, selectedLevels, onSelectedLevelsChange }: LogsListProps) {
+  const deferredSelectedLevels = useDeferredValue(selectedLevels)
+
+  const filteredLogs = useMemo(() => {
+    if (deferredSelectedLevels.length === ALL_LEVELS.length) return logs
+    return logs.filter(log => deferredSelectedLevels.includes(log.level))
+  }, [logs, deferredSelectedLevels])
+
+  return (
+    <div>
+      <LogLevelFilter
+        selectedLevels={selectedLevels}
+        onChange={onSelectedLevelsChange}
+      /> {/* Responds instantly to clicks */}
+      <LogTable logs={filteredLogs} /> {/* Filters in background */}
+    </div>
+  )
+}
+```
+
+**Expected Result:** Filter buttons respond instantly; 1000+ logs re-render in background.
+
+---
+
+### Task 2.2: Add useOptimistic to RequestParametersPanel & RequestBodyPanel
+**Files:**
+- `src/components/request/editor/request-parameters-panel.tsx`
+- `src/components/request/editor/request-body-panel.tsx`
+
+**Effort:** 30 min | **Impact:** High (all form edits feel instant)
+
+**Pattern (same as Task 1.2):** Wrap state with useOptimistic, update optimistically before persisting.
+
+**Expected Result:** All parameter and body edits appear instantly in UI.
+
+---
+
+### Task 2.3: Add useOptimistic to CollectionTree Actions
+**File:** `src/components/layout/collection-tree.tsx`
+**Effort:** 30 min | **Impact:** Medium (delete/rename feel instant)
+
+```tsx
+const [optimisticCollections, optimisticDelete] = useOptimistic(
+  collections,
+  (state, collectionId: string) =>
+    state.filter(c => c.id !== collectionId)
+)
+
+const handleDelete = (collectionId: string) => {
+  optimisticDelete(collectionId)
+  // Then persist in background
+  deleteCollection(collectionId)
+}
+```
+
+**Expected Result:** Collection deletion shows result immediately; reverts if fails.
+
+---
+
+### Task 2.4: Memoize RequestEditor & RequestWorkspace
 **Files:**
 - `src/components/request/editor/request-editor.tsx`
 - `src/components/request/request-workspace.tsx`
@@ -396,17 +702,26 @@ const treeSensors = React.useMemo(() =>
 
 ---
 
-### Phase 2 Checklist
-- [ ] Task 2.1: Memoize RequestEditor & RequestWorkspace
-- [ ] Task 2.2: Split ResponseViewer into memoized sections
-- [ ] Task 2.3: Optimize CollectionTree search filtering
-- [ ] Task 2.4: Memoize RequestTabBar context menus
-- [ ] Task 2.5: Memoize response list components
-- [ ] Task 2.6: Optimize CollectionTree sensors
+### Phase 2 Checklist - Extend Modern Hooks + Structural Memoization
+- [ ] Task 2.0: Add useTransition to RequestWorkspace (request switching)
+- [ ] Task 2.1: Add useDeferredValue to LogsList filtering
+- [ ] Task 2.2: Add useOptimistic to RequestParametersPanel & RequestBodyPanel
+- [ ] Task 2.3: Add useOptimistic to CollectionTree actions (delete/rename)
+- [ ] Task 2.4: Memoize RequestEditor & RequestWorkspace (React.memo)
+- [ ] Task 2.5: Split ResponseViewer into memoized sections
+- [ ] Task 2.6: Memoize RequestTabBar context menus
+- [ ] Task 2.7: Memoize response list components
+- [ ] Task 2.8: Optimize CollectionTree sensors with useMemo
 - [ ] Test: All tests pass
-- [ ] Profiler: ResponseViewer < 50ms, CollectionTree search < 30ms
+- [ ] Profiler: LogsList < 20ms, response switching < 10ms, collection actions instant
 
-**Expected Total Impact:** Additional 15-25% reduction, particularly on response viewing and collection search
+**Expected Total Impact:** Additional 20-30% reduction + instant perceived responses from optimistic updates
+
+**Modern hook wins in Phase 2:**
+- Request switching: Non-blocking transitions
+- Log filtering: Buttons respond instantly
+- All field edits: Optimistic feedback across all panels
+- Collection actions: Delete/rename feel instant
 
 ---
 
@@ -629,29 +944,47 @@ After Phase 2:
 
 ## Success Criteria
 
-### Phase 1 Complete ✓
-- [ ] RequestTab memoized (no prop changes)
+### Phase 1 Complete ✓ (Modern Hooks Priority)
+- [ ] useTransition working in RequestTabBar
+- [ ] useDeferredValue working in CollectionTree search
+- [ ] useOptimistic working in RequestHeadersPanel
+- [ ] RequestTab memoized (React.memo)
 - [ ] All panel handlers wrapped in useCallback
 - [ ] All panel components memoized
 - [ ] 613 unit tests passing
 - [ ] E2E critical tests passing
-- [ ] Profiler shows 20-30% improvement in editor responsiveness
+- [ ] Profiler shows:
+  - Search input: Instant typing response
+  - Tab switching: < 5ms
+  - Header editing: < 15ms
+  - Overall: 40-50% improvement
 
-### Phase 2 Complete ✓
+### Phase 2 Complete ✓ (Extended Modern Hooks)
+- [ ] useTransition working in RequestWorkspace
+- [ ] useDeferredValue working in LogsList filtering
+- [ ] useOptimistic working in all form panels
+- [ ] useOptimistic working in collection actions
 - [ ] RequestEditor, RequestWorkspace memoized
 - [ ] ResponseViewer split into sections
-- [ ] CollectionTree search optimized
 - [ ] All response viewers memoized
 - [ ] 613 unit tests passing
 - [ ] E2E critical + comprehensive tests passing
-- [ ] Flamegraph shows 40-60% reduction in main thread time
-- [ ] Search < 30ms, editing < 15ms, responses < 50ms
+- [ ] Profiler shows:
+  - Search: Instant
+  - Editing: < 5ms perceived latency
+  - Log filtering: Instant
+  - Response switching: < 10ms (non-blocking)
+  - Collection actions: Instant feedback
+  - Overall: 60-70% improvement
+- [ ] Flamegraph shows 50-70% reduction in main thread time
 
 ### Overall Impact ✓
-- [ ] UI feels responsive on 2018+ hardware
-- [ ] No noticeable lag during heavy editing
-- [ ] Large responses (100KB+) load smoothly
-- [ ] Search across 100+ collections feels instant
+- [ ] **Search across 100+ collections:** Instant typing (no lag)
+- [ ] **Field editing:** Optimistic feedback (<5ms perceived)
+- [ ] **Tab/request switching:** Non-blocking (<10ms)
+- [ ] **UI fully responsive** on 2018+ hardware
+- [ ] **Large responses (100KB+):** Smooth with non-blocking filtering
+- [ ] **All user actions** feel snappy and responsive
 
 ---
 
