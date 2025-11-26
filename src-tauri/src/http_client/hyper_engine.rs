@@ -1226,6 +1226,8 @@ impl HyperEngine {
 mod tests {
     use super::*;
     use hyper::http::HeaderValue;
+    use std::sync::{Arc, Mutex};
+    use std::time::Instant;
 
     // ========== format_http_version tests ==========
 
@@ -1796,5 +1798,94 @@ mod tests {
         let body_bytes = result.unwrap();
         let body_str = String::from_utf8(body_bytes.to_vec()).unwrap();
         assert!(body_str.contains("--myboundary"));
+    }
+
+    // ========== Logging and helper behavior ==========
+
+    struct VecEmitter {
+        events: Arc<Mutex<Vec<LogEntry>>>,
+    }
+
+    impl LogEmitter for VecEmitter {
+        fn emit(&self, entry: LogEntry) {
+            self.events.lock().unwrap().push(entry);
+        }
+    }
+
+    fn make_logger() -> (RequestLogger, Arc<VecEmitter>) {
+        let emitter = Arc::new(VecEmitter {
+            events: Arc::new(Mutex::new(Vec::new())),
+        });
+        let logger = RequestLogger::new(emitter.clone(), "req-1".into(), Instant::now());
+        (logger, emitter)
+    }
+
+    #[test]
+    fn log_body_truncates_binary_payloads() {
+        let (logger, emitter) = make_logger();
+        let data = b"\x01\x02\x03\x04\x05";
+
+        HyperEngine::log_body(&logger, "response_body", "body", data, 3, "<");
+
+        let events = emitter.events.lock().unwrap();
+        assert_eq!(events.len(), 1);
+        let event = &events[0];
+        assert_eq!(event.bytes_logged, Some(3));
+        assert_eq!(event.truncated, Some(true));
+        assert_eq!(event.level, LogLevel::Debug);
+    }
+
+    #[test]
+    fn log_headers_redacts_sensitive_values() {
+        let (logger, emitter) = make_logger();
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            hyper::header::AUTHORIZATION,
+            HeaderValue::from_static("Bearer secret"),
+        );
+        headers.insert(HeaderName::from_static("cookie"), HeaderValue::from_static("a=b"));
+        headers.insert(HeaderName::from_static("x-ok"), HeaderValue::from_static("ok"));
+
+        HyperEngine::log_headers(&logger, &headers, true, "request_header", ">");
+
+        let events = emitter.events.lock().unwrap();
+        assert_eq!(events.len(), 3);
+        let auth = events
+            .iter()
+            .find(|e| e.message.to_lowercase().contains("authorization"))
+            .unwrap();
+        assert!(auth.message.contains("[REDACTED"));
+        assert_eq!(auth.details.as_ref().unwrap()["redacted"], serde_json::Value::Bool(true));
+        let non_sensitive = events
+            .iter()
+            .find(|e| e.message.to_lowercase().contains("x-ok"))
+            .unwrap();
+        assert_eq!(non_sensitive.details.as_ref().unwrap()["redacted"], serde_json::Value::Bool(false));
+    }
+
+    #[test]
+    fn build_body_reads_file_and_sets_content_type() {
+        let mut tmp = tempfile::Builder::new().suffix(".json").tempfile().unwrap();
+        use std::io::Write;
+        tmp.write_all(b"{\"ok\":true}").unwrap();
+        let path = tmp.path().to_str().unwrap().to_string();
+
+        let mut headers = HeaderMap::new();
+        let request = Request {
+            request_id: "file".into(),
+            url: "https://example.com".into(),
+            method: "POST".into(),
+            body_file_path: Some(path.clone()),
+            ..Default::default()
+        };
+
+        let body = HyperEngine::build_body(&request, &mut headers).expect("file body");
+        assert_eq!(body.as_ref(), b"{\"ok\":true}");
+        let ct = headers
+            .get(hyper::header::CONTENT_TYPE)
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert!(ct.contains("json"));
     }
 }
