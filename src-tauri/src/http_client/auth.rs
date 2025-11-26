@@ -2104,12 +2104,8 @@ mod tests {
     fn build_stub_token_trims_scope() {
         let token = build_stub_token("client_credentials", "svc", Some("  read "), 10);
         let parts: Vec<&str> = token.split('.').collect();
-        let payload = String::from_utf8(
-            general_purpose::URL_SAFE_NO_PAD
-                .decode(parts[1])
-                .unwrap(),
-        )
-        .unwrap();
+        let payload =
+            String::from_utf8(general_purpose::URL_SAFE_NO_PAD.decode(parts[1]).unwrap()).unwrap();
         assert!(payload.contains("read"));
     }
 
@@ -2420,7 +2416,11 @@ mod tests {
 
         let events = events.lock().unwrap();
         assert!(!events.is_empty());
-        assert!(events.iter().any(|e| e.message.contains("Generated stub authentication token")));
+        assert!(
+            events
+                .iter()
+                .any(|e| e.message.contains("Generated stub authentication token"))
+        );
     }
 
     // ========== Auth placement tests ==========

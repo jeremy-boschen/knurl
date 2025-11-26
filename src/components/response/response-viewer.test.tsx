@@ -297,6 +297,32 @@ describe("ResponseViewer", () => {
     expect(statusAfter.className).toContain("text-red-500")
   })
 
+  it("renders CSV preview with BOM, comments, and quoted commas", async () => {
+    const user = userEvent.setup()
+    renderViewer({
+      httpData: {
+        headers: { "content-type": "text/csv" },
+        body: '\uFEFF# comment\n"name","notes"\n"foo","a,b"\n',
+      },
+    })
+
+    await user.click(screen.getByRole("tab", { name: /Preview/i }))
+    const preview = await screen.findByRole("table")
+    expect(within(preview).getByText("name")).toBeInTheDocument()
+    expect(within(preview).getByText("a,b")).toBeInTheDocument()
+    expect(within(preview).queryByText(/comment/)).toBeNull()
+  })
+
+  it("shows empty CSV message when only comments are present", async () => {
+    const user = userEvent.setup()
+    renderViewer({
+      httpData: { headers: { "content-type": "text/csv" }, body: "# only comments\n# more\n" },
+    })
+
+    await user.click(screen.getByRole("tab", { name: /Preview/i }))
+    expect(await screen.findByText(/Empty CSV/i)).toBeInTheDocument()
+  })
+
   it("uses content-disposition filename when saving binary responses", async () => {
     const user = userEvent.setup()
     renderViewer({
@@ -311,6 +337,16 @@ describe("ResponseViewer", () => {
 
     await user.click(screen.getByRole("button", { name: /save/i }))
     expect(saveBinary).toHaveBeenCalledWith("Zm9v", expect.objectContaining({ defaultPath: "clip.mp4" }))
+  })
+
+  it("infers sensible default filename from content-type (yaml)", async () => {
+    const user = userEvent.setup()
+    renderViewer({
+      httpData: { headers: { "content-type": "application/x-yaml" }, body: "foo: bar" },
+    })
+
+    await user.click(screen.getByRole("button", { name: /save/i }))
+    expect(saveFile).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ defaultPath: "response.yml" }))
   })
 
   it("falls back to content-type extension when filename missing", async () => {
@@ -342,6 +378,13 @@ describe("ResponseViewer", () => {
 
     await user.click(screen.getByRole("tab", { name: /Preview/i }))
     expect(screen.getByText(/Preview disabled for large media files/i)).toBeInTheDocument()
+  })
+
+  it("formats response size into human readable units", () => {
+    renderViewer({
+      responseOverrides: { responseSize: 2 * 1024 * 1024 }, // 2 MB
+    })
+    expect(screen.getByText("2 MB")).toBeInTheDocument()
   })
 
   it("renders binary body text when base64 present and uses filePath actions when provided", async () => {

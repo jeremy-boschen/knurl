@@ -1843,8 +1843,14 @@ mod tests {
             hyper::header::AUTHORIZATION,
             HeaderValue::from_static("Bearer secret"),
         );
-        headers.insert(HeaderName::from_static("cookie"), HeaderValue::from_static("a=b"));
-        headers.insert(HeaderName::from_static("x-ok"), HeaderValue::from_static("ok"));
+        headers.insert(
+            HeaderName::from_static("cookie"),
+            HeaderValue::from_static("a=b"),
+        );
+        headers.insert(
+            HeaderName::from_static("x-ok"),
+            HeaderValue::from_static("ok"),
+        );
 
         HyperEngine::log_headers(&logger, &headers, true, "request_header", ">");
 
@@ -1855,12 +1861,18 @@ mod tests {
             .find(|e| e.message.to_lowercase().contains("authorization"))
             .unwrap();
         assert!(auth.message.contains("[REDACTED"));
-        assert_eq!(auth.details.as_ref().unwrap()["redacted"], serde_json::Value::Bool(true));
+        assert_eq!(
+            auth.details.as_ref().unwrap()["redacted"],
+            serde_json::Value::Bool(true)
+        );
         let non_sensitive = events
             .iter()
             .find(|e| e.message.to_lowercase().contains("x-ok"))
             .unwrap();
-        assert_eq!(non_sensitive.details.as_ref().unwrap()["redacted"], serde_json::Value::Bool(false));
+        assert_eq!(
+            non_sensitive.details.as_ref().unwrap()["redacted"],
+            serde_json::Value::Bool(false)
+        );
     }
 
     #[test]
