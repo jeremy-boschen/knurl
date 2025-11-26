@@ -9,7 +9,7 @@ import {
   createFolderFixture,
   createRequestFixture,
   resetCollectionFixtureSeeds,
-} from "@/test/fixtures/collections"
+} from "@test/fixtures/collections"
 import { useImportActions } from "./use-import-actions"
 import { useCollections } from "@/state"
 

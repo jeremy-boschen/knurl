@@ -6,7 +6,7 @@ vi.mock("@/lib/request/prepared-http", () => ({
 
 import { buildExportCommand } from "./exporters"
 import { prepareHttpRequest } from "@/lib/request/prepared-http"
-import { createRequestFixture, createExportedCollectionFixture } from "@/test/fixtures/collections"
+import { createRequestFixture, createExportedCollectionFixture } from "@test/fixtures/collections"
 import type { Collection } from "@/types"
 
 const mockedPrepare = vi.mocked(prepareHttpRequest)

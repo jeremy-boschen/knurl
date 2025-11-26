@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import React from "react"
 
 import SaveRequestDialog from "./save-request-dialog"
-import { createRequestFixture } from "@/test/fixtures/collections"
+import { createRequestFixture } from "@test/fixtures/collections"
 
 const stateMocks = vi.hoisted(() => ({
   useCollections: vi.fn(),

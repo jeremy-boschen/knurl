@@ -8,7 +8,7 @@ import {
   createExportedCollectionFixture,
   createRequestFixture,
   resetCollectionFixtureSeeds,
-} from "@/test/fixtures/collections"
+} from "@test/fixtures/collections"
 
 describe("useSelectionManager", () => {
   beforeEach(() => {

@@ -30,9 +30,9 @@ function collectTests(dir) {
   return results
 }
 
-const testFiles = collectTests(join(projectRoot, "src")).sort((a, b) => a.localeCompare(b))
+const testFiles = collectTests(join(projectRoot, "src-ui", "src")).sort((a, b) => a.localeCompare(b))
 if (testFiles.length === 0) {
-  console.error("No test files found under src/")
+  console.error("No test files found under src-ui/src/")
   process.exit(1)
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { prepareHttpRequest } from "./prepared-http"
-import { createRequestFixture } from "@/test/fixtures/collections"
+import { createRequestFixture } from "@test/fixtures/collections"
 import type { AuthResult } from "@/types"
 
 describe("prepareHttpRequest", () => {

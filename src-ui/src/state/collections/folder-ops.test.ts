@@ -4,7 +4,7 @@ import { createFolderOps } from "./folder-ops"
 import { markCollectionLoaded, removeCollectionFromLoadTracking } from "./core"
 import { RootCollectionFolderId } from "@/types/collections/collection"
 import type { Application, CollectionCache, RequestTabState } from "@/types"
-import { createRequestFixture } from "@/test/fixtures/collections"
+import { createRequestFixture } from "@test/fixtures/collections"
 import * as utils from "@/lib/utils"
 
 const COLLECTION_ID = "col-1"
