@@ -67,7 +67,7 @@ if (notesFile && !existsSync(notesFile)) {
 }
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
-const repoRoot = path.resolve(scriptDir, '..')
+const repoRoot = path.resolve(scriptDir, '../..')
 
 const runCommand = (command, commandArgs = [], options = {}) => {
   execFileSync(command, commandArgs, {

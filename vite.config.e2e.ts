@@ -4,8 +4,8 @@ import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import checker from 'vite-plugin-checker'
 import istanbul from 'vite-plugin-istanbul'
-import {consoleForwardPlugin} from './scripts/vite-console-forward-plugin'
-import {cssVarsExportPlugin} from './scripts/vite-css-vars-export-plugin'
+import {consoleForwardPlugin} from './scripts/build/vite-console-forward-plugin'
+import {cssVarsExportPlugin} from './scripts/build/vite-css-vars-export-plugin'
 
 const host = process.env.TAURI_DEV_HOST
 
@@ -75,8 +75,10 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@test': path.resolve(__dirname, './test'),
+      "@": path.resolve(__dirname, "./src-ui/src"),
+      "@test": path.resolve(__dirname, "./src-ui/test"),
+      // Use React profiling build for accurate performance metrics
+      'react-dom/client': 'react-dom/profiling',
       // This is needed for recent codemirror styling. No idea why
       '@codemirror/state': path.resolve(__dirname, './node_modules/@codemirror/state/dist/index.cjs'),
       '@codemirror/view': path.resolve(__dirname, './node_modules/@codemirror/view/dist/index.cjs'),

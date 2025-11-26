@@ -17,7 +17,7 @@ const THRESHOLDS = {
   statements: 70,
 }
 
-const coveragePath = path.join(__dirname, '../coverage/coverage-summary.json')
+const coveragePath = path.join(__dirname, '../../coverage/coverage-summary.json')
 
 if (!fs.existsSync(coveragePath)) {
   console.error('❌ Coverage summary not found. Run: yarn test or yarn test:unit')

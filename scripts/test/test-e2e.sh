@@ -83,12 +83,12 @@ if [[ ${#spec_files[@]} -gt 0 ]] || [[ -n "$test_name" ]]; then
   fi
   eval "$wdio_cmd"
   if [[ $enable_coverage == 1 ]]; then
-    node scripts/aggregate-e2e-coverage.mjs
+    node scripts/test/aggregate-e2e-coverage.mjs
   fi
 else
   echo "Running all E2E tests"
   yarn wdio run ./wdio.conf.ts
   if [[ $enable_coverage == 1 ]]; then
-    node scripts/aggregate-e2e-coverage.mjs
+    node scripts/test/aggregate-e2e-coverage.mjs
   fi
 fi

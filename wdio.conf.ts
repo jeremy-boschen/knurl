@@ -1,11 +1,11 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: OK */
-import type { ChildProcessByStdio } from "node:child_process"
-import { spawn, spawnSync } from "node:child_process"
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
-import { homedir, tmpdir } from "node:os"
+import type {ChildProcessByStdio} from "node:child_process"
+import {spawn, spawnSync} from "node:child_process"
+import {existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync} from "node:fs"
+import {homedir, tmpdir} from "node:os"
 import * as path from "node:path"
-import type { Readable } from "node:stream"
-import { fileURLToPath } from "node:url"
+import type {Readable} from "node:stream"
+import {fileURLToPath} from "node:url"
 
 declare global {
   // eslint-disable-next-line no-var
@@ -124,24 +124,24 @@ function killProcessesOnPort(port: number) {
           "-Command",
           `Get-NetTCPConnection -LocalPort ${port} -State Listen | Select-Object -ExpandProperty OwningProcess | ForEach-Object { if ($_ -ne $PID) { Try { Stop-Process -Id $_ -Force -ErrorAction Stop } Catch { } } }`,
         ],
-        { stdio: "ignore" },
+        {stdio: "ignore"},
       )
       return
     }
 
-    const lsofResult = spawnSync("lsof", ["-ti", `tcp:${port}`], { encoding: "utf8" })
+    const lsofResult = spawnSync("lsof", ["-ti", `tcp:${port}`], {encoding: "utf8"})
     const output = lsofResult.stdout?.trim()
     if (lsofResult.status === 0 && output) {
       for (const pid of output.split(/\s+/)) {
         if (!pid) {
           continue
         }
-        spawnSync("kill", ["-9", pid], { stdio: "ignore" })
+        spawnSync("kill", ["-9", pid], {stdio: "ignore"})
       }
       return
     }
 
-    spawnSync("fuser", ["-k", `${port}/tcp`], { stdio: "ignore" })
+    spawnSync("fuser", ["-k", `${port}/tcp`], {stdio: "ignore"})
   } catch (error) {
     console.warn(`Failed to clean processes on port ${port}:`, error)
   }
@@ -155,11 +155,11 @@ function killProcessesByPattern(pattern: string) {
           Try { Stop-Process -Id $_.Id -Force -ErrorAction Stop } Catch { }
         }
       `
-      spawnSync("powershell.exe", ["-NoLogo", "-NoProfile", "-Command", script], { stdio: "ignore" })
+      spawnSync("powershell.exe", ["-NoLogo", "-NoProfile", "-Command", script], {stdio: "ignore"})
       return
     }
 
-    const result = spawnSync("pkill", ["-9", "-f", pattern], { stdio: "ignore" })
+    const result = spawnSync("pkill", ["-9", "-f", pattern], {stdio: "ignore"})
     if (result.status === 0) {
       return
     }
@@ -212,7 +212,7 @@ function envFlag(value: string | undefined | null): boolean {
 }
 
 function buildEnvWithKeyringDefaults(): NodeJS.ProcessEnv {
-  const env = { ...process.env }
+  const env = {...process.env}
   const hasDisable = env.KNURL_DISABLE_KEYRING != null
   const hasExplicitEnable = env.KNURL_USE_KEYRING != null
   if (process.platform === "linux" && !hasDisable && !hasExplicitEnable) {
@@ -254,7 +254,7 @@ function resolveNativeDriverPath(): string | null {
 
 function locateExecutable(executable: string): string | null {
   const command = process.platform === "win32" ? "where" : "which"
-  const result = spawnSync(command, [executable], { encoding: "utf8" })
+  const result = spawnSync(command, [executable], {encoding: "utf8"})
   if (result.status === 0) {
     const line = result.stdout.split(/\r?\n/).find((entry) => entry.trim().length > 0)
     if (line) {
@@ -272,7 +272,7 @@ async function waitForDevServer(url: string, timeout = 30000, interval = 500) {
   const start = Date.now()
   while (Date.now() - start < timeout) {
     try {
-      const res = await fetch(url, { method: "GET" })
+      const res = await fetch(url, {method: "GET"})
       if (res.ok) {
         await new Promise((resolve) => setTimeout(resolve, 500))
         return
@@ -289,7 +289,7 @@ async function waitForEndpoint(url: string, timeout = 30000, interval = 250) {
   const start = Date.now()
   while (Date.now() - start < timeout) {
     try {
-      const res = await fetch(url, { method: "GET" })
+      const res = await fetch(url, {method: "GET"})
       if (res.ok) {
         return
       }
@@ -344,7 +344,7 @@ async function handleOnPrepare() {
     PORT: String(MOCK_ENDPOINT_PORT),
   }
 
-  mockEndpointProcess = spawn("node", ["scripts/mock-endpoint-server.mjs"], {
+  mockEndpointProcess = spawn("node", ["src-common/e2e/support/mock-endpoint-server.mjs"], {
     cwd: process.cwd(),
     env: mockEndpointEnv,
     stdio: ["ignore", "pipe", "pipe"],
@@ -425,7 +425,7 @@ async function handleOnPrepare() {
     VITE_E2E_STUB_OAUTH: "0",
   }
 
-  const iconGeneration = spawnSync("node", ["scripts/generate-knurl-icon.mjs"], {
+  const iconGeneration = spawnSync("node", ["scripts/build/generate-knurl-icon.mjs"], {
     cwd: process.cwd(),
     shell: true,
     stdio: "ignore",
@@ -657,7 +657,7 @@ async function handleBefore() {
   // Set up WebDriver Bidi log capturing
   try {
     const browserConsoleLogs: any[] = []
-    await browser.sessionSubscribe({ events: ["log.entryAdded"] })
+    await browser.sessionSubscribe({events: ["log.entryAdded"]})
     browser.on("log.entryAdded", (entry) => {
       browserConsoleLogs.push(entry)
     })
@@ -716,7 +716,7 @@ async function handleAfterTest(test: any, result: any) {
     if (coverage) {
       const coverageDir = path.join(process.cwd(), ".nyc_output")
       if (!existsSync(coverageDir)) {
-        mkdirSync(coverageDir, { recursive: true })
+        mkdirSync(coverageDir, {recursive: true})
       }
 
       const coverageFile = path.join(
@@ -856,8 +856,8 @@ export const config = {
     },
   ],
   reporters: [
-    ["spec", { symbols: { success: "✓", pending: "○", fail: "✕" }, realtimeReporting: false }],
-    ["json", { outputDir: "./test-results", outputFileFormat: (opts: { cid: any }) => `results-${opts.cid}.json` }],
+    ["spec", {symbols: {success: "✓", pending: "○", fail: "✕"}, realtimeReporting: false}],
+    ["json", {outputDir: "./test-results", outputFileFormat: (opts: { cid: any }) => `results-${opts.cid}.json`}],
   ],
   framework: "mocha",
   baseUrl: "http://localhost:1420",

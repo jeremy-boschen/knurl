@@ -122,7 +122,7 @@ fi
 if [ "$RUN_UNIT" = true ]; then
   echo ""
   echo "1️⃣  Running frontend unit tests..."
-  VITEST_COVERAGE=true node scripts/run-vitest-groups.mjs --run
+  VITEST_COVERAGE=true node scripts/test/run-vitest-groups.mjs --run
 
   echo ""
   echo "2️⃣  Running backend unit tests..."
@@ -139,7 +139,7 @@ if [ "$RUN_UNIT" = true ]; then
   # Convert Rust LCOV
   if [ -f coverage/rust-lcov.info ]; then
     echo "Converting Rust LCOV to Istanbul format..."
-    node scripts/lcov-to-istanbul.mjs coverage/rust-lcov.info coverage/rust-coverage.json
+    node scripts/test/lcov-to-istanbul.mjs coverage/rust-lcov.info coverage/rust-coverage.json
   fi
 fi
 
@@ -162,10 +162,10 @@ if [ "$RUN_E2E" = true ]; then
   eval "$CMD"
 
   echo "Aggregating E2E coverage..."
-  node scripts/aggregate-e2e-coverage.mjs
+  node scripts/test/aggregate-e2e-coverage.mjs
   
   echo "Converting E2E to Cobertura..."
-  node scripts/convert-e2e-to-cobertura.mjs
+  node scripts/test/convert-e2e-to-cobertura.mjs
 fi
 
 # -----------------------------------------------------------------------------
@@ -186,7 +186,7 @@ if [ "$RUN_PERF" = true ]; then
   eval "$CMD"
   
   echo "Generating Performance Report..."
-  node scripts/generate-performance-report.mjs
+  node scripts/test/generate-performance-report.mjs
 fi
 
 # -----------------------------------------------------------------------------
@@ -198,14 +198,14 @@ if [ "$RUN_UNIT" = true ] || [ "$RUN_E2E" = true ]; then
   echo "MERGING COVERAGE..."
   
   # 1. Merge Istanbul JSONs (Frontend Unit + Rust Unit + E2E Aggregated)
-  node scripts/merge-coverage.mjs
+  node scripts/test/merge-coverage.mjs
 
   # 2. Merge Cobertura XMLs (Frontend + Rust + E2E) - useful for CI
-  node scripts/merge-cobertura.mjs
+  node scripts/test/merge-cobertura.mjs
 
   echo ""
   echo "CHECKING THRESHOLDS..."
-  node scripts/check-coverage.js
+  node scripts/test/check-coverage.js
 fi
 
 echo ""

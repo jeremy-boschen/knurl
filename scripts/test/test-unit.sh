@@ -2,7 +2,7 @@
 set -e
 
 echo "Running frontend unit tests with coverage..."
-VITEST_COVERAGE=true node scripts/run-vitest-groups.mjs --run
+VITEST_COVERAGE=true node scripts/test/run-vitest-groups.mjs --run
 
 echo "Running backend unit tests with coverage..."
 cd src-tauri
@@ -17,11 +17,11 @@ cd - > /dev/null
 
 if [ -f coverage/rust-lcov.info ]; then
   echo "Converting Rust LCOV to Istanbul format..."
-  node scripts/lcov-to-istanbul.mjs coverage/rust-lcov.info coverage/rust-coverage.json
+  node scripts/test/lcov-to-istanbul.mjs coverage/rust-lcov.info coverage/rust-coverage.json
 fi
 
 echo "Merging unit test coverage reports..."
-node scripts/merge-coverage.mjs
+node scripts/test/merge-coverage.mjs
 
 echo "Checking coverage thresholds..."
-node scripts/check-coverage.js
+node scripts/test/check-coverage.js

@@ -13,7 +13,7 @@ if (!allowed.has(releaseType)) {
 }
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
-const repoRoot = path.resolve(scriptDir, '..')
+const repoRoot = path.resolve(scriptDir, '../..')
 
 function runGit(command, opts = {}) {
   return execSync(command, { cwd: repoRoot, stdio: 'pipe', encoding: 'utf8', ...opts }).trim()

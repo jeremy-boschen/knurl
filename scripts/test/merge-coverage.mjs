@@ -12,7 +12,7 @@ const { createCoverageMap } = coverageLib
 const { createReporter } = istanbulApi
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const projectRoot = path.resolve(__dirname, '..')
+const projectRoot = path.resolve(__dirname, '../..')
 
 const map = createCoverageMap({})
 let mergedCount = 0

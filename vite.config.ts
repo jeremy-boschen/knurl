@@ -4,8 +4,8 @@ import path from "node:path";
 import tailwindcss from '@tailwindcss/vite'
 import checker from 'vite-plugin-checker'
 import {visualizer} from "rollup-plugin-visualizer";
-import {consoleForwardPlugin} from "./scripts/vite-console-forward-plugin";
-import {cssVarsExportPlugin} from "./scripts/vite-css-vars-export-plugin";
+import {consoleForwardPlugin} from "./scripts/build/vite-console-forward-plugin";
+import {cssVarsExportPlugin} from "./scripts/build/vite-css-vars-export-plugin";
 
 const host = process.env.TAURI_DEV_HOST;
 
