@@ -1,4 +1,4 @@
-import React, { Profiler, Suspense, useCallback, useDeferredValue } from "react"
+import React, { Profiler, Suspense, useCallback, useDeferredValue, useMemo } from "react"
 
 import {
   closestCenter,
@@ -211,19 +211,23 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
     }),
   )
 
-  const collisionDetectionStrategy: CollisionDetection = (args) => {
-    const pointerCollisions = pointerWithin(args)
-    if (pointerCollisions.length > 0) {
-      return pointerCollisions
-    }
+  // Memoize collision detection strategy
+  const collisionDetectionStrategy: CollisionDetection = useMemo(
+    () => (args) => {
+      const pointerCollisions = pointerWithin(args)
+      if (pointerCollisions.length > 0) {
+        return pointerCollisions
+      }
 
-    const rectCollisions = rectIntersection(args)
-    if (rectCollisions.length > 0) {
-      return rectCollisions
-    }
+      const rectCollisions = rectIntersection(args)
+      if (rectCollisions.length > 0) {
+        return rectCollisions
+      }
 
-    return closestCenter(args)
-  }
+      return closestCenter(args)
+    },
+    [],
+  )
 
   ///
   /// Expanded and selected state of each CollectionRow. Managed here because so we can transition
