@@ -4,18 +4,20 @@ import { describe, expect, it } from "vitest"
 import { ValidationErrorDisplay } from "./validation-error-display"
 
 describe("ValidationErrorDisplay", () => {
-  it("lists issues with their paths", () => {
+  it("renders each issue with path and message", () => {
     render(
       <ValidationErrorDisplay
         issues={[
-          { path: ["collection", "name"], message: "Name missing" } as any,
+          { path: ["request", "url"], message: "Invalid URL" } as any,
           { path: [], message: "Root error" } as any,
         ]}
       />,
     )
 
-    expect(screen.getByText(/collection.name/i)).toBeInTheDocument()
-    expect(screen.getByText(/Name missing/)).toBeInTheDocument()
+    expect(screen.getByText("Validation Errors")).toBeInTheDocument()
+    expect(screen.getByText("request.url")).toBeInTheDocument()
+    expect(screen.getByText(/Invalid URL/)).toBeInTheDocument()
+    expect(screen.getByText("Root")).toBeInTheDocument()
     expect(screen.getByText(/Root error/)).toBeInTheDocument()
   })
 })

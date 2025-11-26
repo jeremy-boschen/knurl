@@ -1986,6 +1986,7 @@ fn emit_auth_log(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::{Arc, Mutex};
 
     // ========== require_value tests ==========
 
@@ -2029,6 +2030,13 @@ mod tests {
         let result = require_value(value, "error");
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "test");
+    }
+
+    #[test]
+    fn require_value_trims_single_side_whitespace() {
+        let padded = "token ".to_string();
+        let value = Some(&padded);
+        assert_eq!(require_value(value, "missing").unwrap(), "token");
     }
 
     // ========== build_stub_token tests ==========
@@ -2090,6 +2098,19 @@ mod tests {
         )
         .unwrap();
         assert!(payload_json.contains("read write"));
+    }
+
+    #[test]
+    fn build_stub_token_trims_scope() {
+        let token = build_stub_token("client_credentials", "svc", Some("  read "), 10);
+        let parts: Vec<&str> = token.split('.').collect();
+        let payload = String::from_utf8(
+            general_purpose::URL_SAFE_NO_PAD
+                .decode(parts[1])
+                .unwrap(),
+        )
+        .unwrap();
+        assert!(payload.contains("read"));
     }
 
     #[test]
@@ -2329,11 +2350,77 @@ mod tests {
 
     #[test]
     fn is_stub_oauth_enabled_respects_env_var() {
-        // Note: These tests depend on environment state and may not be fully isolated
-        // They test the logic of the function with different inputs
-        let _enabled = is_stub_oauth_enabled();
-        // Function reads from env, so we just verify it executes without panic
-        // Full env testing is done in integration tests
+        // Cannot mutate env with forbid(unsafe_code); just ensure function is callable.
+        let _ = is_stub_oauth_enabled();
+    }
+
+    // ========== emit_auth_log / stubbed_oauth_result tests ==========
+
+    struct CollectEmitter {
+        events: Arc<Mutex<Vec<LogEntry>>>,
+    }
+
+    impl LogEmitter for CollectEmitter {
+        fn emit(&self, entry: LogEntry) {
+            self.events.lock().unwrap().push(entry);
+        }
+    }
+
+    #[test]
+    fn emit_auth_log_sets_category_and_phase() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let emitter = CollectEmitter {
+            events: events.clone(),
+        };
+
+        emit_auth_log(
+            &emitter,
+            "req-1",
+            LogLevel::Warning,
+            "phase",
+            "message",
+            Some(serde_json::json!({"k": "v"})),
+        );
+
+        let stored = events.lock().unwrap();
+        assert_eq!(stored.len(), 1);
+        let first = &stored[0];
+        assert_eq!(first.category.as_deref(), Some("auth"));
+        assert_eq!(first.phase.as_deref(), Some("phase"));
+        assert_eq!(first.level, LogLevel::Warning);
+        assert!(!first.timestamp.is_empty());
+    }
+
+    #[test]
+    fn stubbed_oauth_result_trims_scope_and_sets_expiration() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let emitter = CollectEmitter {
+            events: events.clone(),
+        };
+
+        let res = stubbed_oauth_result(
+            &emitter,
+            "req-2".to_string(),
+            "client_credentials",
+            StubOauthOptions {
+                auth_url: None,
+                token_url: Some(&"https://idp/token".to_string()),
+                device_authorization_url: None,
+                client_id: Some(&"id".to_string()),
+                client_secret: Some(&"secret".to_string()),
+                scope: Some(&"  read ".to_string()),
+                refresh_token: None,
+                redirect_uri: None,
+            },
+        )
+        .expect("stub oauth result");
+
+        assert!(res.headers.as_ref().unwrap().get("Authorization").is_some());
+        assert!(res.expires_at.unwrap() > Utc::now().timestamp());
+
+        let events = events.lock().unwrap();
+        assert!(!events.is_empty());
+        assert!(events.iter().any(|e| e.message.contains("Generated stub authentication token")));
     }
 
     // ========== Auth placement tests ==========

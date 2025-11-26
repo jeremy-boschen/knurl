@@ -10,9 +10,14 @@ vi.mock("@/state", () => ({
   useRequestOptions: vi.fn(),
   useSettings: vi.fn(),
 }))
+vi.mock("@/bindings/knurl", () => ({
+  openFile: vi.fn(),
+}))
+import { openFile } from "@/bindings/knurl"
 
 const mockUpdateClientOption = vi.fn()
 const mockUpdateAutoSave = vi.fn()
+const mockOpenFile = vi.mocked(openFile)
 
 const mockOptions = {
   timeoutSecs: 30,
@@ -163,5 +168,35 @@ describe("RequestOptionsPanel", () => {
       caText: "my-cert-text",
       caPath: undefined,
     })
+  })
+
+  it("opens CA browse dialog and populates path when file chosen", async () => {
+    mockOpenFile.mockResolvedValueOnce({ filePath: "/certs/custom.pem" } as any)
+    const user = userEvent.setup()
+    render(<RequestOptionsPanel tabId="1" />)
+
+    await user.click(screen.getByRole("button", { name: /browse/i }))
+    expect(mockOpenFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Select CA Bundle (PEM)",
+        readContent: false,
+      }),
+    )
+    expect(mockUpdateClientOption).toHaveBeenCalledWith({ caPath: "/certs/custom.pem", caText: undefined })
+  })
+
+  it("swallows browse errors without throwing", async () => {
+    mockOpenFile.mockRejectedValueOnce(new Error("cancelled"))
+    const user = userEvent.setup()
+    render(<RequestOptionsPanel tabId="1" />)
+    await user.click(screen.getByRole("button", { name: /browse/i }))
+    expect(mockUpdateClientOption).not.toHaveBeenCalledWith({ caPath: "/certs/custom.pem", caText: undefined })
+  })
+
+  it("changes HTTP version radio", async () => {
+    const user = userEvent.setup()
+    render(<RequestOptionsPanel tabId="1" />)
+    await user.click(screen.getByLabelText("HTTP/2"))
+    expect(mockUpdateClientOption).toHaveBeenCalledWith({ httpVersion: "http2" })
   })
 })

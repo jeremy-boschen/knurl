@@ -28,12 +28,20 @@ vi.mock("@/components/ui/knurl", async (importOriginal) => {
     FileInput: ({ onFileChange, "data-test-id": dataTestId }: any) => (
       <button
         type="button"
-        data-testid={dataTestId ?? "mock-file-input"}
+        data-test-id={dataTestId ?? "mock-file-input"}
         onClick={() => onFileChange("/tmp/demo.txt", "demo.txt", "text/plain")}
       >
         upload
       </button>
     ),
+  }
+})
+
+vi.mock("@/lib/utils", async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    generateUniqueId: () => "gen-id",
   }
 })
 
@@ -61,6 +69,40 @@ const renderPanel = () =>
   )
 
 describe("RequestBodyPanel", () => {
+  it("maps body type labels", () => {
+    expect(getBodyTypeLabel({ type: "none" } as any)).toBe("None")
+    expect(getBodyTypeLabel({ type: "binary" } as any)).toBe("Binary File")
+    expect(getBodyTypeLabel({ type: "form", encoding: "multipart" } as any)).toBe("Form > Multipart")
+    expect(getBodyTypeLabel({ type: "form", encoding: "url" } as any)).toBe("Form > URL-Encoded")
+    expect(getBodyTypeLabel({ type: "text", language: "json" } as any)).toMatch(/Text > JSON/i)
+  })
+
+  it("infers common content types by extension", () => {
+    expect(guessContentTypeByExt("report.csv")).toBe("text/csv")
+    expect(guessContentTypeByExt("image.PNG")).toBe("image/png")
+    expect(guessContentTypeByExt("archive.tgz")).toBe("application/gzip")
+    expect(guessContentTypeByExt("unknown.bin")).toBeUndefined()
+  })
+
+  it("disables formatting for plain text bodies", async () => {
+    const user = userEvent.setup()
+    const actions = { updateBodyContent: vi.fn(), updateBody: vi.fn(), updateFormItem: vi.fn(), removeFormItem: vi.fn() }
+    useRequestBodyMock.mockReturnValue({
+      state: {
+        body: { type: "text", content: "hi", language: "text" },
+        original: { type: "text", content: "hi", language: "text" },
+      },
+      actions,
+    })
+
+    renderPanel()
+
+    const formatBtn = getByDataId("request-body-panel:format-button")
+    await user.click(formatBtn)
+    expect(formatMock).not.toHaveBeenCalled()
+    expect(formatBtn).toBeDisabled()
+  })
+
   beforeEach(() => {
     formatMock.mockClear()
     useRequestBodyMock.mockReset()
@@ -142,7 +184,70 @@ describe("RequestBodyPanel", () => {
       preventDefault: () => {},
     })
 
-    expect(actions.updateBody).toHaveBeenCalledWith(expect.objectContaining({ binaryPath: "/tmp/demo.json" }))
+    expect(actions.updateBody).toHaveBeenCalledWith(
+      expect.objectContaining({ binaryPath: "/tmp/demo.json", binaryContentType: "application/json" }),
+    )
+  })
+
+  it("forces multipart encoding and populates file entries on form drop", () => {
+    const actions = { updateBodyContent: vi.fn(), updateBody: vi.fn(), updateFormItem: vi.fn(), removeFormItem: vi.fn() }
+    useRequestBodyMock.mockReturnValue({
+      state: {
+        body: { type: "form", encoding: "url", formData: {} },
+        original: { type: "form", encoding: "url", formData: {} },
+      },
+      actions,
+    })
+
+    renderPanel()
+
+    const formZone = getByDataId("request-body-panel:form-section")
+    fireEvent.drop(formZone, {
+      dataTransfer: {
+        getData: () => "file:///tmp/photo.png",
+      },
+      preventDefault: () => {},
+    })
+
+    expect(actions.updateBody).toHaveBeenCalledWith({ encoding: "multipart" })
+    expect(actions.updateFormItem).toHaveBeenCalledWith(
+      "gen-id",
+      expect.objectContaining({
+        id: "gen-id",
+        key: "photo.png",
+        fileName: "photo.png",
+        filePath: "/tmp/photo.png",
+        contentType: "image/png",
+      }),
+    )
+  })
+
+  it("updates file form item content type when choosing file", () => {
+    const actions = { updateBodyContent: vi.fn(), updateBody: vi.fn(), updateFormItem: vi.fn(), removeFormItem: vi.fn() }
+    useRequestBodyMock.mockReturnValue({
+      state: {
+        body: {
+          type: "form",
+          encoding: "multipart",
+          formData: { f1: { id: "f1", key: "file", value: "", enabled: true, secure: false, kind: "file" } },
+        },
+        original: { type: "form", encoding: "multipart", formData: { f1: { id: "f1", key: "file", enabled: true } } },
+      },
+      actions,
+    })
+
+    renderPanel()
+
+    const fileButton = getByDataId("request-body-panel:form-file-input:f1")
+    fireEvent.click(fileButton)
+    expect(actions.updateFormItem).toHaveBeenCalledWith(
+      "f1",
+      expect.objectContaining({
+        fileName: "demo.txt",
+        filePath: "/tmp/demo.txt",
+        contentType: "text/plain",
+      }),
+    )
   })
 
   it("shows form warnings when file fields require multipart encoding", () => {
