@@ -1,74 +1,100 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ ! -f /proc/sys/kernel/osrelease ]] || ! grep -qi 'microsoft' /proc/sys/kernel/osrelease; then
-  echo "This helper must be run inside Windows Subsystem for Linux." >&2
-  exit 1
-fi
-
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Run this script from within a Git repository." >&2
   exit 1
 fi
 
-if [[ $# -ne 2 ]]; then
-  echo "Usage: $0 <local-branch> <worktrees-root>" >&2
+WORKTREES_ROOT="$HOME/worktrees/knurl"
+BRANCH_PREFIX="wsl/"
+BASE_BRANCH="main"
+
+usage() {
+  echo "Usage: $0 {--add <name>|--pull|--push}" >&2
   exit 1
+}
+
+if [[ $# -lt 1 ]]; then
+  usage
 fi
 
-branch=$1
-root=$2
+mode="$1"
 
-if [[ -z $branch ]]; then
-  echo "Branch name cannot be empty." >&2
-  exit 1
-fi
+case "$mode" in
+  --add)
+    if [[ $# -lt 2 ]]; then
+      echo "Error: Name required for --add" >&2
+      usage
+    fi
+    name="$2"
+    
+    worktree_path="$WORKTREES_ROOT/$name"
+    branch_name="${BRANCH_PREFIX}${name}"
+    
+    echo "Creating worktree..."
+    echo "Path: $worktree_path"
+    echo "Branch: $branch_name"
+    echo "Base: $BASE_BRANCH"
+    
+    mkdir -p "$WORKTREES_ROOT"
+    
+    if [[ -d "$worktree_path" ]]; then
+        echo "Error: Worktree path $worktree_path already exists." >&2
+        exit 1
+    fi
 
-if [[ -z $root ]]; then
-  echo "Worktrees root cannot be empty." >&2
-  exit 1
-fi
-
-if ! git show-ref --verify --quiet "refs/heads/$branch"; then
-  echo "Local branch $branch does not exist." >&2
-  exit 1
-fi
-
-safe_branch=$(printf '%s' "$branch" | sed 's#[^A-Za-z0-9._-]#-#g')
-worktree_name="wsl-$safe_branch"
-new_branch="wsl/$branch"
-
-mkdir -p "$root"
-root=$(realpath "$root")
-dest="$root/$worktree_name"
-
-if git worktree list --porcelain | grep -F "worktree $dest" >/dev/null; then
-  echo "A worktree is already registered at $dest." >&2
-  exit 1
-fi
-
-if [[ -e $dest ]]; then
-  echo "Destination path $dest already exists." >&2
-  exit 1
-fi
-
-if git show-ref --verify --quiet "refs/heads/$new_branch"; then
-  echo "Branch $new_branch already exists." >&2
-  exit 1
-fi
-
-if git worktree list --porcelain | awk '/^branch / {print $2}' | grep -Fx "refs/heads/$new_branch" >/dev/null 2>&1; then
-  echo "Branch $new_branch already checked out in another worktree." >&2
-  exit 1
-fi
-
-echo "Creating worktree $worktree_name for branch $branch at $dest"
-git worktree add -b "$new_branch" "$dest" "$branch"
-
-# Configure the new branch to pull changes from the local base branch without hitting remotes.
-git -C "$dest" config "branch.$new_branch.remote" "."
-git -C "$dest" config "branch.$new_branch.merge" "refs/heads/$branch"
-
-echo "Worktree created. To enter:"
-echo "  cd $dest"
-echo "Inside the worktree, 'git pull' will mirror commits from the local branch '$branch'."
+    git worktree add "$worktree_path" -b "$branch_name" "$BASE_BRANCH"
+    ;;
+    
+  --pull)
+    if [[ ! -d "$WORKTREES_ROOT" ]]; then
+      echo "Directory $WORKTREES_ROOT does not exist. No worktrees to pull." >&2
+      exit 0
+    fi
+    
+    echo "Pulling updates for all worktrees in $WORKTREES_ROOT..."
+    for dir in "$WORKTREES_ROOT"/*; do
+      if [[ -d "$dir" ]]; then
+        echo "Updating $(basename "$dir")..."
+        if [[ -f "$dir/.git" ]] || [[ -d "$dir/.git" ]]; then
+           # Run merge in a subshell to preserve current directory
+           (cd "$dir" && git merge "$BASE_BRANCH")
+        else
+           echo "Skipping $(basename "$dir") (not a git repository)"
+        fi
+      fi
+    done
+    ;;
+    
+  --push)
+    if [[ ! -d "$WORKTREES_ROOT" ]]; then
+      echo "Directory $WORKTREES_ROOT does not exist. No worktrees to push." >&2
+      exit 0
+    fi
+    
+    echo "Merging all worktree branches into $BASE_BRANCH..."
+    
+    # Ensure we are on the base branch in the main repo
+    # If git checkout fails (e.g. dirty state), script exits due to set -e
+    git checkout "$BASE_BRANCH"
+    
+    for dir in "$WORKTREES_ROOT"/*; do
+      if [[ -d "$dir" ]]; then
+        name=$(basename "$dir")
+        branch_name="${BRANCH_PREFIX}${name}"
+        
+        if git show-ref --verify --quiet "refs/heads/$branch_name"; then
+          echo "Merging $branch_name..."
+          git merge "$branch_name"
+        else
+          echo "Skipping $name: branch $branch_name not found."
+        fi
+      fi
+    done
+    ;;
+    
+  *)
+    usage
+    ;;
+esac
