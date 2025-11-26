@@ -58,4 +58,39 @@ describe("RequestHeadersPanel", () => {
     await user.click(buttons[buttons.length - 1])
     expect(actions.removeHeader).toHaveBeenCalledWith("h1")
   })
+
+  it("toggles enabled and secure state, marks unsaved when changed", async () => {
+    const user = userEvent.setup()
+    const h = { id: "h2", name: "Auth", value: "secret", enabled: false, secure: false }
+    // Original has enabled=false, secure=false so toggling should mark unsaved
+    const { container } = renderWith({ [h.id]: h }, { [h.id]: h })
+
+    const enabled = container.querySelector(
+      '[data-test-id="request-headers-panel:enabled-checkbox:h2"]',
+    ) as HTMLElement
+    await user.click(enabled)
+    expect(actions.updateHeader).toHaveBeenCalledWith("h2", { enabled: true })
+
+    const secureToggle = container.querySelector(
+      '[data-test-id="request-headers-panel:secure-toggle:h2"]',
+    ) as HTMLElement
+    await user.click(secureToggle)
+    expect(actions.updateHeader).toHaveBeenCalledWith("h2", { secure: true })
+  })
+
+  it("renders empty state when no headers exist", () => {
+    const { container } = renderWith({}, {})
+    expect(container.querySelector('[data-test-id="request-headers-panel:empty-state"]')).toBeInTheDocument()
+  })
+
+  it("marks unsaved changes and masks secure values", () => {
+    const h = { id: "h3", name: "Auth", value: "secret", enabled: true, secure: true }
+    renderWith({ [h.id]: h }, { [h.id]: { ...h, value: "old", secure: false } })
+
+    const valueInput = document.querySelector(
+      '[data-test-id="request-headers-panel:value-input:h3"]',
+    ) as HTMLInputElement
+    expect(valueInput.type).toBe("password")
+    expect(valueInput.className).toContain("unsaved-changes")
+  })
 })

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react"
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -265,6 +265,102 @@ describe("ResponseViewer", () => {
     await user.click(await screen.findByRole("option", { name: "XML" }))
 
     await waitFor(() => expect(getByDataTestId("response-viewer:format-toggle-button").textContent).toMatch(/Format/))
+  })
+
+  it("detects language from body when content-type missing and hides preview for non-previewable", () => {
+    renderViewer({
+      httpData: {
+        headers: {},
+        body: '{"k":1}',
+      },
+    })
+
+    expect(screen.queryByRole("tab", { name: /Preview/i })).toBeNull()
+    expect(getByDataTestId("response-viewer:heading")).toBeInTheDocument()
+  })
+
+  it("shows preview for CSV and applies status colors for 3xx/5xx", async () => {
+    const user = userEvent.setup()
+    renderViewer({
+      httpData: { headers: { "content-type": "text/csv" }, status: 302, statusText: "Found" },
+    })
+
+    expect(getByDataTestId("response-panel:status-code").className).toContain("text-blue-500")
+    await user.click(screen.getByRole("tab", { name: /Preview/i }))
+    expect(screen.getByRole("tabpanel", { name: /Preview/i })).toBeInTheDocument()
+
+    cleanup()
+    renderViewer({
+      httpData: { headers: { "content-type": "text/plain" }, status: 503, statusText: "Down" },
+    })
+    const statusAfter = getByDataTestId("response-panel:status-code")
+    expect(statusAfter.className).toContain("text-red-500")
+  })
+
+  it("uses content-disposition filename when saving binary responses", async () => {
+    const user = userEvent.setup()
+    renderViewer({
+      httpData: {
+        headers: {
+          "content-type": "video/mp4",
+          "content-disposition": "attachment; filename*=UTF-8''clip.mp4",
+        },
+        bodyBase64: "Zm9v",
+      },
+    })
+
+    await user.click(screen.getByRole("button", { name: /save/i }))
+    expect(saveBinary).toHaveBeenCalledWith("Zm9v", expect.objectContaining({ defaultPath: "clip.mp4" }))
+  })
+
+  it("falls back to content-type extension when filename missing", async () => {
+    const user = userEvent.setup()
+    renderViewer({
+      httpData: {
+        headers: { "content-type": "application/octet-stream" },
+        bodyBase64: "YWJj",
+      },
+    })
+
+    await user.click(screen.getByRole("button", { name: /save/i }))
+    expect(saveFile).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ defaultPath: "response.txt" }))
+  })
+
+  it("disables previews for large PDFs or media without base64 payloads", async () => {
+    const user = userEvent.setup()
+    renderViewer({
+      httpData: { headers: { "content-type": "application/pdf" }, bodyBase64: undefined },
+    })
+
+    await user.click(screen.getByRole("tab", { name: /Preview/i }))
+    expect(screen.getByText(/Preview disabled for large PDFs/i)).toBeInTheDocument()
+
+    cleanup()
+    renderViewer({
+      httpData: { headers: { "content-type": "video/mp4" }, bodyBase64: undefined },
+    })
+
+    await user.click(screen.getByRole("tab", { name: /Preview/i }))
+    expect(screen.getByText(/Preview disabled for large media files/i)).toBeInTheDocument()
+  })
+
+  it("renders binary body text when base64 present and uses filePath actions when provided", async () => {
+    const user = userEvent.setup()
+    renderViewer({
+      httpData: {
+        headers: { "content-type": "image/png" },
+        bodyBase64: "ZmFrZS1pbWFnZQ==",
+        filePath: "/tmp/resp.bin",
+      },
+    })
+
+    expect(getByDataTestId("response-viewer:body").textContent).toContain("ZmFrZS1pbWFnZQ==")
+
+    await user.click(screen.getByRole("tab", { name: /Preview/i }))
+    await user.click(getByDataTestId("response-viewer:preview-open-file-button"))
+    await user.click(getByDataTestId("response-viewer:preview-reveal-file-button"))
+    expect(openPath).toHaveBeenCalledWith("/tmp/resp.bin")
+    expect(revealItemInDir).toHaveBeenCalledWith("/tmp/resp.bin")
   })
 
   it("shows error status when logs contain errors and no http response", async () => {
