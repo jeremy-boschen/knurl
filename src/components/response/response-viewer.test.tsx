@@ -344,6 +344,25 @@ describe("ResponseViewer", () => {
     expect(screen.getByText(/Preview disabled for large media files/i)).toBeInTheDocument()
   })
 
+  it("renders binary body text when base64 present and uses filePath actions when provided", async () => {
+    const user = userEvent.setup()
+    renderViewer({
+      httpData: {
+        headers: { "content-type": "image/png" },
+        bodyBase64: "ZmFrZS1pbWFnZQ==",
+        filePath: "/tmp/resp.bin",
+      },
+    })
+
+    expect(getByDataTestId("response-viewer:body").textContent).toContain("ZmFrZS1pbWFnZQ==")
+
+    await user.click(screen.getByRole("tab", { name: /Preview/i }))
+    await user.click(getByDataTestId("response-viewer:preview-open-file-button"))
+    await user.click(getByDataTestId("response-viewer:preview-reveal-file-button"))
+    expect(openPath).toHaveBeenCalledWith("/tmp/resp.bin")
+    expect(revealItemInDir).toHaveBeenCalledWith("/tmp/resp.bin")
+  })
+
   it("shows error status when logs contain errors and no http response", async () => {
     renderViewer({
       responseOverrides: {

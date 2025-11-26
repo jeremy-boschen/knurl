@@ -82,4 +82,15 @@ describe("RequestHeadersPanel", () => {
     const { container } = renderWith({}, {})
     expect(container.querySelector('[data-test-id="request-headers-panel:empty-state"]')).toBeInTheDocument()
   })
+
+  it("marks unsaved changes and masks secure values", () => {
+    const h = { id: "h3", name: "Auth", value: "secret", enabled: true, secure: true }
+    renderWith({ [h.id]: h }, { [h.id]: { ...h, value: "old", secure: false } })
+
+    const valueInput = document.querySelector(
+      '[data-test-id="request-headers-panel:value-input:h3"]',
+    ) as HTMLInputElement
+    expect(valueInput.type).toBe("password")
+    expect(valueInput.className).toContain("unsaved-changes")
+  })
 })
