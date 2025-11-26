@@ -10,7 +10,6 @@
     "test:e2e": "bash scripts/test/test.sh --mode e2e",
     "test": "bash scripts/test/test.sh",
     "test:check": "bash scripts/test/test.sh --mode check",
-    "test:integration": "bash scripts/test/test.sh --mode integration",
     "perf:benchmark": "bash scripts/test/test.sh --mode perf",
     "perf:report": "node scripts/test/generate-performance-report.mjs",
     "perf": "bash scripts/test/test.sh --mode perf && yarn perf:report",
