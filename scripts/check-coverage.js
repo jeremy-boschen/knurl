@@ -17,39 +17,34 @@ const THRESHOLDS = {
   statements: 70,
 }
 
-const coveragePath = path.join(__dirname, '../coverage/coverage-final.json')
+const coveragePath = path.join(__dirname, '../coverage/coverage-summary.json')
 
 if (!fs.existsSync(coveragePath)) {
-  console.error('❌ Coverage report not found. Run: VITEST_COVERAGE=true yarn test:fe --run')
+  console.error('❌ Coverage summary not found. Run: yarn test or yarn test:unit')
+  console.log(`  Expected: ${coveragePath}`)
   process.exit(1)
 }
 
 try {
   const coverage = JSON.parse(fs.readFileSync(coveragePath, 'utf-8'))
-
-  // Calculate totals from coverage data
-  const totals = {
-    lines: { total: 0, covered: 0 },
-    functions: { total: 0, covered: 0 },
-    branches: { total: 0, covered: 0 },
-    statements: { total: 0, covered: 0},
+  
+  // coverage-summary.json has a 'total' key with the aggregated stats
+  if (!coverage.total) {
+    console.error('❌ Invalid coverage summary format: missing "total" property')
+    process.exit(1)
   }
 
-  Object.values(coverage).forEach(file => {
-    if (!file.totals) return
-
-    Object.keys(totals).forEach(key => {
-      totals[key].total += file.totals[key].total || 0
-      totals[key].covered += file.totals[key].covered || 0
-    })
-  })
-
-  // Calculate percentages
   const results = {}
   let allPass = true
 
-  Object.entries(totals).forEach(([key, data]) => {
-    const pct = data.total === 0 ? 100 : Math.round((data.covered / data.total) * 100)
+  Object.keys(THRESHOLDS).forEach(key => {
+    const metric = coverage.total[key]
+    if (!metric) {
+      console.warn(`⚠ Metric '${key}' not found in coverage summary`)
+      return
+    }
+    
+    const pct = metric.pct
     results[key] = pct
 
     if (pct < THRESHOLDS[key]) {
@@ -73,7 +68,7 @@ try {
 
   if (!allPass) {
     console.error('\n❌ Coverage below thresholds!')
-    console.error('Run: VITEST_COVERAGE=true yarn test:fe --run')
+    console.error('Run: yarn test to generate full coverage')
     console.error('Then add more tests to improve coverage.\n')
     process.exit(1)
   }

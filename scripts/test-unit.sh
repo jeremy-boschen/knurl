@@ -15,6 +15,11 @@ else
 fi
 cd - > /dev/null
 
+if [ -f coverage/rust-lcov.info ]; then
+  echo "Converting Rust LCOV to Istanbul format..."
+  node scripts/lcov-to-istanbul.mjs coverage/rust-lcov.info coverage/rust-coverage.json
+fi
+
 echo "Merging unit test coverage reports..."
 node scripts/merge-coverage.mjs
 
