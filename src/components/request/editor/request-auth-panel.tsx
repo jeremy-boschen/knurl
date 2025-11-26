@@ -92,7 +92,7 @@ const OAuth2AuthForm: FC<OAuth2AuthFormProps> = ({ requestId, auth, onUpdate, on
 
 // --- Main Panel Component ---
 
-export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
+function RequestAuthPanelComponent({ tabId }: RequestAuthPanelProps) {
   const requestTab = useRequestTab(tabId)
   const {
     actions: { collectionsApi: getCollectionsApi },
@@ -305,3 +305,5 @@ export function RequestAuthPanel({ tabId }: RequestAuthPanelProps) {
     </div>
   )
 }
+
+export const RequestAuthPanel = React.memo(RequestAuthPanelComponent)

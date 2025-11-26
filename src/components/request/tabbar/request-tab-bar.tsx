@@ -4,7 +4,7 @@
  * @description Manages the bar of active request tabs
  */
 
-import React from "react"
+import React, { useTransition } from "react"
 
 import { PlusIcon, XIcon } from "lucide-react"
 
@@ -20,6 +20,7 @@ import { collectionsApi, ScratchCollectionId, useOpenTabs } from "@/state"
 import RequestTab from "./request-tab"
 
 export default function RequestTabBar() {
+  const [_isPending, startTransition] = useTransition()
   const {
     state: { openTabs },
     actions: { requestTabsApi },
@@ -40,7 +41,9 @@ export default function RequestTabBar() {
     }
     const tabId = event.currentTarget.dataset.tabKey
     if (tabId) {
-      requestTabsApi.setActiveTab(tabId)
+      startTransition(() => {
+        requestTabsApi.setActiveTab(tabId)
+      })
     }
   }
 
@@ -53,7 +56,9 @@ export default function RequestTabBar() {
 
   const handleContextMenu = React.useCallback(
     (tabId: string) => {
-      requestTabsApi.setActiveTab(tabId)
+      startTransition(() => {
+        requestTabsApi.setActiveTab(tabId)
+      })
     },
     [requestTabsApi],
   )

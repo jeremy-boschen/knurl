@@ -1,5 +1,6 @@
+import React, { type ReactNode } from "react"
+
 import { ShieldIcon, ShieldCheckIcon, Trash2Icon } from "lucide-react"
-import type { ReactNode } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -23,7 +24,7 @@ export type FieldRowProps = {
   hasUnsavedSecure?: boolean
 }
 
-export function FieldRow({
+export const FieldRow = React.memo(function FieldRow({
   enabled,
   onEnabledChange,
   nameValue,
@@ -100,4 +101,4 @@ export function FieldRow({
       </div>
     </div>
   )
-}
+})

@@ -1,4 +1,4 @@
-import { type ReactNode, useId, useState } from "react"
+import React, { type ReactNode, useId, useState } from "react"
 
 import { Input } from "@/components/ui/knurl/input"
 import { Button } from "@/components/ui/button"
@@ -32,7 +32,7 @@ function OptionField({ label, children, className }: OptionFieldProps) {
   )
 }
 
-export function RequestOptionsPanel({ tabId }: RequestOptionsPanelProps) {
+function RequestOptionsPanelComponent({ tabId }: RequestOptionsPanelProps) {
   const {
     state: { options, original, autoSave, originalAutoSave },
     actions,
@@ -248,3 +248,5 @@ export function RequestOptionsPanel({ tabId }: RequestOptionsPanelProps) {
     </div>
   )
 }
+
+export const RequestOptionsPanel = React.memo(RequestOptionsPanelComponent)

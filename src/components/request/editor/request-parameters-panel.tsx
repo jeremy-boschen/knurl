@@ -1,4 +1,4 @@
-import { Profiler } from "react"
+import React, { Profiler, useCallback } from "react"
 
 import { Input } from "@/components/ui/knurl/input"
 import { cn } from "@/lib"
@@ -13,11 +13,74 @@ export type RequestParametersPanelProps = {
   tabId: string
 }
 
-export function RequestParametersPanel({ tabId }: RequestParametersPanelProps) {
+function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps) {
   const {
     state: { queryParams, pathParams, cookieParams, original },
     actions,
   } = useRequestParameters(tabId)
+
+  // Path parameter handlers
+  const handlePathParamEnabledChange = useCallback(
+    (pathParamId: string, enabled: boolean) => actions.updatePathParam(pathParamId, { enabled }),
+    [actions],
+  )
+  const handlePathParamNameChange = useCallback(
+    (pathParamId: string, name: string) => actions.updatePathParam(pathParamId, { name }),
+    [actions],
+  )
+  const handlePathParamValueChange = useCallback(
+    (pathParamId: string, value: string) => actions.updatePathParam(pathParamId, { value }),
+    [actions],
+  )
+  const handlePathParamSecureChange = useCallback(
+    (pathParamId: string, secure: boolean) => actions.updatePathParam(pathParamId, { secure }),
+    [actions],
+  )
+  const handlePathParamDelete = useCallback((pathParamId: string) => actions.removePathParam(pathParamId), [actions])
+
+  // Query parameter handlers
+  const handleQueryParamEnabledChange = useCallback(
+    (queryParamId: string, enabled: boolean) => actions.updateQueryParam(queryParamId, { enabled }),
+    [actions],
+  )
+  const handleQueryParamNameChange = useCallback(
+    (queryParamId: string, name: string) => actions.updateQueryParam(queryParamId, { name }),
+    [actions],
+  )
+  const handleQueryParamValueChange = useCallback(
+    (queryParamId: string, value: string) => actions.updateQueryParam(queryParamId, { value }),
+    [actions],
+  )
+  const handleQueryParamSecureChange = useCallback(
+    (queryParamId: string, secure: boolean) => actions.updateQueryParam(queryParamId, { secure }),
+    [actions],
+  )
+  const handleQueryParamDelete = useCallback(
+    (queryParamId: string) => actions.removeQueryParam(queryParamId),
+    [actions],
+  )
+
+  // Cookie parameter handlers
+  const handleCookieParamEnabledChange = useCallback(
+    (cookieParamId: string, enabled: boolean) => actions.updateCookieParam(cookieParamId, { enabled }),
+    [actions],
+  )
+  const handleCookieParamNameChange = useCallback(
+    (cookieParamId: string, name: string) => actions.updateCookieParam(cookieParamId, { name }),
+    [actions],
+  )
+  const handleCookieParamValueChange = useCallback(
+    (cookieParamId: string, value: string) => actions.updateCookieParam(cookieParamId, { value }),
+    [actions],
+  )
+  const handleCookieParamSecureChange = useCallback(
+    (cookieParamId: string, secure: boolean) => actions.updateCookieParam(cookieParamId, { secure }),
+    [actions],
+  )
+  const handleCookieParamDelete = useCallback(
+    (cookieParamId: string) => actions.removeCookieParam(cookieParamId),
+    [actions],
+  )
 
   return (
     <Profiler id="RequestParametersPanel" onRender={onProfilerRender}>
@@ -31,15 +94,15 @@ export function RequestParametersPanel({ tabId }: RequestParametersPanelProps) {
               <FieldRow
                 key={pathParam.id}
                 enabled={pathParam.enabled}
-                onEnabledChange={(enabled) => actions.updatePathParam(pathParam.id, { enabled })}
+                onEnabledChange={(enabled) => handlePathParamEnabledChange(pathParam.id, enabled)}
                 nameValue={pathParam.name}
-                onNameChange={(name) => actions.updatePathParam(pathParam.id, { name })}
+                onNameChange={(name) => handlePathParamNameChange(pathParam.id, name)}
                 valueSlot={
                   <Input
                     type={pathParam.secure ? "password" : "text"}
                     placeholder="Value"
                     value={pathParam.value}
-                    onChange={(e) => actions.updatePathParam(pathParam.id, { value: e.target.value })}
+                    onChange={(e) => handlePathParamValueChange(pathParam.id, e.target.value)}
                     className={cn(
                       "font-mono",
                       original.pathParams?.[pathParam.id]?.value !== pathParam.value && "unsaved-changes",
@@ -47,9 +110,9 @@ export function RequestParametersPanel({ tabId }: RequestParametersPanelProps) {
                     data-test-id={`request-parameters-panel:path-param-value-input:${pathParam.id}`}
                   />
                 }
-                onDelete={() => actions.removePathParam(pathParam.id)}
+                onDelete={() => handlePathParamDelete(pathParam.id)}
                 secure={pathParam.secure}
-                onSecureChange={(secure) => actions.updatePathParam(pathParam.id, { secure })}
+                onSecureChange={(secure) => handlePathParamSecureChange(pathParam.id, secure)}
                 deleteTooltip="Delete Path Parameter"
                 hasUnsavedEnabled={original.pathParams?.[pathParam.id]?.enabled !== pathParam.enabled}
                 hasUnsavedName={original.pathParams?.[pathParam.id]?.name !== pathParam.name}
@@ -72,15 +135,15 @@ export function RequestParametersPanel({ tabId }: RequestParametersPanelProps) {
               <FieldRow
                 key={param.id}
                 enabled={param.enabled}
-                onEnabledChange={(enabled) => actions.updateQueryParam(param.id, { enabled })}
+                onEnabledChange={(enabled) => handleQueryParamEnabledChange(param.id, enabled)}
                 nameValue={param.name}
-                onNameChange={(name) => actions.updateQueryParam(param.id, { name })}
+                onNameChange={(name) => handleQueryParamNameChange(param.id, name)}
                 valueSlot={
                   <Input
                     type={param.secure ? "password" : "text"}
                     placeholder="Value"
                     value={param.value}
-                    onChange={(e) => actions.updateQueryParam(param.id, { value: e.target.value })}
+                    onChange={(e) => handleQueryParamValueChange(param.id, e.target.value)}
                     className={cn(
                       "font-mono",
                       original.queryParams?.[param.id]?.value !== param.value && "unsaved-changes",
@@ -88,9 +151,9 @@ export function RequestParametersPanel({ tabId }: RequestParametersPanelProps) {
                     data-test-id={`request-parameters-panel:query-param-value-input:${param.id}`}
                   />
                 }
-                onDelete={() => actions.removeQueryParam(param.id)}
+                onDelete={() => handleQueryParamDelete(param.id)}
                 secure={param.secure}
-                onSecureChange={(secure) => actions.updateQueryParam(param.id, { secure })}
+                onSecureChange={(secure) => handleQueryParamSecureChange(param.id, secure)}
                 deleteTooltip="Delete Query Parameter"
                 hasUnsavedEnabled={original.queryParams?.[param.id]?.enabled !== param.enabled}
                 hasUnsavedName={original.queryParams?.[param.id]?.name !== param.name}
@@ -114,15 +177,15 @@ export function RequestParametersPanel({ tabId }: RequestParametersPanelProps) {
                 <FieldRow
                   key={param.id}
                   enabled={param.enabled}
-                  onEnabledChange={(enabled) => actions.updateCookieParam(param.id, { enabled })}
+                  onEnabledChange={(enabled) => handleCookieParamEnabledChange(param.id, enabled)}
                   nameValue={param.name}
-                  onNameChange={(name) => actions.updateCookieParam(param.id, { name })}
+                  onNameChange={(name) => handleCookieParamNameChange(param.id, name)}
                   valueSlot={
                     <Input
                       type={param.secure ? "password" : "text"}
                       placeholder="Value"
                       value={param.value}
-                      onChange={(e) => actions.updateCookieParam(param.id, { value: e.target.value })}
+                      onChange={(e) => handleCookieParamValueChange(param.id, e.target.value)}
                       className={cn(
                         "font-mono",
                         original.cookieParams?.[param.id]?.value !== param.value && "unsaved-changes",
@@ -130,9 +193,9 @@ export function RequestParametersPanel({ tabId }: RequestParametersPanelProps) {
                       data-test-id={`request-parameters-panel:cookie-param-value-input:${param.id}`}
                     />
                   }
-                  onDelete={() => actions.removeCookieParam(param.id)}
+                  onDelete={() => handleCookieParamDelete(param.id)}
                   secure={param.secure}
-                  onSecureChange={(secure) => actions.updateCookieParam(param.id, { secure })}
+                  onSecureChange={(secure) => handleCookieParamSecureChange(param.id, secure)}
                   deleteTooltip="Delete Cookie"
                   hasUnsavedEnabled={original.cookieParams?.[param.id]?.enabled !== param.enabled}
                   hasUnsavedName={original.cookieParams?.[param.id]?.name !== param.name}
@@ -150,3 +213,5 @@ export function RequestParametersPanel({ tabId }: RequestParametersPanelProps) {
     </Profiler>
   )
 }
+
+export const RequestParametersPanel = React.memo(RequestParametersPanelComponent)

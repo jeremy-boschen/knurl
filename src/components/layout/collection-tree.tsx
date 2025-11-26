@@ -1,4 +1,4 @@
-import React, { Profiler, Suspense, useCallback } from "react"
+import React, { Profiler, Suspense, useCallback, useDeferredValue } from "react"
 
 import {
   closestCenter,
@@ -775,6 +775,7 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
 
   // Normalize query once
   const query = (searchTerm ?? "").trim().toLowerCase()
+  const deferredQuery = useDeferredValue(query)
   const contextValue = { activeId, dropIndicator }
 
   const collapsedContent = (
@@ -867,14 +868,14 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
 
       <div className="flex-1 overflow-y-auto p-2" data-test-id="collection-tree">
         {/* When searching, render search-aware rows that self-filter and expand. */}
-        {query ? (
+        {deferredQuery ? (
           <div role="tree" aria-label="Collections (search)">
             {index.map((meta) => (
               <CollectionRowSearchable
                 key={meta.id}
                 collectionId={meta.id}
                 collectionName={meta.name}
-                query={query}
+                query={deferredQuery}
                 onAction={handleAction}
               />
             ))}

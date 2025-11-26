@@ -1,5 +1,4 @@
-import type * as React from "react"
-import { useEffect } from "react"
+import React, { useEffect } from "react"
 
 import { XIcon } from "lucide-react"
 
@@ -17,7 +16,7 @@ type RequestTabProps = {
   onContextMenu?: (event: React.MouseEvent<HTMLDivElement>) => void
 }
 
-export default function RequestTab({ tabId, onSelectTab, onCloseTab, onContextMenu }: RequestTabProps) {
+const RequestTab = React.memo(function RequestTab({ tabId, onSelectTab, onCloseTab, onContextMenu }: RequestTabProps) {
   const { isActive, name, method, isDirty, requestId, collectionId } = useRequestsTabSummary(tabId)
 
   // Emit requestUi:opened event after tab renders
@@ -81,4 +80,6 @@ export default function RequestTab({ tabId, onSelectTab, onCloseTab, onContextMe
       </Tooltip>
     </div>
   )
-}
+})
+
+export default RequestTab

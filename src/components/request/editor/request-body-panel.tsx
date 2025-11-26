@@ -1,4 +1,4 @@
-import { Profiler, useCallback, useEffect, useMemo, useRef } from "react"
+import React, { Profiler, useCallback, useEffect, useMemo, useRef } from "react"
 
 import { CodeIcon } from "lucide-react"
 
@@ -90,7 +90,7 @@ export const getBodyTypeLabel = (body: RequestBodyData): string => {
   }
 }
 
-export function RequestBodyPanel({ tabId }: RequestBodyPanelProps) {
+function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
   const {
     state: { body, original },
     actions,
@@ -400,6 +400,8 @@ export function RequestBodyPanel({ tabId }: RequestBodyPanelProps) {
     </Profiler>
   )
 }
+
+export const RequestBodyPanel = React.memo(RequestBodyPanelComponent)
 
 function isDirty(original: RequestBodyData, body: RequestBodyData) {
   return original.type !== body.type || original.encoding !== body.encoding || original.language !== body.language
