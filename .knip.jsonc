@@ -2,10 +2,10 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
     // App entry
-    "src/index.tsx",
-    "src/App.tsx",
+    "src-ui/src/index.tsx",
+    "src-ui/src/App.tsx",
     // Worker entry used via new URL(...)
-    "src/worker/prettier.worker.ts",
+    "src-ui/src/worker/prettier.worker.ts",
     // Build/test/config entry points
     "postcss.config.js",
     // Project scripts (e.g., mock servers)
@@ -13,8 +13,9 @@
   ],
   "project": [
     // Source and tests
-    "src/**/*.{ts,tsx}",
-    "test/**/*.{ts,tsx,js,mjs,cts,mts}"
+    "src-ui/src/**/*.{ts,tsx}",
+    "src-common/e2e/**/*.{ts,tsx,js,mjs,cts,mts}",
+    "src-ui/test/**/*.{ts,tsx,js,mjs,cts,mts}"
   ],
   "ignoreDependencies": [
     // CLI-only meta tool (codegen)
@@ -22,11 +23,11 @@
   ],
   "ignore": [
     // Ignore storybook files (none today, kept for future)
-    "src/**/*.stories.tsx",
-    "src/**/__stories__/**",
+    "src-ui/src/**/*.stories.tsx",
+    "src-ui/src/**/__stories__/**",
     // Optional pages and test helpers not wired into the main app
-    "src/pages/**",
-    "src/test/**",
-    "test/**"
+    "src-ui/src/pages/**",
+    "src-ui/test/**",
+    "src-common/e2e/**"
   ]
 }

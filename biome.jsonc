@@ -8,21 +8,21 @@
   "files": {
     "ignoreUnknown": true,
     "includes": [
-      "src/**/*",
+      "src-ui/src/**/*",
       "__tests__/**/*",
       "!src-tauri",
       "!node_modules",
-      "!src/components/ui/*.tsx",
-      "src/components/ui/knurl/**/*",
-      "!src/App.css",
-      "!src/**/*.test.ts",
-      "!src/**/*.test.tsx",
+      "!src-ui/src/components/ui/*.tsx",
+      "src-ui/src/components/ui/knurl/**/*",
+      "!src-ui/src/App.css",
+      "!src-ui/src/**/*.test.ts",
+      "!src-ui/src/**/*.test.tsx",
       "wdio.conf.ts"
     ]
   },
   "overrides": [
     {
-      "includes": ["**/*.test.ts", "**/*.test.tsx", "src/test/*.ts"],
+      "includes": ["**/*.test.ts", "**/*.test.tsx", "src-ui/test/*.ts"],
       "linter": {
         "rules": {
           "correctness": {

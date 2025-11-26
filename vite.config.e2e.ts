@@ -51,15 +51,16 @@ export default defineConfig({
     // Extract CSS custom properties into JSON:
     // index.css => default bucket, App.css => custom bucket
     cssVarsExportPlugin({
-      cssFiles: ['src/index.css', 'src/App.css'],
+      cssFiles: ['src-ui/src/index.css', 'src-ui/src/App.css'],
     }),
     tailwindcss(),
     // Istanbul instrumentation for E2E coverage collection
     istanbul({
-      include: 'src/**/*.{js,ts,tsx}',
+      include: 'src-ui/src/**/*.{js,ts,tsx}',
       exclude: [
         'node_modules',
-        'test/',
+        'src-ui/test/',
+        'src-common/e2e/**',
         '**/*.test.ts',
         '**/*.test.tsx',
         '**/*.spec.ts',

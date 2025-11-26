@@ -11,8 +11,8 @@
     "moduleResolution": "NodeNext",
     "baseUrl": "..",
     "paths": {
-      "@/*": ["src/*"],
-      "@test/*": ["test/*"]
+      "@/*": ["src-ui/src/*"],
+      "@test/*": ["src-common/e2e/*"]
     },
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,

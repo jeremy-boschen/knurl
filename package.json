@@ -10,7 +10,7 @@
     "test:e2e": "bash scripts/test/test-e2e.sh",
     "test": "bash scripts/test/test.sh",
     "test:check": "bash scripts/test/test-check.sh",
-    "perf:benchmark": "bash scripts/test/test-e2e.sh -- --spec='test/specs/performance-benchmark.e2e.ts'",
+    "perf:benchmark": "bash scripts/test/test-e2e.sh -- --spec='src-common/e2e/specs/performance.e2e.ts'",
     "perf:report": "node scripts/test/generate-performance-report.mjs",
     "perf": "yarn perf:benchmark && yarn perf:report",
     "generate:knurl-icon": "node scripts/build/generate-knurl-icon.mjs",

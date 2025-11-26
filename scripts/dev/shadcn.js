@@ -4,7 +4,7 @@ import path from "node:path";
 
 const ROOT = process.cwd();
 // adjust the glob if your shadcn path differs
-const DIR = path.join(ROOT, "src/components/ui");
+const DIR = path.join(ROOT, "src-ui/src/components/ui");
 
 function prependOnce(file, header) {
   const src = fs.readFileSync(file, "utf8");
