@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it} from "vitest"
 import {useApplication} from "@/state/application"
-import {resetApplicationStore} from "@/test/zustand"
+import {resetApplicationStore} from "@test/zustand"
 
 const settingsSheet = {type: "settings"} as const
 const importSheet = {type: "import"} as const

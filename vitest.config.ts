@@ -12,27 +12,27 @@ export default mergeConfig(viteConfig, defineConfig({
     fileParallelism: true,
     environment: "jsdom",
     globals: true,
-    setupFiles: ["src/test/setup.ts"],
-    include: ["src/**/*.test.{ts,tsx}"],
+    setupFiles: ["src-ui/test/setup.ts"],
+    include: ["src-ui/src/**/*.test.{ts,tsx}"],
     coverage: {
       enabled: coverageEnabled,
       provider: "istanbul",
       reporter: coverageEnabled ? ["html", "json", "cobertura"] : [],
       reportsDirectory: "coverage",
-      // Only consider coverage for source files under src/
+      // Only consider coverage for source files under src-ui/src/
       all: false,
       include: [
-        "src/**/*.{ts,tsx}",
+        "src-ui/src/**/*.{ts,tsx}",
       ],
       exclude: [
         // Do not count test and story files toward coverage
-        "src/test/**",
-        "src/**/*.test.*",
-        "src/**/__tests__/**",
-        "src/**/stories/**",
-        "src/**/*.stories.*",
+        "src-ui/test/**",
+        "src-ui/src/**/*.test.*",
+        "src-ui/src/**/__tests__/**",
+        "src-ui/src/**/stories/**",
+        "src-ui/src/**/*.stories.*",
         // Exclude shadcn components
-        "src/components/ui/*.tsx",
+        "src-ui/src/components/ui/*.tsx",
         // Exclude generated or non-frontend code
         "src-tauri/**",
       ],

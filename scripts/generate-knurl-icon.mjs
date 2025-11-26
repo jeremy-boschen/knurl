@@ -2,8 +2,8 @@ import {promises as fs} from 'node:fs'
 import {join} from 'node:path'
 import {execSync} from 'node:child_process'
 
-const svgPath = join(process.cwd(), 'src', 'assets', 'knurl.svg')
-const componentPath = join(process.cwd(), 'src', 'components', 'icons', 'knurl-icon.tsx')
+const svgPath = join(process.cwd(), 'src-ui', 'src', 'assets', 'knurl.svg')
+const componentPath = join(process.cwd(), 'src-ui', 'src', 'components', 'icons', 'knurl-icon.tsx')
 
 // Read the SVG file
 const svgContent = await fs.readFile(svgPath, 'utf-8')

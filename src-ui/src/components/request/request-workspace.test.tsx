@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import React from "react"
 
 import RequestWorkspace from "./request-workspace"
-import { createRequestFixture } from "@/test/fixtures/collections"
+import { createRequestFixture } from "@test/fixtures/collections"
 
 const hoistedState = vi.hoisted(() => ({
   useRequestTab: vi.fn(),

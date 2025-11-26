@@ -59,7 +59,12 @@ const MOCK_ENDPOINT_HOST = "127.0.0.1"
  */
 function prepareSettingsFile(configDir: string): void {
   try {
-    const fixtureSettingsPath = path.join(__dirname, "test", "fixtures", "settings.json")
+    // Check both old and new fixture paths for backwards compatibility during migration
+    let fixtureSettingsPath = path.join(__dirname, "src-common", "e2e", "fixtures", "settings.json")
+    // Fallback to old path if new one doesn't exist
+    if (!existsSync(fixtureSettingsPath)) {
+      fixtureSettingsPath = path.join(__dirname, "test", "fixtures", "settings.json")
+    }
     const configSettingsPath = path.join(configDir, "settings.json")
     if (existsSync(fixtureSettingsPath)) {
       let settingsContent = readFileSync(fixtureSettingsPath, "utf-8")
@@ -838,8 +843,8 @@ export const config = {
   host: "127.0.0.1",
   port: 4444,
   logLevel: "error",
-  specs: ["./test/specs/**/*.ts", "./documentation/e2e/**/*.e2e.ts"],
-  exclude: runningDocs ? ["./test/specs/**/*.ts"] : ["./documentation/e2e/**/*.e2e.ts"],
+  specs: ["./src-common/e2e/specs/**/*.ts", "./documentation/e2e/**/*.e2e.ts"],
+  exclude: runningDocs ? ["./src-common/e2e/specs/**/*.ts"] : ["./documentation/e2e/**/*.e2e.ts"],
   maxInstances: 1,
   capabilities: [
     {

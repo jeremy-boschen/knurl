@@ -26,7 +26,7 @@ import {
   useRequestsTabSummary,
   useSidebar,
 } from "@/state/application"
-import {resetApplicationStore} from "@/test/zustand"
+import {resetApplicationStore} from "@test/zustand"
 import {isRequestDirty, toMergedRequest, type Cookie} from "@/types"
 
 const getRequestState = (collectionId: string, requestId: string) =>

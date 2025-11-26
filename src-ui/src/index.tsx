@@ -15,10 +15,10 @@ import { asSuspense } from "@/state/utils"
 // Integration bridge: Only loaded when VITE_INTEGRATION_ENABLED is set (for integration tests)
 // E2E bridge: Only during E2E tests (when VITE_E2E_ENABLED is set by wdio.conf.ts)
 if (import.meta.env.VITE_INTEGRATION_ENABLED) {
-  await import("./test/integration-bridge")
+  await import("../test/integration-bridge")
 }
 if (import.meta.env.VITE_E2E_ENABLED) {
-  await import("./test/e2e-bridge")
+  await import("../test/e2e-bridge")
 }
 
 // This must be the first thing to run to ensure Immer is configured

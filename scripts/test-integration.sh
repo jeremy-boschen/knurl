@@ -78,5 +78,5 @@ if [[ ${#spec_files[@]} -gt 0 ]] || [[ -n "$test_name" ]]; then
   eval "$wdio_cmd"
 else
   echo "Running all integration tests"
-  VITE_INTEGRATION_ENABLED=true yarn wdio run ./wdio.conf.ts --spec "test/specs/integration/**/*.intg.ts"
+  VITE_INTEGRATION_ENABLED=true yarn wdio run ./wdio.conf.ts --spec "src-common/e2e/specs/integration/**/*.intg.ts"
 fi

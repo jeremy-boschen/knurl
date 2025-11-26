@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { PanelGroupHandle } from "@jeremy-boschen/react-adjustable-panels"
 
 import { useApplication } from "@/state/application"
-import { resetApplicationStore } from "@/test/zustand"
+import { resetApplicationStore } from "@test/zustand"
 
 const createPanelGroupHandle = () =>
   ({

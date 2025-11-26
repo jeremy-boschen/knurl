@@ -47,7 +47,7 @@ export default defineConfig(({
     // Extract CSS custom properties into JSON:
     // index.css => default bucket, App.css => custom bucket
     cssVarsExportPlugin({
-      cssFiles: ["src/index.css", "src/App.css"],
+      cssFiles: ["src-ui/src/index.css", "src-ui/src/App.css"],
     }),
     tailwindcss(),
     // Type-check TypeScript during dev and build
@@ -55,7 +55,8 @@ export default defineConfig(({
   ],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(__dirname, "./src-ui/src"),
+      "@test": path.resolve(__dirname, "./src-ui/test"),
       // Use React profiling build for accurate performance metrics
       'react-dom/client': 'react-dom/profiling',
       // This is needed for recent codemirror styling. No idea why
