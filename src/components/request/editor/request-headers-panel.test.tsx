@@ -93,4 +93,14 @@ describe("RequestHeadersPanel", () => {
     expect(valueInput.type).toBe("password")
     expect(valueInput.className).toContain("unsaved-changes")
   })
+
+  it("shows unsaved marker on secure toggle when original differs", () => {
+    const h = { id: "h4", name: "X", value: "v", enabled: true, secure: true }
+    const { container } = renderWith({ [h.id]: h }, { [h.id]: { ...h, secure: false } })
+
+    const toggle = container.querySelector(
+      '[data-test-id="request-headers-panel:secure-toggle:h4"]',
+    ) as HTMLElement
+    expect(toggle.className).toContain("unsaved-changes")
+  })
 })

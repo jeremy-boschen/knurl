@@ -193,6 +193,41 @@ describe("RequestOptionsPanel", () => {
     expect(mockUpdateClientOption).not.toHaveBeenCalledWith({ caPath: "/certs/custom.pem", caText: undefined })
   })
 
+  it("marks fields as unsaved when values differ from original", () => {
+    vi.mocked(useRequestOptions).mockReturnValue({
+      state: {
+        options: { ...mockOptions, timeoutSecs: 10, caText: "cert", caPath: "" },
+        original: { ...mockOptions, timeoutSecs: 30, caText: "", caPath: "" },
+        autoSave: true,
+        originalAutoSave: false,
+      },
+      actions: {
+        updateClientOption: mockUpdateClientOption,
+        updateAutoSave: mockUpdateAutoSave,
+      },
+    } as any)
+
+    render(<RequestOptionsPanel tabId="1" />)
+
+    const timeoutInput = document.querySelector(
+      '[data-test-id="request-options-panel:timeout-input"]',
+    ) as HTMLElement | null
+    expect(timeoutInput?.className).toContain("unsaved-changes")
+
+    const autoSaveSwitch = document.querySelector(
+      '[data-test-id="request-options-panel:auto-save-switch"]',
+    ) as HTMLElement | null
+    expect(autoSaveSwitch?.className).toContain("unsaved-changes")
+
+    // Switch to CA text to expose unsaved marker there too
+    const caTextRadio = screen.getByLabelText("Pasted Text")
+    fireEvent.click(caTextRadio)
+    const caTextArea = document.querySelector(
+      '[data-test-id="request-options-panel:ca-text-input"]',
+    ) as HTMLElement | null
+    expect(caTextArea?.className).toContain("unsaved-changes")
+  })
+
   it("changes HTTP version radio", async () => {
     const user = userEvent.setup()
     render(<RequestOptionsPanel tabId="1" />)
