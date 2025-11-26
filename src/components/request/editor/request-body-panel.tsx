@@ -98,10 +98,10 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
   const editorRef = useRef<CodeEditorHandle | null>(null)
 
   // Optimistic updates for instant feedback
-  const [optimisticBody, updateBodyOptimistic] = useOptimistic(
-    body,
-    (state, changes: Record<string, unknown>) => ({ ...state, ...changes }),
-  )
+  const [optimisticBody, updateBodyOptimistic] = useOptimistic(body, (state, changes: Record<string, unknown>) => ({
+    ...state,
+    ...changes,
+  }))
 
   // Create a temporary request object for type checking functions
   const request = { body: optimisticBody } as RequestState

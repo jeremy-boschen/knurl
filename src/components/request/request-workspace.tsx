@@ -51,7 +51,9 @@ type RequestWorkspaceContentProps = {
   requestTab: LoadedRequestTab
 }
 
-const RequestWorkspaceContent = React.memo(function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
+const RequestWorkspaceContent = React.memo(function RequestWorkspaceContent({
+  requestTab,
+}: RequestWorkspaceContentProps) {
   const urlInputRef = useRef<HTMLInputElement>(null)
   const [_userResizedTabs, setUserResizedTabs] = useState<Record<string, boolean>>({})
   const [layout, setLayout] = useState<"vertical" | "horizontal">("vertical")

@@ -1,4 +1,4 @@
-import React, { Profiler, useCallback, useOptimistic, useMemo } from "react"
+import React, { Profiler, useCallback, useOptimistic } from "react"
 
 import { Input } from "@/components/ui/knurl/input"
 import { cn } from "@/lib"
