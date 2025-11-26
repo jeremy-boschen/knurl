@@ -45,9 +45,21 @@ if (fs.existsSync(e2eCoveragePath)) {
 
 // Note: Rust coverage from cargo-llvm-cov is kept in rust-lcov.info file separately
 // Both frontend (lcov.info) and backend (rust-lcov.info) LCOV files are available in coverage/
-const rustLcovPath = path.join(projectRoot, 'coverage', 'rust-lcov.info')
-if (fs.existsSync(rustLcovPath)) {
-  console.log(`ℹ Rust coverage available in ${path.relative(projectRoot, rustLcovPath)}`)
+const rustCoveragePath = path.join(projectRoot, 'coverage', 'rust-coverage.json')
+if (fs.existsSync(rustCoveragePath)) {
+  try {
+    const rustCoverage = JSON.parse(fs.readFileSync(rustCoveragePath, 'utf-8'))
+    map.merge(rustCoverage)
+    mergedCount++
+    console.log(`✓ Loaded Rust coverage from ${path.relative(projectRoot, rustCoveragePath)}`)
+  } catch (error) {
+    console.warn(`✗ Failed to load Rust coverage: ${error.message}`)
+  }
+} else {
+  const rustLcovPath = path.join(projectRoot, 'coverage', 'rust-lcov.info')
+  if (fs.existsSync(rustLcovPath)) {
+    console.log(`ℹ Rust coverage available in ${path.relative(projectRoot, rustLcovPath)} (LCOV format, not merged)`)
+  }
 }
 
 if (mergedCount === 0) {
@@ -55,34 +67,56 @@ if (mergedCount === 0) {
   console.warn(`  Expected paths:`)
   console.warn(`  - ${path.relative(projectRoot, unitCoveragePath)}`)
   console.warn(`  - ${path.relative(projectRoot, e2eCoveragePath)}`)
-  console.warn(`  - ${path.relative(projectRoot, rustLcovPath)}`)
+  console.warn(`  - ${path.relative(projectRoot, rustCoveragePath)}`)
   process.exit(0)
 }
 
-// Generate merged report
+// Normalize all paths in the map to forward slashes to ensure consistent sorting
+// istanbul-lib-coverage doesn't expose a direct way to mutate keys, 
+// so we have to iterate and rebuild if necessary, or trust that the reporter handles it if keys match.
+// However, standard reporters sort based on the file path string. 
+// If we have mixed separators, sorting is broken.
+const files = map.files();
+files.forEach(file => {
+  const fc = map.fileCoverageFor(file);
+  const normalizedPath = file.split(path.sep).join('/');
+  
+  // If path changed (was backslash), update it
+  if (file !== normalizedPath) {
+    fc.data.path = normalizedPath;
+    // We can't easily remove/add keys to the map instance without private access or creating a new map.
+    // But for reporting, often the 'path' property in data is used. 
+    // Let's try to force it.
+  }
+});
+// To be safe, let's create a NEW map with normalized keys
+const normalizedMap = createCoverageMap({});
+files.forEach(file => {
+  const fc = map.fileCoverageFor(file);
+  const data = JSON.parse(JSON.stringify(fc.data)); // Deep copy
+  data.path = data.path.split(path.sep).join('/'); // Normalize path property
+  normalizedMap.addFileCoverage(data); // Add with normalized path
+});
+
+// Generate merged reports
 try {
+  // Determine reporters from env or default
+  const requestedReporters = process.env.COVERAGE_REPORTERS 
+    ? process.env.COVERAGE_REPORTERS.split(',').map(r => r.trim())
+    : ['json', 'json-summary', 'lcov', 'text', 'text-summary', 'html']
+
   const reporter = createReporter()
-  reporter.addAll(['json', 'lcov', 'text', 'html'])
+  reporter.addAll(requestedReporters)
 
   const mergedCoveragePath = path.join(projectRoot, 'coverage', 'merged')
-  reporter.write(map)
+  reporter.write(normalizedMap)
 
   console.log(`\n✓ Generated merged coverage report`)
+  console.log(`  Reports: ${requestedReporters.join(', ')}`)
   console.log(`  Reports available in: ${path.relative(projectRoot, path.join(projectRoot, 'coverage'))}`)
   console.log(`  - HTML: coverage/index.html`)
   console.log(`  - LCOV: coverage/lcov.info`)
-
-  // Note Rust coverage availability
-  const rustLcovPath = path.join(projectRoot, 'coverage', 'rust-lcov.info')
-  if (fs.existsSync(rustLcovPath)) {
-    console.log(`  - Rust LCOV: coverage/rust-lcov.info`)
-    console.log(`\n✓ Coverage generated for both layers:`)
-    console.log(`  • Frontend: coverage/index.html (HTML report)`)
-    console.log(`  • Rust: coverage/rust-lcov.info (LCOV format)`)
-    console.log(`\n📝 View coverage:`)
-    console.log(`  Frontend: Open coverage/index.html in browser`)
-    console.log(`  Rust: Use lcov tools or upload rust-lcov.info to online viewers`)
-  }
+  console.log(`  - JSON Summary: coverage/coverage-summary.json`)
 
   // Try to merge Cobertura files if both exist
   const coberturaMergePath = path.join(projectRoot, 'coverage', 'cobertura-coverage.xml')
