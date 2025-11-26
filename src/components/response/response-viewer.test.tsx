@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react"
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -265,6 +265,36 @@ describe("ResponseViewer", () => {
     await user.click(await screen.findByRole("option", { name: "XML" }))
 
     await waitFor(() => expect(getByDataTestId("response-viewer:format-toggle-button").textContent).toMatch(/Format/))
+  })
+
+  it("detects language from body when content-type missing and hides preview for non-previewable", () => {
+    renderViewer({
+      httpData: {
+        headers: {},
+        body: '{"k":1}',
+      },
+    })
+
+    expect(screen.queryByRole("tab", { name: /Preview/i })).toBeNull()
+    expect(getByDataTestId("response-viewer:heading")).toBeInTheDocument()
+  })
+
+  it("shows preview for CSV and applies status colors for 3xx/5xx", async () => {
+    const user = userEvent.setup()
+    renderViewer({
+      httpData: { headers: { "content-type": "text/csv" }, status: 302, statusText: "Found" },
+    })
+
+    expect(getByDataTestId("response-panel:status-code").className).toContain("text-blue-500")
+    await user.click(screen.getByRole("tab", { name: /Preview/i }))
+    expect(screen.getByRole("tabpanel", { name: /Preview/i })).toBeInTheDocument()
+
+    cleanup()
+    renderViewer({
+      httpData: { headers: { "content-type": "text/plain" }, status: 503, statusText: "Down" },
+    })
+    const statusAfter = getByDataTestId("response-panel:status-code")
+    expect(statusAfter.className).toContain("text-red-500")
   })
 
   it("shows error status when logs contain errors and no http response", async () => {

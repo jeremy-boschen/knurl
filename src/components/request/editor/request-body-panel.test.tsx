@@ -61,6 +61,21 @@ const renderPanel = () =>
   )
 
 describe("RequestBodyPanel", () => {
+  it("maps body type labels", () => {
+    expect(getBodyTypeLabel({ type: "none" } as any)).toBe("None")
+    expect(getBodyTypeLabel({ type: "binary" } as any)).toBe("Binary File")
+    expect(getBodyTypeLabel({ type: "form", encoding: "multipart" } as any)).toBe("Form > Multipart")
+    expect(getBodyTypeLabel({ type: "form", encoding: "url" } as any)).toBe("Form > URL-Encoded")
+    expect(getBodyTypeLabel({ type: "text", language: "json" } as any)).toMatch(/Text > JSON/i)
+  })
+
+  it("infers common content types by extension", () => {
+    expect(guessContentTypeByExt("report.csv")).toBe("text/csv")
+    expect(guessContentTypeByExt("image.PNG")).toBe("image/png")
+    expect(guessContentTypeByExt("archive.tgz")).toBe("application/gzip")
+    expect(guessContentTypeByExt("unknown.bin")).toBeUndefined()
+  })
+
   beforeEach(() => {
     formatMock.mockClear()
     useRequestBodyMock.mockReset()
