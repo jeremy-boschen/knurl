@@ -1,4 +1,4 @@
-import React, { Profiler } from "react"
+import React, { Profiler, useDeferredValue, useMemo } from "react"
 
 import { CopyIcon, WrapTextIcon } from "lucide-react"
 
@@ -50,6 +50,9 @@ export const LogsList = ({ logs, sending, selectedLevels, onSelectedLevelsChange
   )
   const [lineWrap, setLineWrap] = React.useState(true)
 
+  // Defer filter state to keep buttons responsive while filtering happens in background
+  const deferredSelectedLevelSet = useDeferredValue(selectedLevelSet)
+
   React.useEffect(() => {
     const next = selectedLevels.length > 0 ? selectedLevels : DEFAULT_LEVELS
     setSelectedLevelSet(new Set(next))
@@ -67,15 +70,15 @@ export const LogsList = ({ logs, sending, selectedLevels, onSelectedLevelsChange
   const allSelected = selectedLevelSet.size === ALL_LEVELS.length
   const someSelected = selectedLevelSet.size > 0 && !allSelected
 
-  const getFilteredLogs = () => {
+  const filteredLogs = useMemo(() => {
     if (!logs) {
       return [] as LogEntry[]
     }
-    if (selectedLevelSet.size === ALL_LEVELS.length) {
+    if (deferredSelectedLevelSet.size === ALL_LEVELS.length) {
       return logs
     }
-    return logs.filter((log) => selectedLevelSet.has((log.level as LogLevel) ?? "info"))
-  }
+    return logs.filter((log) => deferredSelectedLevelSet.has((log.level as LogLevel) ?? "info"))
+  }, [logs, deferredSelectedLevelSet])
 
   const handleToggleAll = (checked: boolean | "indeterminate") => {
     if (checked === true) {
@@ -122,8 +125,7 @@ export const LogsList = ({ logs, sending, selectedLevels, onSelectedLevelsChange
   }
 
   const copyAllLogs = () => {
-    const filtered = getFilteredLogs()
-    const logText = filtered
+    const logText = filteredLogs
       .map(
         (log) =>
           `[${new Date(log.timestamp).toISOString()}] ${log.level.toUpperCase()}${(() => {
@@ -231,7 +233,7 @@ export const LogsList = ({ logs, sending, selectedLevels, onSelectedLevelsChange
                 </TooltipContent>
               </Tooltip>
               <span className="text-xs">
-                {getFilteredLogs().length} of {logs.length} logs
+                {filteredLogs.length} of {logs.length} logs
               </span>
             </div>
           </div>
@@ -239,7 +241,7 @@ export const LogsList = ({ logs, sending, selectedLevels, onSelectedLevelsChange
             variant="ghost"
             size="sm"
             onClick={copyAllLogs}
-            disabled={getFilteredLogs().length === 0}
+            disabled={filteredLogs.length === 0}
             data-test-id="logs-list:copy-all-button"
           >
             <CopyIcon className="mr-1 h-4 w-4" />
@@ -248,7 +250,7 @@ export const LogsList = ({ logs, sending, selectedLevels, onSelectedLevelsChange
         </div>
         <div className="flex-1 overflow-auto font-mono text-sm">
           <DataTable columnTemplate="auto auto 1fr auto">
-            {getFilteredLogs().map((log, index) => {
+            {filteredLogs.map((log, index) => {
               const metaLabel = buildMetaLabel(log)
               return (
                 // biome-ignore lint/suspicious/noArrayIndexKey: index is stable

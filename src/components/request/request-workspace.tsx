@@ -1,5 +1,4 @@
-import type * as React from "react"
-import { useRef, useState } from "react"
+import React, { useRef, useState, useEffect, useTransition } from "react"
 
 import { Panel, PanelGroup, ResizeHandle } from "@jeremy-boschen/react-adjustable-panels"
 import "@jeremy-boschen/react-adjustable-panels/style.css"
@@ -52,12 +51,24 @@ type RequestWorkspaceContentProps = {
   requestTab: LoadedRequestTab
 }
 
-function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
+const RequestWorkspaceContent = React.memo(function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
   const urlInputRef = useRef<HTMLInputElement>(null)
   const [_userResizedTabs, setUserResizedTabs] = useState<Record<string, boolean>>({})
   const [layout, setLayout] = useState<"vertical" | "horizontal">("vertical")
   const [exporting, setExporting] = useState<"curl" | "wget" | "fetch" | null>(null)
   const [showSaveRequestDialog, setShowSaveRequestDialog] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const [displayedTabId, setDisplayedTabId] = useState(requestTab.state.activeTab.tabId)
+
+  // Defer displaying new tab to allow non-blocking render of editor
+  useEffect(() => {
+    const newTabId = requestTab.state.activeTab.tabId
+    if (newTabId !== displayedTabId) {
+      startTransition(() => {
+        setDisplayedTabId(newTabId)
+      })
+    }
+  }, [requestTab.state.activeTab.tabId, displayedTabId])
 
   const { state, actions } = requestTab
   const activeTab = state.activeTab as NonNullable<typeof state.activeTab>
@@ -163,7 +174,7 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
             minSize={hasResponse ? (isVerticalLayout ? "5%" : "200px") : undefined}
             className="overflow-hidden"
           >
-            <div className="flex h-full w-full flex-col">
+            <div className="relative flex h-full w-full flex-col">
               <div className="w-full shrink-0 bg-muted py-3 px-2">
                 <div className="flex w-full items-center gap-2">
                   <Select name="method" key={activeTab.tabId} value={request.method} onValueChange={handleMethodChange}>
@@ -299,7 +310,12 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
               </div>
 
               <ErrorBoundary>
-                <RequestEditor tabId={activeTab.tabId} />
+                {isPending && (
+                  <div className="absolute inset-0 z-40 flex items-center justify-center bg-background/50">
+                    <Spinner className="h-6 w-6" />
+                  </div>
+                )}
+                <RequestEditor tabId={displayedTabId} />
               </ErrorBoundary>
             </div>
           </Panel>
@@ -326,7 +342,7 @@ function RequestWorkspaceContent({ requestTab }: RequestWorkspaceContentProps) {
       </div>
     </>
   )
-}
+})
 
 export default function RequestWorkspace({ tabId }: RequestWorkspaceProps) {
   const requestTab = useRequestTab(tabId)
