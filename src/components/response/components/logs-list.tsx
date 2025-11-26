@@ -44,7 +44,7 @@ type LogsListProps = {
   onSelectedLevelsChange?: (levels: LogLevel[]) => void
 }
 
-export const LogsList = ({ logs, sending, selectedLevels, onSelectedLevelsChange }: LogsListProps) => {
+const LogsListComponent = ({ logs, sending, selectedLevels, onSelectedLevelsChange }: LogsListProps) => {
   const [selectedLevelSet, setSelectedLevelSet] = React.useState<Set<LogLevel>>(
     new Set(selectedLevels?.length ? selectedLevels : DEFAULT_LEVELS),
   )
@@ -303,3 +303,5 @@ export const LogsList = ({ logs, sending, selectedLevels, onSelectedLevelsChange
     </Profiler>
   )
 }
+
+export const LogsList = React.memo(LogsListComponent)
