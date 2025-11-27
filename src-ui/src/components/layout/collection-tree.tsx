@@ -667,7 +667,7 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
     }
 
     const overRect = over.rect
-    const activeRect = event.active.rect.current.translated ?? event.active.rect.current
+    const activeRect = event.active.rect.current.translated
     const pointerY = activeRect ? activeRect.top + activeRect.height / 2 : overRect.top + overRect.height / 2
     const topBoundary = overRect.top + overRect.height / 3
     const bottomBoundary = overRect.top + (overRect.height * 2) / 3

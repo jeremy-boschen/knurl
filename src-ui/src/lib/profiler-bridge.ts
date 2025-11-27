@@ -13,7 +13,7 @@
 
 export interface ProfilerMetric {
   id: string
-  phase: "mount" | "update"
+  phase: "mount" | "update" | "nested-update"
   actualDuration: number // Time spent rendering this component
   baseDuration: number // Time without memoization
   startTime: number // When the commit started
@@ -92,7 +92,7 @@ if (import.meta.env.DEV) {
  */
 export function onProfilerRender(
   id: string,
-  phase: "mount" | "update",
+  phase: "mount" | "update" | "nested-update",
   actualDuration: number,
   baseDuration: number,
   startTime: number,
