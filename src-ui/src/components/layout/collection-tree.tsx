@@ -154,8 +154,6 @@ const MAX_COLLECTIONS_WHEN_COLLAPSED = 10
 type ActionId =
   | "select"
   | "select:expand"
-  | "new-request"
-  | "new-folder"
   | "rename"
   | "manage-settings"
   | "export"
@@ -164,6 +162,7 @@ type ActionId =
   | "copy"
   | "duplicate"
   | "request:move"
+  | "request:new"
   | "folder:new"
   | "folder:rename"
   | "folder:delete"
@@ -373,12 +372,6 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
         }
         break
       }
-      case "new-request": {
-        if (collectionId) {
-          void requestTabsApi.createRequestTab(collectionId)
-        }
-        break
-      }
       case "clear-scratch": {
         setDialogProps({
           action: "clear-scratch",
@@ -516,7 +509,6 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
         }
         break
       }
-      case "new-folder":
       case "folder:new": {
         if (collectionId) {
           const parentId = dataset.parentId ?? dataset.folderId ?? RootCollectionFolderId

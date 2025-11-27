@@ -386,7 +386,7 @@ describe("CollectionTree", () => {
     render(<CollectionTree searchTerm="" />)
 
     await triggerCollectionAction("col-1", {
-      actionId: "new-folder",
+      actionId: "folder:new",
       kind: "collection",
       collectionId: "col-1",
     })

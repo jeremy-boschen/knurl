@@ -7,8 +7,8 @@ import { isScratchCollection, useCollections, useOpenTabs, utilitySheetsApi } fr
 import { RootCollectionFolderId } from "@/types"
 
 export type CollectionAction =
-  | "new-request"
-  | "new-folder"
+  | "request:new"
+  | "folder:new"
   | "rename"
   | "manage-settings"
   | "export"
@@ -43,8 +43,8 @@ export function CollectionMenuContent({ collection, exclude = [], onAction }: Co
   const isScratch = isScratchCollection(collection.id)
 
   const internalActions: Record<CollectionAction, () => void> = {
-    "new-request": () => requestsTabsApi.createRequestTab(collection.id),
-    "new-folder": () => {
+    "request:new": () => requestsTabsApi.createRequestTab(collection.id),
+    "folder:new": () => {
       try {
         collectionsApi().createFolder(collection.id, RootCollectionFolderId, "New Folder")
       } catch (error) {
@@ -85,15 +85,15 @@ export function CollectionMenuContent({ collection, exclude = [], onAction }: Co
   }
 
   const visible: CollectionAction[] = [
-    "new-request",
-    "new-folder",
+    "request:new",
+    "folder:new",
     "rename",
     "manage-settings",
     "export",
     isScratch ? "clear-scratch" : "delete",
   ]
     .filter((id) => !exclude.includes(id))
-    .filter((id) => !(isScratch && id === "new-folder")) as CollectionAction[]
+    .filter((id) => !(isScratch && id === "folder:new")) as CollectionAction[]
 
   const renderItem = (
     id: CollectionAction,
@@ -158,19 +158,19 @@ export function CollectionMenuContent({ collection, exclude = [], onAction }: Co
     )
   }
 
-  const hasNonDestructive = visible.some((id) => ["new-request", "rename", "manage-settings", "export"].includes(id))
+  const hasNonDestructive = visible.some((id) => ["request:new", "rename", "manage-settings", "export"].includes(id))
   const hasDestructive = visible.some((id) => ["delete", "clear-scratch"].includes(id))
 
   return (
     <DropdownMenuContent className="w-56" align="start" sideOffset={2}>
-      {visible.includes("new-request") &&
-        renderItem("new-request", "New Request", <PlusIcon className="mr-2 h-4 w-4" />)}
-      {visible.includes("new-folder") &&
-        renderItem("new-folder", "New Folder", <FolderPlusIcon className="mr-2 h-4 w-4" />, false, {
+      {visible.includes("request:new") &&
+        renderItem("request:new", "New Request", <PlusIcon className="mr-2 h-4 w-4" />)}
+      {visible.includes("folder:new") &&
+        renderItem("folder:new", "New Folder", <FolderPlusIcon className="mr-2 h-4 w-4" />, false, {
           "data-parent-id": RootCollectionFolderId,
         })}
       {visible.some((id) => ["rename", "manage-settings", "export"].includes(id)) &&
-        (visible.includes("new-request") || visible.includes("new-folder")) && <DropdownMenuSeparator />}
+        (visible.includes("request:new") || visible.includes("folder:new")) && <DropdownMenuSeparator />}
       {visible.includes("rename") && renderItem("rename", "Rename", <Edit2Icon className="mr-2 h-4 w-4" />)}
       {visible.includes("manage-settings") &&
         renderItem("manage-settings", "Manage Settings", <GlobeIcon className="mr-2 h-4 w-4 text-primary" />)}

@@ -95,7 +95,7 @@ describe("CollectionMenuContent", () => {
   })
 
   it("excludes specified actions", () => {
-    render(<TestProvider collection={mockCollection} exclude={["delete", "export", "new-folder"]}/>)
+    render(<TestProvider collection={mockCollection} exclude={["delete", "export", "folder:new"]}/>)
     expect(screen.queryByText("Delete")).not.toBeInTheDocument()
     expect(screen.queryByText("Export")).not.toBeInTheDocument()
     expect(screen.queryByText("New Folder")).not.toBeInTheDocument()
