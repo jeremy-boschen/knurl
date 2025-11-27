@@ -22,11 +22,7 @@
   },
   "overrides": [
     {
-      "includes": [
-        "**/*.test.ts",
-        "**/*.test.tsx",
-        "src-ui/test/*.ts"
-      ],
+      "includes": ["**/*.test.ts", "**/*.test.tsx", "src-ui/test/*.ts"],
       "linter": {
         "rules": {
           "correctness": {
@@ -43,9 +39,7 @@
       }
     },
     {
-      "includes": [
-        "**/*.css"
-      ],
+      "includes": ["**/*.css"],
       "linter": {
         "enabled": false
       },
@@ -88,26 +82,13 @@
           "options": {
             "groups": [
               // 1) React-related first
-              [
-                "react",
-                "react-dom",
-                "@types/react",
-                "react*"
-              ],
+              ["react", "react-dom", "@types/react", "react*"],
               ":BLANK_LINE:",
               // 2) All packages (Node built-ins + external), excluding your alias
-              [
-                ":NODE:",
-                ":PACKAGE:",
-                "!@/**"
-              ],
+              [":NODE:", ":PACKAGE:", "!@/**"],
               ":BLANK_LINE:",
               // 3) Project-local imports
-              [
-                "@/**",
-                "./**",
-                "../**"
-              ]
+              ["@/**", "./**", "../**"]
             ]
           }
         }
