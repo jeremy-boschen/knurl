@@ -456,8 +456,9 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
         break
       }
       case "request:new": {
-        if (collectionId && folderId) {
-          void requestTabsApi.createRequestTab(collectionId, { folderId })
+        if (collectionId) {
+          const resolvedFolderId = folderId ?? RootCollectionFolderId
+          void requestTabsApi.createRequestTab(collectionId, { folderId: resolvedFolderId })
         }
         break
       }

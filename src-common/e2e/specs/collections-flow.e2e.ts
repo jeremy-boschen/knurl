@@ -67,7 +67,7 @@ describe("Collection And Request Flow", () => {
     await browser.pause(200) // Let UI render
     await clickByTestId(`collection-tree:collection-row:menu-button:${state.collectionId}`)
     await browser.pause(200) // Let menu appear
-    await clickByTestId(`collection-menu:item:new-request:${state.collectionId}`)
+    await clickByTestId(`collection-menu:item:request:new:${state.collectionId}`)
     await browser.pause(300) // Let request be created
 
     const { requestId, tabKey } = await waitForNewCollectionRequest(state.collectionId, existingIds)

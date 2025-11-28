@@ -34,7 +34,7 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
     // Create a request in the collection via menu
     await clickByTestId(`collection-tree:collection-row:${state.collectionId}`)
     await clickByTestId(`collection-tree:collection-row:menu-button:${state.collectionId}`)
-    await clickByTestId(`collection-menu:item:new-request:${state.collectionId}`)
+    await clickByTestId(`collection-menu:item:request:new:${state.collectionId}`)
 
     // Wait for request editor to appear (this confirms request was created)
     await waitForRequestEditor()

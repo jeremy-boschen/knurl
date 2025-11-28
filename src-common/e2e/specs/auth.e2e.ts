@@ -863,7 +863,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
 
     // Create a request in this collection
     await openCollectionMenu(collectionId)
-    await clickByTestId(`collection-menu:item:new-request:${collectionId}`)
+    await clickByTestId(`collection-menu:item:request:new:${collectionId}`)
 
     // Wait for request editor to be ready
     await waitForRequestEditor()
@@ -967,7 +967,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
 
     // Create a request in this collection
     await openCollectionMenu(collectionId)
-    await clickByTestId(`collection-menu:item:new-request:${collectionId}`)
+    await clickByTestId(`collection-menu:item:request:new:${collectionId}`)
 
     // Wait for request editor to be ready
     await waitForRequestEditor()
@@ -1070,7 +1070,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
 
     // Create a request in this collection
     await openCollectionMenu(collectionId)
-    await clickByTestId(`collection-menu:item:new-request:${collectionId}`)
+    await clickByTestId(`collection-menu:item:request:new:${collectionId}`)
 
     // Wait for request editor to be ready
     await waitForRequestEditor()
@@ -1158,7 +1158,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
 
     // Create a request in this collection
     await openCollectionMenu(collectionId)
-    await clickByTestId(`collection-menu:item:new-request:${collectionId}`)
+    await clickByTestId(`collection-menu:item:request:new:${collectionId}`)
 
     // Wait for request editor to be ready
     await waitForRequestEditor()
