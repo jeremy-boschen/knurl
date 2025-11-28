@@ -450,90 +450,65 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
     }
   }
 
-  const handleAction = async (
-    input: ActionPayload | Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>,
-  ) => {
-    if ("key" in input) {
-      if (input.key !== "Enter" && input.key !== " ") {
+  // Handler for row select/expand (extracts data from DOM attributes)
+  const handleRowSelect = async (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => {
+    if ("key" in event) {
+      if (event.key !== "Enter" && event.key !== " ") {
         return
       }
     }
 
-    let actionId: ActionId | undefined
-    let kind: string | undefined
-    let collectionId: string | undefined
-    let requestId: string | undefined
-    let name: string | undefined
-    const dataset: Record<string, string | undefined> = {}
-
-    if ("actionId" in input) {
-      ignoreNextClickRef.current = true
-      actionId = input.actionId
-      kind = input.kind
-      collectionId = input.collectionId
-      requestId = input.requestId
-      name = input.name
-      if (input.folderId) {
-        dataset.folderId = input.folderId
-      }
-      if (input.parentId != null) {
-        dataset.parentId = input.parentId ?? undefined
-      }
-      if (input.targetFolderId) {
-        dataset.targetFolderId = input.targetFolderId
-      }
-    } else {
-      if (ignoreNextClickRef.current) {
-        ignoreNextClickRef.current = false
-        const evt = input as Event
-        evt.preventDefault?.()
-        evt.stopPropagation?.()
-        return
-      }
-      const target = (input as Event).currentTarget as HTMLElement | null
-      if (!target) {
-        return
-      }
-      const ds = target.dataset
-      actionId = ds.actionId as ActionId | undefined
-      kind = ds.kind
-      collectionId = ds.collectionId
-      requestId = ds.requestId
-      name = ds.name
-      dataset.folderId = ds.folderId
-      dataset.parentId = ds.parentId
-      dataset.targetFolderId = ds.targetFolderId
-    }
-
-    if (!actionId) {
-      console.error("[CollectionTree] handleAction missing actionId", { dataset })
+    if (ignoreNextClickRef.current) {
+      ignoreNextClickRef.current = false
+      ;(event as Event).preventDefault?.()
+      ;(event as Event).stopPropagation?.()
       return
     }
 
-    if (["select", "select:expand"].includes(actionId)) {
-      if (!("actionId" in input)) {
-        ;(input as Event).preventDefault?.()
-      }
+    const target = (event as Event).currentTarget as HTMLElement | null
+    if (!target) {
+      return
     }
 
-    if (!("actionId" in input)) {
-      ;(input as Event).stopPropagation?.()
+    const actionId = target.dataset.actionId as ActionId | undefined
+    if (!["select", "select:expand"].includes(actionId ?? "")) {
+      return
     }
 
-    // If we have a collectionId, we can assume that we must load the collection
+    ;(event as Event).preventDefault?.()
+    ;(event as Event).stopPropagation?.()
+
+    const collectionId = target.dataset.collectionId
+    const requestId = target.dataset.requestId
+    const kind = target.dataset.kind ?? "collection"
+
     if (collectionId) {
-      // Fire off loading the collection. No need to wait for it. The CollectionRow will handle that.
       await collectionsApi().loadCollection(collectionId)
     }
 
-    kind = kind ?? "collection"
+    await handleSelectAction(actionId as "select" | "select:expand", collectionId, requestId, kind)
+  }
 
-    const domEvent = "actionId" in input ? undefined : (input as Event & { ctrlKey?: boolean; metaKey?: boolean })
+  // Handler for menu actions (explicit ActionPayload)
+  const handleMenuAction = async (payload: ActionPayload) => {
+    ignoreNextClickRef.current = true
+    const { actionId, kind, collectionId, requestId, folderId, parentId, targetFolderId, name } = payload
+
+    if (!actionId) {
+      console.error("[CollectionTree] handleMenuAction missing actionId", payload)
+      return
+    }
+
+    if (collectionId) {
+      await collectionsApi().loadCollection(collectionId)
+    }
+
+    const resolvedKind = kind ?? "collection"
 
     switch (actionId) {
       case "select:expand":
       case "select": {
-        await handleSelectAction(actionId, collectionId, requestId, kind)
+        await handleSelectAction(actionId, collectionId, requestId, resolvedKind)
         break
       }
       case "clear-scratch": {
@@ -542,7 +517,7 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
       }
       case "delete":
       case "rename": {
-        handleDeleteOrRenameDialog(actionId, kind, collectionId, requestId, dataset.folderId, name, domEvent)
+        handleDeleteOrRenameDialog(actionId, resolvedKind, collectionId, requestId, folderId, name, undefined)
         break
       }
       case "manage-settings": {
@@ -572,20 +547,20 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
         break
       }
       case "request:move": {
-        if (collectionId && requestId && dataset.targetFolderId) {
-          collectionsApi().moveRequestToFolder(collectionId, requestId, dataset.targetFolderId)
+        if (collectionId && requestId && targetFolderId) {
+          collectionsApi().moveRequestToFolder(collectionId, requestId, targetFolderId)
         }
         break
       }
       case "request:new": {
-        if (collectionId && dataset.folderId) {
-          void requestTabsApi.createRequestTab(collectionId, { folderId: dataset.folderId })
+        if (collectionId && folderId) {
+          void requestTabsApi.createRequestTab(collectionId, { folderId })
         }
         break
       }
       case "folder:new": {
         if (collectionId) {
-          const parentId = dataset.parentId ?? dataset.folderId ?? RootCollectionFolderId
+          const resolvedParentId = parentId ?? folderId ?? RootCollectionFolderId
           setDialogProps({
             action: "folder-create",
             name: "",
@@ -593,14 +568,14 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
             description: "Add a new folder to organize requests.",
             context: {
               collectionId,
-              parentId,
+              parentId: resolvedParentId,
             },
           })
         }
         break
       }
       case "folder:rename": {
-        if (collectionId && dataset.folderId && name) {
+        if (collectionId && folderId && name) {
           setDialogProps({
             action: "rename",
             name,
@@ -613,14 +588,14 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
             context: {
               kind: "folder",
               collectionId,
-              folderId: dataset.folderId,
+              folderId,
             },
           })
         }
         break
       }
       case "folder:delete": {
-        if (collectionId && dataset.folderId && name) {
+        if (collectionId && folderId && name) {
           setDialogProps({
             action: "delete",
             name,
@@ -634,7 +609,7 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
             context: {
               kind: "folder",
               collectionId,
-              folderId: dataset.folderId,
+              folderId,
             },
           })
         }
@@ -819,7 +794,7 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
           data-action-id="select:expand"
           data-kind="collection"
           data-collection-id={meta.id}
-          onClick={handleAction}
+          onClick={handleRowSelect}
           data-test-id={`collection-tree:collapsed-collection-button:${meta.id}`}
         >
           {rowState.opened[meta.id] ? (
@@ -905,7 +880,8 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
                 collectionId={meta.id}
                 collectionName={meta.name}
                 query={deferredQuery}
-                onAction={handleAction}
+                onRowSelect={handleRowSelect}
+                onMenuAction={handleMenuAction}
               />
             ))}
           </div>
@@ -926,7 +902,8 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
                     collectionId={meta.id}
                     collectionName={meta.name}
                     open={rowState.opened[meta.id] ?? false}
-                    onAction={handleAction}
+                    onRowSelect={handleRowSelect}
+                    onMenuAction={handleMenuAction}
                   />
                 ))}
               </SortableContext>
@@ -948,10 +925,11 @@ type CollectionRowProps = {
   collectionId: string
   collectionName: string
   open: boolean
-  onAction: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+  onRowSelect: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+  onMenuAction: (payload: ActionPayload) => void
 }
 
-function CollectionRow({ collectionId, collectionName, open, onAction }: CollectionRowProps) {
+function CollectionRow({ collectionId, collectionName, open, onRowSelect, onMenuAction }: CollectionRowProps) {
   const { dropIndicator } = useDndTreeContext()
   const isOver = dropIndicator?.id === collectionId
   const dropPosition = isOver ? dropIndicator.position : null
@@ -996,8 +974,8 @@ function CollectionRow({ collectionId, collectionName, open, onAction }: Collect
         data-action-id="select"
         data-kind="collection"
         data-collection-id={collectionId}
-        onClick={onAction}
-        onKeyDown={onAction}
+        onClick={onRowSelect}
+        onKeyDown={onRowSelect}
         data-test-id={`collection-tree:collection-row:${collectionId}`}
       >
         <div className="flex flex-1 items-center space-x-2">
@@ -1032,7 +1010,7 @@ function CollectionRow({ collectionId, collectionName, open, onAction }: Collect
               <MoreHorizontalIcon className="h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
-          <CollectionMenuContent collection={{ id: collectionId, name: collectionName }} onAction={onAction} />
+          <CollectionMenuContent collection={{ id: collectionId, name: collectionName }} onAction={onMenuAction} />
         </DropdownMenu>
       </div>
 
@@ -1050,7 +1028,7 @@ function CollectionRow({ collectionId, collectionName, open, onAction }: Collect
             )}
           >
             <Suspense name="collection" fallback={<div />}>
-              <CollectionContent collectionId={collectionId} onAction={onAction} />
+              <CollectionContent collectionId={collectionId} onRowSelect={onRowSelect} onMenuAction={onMenuAction} />
             </Suspense>
           </ErrorBoundary>
         </div>
@@ -1063,10 +1041,17 @@ type CollectionRowSearchableProps = {
   collectionId: string
   collectionName: string
   query: string
-  onAction: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+  onRowSelect: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+  onMenuAction: (payload: ActionPayload) => void
 }
 
-function CollectionRowSearchable({ collectionId, collectionName, query, onAction }: CollectionRowSearchableProps) {
+function CollectionRowSearchable({
+  collectionId,
+  collectionName,
+  query,
+  onRowSelect,
+  onMenuAction,
+}: CollectionRowSearchableProps) {
   const {
     state: { collection },
   } = useCollectionFromCache(collectionId)
@@ -1112,8 +1097,8 @@ function CollectionRowSearchable({ collectionId, collectionName, query, onAction
         data-action-id="select:expand"
         data-kind="collection"
         data-collection-id={collectionId}
-        onClick={onAction}
-        onKeyDown={onAction}
+        onClick={onRowSelect}
+        onKeyDown={onRowSelect}
       >
         <div className="flex items-center space-x-2">
           <div className="tree-offset-flex hover:cursor-grab active:cursor-grabbing">
@@ -1129,7 +1114,7 @@ function CollectionRowSearchable({ collectionId, collectionName, query, onAction
                 <MoreHorizontalIcon className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
-            <CollectionMenuContent collection={{ id: collectionId, name: collectionName }} onAction={onAction} />
+            <CollectionMenuContent collection={{ id: collectionId, name: collectionName }} onAction={onMenuAction} />
           </DropdownMenu>
         </div>
       </div>
@@ -1151,7 +1136,8 @@ function CollectionRowSearchable({ collectionId, collectionName, query, onAction
             folderId={RootCollectionFolderId}
             requests={matchingRequests}
             folderOptions={folderOptions}
-            onAction={onAction}
+            onRowSelect={onRowSelect}
+            onMenuAction={onMenuAction}
             filterQuery={query}
           />
         </ErrorBoundary>
@@ -1165,7 +1151,8 @@ type RequestListProps = {
   folderId: string
   requests: RequestState[]
   folderOptions: FolderOption[]
-  onAction: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+  onRowSelect: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+  onMenuAction: (payload: ActionPayload) => void
   filterQuery?: string
 }
 
@@ -1174,7 +1161,8 @@ function RequestList({
   folderId,
   requests: sourceRequests,
   folderOptions,
-  onAction,
+  onRowSelect,
+  onMenuAction,
   filterQuery,
 }: RequestListProps) {
   const allRequests = sourceRequests
@@ -1225,7 +1213,8 @@ function RequestList({
             r={r}
             collectionId={collectionId}
             folderId={folderId}
-            onAction={onAction}
+            onRowSelect={onRowSelect}
+            onMenuAction={onMenuAction}
             dndDisabled={true}
             moveTargets={moveTargets}
             siblings={requestOrder}
@@ -1245,7 +1234,8 @@ function RequestList({
             r={r}
             collectionId={collectionId}
             folderId={folderId}
-            onAction={onAction}
+            onRowSelect={onRowSelect}
+            onMenuAction={onMenuAction}
             moveTargets={moveTargets}
             siblings={requestOrder}
             folderPath={folderPathFor(r)}
@@ -1258,10 +1248,11 @@ function RequestList({
 
 type CollectionContentProps = {
   collectionId: string
-  onAction: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+  onRowSelect: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+  onMenuAction: (payload: ActionPayload) => void
 }
 
-function CollectionContent({ collectionId, onAction }: CollectionContentProps) {
+function CollectionContent({ collectionId, onRowSelect, onMenuAction }: CollectionContentProps) {
   const {
     state: { collection },
   } = useCollection(collectionId)
@@ -1290,7 +1281,8 @@ function CollectionContent({ collectionId, onAction }: CollectionContentProps) {
         folderId={RootCollectionFolderId}
         requests={rootRequests}
         folderOptions={folderOptions}
-        onAction={onAction}
+        onRowSelect={onRowSelect}
+        onMenuAction={onMenuAction}
       />
 
       <SortableContext items={rootFolder?.childFolderIds ?? []} strategy={verticalListSortingStrategy}>
@@ -1302,7 +1294,8 @@ function CollectionContent({ collectionId, onAction }: CollectionContentProps) {
             folderId={folderId}
             depth={0}
             folderOptions={folderOptions}
-            onAction={onAction}
+            onRowSelect={onRowSelect}
+            onMenuAction={onMenuAction}
           />
         ))}
       </SortableContext>
@@ -1316,7 +1309,8 @@ type CollectionFolderBranchProps = {
   folderId: string
   depth: number
   folderOptions: FolderOption[]
-  onAction: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+  onRowSelect: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+  onMenuAction: (payload: ActionPayload) => void
 }
 
 function CollectionFolderBranch({
@@ -1325,7 +1319,8 @@ function CollectionFolderBranch({
   folderId,
   depth,
   folderOptions,
-  onAction,
+  onRowSelect,
+  onMenuAction,
 }: CollectionFolderBranchProps) {
   const { dropIndicator } = useDndTreeContext()
   const isOver = dropIndicator?.id === folderId
@@ -1433,7 +1428,11 @@ function CollectionFolderBranch({
                 <MoreHorizontalIcon className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
-            <FolderMenuContent collectionId={collectionId} folder={folder} onAction={(payload) => onAction(payload)} />
+            <FolderMenuContent
+              collectionId={collectionId}
+              folder={folder}
+              onAction={(payload) => onMenuAction(payload)}
+            />
           </DropdownMenu>
         )}
       </div>
@@ -1445,7 +1444,8 @@ function CollectionFolderBranch({
             folderId={folderId}
             requests={requests}
             folderOptions={folderOptions}
-            onAction={onAction}
+            onRowSelect={onRowSelect}
+            onMenuAction={onMenuAction}
           />
           <SortableContext items={folder.childFolderIds} strategy={verticalListSortingStrategy}>
             {folder.childFolderIds.map((childId) => (
@@ -1456,7 +1456,8 @@ function CollectionFolderBranch({
                 folderId={childId}
                 depth={depth + 1}
                 folderOptions={folderOptions}
-                onAction={onAction}
+                onRowSelect={onRowSelect}
+                onMenuAction={onMenuAction}
               />
             ))}
           </SortableContext>
@@ -1470,7 +1471,8 @@ type RequestRowProps = {
   r: RequestState
   collectionId: string
   folderId: string
-  onAction: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+  onRowSelect: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+  onMenuAction: (payload: ActionPayload) => void
   dndDisabled?: boolean
   moveTargets: FolderOption[]
   siblings: string[]
@@ -1481,7 +1483,8 @@ function RequestRow({
   r,
   collectionId,
   folderId,
-  onAction,
+  onRowSelect,
+  onMenuAction,
   dndDisabled = false,
   moveTargets = [],
   siblings,
@@ -1527,8 +1530,8 @@ function RequestRow({
       data-collection-id={collectionId}
       data-request-id={r.id}
       data-folder-id={folderId}
-      onClick={onAction}
-      onKeyDown={onAction}
+      onClick={onRowSelect}
+      onKeyDown={onRowSelect}
       data-test-id={`collection-tree:request-row:${r.id}`}
     >
       {isOver && dropPosition === "top" && <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary z-10" />}
@@ -1575,7 +1578,7 @@ function RequestRow({
             requestName={r.name}
             isScratch={isScratch}
             moveTargets={moveTargets.map((target) => ({ id: target.id, path: target.path }))}
-            onAction={(payload) => onAction(payload)}
+            onAction={(payload) => onMenuAction(payload)}
           />
         </DropdownMenu>
       </div>
