@@ -36,6 +36,27 @@ import {
 
 import ErrorBoundary from "@/components/error/error-boundary"
 import { DndTreeProvider, useDndTreeContext, useOptionalDndTreeContext } from "@/components/layout/dnd-tree-context"
+import type {
+  ActionId,
+  ActionPayload,
+  ClearScratchContext,
+  CollectionDragData,
+  CollectionRowProps,
+  CollectionRowSearchableProps,
+  CollectionsTreeProps,
+  DeleteContext,
+  DialogProps,
+  DragPayload,
+  DropPosition,
+  FolderCreateContext,
+  FolderDragData,
+  RenameContext,
+  RequestDragData,
+  RequestListProps,
+  RequestRowProps,
+  CollectionContentProps,
+  CollectionFolderBranchProps,
+} from "./types"
 import DeleteDialog from "@/components/shared/delete-dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -62,125 +83,7 @@ import {
 import type { CollectionCache, RequestState } from "@/types"
 import { RootCollectionFolderId } from "@/types"
 
-export type RenameContext =
-  | {
-      kind: "request"
-      collectionId: string
-      requestId: string
-    }
-  | {
-      kind: "collection"
-      collectionId: string
-      requestId: never
-    }
-  | {
-      kind: "folder"
-      collectionId: string
-      folderId: string
-    }
-
-export type DeleteContext =
-  | {
-      kind: "request"
-      collectionId: string
-      requestId: string
-    }
-  | {
-      kind: "collection"
-      collectionId: string
-      requestId: never
-    }
-  | {
-      kind: "folder"
-      collectionId: string
-      folderId: string
-    }
-
-export type ClearScratchContext = {
-  collectionId: string
-}
-
-export type FolderCreateContext = {
-  collectionId: string
-  parentId: string | null
-}
-
-type FolderDragData = {
-  type: "folder-item"
-  collectionId: string
-  folderId: string
-  parentId: string
-  siblings: string[]
-  childIds: string[]
-}
-
-type CollectionDragData = {
-  type: "collection"
-  collectionId: string
-}
-
-type RequestDragData = {
-  type: "request-item"
-  collectionId: string
-  requestId: string
-  folderId: string
-  siblings: string[]
-}
-
-type DragPayload = FolderDragData | CollectionDragData | RequestDragData
-export type DropPosition = "top" | "bottom" | "middle" | null
-
-export type DialogProps =
-  | { action: "rename"; name: string; title: string; description: React.ReactNode; context: RenameContext }
-  | { action: "delete"; name: string; title: string; description: React.ReactNode; context: DeleteContext }
-  | {
-      action: "clear-scratch"
-      name: string
-      title: string
-      description: React.ReactNode
-      context: ClearScratchContext
-    }
-  | { action: "export"; context: string }
-  | {
-      action: "folder-create"
-      name: string
-      title: string
-      description: React.ReactNode
-      context: FolderCreateContext
-    }
-
 const MAX_COLLECTIONS_WHEN_COLLAPSED = 10
-
-export type ActionId =
-  | "select"
-  | "select:expand"
-  | "rename"
-  | "manage-settings"
-  | "export"
-  | "delete"
-  | "clear-scratch"
-  | "copy"
-  | "duplicate"
-  | "request:move"
-  | "request:new"
-  | "folder:new"
-  | "folder:rename"
-  | "folder:delete"
-
-export type ActionPayload = {
-  actionId: ActionId
-  kind: string
-  collectionId?: string
-  requestId?: string
-  folderId?: string
-  parentId?: string | null
-  targetFolderId?: string
-  name?: string
-}
-
-type CollectionsTreeProps = {
-  searchTerm: string | undefined
-}
 
 export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
   const {
@@ -921,14 +824,6 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
   )
 }
 
-type CollectionRowProps = {
-  collectionId: string
-  collectionName: string
-  open: boolean
-  onRowSelect: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
-  onMenuAction: (payload: ActionPayload) => void
-}
-
 function CollectionRow({ collectionId, collectionName, open, onRowSelect, onMenuAction }: CollectionRowProps) {
   const { dropIndicator } = useDndTreeContext()
   const isOver = dropIndicator?.id === collectionId
@@ -1037,14 +932,6 @@ function CollectionRow({ collectionId, collectionName, open, onRowSelect, onMenu
   )
 }
 
-type CollectionRowSearchableProps = {
-  collectionId: string
-  collectionName: string
-  query: string
-  onRowSelect: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
-  onMenuAction: (payload: ActionPayload) => void
-}
-
 function CollectionRowSearchable({
   collectionId,
   collectionName,
@@ -1146,16 +1033,6 @@ function CollectionRowSearchable({
   )
 }
 
-type RequestListProps = {
-  collectionId: string
-  folderId: string
-  requests: RequestState[]
-  folderOptions: FolderOption[]
-  onRowSelect: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
-  onMenuAction: (payload: ActionPayload) => void
-  filterQuery?: string
-}
-
 function RequestList({
   collectionId,
   folderId,
@@ -1246,12 +1123,6 @@ function RequestList({
   )
 }
 
-type CollectionContentProps = {
-  collectionId: string
-  onRowSelect: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
-  onMenuAction: (payload: ActionPayload) => void
-}
-
 function CollectionContent({ collectionId, onRowSelect, onMenuAction }: CollectionContentProps) {
   const {
     state: { collection },
@@ -1301,16 +1172,6 @@ function CollectionContent({ collectionId, onRowSelect, onMenuAction }: Collecti
       </SortableContext>
     </div>
   )
-}
-
-type CollectionFolderBranchProps = {
-  collection: CollectionCache
-  collectionId: string
-  folderId: string
-  depth: number
-  folderOptions: FolderOption[]
-  onRowSelect: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
-  onMenuAction: (payload: ActionPayload) => void
 }
 
 function CollectionFolderBranch({
@@ -1465,18 +1326,6 @@ function CollectionFolderBranch({
       )}
     </div>
   )
-}
-
-type RequestRowProps = {
-  r: RequestState
-  collectionId: string
-  folderId: string
-  onRowSelect: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
-  onMenuAction: (payload: ActionPayload) => void
-  dndDisabled?: boolean
-  moveTargets: FolderOption[]
-  siblings: string[]
-  folderPath?: string
 }
 
 function RequestRow({

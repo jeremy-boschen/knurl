@@ -1,5 +1,5 @@
 import React from "react"
-import type { DropPosition } from "@/components/layout/collection-tree"
+import type { DropPosition } from "@/components/layout/collection-tree/types"
 
 type DndTreeContextType = {
   activeId: string | null
