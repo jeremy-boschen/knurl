@@ -46,7 +46,7 @@ describe("TitleBar", () => {
     const collectionsApi = {loadCollection}
     collectionsApiSpy.mockReturnValue(() => collectionsApi as unknown as CollectionsApi)
 
-    requestTabSpy.mockReturnValue(options.hasActiveTab ? ({} as unknown) : null)
+    requestTabSpy.mockReturnValue(options.hasActiveTab ? ({} as any) : null)
 
     const windowApi = {
       minimize: vi.fn(),
