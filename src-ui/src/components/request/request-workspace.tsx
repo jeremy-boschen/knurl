@@ -62,7 +62,13 @@ const RequestWorkspaceContent = React.memo(function RequestWorkspaceContent({
   const [isPending, startTransition] = useTransition()
   const [displayedTabId, setDisplayedTabId] = useState(requestTab.state.activeTab.tabId)
 
-  // Defer displaying new tab to allow non-blocking render of editor
+  // Sync displayedTabId immediately with the passed requestTab to prevent using deleted tabs
+  if (displayedTabId !== requestTab.state.activeTab.tabId) {
+    setDisplayedTabId(requestTab.state.activeTab.tabId)
+  }
+
+  // Optionally defer displaying changes for smoother transitions in normal cases
+  // But this is bypassed when the component receives a different prop (which already causes a sync above)
   useEffect(() => {
     const newTabId = requestTab.state.activeTab.tabId
     if (newTabId !== displayedTabId) {

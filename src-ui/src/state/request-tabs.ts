@@ -196,7 +196,6 @@ export const requestTabsSliceCreator: StateCreator<
       }
 
       const { collectionId, requestId } = openTab
-      requireLoadedCollection(state, collectionId)
 
       set((app) => {
         const state = app.requestTabsState
