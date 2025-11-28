@@ -62,7 +62,7 @@ import {
 import type { CollectionCache, RequestState } from "@/types"
 import { RootCollectionFolderId } from "@/types"
 
-type RenameContext =
+export type RenameContext =
   | {
       kind: "request"
       collectionId: string
@@ -79,7 +79,7 @@ type RenameContext =
       folderId: string
     }
 
-type DeleteContext =
+export type DeleteContext =
   | {
       kind: "request"
       collectionId: string
@@ -96,11 +96,11 @@ type DeleteContext =
       folderId: string
     }
 
-type ClearScratchContext = {
+export type ClearScratchContext = {
   collectionId: string
 }
 
-type FolderCreateContext = {
+export type FolderCreateContext = {
   collectionId: string
   parentId: string | null
 }
@@ -130,7 +130,7 @@ type RequestDragData = {
 type DragPayload = FolderDragData | CollectionDragData | RequestDragData
 export type DropPosition = "top" | "bottom" | "middle" | null
 
-type DialogProps =
+export type DialogProps =
   | { action: "rename"; name: string; title: string; description: React.ReactNode; context: RenameContext }
   | { action: "delete"; name: string; title: string; description: React.ReactNode; context: DeleteContext }
   | {
@@ -151,7 +151,7 @@ type DialogProps =
 
 const MAX_COLLECTIONS_WHEN_COLLAPSED = 10
 
-type ActionId =
+export type ActionId =
   | "select"
   | "select:expand"
   | "rename"
@@ -167,7 +167,7 @@ type ActionId =
   | "folder:rename"
   | "folder:delete"
 
-type ActionPayload = {
+export type ActionPayload = {
   actionId: ActionId
   kind: string
   collectionId?: string
@@ -256,6 +256,200 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
   const [activeId, setActiveId] = React.useState<string | null>(null)
   const [dropIndicator, setDropIndicator] = React.useState<{ id: string; position: DropPosition } | null>(null)
 
+  // Handler functions must be declared before the callbacks that use them
+  const handleDelete = async (ctx: DeleteContext) => {
+    if (ctx.kind === "request") {
+      // Close the tab if it's open
+      const tab = requestTabsApi.getOpenTab(ctx.collectionId, ctx.requestId)
+      if (tab) {
+        requestTabsApi.removeTab(tab.tabId)
+      }
+      collectionsApi().deleteRequest(ctx.collectionId, ctx.requestId)
+    } else if (ctx.kind === "collection") {
+      collectionsApi().removeCollection(ctx.collectionId)
+    } else if (ctx.kind === "folder") {
+      const collection = useApplication.getState().collectionsState.cache[ctx.collectionId]
+      if (!collection) {
+        return
+      }
+
+      const collectRequestIds = (folderId: string, acc: string[]) => {
+        const folder = collection.folders[folderId]
+        if (!folder) {
+          return acc
+        }
+        acc.push(...folder.requestIds)
+        for (const childId of folder.childFolderIds) {
+          collectRequestIds(childId, acc)
+        }
+        return acc
+      }
+
+      const requestIds = collectRequestIds(ctx.folderId, [])
+
+      for (const requestId of requestIds) {
+        const tab = requestTabsApi.getOpenTab(ctx.collectionId, requestId)
+        if (tab) {
+          requestTabsApi.removeTab(tab.tabId)
+        }
+      }
+
+      collectionsApi().deleteFolder(ctx.collectionId, ctx.folderId)
+    }
+  }
+
+  const handleSelectAction = async (
+    actionId: "select" | "select:expand",
+    collectionId: string | undefined,
+    requestId: string | undefined,
+    kind: string,
+  ) => {
+    // Always expand the sidebar when a collection/request is selected
+    expandSidebar()
+
+    if (collectionId) {
+      // If we're expanding the sidebar because a folder was clicked, and the folder clicked was already open,
+      // then we don't want to toggle it.
+      if (actionId === "select:expand" && rowState.opened[collectionId]) {
+        return
+      }
+
+      setRowState((state) => ({
+        current: {
+          collectionId,
+          requestId,
+        },
+        opened: {
+          ...state.opened,
+          // If selecting a request, the collection is always open; otherwise we're toggling the collection
+          [collectionId]: kind === "request" ? true : !state.opened[collectionId],
+        },
+      }))
+
+      if (requestId) {
+        try {
+          await requestTabsApi.loadTab(collectionId, requestId)
+          requestTabsApi.openRequestTab(collectionId, requestId)
+        } catch (error) {
+          console.error("Failed to open request tab", error)
+        }
+      }
+    }
+  }
+
+  const handleClearScratchDialog = (collectionId: string | undefined, name: string | undefined) => {
+    setDialogProps({
+      action: "clear-scratch",
+      name,
+      title: "Clear All Requests",
+      description: (
+        <>
+          Are you sure you want to clear all requests from the <span className="text-lg text-primary">{name}</span>{" "}
+          collection?
+        </>
+      ),
+      context: {
+        collectionId,
+      },
+    })
+  }
+
+  const handleDeleteOrRenameDialog = (
+    actionId: "delete" | "rename",
+    kind: string,
+    collectionId: string | undefined,
+    requestId: string | undefined,
+    folderId: string | undefined,
+    name: string | undefined,
+    domEvent: (Event & { ctrlKey?: boolean; metaKey?: boolean }) | undefined,
+  ) => {
+    if (kind === "folder") {
+      if (!collectionId || !folderId) {
+        return
+      }
+      setDialogProps({
+        action: actionId,
+        name,
+        title: `${capitalize(actionId)} Folder`,
+        description:
+          actionId === "rename" ? (
+            <>
+              Rename the <span className="text-lg text-primary">{name}</span> folder?
+            </>
+          ) : (
+            <>
+              Deleting the <span className="text-lg text-primary">{name}</span> folder will remove all nested folders
+              and requests. This cannot be undone.
+            </>
+          ),
+        context: {
+          kind: "folder",
+          collectionId,
+          folderId,
+        },
+      })
+      return
+    }
+
+    const hasModifier =
+      actionId === "delete" && domEvent && ((domEvent.ctrlKey ?? false) || (domEvent.metaKey ?? false))
+    if (hasModifier) {
+      void handleDelete({
+        kind,
+        collectionId,
+        requestId,
+      })
+
+      return
+    }
+
+    setDialogProps({
+      action: actionId,
+      name,
+      title: `${capitalize(actionId)} ${capitalize(kind)}`,
+      description:
+        actionId === "rename" ? (
+          <>
+            Rename the <span className="text-lg text-primary">{name}</span> {kind}?
+          </>
+        ) : (
+          <>
+            Are you sure you want to delete the <span className="text-lg text-primary">{name}</span> {kind}?
+          </>
+        ),
+      context: {
+        kind,
+        collectionId,
+        requestId,
+      },
+    })
+  }
+
+  const handleDuplicateRequest = async (collectionId: string | undefined, requestId: string | undefined) => {
+    if (collectionId && requestId) {
+      try {
+        await requestTabsApi.loadTab(collectionId, requestId)
+        collectionsApi().duplicateRequest(collectionId, requestId)
+      } catch (error) {
+        console.error("Failed to duplicate request", error)
+      }
+    }
+  }
+
+  const handleCopyRequest = async (collectionId: string | undefined, requestId: string | undefined) => {
+    if (collectionId && requestId) {
+      try {
+        await requestTabsApi.loadTab(collectionId, requestId)
+        const request = collectionsApi().getRequest(collectionId, requestId)
+        if (request) {
+          void navigator.clipboard.writeText(JSON.stringify(request, null, 2))
+        }
+      } catch (error) {
+        console.error("Failed to copy request", error)
+      }
+    }
+  }
+
   const handleAction = async (
     input: ActionPayload | Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>,
   ) => {
@@ -339,119 +533,16 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
     switch (actionId) {
       case "select:expand":
       case "select": {
-        // Always expand the sidebar when a collection/request is selected
-        expandSidebar()
-
-        if (collectionId) {
-          // If we're expanding the sidebar because a folder was clicked, and the folder clicked was already open,
-          // then we don't want to toggle it.
-          if (actionId === "select:expand" && rowState.opened[collectionId]) {
-            return
-          }
-
-          setRowState((state) => ({
-            current: {
-              collectionId,
-              requestId,
-            },
-            opened: {
-              ...state.opened,
-              // If selecting a request, the collection is always open; otherwise we're toggling the collection
-              [collectionId]: kind === "request" ? true : !state.opened[collectionId],
-            },
-          }))
-
-          if (requestId) {
-            try {
-              await requestTabsApi.loadTab(collectionId, requestId)
-              requestTabsApi.openRequestTab(collectionId, requestId)
-            } catch (error) {
-              console.error("Failed to open request tab", error)
-            }
-          }
-        }
+        await handleSelectAction(actionId, collectionId, requestId, kind)
         break
       }
       case "clear-scratch": {
-        setDialogProps({
-          action: "clear-scratch",
-          name,
-          title: "Clear All Requests",
-          description: (
-            <>
-              Are you sure you want to clear all requests from the <span className="text-lg text-primary">{name}</span>{" "}
-              collection?
-            </>
-          ),
-          context: {
-            collectionId,
-          },
-        })
+        handleClearScratchDialog(collectionId, name)
         break
       }
       case "delete":
       case "rename": {
-        if (kind === "folder") {
-          const folderId = dataset.folderId
-          if (!collectionId || !folderId) {
-            return
-          }
-          setDialogProps({
-            action: actionId,
-            name,
-            title: `${capitalize(actionId)} Folder`,
-            description:
-              actionId === "rename" ? (
-                <>
-                  Rename the <span className="text-lg text-primary">{name}</span> folder?
-                </>
-              ) : (
-                <>
-                  Deleting the <span className="text-lg text-primary">{name}</span> folder will remove all nested
-                  folders and requests. This cannot be undone.
-                </>
-              ),
-            context: {
-              kind: "folder",
-              collectionId,
-              folderId,
-            },
-          })
-          break
-        }
-
-        const hasModifier =
-          actionId === "delete" && domEvent && ((domEvent.ctrlKey ?? false) || (domEvent.metaKey ?? false))
-        if (hasModifier) {
-          void handleDelete({
-            kind,
-            collectionId,
-            requestId,
-          })
-
-          return
-        }
-
-        setDialogProps({
-          action: actionId,
-          name,
-          title: `${capitalize(actionId)} ${capitalize(kind)}`,
-          description:
-            actionId === "rename" ? (
-              <>
-                Rename the <span className="text-lg text-primary">{name}</span> {kind}?
-              </>
-            ) : (
-              <>
-                Are you sure you want to delete the <span className="text-lg text-primary">{name}</span> {kind}?
-              </>
-            ),
-          context: {
-            kind,
-            collectionId,
-            requestId,
-          },
-        })
+        handleDeleteOrRenameDialog(actionId, kind, collectionId, requestId, dataset.folderId, name, domEvent)
         break
       }
       case "manage-settings": {
@@ -473,28 +564,11 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
         break
       }
       case "duplicate": {
-        if (collectionId && requestId) {
-          try {
-            await requestTabsApi.loadTab(collectionId, requestId)
-            collectionsApi().duplicateRequest(collectionId, requestId)
-          } catch (error) {
-            console.error("Failed to duplicate request", error)
-          }
-        }
+        await handleDuplicateRequest(collectionId, requestId)
         break
       }
       case "copy": {
-        if (collectionId && requestId) {
-          try {
-            await requestTabsApi.loadTab(collectionId, requestId)
-            const request = collectionsApi().getRequest(collectionId, requestId)
-            if (request) {
-              void navigator.clipboard.writeText(JSON.stringify(request, null, 2))
-            }
-          } catch (error) {
-            console.error("Failed to copy request", error)
-          }
-        }
+        await handleCopyRequest(collectionId, requestId)
         break
       }
       case "request:move": {
@@ -583,47 +657,6 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
 
   const handleClearScratch = (_: ClearScratchContext) => {
     collectionsApi().clearScratchCollection()
-  }
-
-  const handleDelete = async (ctx: DeleteContext) => {
-    if (ctx.kind === "request") {
-      // Close the tab if it's open
-      const tab = requestTabsApi.getOpenTab(ctx.collectionId, ctx.requestId)
-      if (tab) {
-        requestTabsApi.removeTab(tab.tabId)
-      }
-      collectionsApi().deleteRequest(ctx.collectionId, ctx.requestId)
-    } else if (ctx.kind === "collection") {
-      collectionsApi().removeCollection(ctx.collectionId)
-    } else if (ctx.kind === "folder") {
-      const collection = useApplication.getState().collectionsState.cache[ctx.collectionId]
-      if (!collection) {
-        return
-      }
-
-      const collectRequestIds = (folderId: string, acc: string[]) => {
-        const folder = collection.folders[folderId]
-        if (!folder) {
-          return acc
-        }
-        acc.push(...folder.requestIds)
-        for (const childId of folder.childFolderIds) {
-          collectRequestIds(childId, acc)
-        }
-        return acc
-      }
-
-      const requestIds = collectRequestIds(ctx.folderId, [])
-
-      for (const requestId of requestIds) {
-        const tab = requestTabsApi.getOpenTab(ctx.collectionId, requestId)
-        if (tab) {
-          requestTabsApi.removeTab(tab.tabId)
-        }
-      }
-
-      collectionsApi().deleteFolder(ctx.collectionId, ctx.folderId)
-    }
   }
 
   const handleFolderCreate = (name: string, ctx: FolderCreateContext) => {
