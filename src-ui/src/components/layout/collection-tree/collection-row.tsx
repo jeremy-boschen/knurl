@@ -145,9 +145,7 @@ export const CollectionRow = React.memo(
   (prev, next) => {
     // Custom comparator: only re-render if these specific props changed
     return (
-      prev.collectionId === next.collectionId &&
-      prev.collectionName === next.collectionName &&
-      prev.open === next.open
+      prev.collectionId === next.collectionId && prev.collectionName === next.collectionName && prev.open === next.open
       // Note: onAction is intentionally not compared as it comes from parent and may change frequently
     )
   },

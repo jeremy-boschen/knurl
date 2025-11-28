@@ -17,7 +17,10 @@ export type CollectionContentProps = {
   onAction: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
 }
 
-export const CollectionContent = React.memo(function CollectionContent({ collectionId, onAction }: CollectionContentProps) {
+export const CollectionContent = React.memo(function CollectionContent({
+  collectionId,
+  onAction,
+}: CollectionContentProps) {
   const {
     state: { collection },
   } = useCollection(collectionId)
