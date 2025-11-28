@@ -1,4 +1,4 @@
-import {expect} from "@wdio/globals"
+import { expect } from "@wdio/globals"
 
 const DEFAULT_TIMEOUT = 15000
 const ESCAPE_KEY = "Escape"
@@ -48,16 +48,17 @@ async function withFallbackClick(element: WebdriverIO.Element): Promise<void> {
   try {
     await element.click()
     return
-  } catch {
-  }
+  } catch {}
 
   await browser.execute((el: HTMLElement) => {
     const dispatchers = [
-      (e: HTMLElement) => e.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true})),
-      (e: HTMLElement) => e.dispatchEvent(new PointerEvent("pointerup", {bubbles: true})),
-      (e: HTMLElement) => e.dispatchEvent(new MouseEvent("click", {bubbles: true})),
+      (e: HTMLElement) => e.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })),
+      (e: HTMLElement) => e.dispatchEvent(new PointerEvent("pointerup", { bubbles: true })),
+      (e: HTMLElement) => e.dispatchEvent(new MouseEvent("click", { bubbles: true })),
     ]
-    dispatchers.forEach((dispatch) => dispatch(el))
+    dispatchers.forEach((dispatch) => {
+      dispatch(el)
+    })
   }, element)
 }
 
@@ -75,7 +76,7 @@ export async function getElementByTestId(
 
   const locator = `[data-test-id="${testId}"]`
   const element = await $(locator)
-  await element.waitForExist({timeout, interval: pollingInterval})
+  await element.waitForExist({ timeout, interval: pollingInterval })
   return element
 }
 
@@ -175,7 +176,7 @@ export async function ensureWorkspaceReady(): Promise<void> {
       const closeButton = await $('[data-test-id="title-bar:close-button"]')
       if (await closeButton.isExisting()) {
         try {
-          await closeButton.waitForDisplayed({timeout: 200})
+          await closeButton.waitForDisplayed({ timeout: 200 })
           return true
         } catch {
           return false
@@ -240,13 +241,13 @@ export async function setInputText(testId: string, value: string): Promise<void>
 
 export async function getInputText(testId: string): Promise<string> {
   const element = await getElementByTestId(testId)
-  await element.waitForDisplayed({timeout: DEFAULT_TIMEOUT})
+  await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
   return element.getValue()
 }
 
 export async function appendInputText(testId: string, value: string): Promise<void> {
   const element = await getElementByTestId(testId)
-  await element.waitForDisplayed({timeout: DEFAULT_TIMEOUT})
+  await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
   // addValue triggers onChange events, so this works correctly with controlled inputs
   await element.addValue(value)
 }
@@ -284,14 +285,11 @@ export async function clickByTestId(testId: string): Promise<void> {
 
 export async function waitForTestIdToDisappear(testId: string, timeout = DEFAULT_TIMEOUT): Promise<void> {
   const locator = `[data-test-id="${testId}"]`
-  await browser.waitUntil(
-    async () => !(await $(locator).isExisting()),
-    {
-      timeout,
-      interval: 100,
-      timeoutMsg: `Element ${testId} remained visible`,
-    },
-  )
+  await browser.waitUntil(async () => !(await $(locator).isExisting()), {
+    timeout,
+    interval: 100,
+    timeoutMsg: `Element ${testId} remained visible`,
+  })
 }
 
 export async function selectOptionByTestId(selectTriggerTestId: string, optionTestId: string): Promise<void> {
@@ -337,14 +335,16 @@ export async function closeApplicationWindow(timeout = DEFAULT_TIMEOUT): Promise
     }
 
     const events: Array<() => void> = [
-      () => button.dispatchEvent(new PointerEvent("pointerover", {bubbles: true})),
-      () => button.dispatchEvent(new PointerEvent("pointerenter", {bubbles: true})),
-      () => button.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true, button: 0})),
-      () => button.dispatchEvent(new PointerEvent("pointerup", {bubbles: true, button: 0})),
-      () => button.dispatchEvent(new MouseEvent("click", {bubbles: true, button: 0})),
+      () => button.dispatchEvent(new PointerEvent("pointerover", { bubbles: true })),
+      () => button.dispatchEvent(new PointerEvent("pointerenter", { bubbles: true })),
+      () => button.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0 })),
+      () => button.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, button: 0 })),
+      () => button.dispatchEvent(new MouseEvent("click", { bubbles: true, button: 0 })),
     ]
 
-    events.forEach((fire) => fire())
+    events.forEach((fire) => {
+      fire()
+    })
     return true
   })
 
@@ -387,7 +387,10 @@ export async function expectTextContent(testId: string, expected: string | RegEx
   await expect(text).toMatch(expected)
 }
 
-export async function ensureCollectionRowVisible(collectionId: string, timeout = DEFAULT_TIMEOUT): Promise<WebdriverIO.Element> {
+export async function ensureCollectionRowVisible(
+  collectionId: string,
+  timeout = DEFAULT_TIMEOUT,
+): Promise<WebdriverIO.Element> {
   await browser.waitUntil(
     async () =>
       await browser.execute(
@@ -429,10 +432,7 @@ export async function expectAttributeValue(testId: string, attribute: string, ex
   await expect(value).toBe(expected)
 }
 
-export async function selectMenuActionById(
-  actionId: string,
-  options: { triggerTestId: string },
-): Promise<void> {
+export async function selectMenuActionById(actionId: string, options: { triggerTestId: string }): Promise<void> {
   // Click the menu trigger to open it
   await clickByTestId(options.triggerTestId)
   await browser.pause(300)
@@ -506,7 +506,7 @@ export async function createCollection(name: string): Promise<string> {
   await clearSidebarSearch().catch(() => {})
   const beforeIds = await browser.execute(() => {
     return Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'))
-      .map(el => el.getAttribute("data-test-id"))
+      .map((el) => el.getAttribute("data-test-id"))
       .filter((id): id is string => Boolean(id))
   })
 
@@ -520,10 +520,10 @@ export async function createCollection(name: string): Promise<string> {
     async () => {
       const ids = await browser.execute(() => {
         return Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'))
-          .map(el => el.getAttribute("data-test-id"))
+          .map((el) => el.getAttribute("data-test-id"))
           .filter((id): id is string => Boolean(id))
       })
-      const diff = ids.filter(id => !beforeIds.includes(id))
+      const diff = ids.filter((id) => !beforeIds.includes(id))
       return diff[0] ?? null
     },
     {
@@ -569,7 +569,7 @@ export async function waitForCollectionIdByName(name: string, timeout = 25000): 
       const rows = Array.from(
         container.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'),
       )
-      const hit = rows.find(row => row.textContent?.includes(searchName))
+      const hit = rows.find((row) => row.textContent?.includes(searchName))
       if (hit) {
         return {
           foundId: hit.getAttribute("data-test-id"),
@@ -582,7 +582,7 @@ export async function waitForCollectionIdByName(name: string, timeout = 25000): 
       const searchRows = Array.from(
         container.querySelectorAll<HTMLElement>('[data-collection-id][data-action-id][data-kind="collection"]'),
       )
-      const searchHit = searchRows.find(row => row.textContent?.includes(searchName))
+      const searchHit = searchRows.find((row) => row.textContent?.includes(searchName))
       if (searchHit) {
         const colId = searchHit.getAttribute("data-collection-id")
         return {
@@ -710,9 +710,13 @@ export async function waitForRequestEditor(timeout = 10000): Promise<WebdriverIO
 export async function getResponseBodyText(): Promise<string> {
   const responseText = await browser.execute(() => {
     const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-    if (!responseBody) return ""
+    if (!responseBody) {
+      return ""
+    }
     const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-    if (!codeEditor) return ""
+    if (!codeEditor) {
+      return ""
+    }
     const content = codeEditor.querySelector(".cm-content")
     return content ? content.textContent : codeEditor.textContent
   })
@@ -724,25 +728,20 @@ export async function getResponseBodyText(): Promise<string> {
  * Polls until response body exists, then returns the text (verifying search content in caller).
  * More efficient than polling+extracting every iteration.
  */
-export async function waitForResponseContaining(
-  searchText: string,
-  timeout = 5000
-): Promise<string> {
+export async function waitForResponseContaining(searchText: string, timeout = 5000): Promise<string> {
   // First, poll until response body element exists
   await browser.waitUntil(
     async () => {
       const text = await getResponseBodyText()
       return text.length > 0
     },
-    { timeout, interval: 100, timeoutMsg: `Response body did not appear within ${timeout}ms` }
+    { timeout, interval: 100, timeoutMsg: `Response body did not appear within ${timeout}ms` },
   )
 
   // Then extract once and verify content
   const responseText = await getResponseBodyText()
   if (!responseText.includes(searchText)) {
-    throw new Error(
-      `Response body does not contain "${searchText}". Got: ${responseText.substring(0, 200)}`
-    )
+    throw new Error(`Response body does not contain "${searchText}". Got: ${responseText.substring(0, 200)}`)
   }
 
   return responseText
@@ -753,7 +752,7 @@ export async function waitForResponseContaining(
  * Handles both single-click and two-step selection patterns.
  */
 export async function selectAuthType(
-  type: "basic" | "bearer" | "apiKey" | "oauth2" | "none" | "inherit"
+  type: "basic" | "bearer" | "apiKey" | "oauth2" | "none" | "inherit",
 ): Promise<void> {
   await clickByTestId("request-editor:auth-tab")
   const typeTestIds: Record<string, string> = {

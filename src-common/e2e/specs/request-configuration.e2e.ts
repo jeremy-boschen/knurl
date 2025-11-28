@@ -1,6 +1,13 @@
 import { expect } from "@wdio/globals"
 
-import { clickByTestId, ensureWorkspaceReady, openNewRequestViaUI, setInputText, getElementByTestId, waitForRequestEditor } from "../support/ui"
+import {
+  clickByTestId,
+  ensureWorkspaceReady,
+  getElementByTestId,
+  openNewRequestViaUI,
+  setInputText,
+  waitForRequestEditor,
+} from "../support/ui"
 
 /**
  * Extract response body JSON from the event bus or response state
@@ -13,7 +20,7 @@ async function getResponseBody(): Promise<unknown> {
       const responsePanel = await $('[data-test-id="response-viewer:body"]')
       return await responsePanel.isDisplayed()
     },
-    { timeout: 10000 }
+    { timeout: 10000 },
   )
 
   // Try to get response from data attribute or by parsing the displayed content
@@ -21,7 +28,7 @@ async function getResponseBody(): Promise<unknown> {
     // Try to get response from hidden test data attribute if it exists
     const hiddenData = document.querySelector('[data-test-id="e2e-response-data"]')
     if (hiddenData) {
-      const data = hiddenData.getAttribute('data-response')
+      const data = hiddenData.getAttribute("data-response")
       if (data) {
         return data
       }
@@ -30,21 +37,21 @@ async function getResponseBody(): Promise<unknown> {
     // Fallback: extract from response body element by searching for JSON
     const bodyElement = document.querySelector('[data-test-id="response-viewer:body"]')
     if (!bodyElement) {
-      throw new Error('Response body element not found')
+      throw new Error("Response body element not found")
     }
 
     // Get all text content and find the JSON part
-    const allText = bodyElement.textContent || ''
-    const jsonStart = allText.indexOf('{')
+    const allText = bodyElement.textContent || ""
+    const jsonStart = allText.indexOf("{")
     if (jsonStart === -1) {
-      throw new Error('No JSON found in response')
+      throw new Error("No JSON found in response")
     }
 
     // Extract from first { to last }
     const jsonPart = allText.substring(jsonStart)
-    const lastBrace = jsonPart.lastIndexOf('}')
+    const lastBrace = jsonPart.lastIndexOf("}")
     if (lastBrace === -1) {
-      throw new Error('Incomplete JSON in response')
+      throw new Error("Incomplete JSON in response")
     }
 
     return jsonPart.substring(0, lastBrace + 1)
@@ -52,7 +59,7 @@ async function getResponseBody(): Promise<unknown> {
 
   try {
     return JSON.parse(responseContent as string)
-  } catch (e) {
+  } catch (_e) {
     throw new Error(`Failed to parse response JSON: ${responseContent}`)
   }
 }
@@ -65,11 +72,11 @@ describe("[SUPPLEMENTAL] Request Configuration", () => {
    * component tests (request-*-panel.test.tsx).
    */
 
-  let tabKey: string
+  let _tabKey: string
 
   before(async () => {
     await ensureWorkspaceReady()
-    tabKey = await openNewRequestViaUI()
+    _tabKey = await openNewRequestViaUI()
     await waitForRequestEditor()
   })
 
@@ -82,7 +89,7 @@ describe("[SUPPLEMENTAL] Request Configuration", () => {
     await getElementByTestId("response-viewer:heading", 10000)
 
     // Verify response contains expected structure
-    const response = await getResponseBody() as Record<string, unknown>
+    const response = (await getResponseBody()) as Record<string, unknown>
     expect(typeof response.headers).toBe("object")
     expect(typeof response.url).toBe("string")
   })
@@ -97,7 +104,7 @@ describe("[SUPPLEMENTAL] Request Configuration", () => {
     await getElementByTestId("response-viewer:heading", 10000)
 
     // Verify server echoed back the query params correctly
-    const response = await getResponseBody() as Record<string, unknown>
+    const response = (await getResponseBody()) as Record<string, unknown>
     const args = response.args as Record<string, string>
     expect(args.key1).toBe("value1")
     expect(args.key2).toBe("value2")

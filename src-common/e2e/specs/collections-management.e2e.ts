@@ -2,15 +2,13 @@ import { expect } from "@wdio/globals"
 
 import {
   clickByTestId,
+  createCollection,
   ensureWorkspaceReady,
   getElementByTestId,
   openCollectionMenu,
   resetOverlays,
-  setInputText,
   waitForTestIdToDisappear,
-  clearInputText,
 } from "../support/ui"
-import { createCollection, clickVisibleNewCollectionButton, waitForCollectionIdByName } from "../support/ui"
 
 const SCRATCH_COLLECTION_ID = "scratch"
 
@@ -62,9 +60,7 @@ describe("[CRITICAL] Collections Management UX", () => {
  */
 async function resolveOrderedCollectionIds(): Promise<string[]> {
   return await browser.execute((scratchId: string) => {
-    const rows = Array.from(
-      document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]')
-    )
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'))
     const ids = rows
       .map((row) => row.getAttribute("data-test-id")?.split(":").pop())
       .filter((id): id is string => !!id && id !== scratchId)
@@ -75,7 +71,9 @@ async function resolveOrderedCollectionIds(): Promise<string[]> {
 
 async function cleanupCollections(ids: string[]): Promise<void> {
   for (const id of ids) {
-    if (!id) continue
+    if (!id) {
+      continue
+    }
     try {
       await openCollectionMenu(id)
       await clickByTestId(`collection-menu:item:delete:${id}`)
@@ -96,17 +94,23 @@ async function cleanupCollections(ids: string[]): Promise<void> {
  * Pure E2E test - no bridge dependency
  * Checks DOM for collection name
  */
-async function isCollectionNamedInTree(collectionId: string, expectedName: string): Promise<boolean> {
-  return await browser.execute((id: string, name: string) => {
-    const row = document.querySelector<HTMLElement>(`[data-test-id="collection-tree:collection-row:${id}"]`)
-    if (!row) return false
-    const text = row.textContent?.trim() || ""
-    console.log(`DOM check for ${id}: "${text}" contains "${name}": ${text.includes(name)}`)
-    return text.includes(name)
-  }, collectionId, expectedName)
+async function _isCollectionNamedInTree(collectionId: string, expectedName: string): Promise<boolean> {
+  return await browser.execute(
+    (id: string, name: string) => {
+      const row = document.querySelector<HTMLElement>(`[data-test-id="collection-tree:collection-row:${id}"]`)
+      if (!row) {
+        return false
+      }
+      const text = row.textContent?.trim() || ""
+      console.log(`DOM check for ${id}: "${text}" contains "${name}": ${text.includes(name)}`)
+      return text.includes(name)
+    },
+    collectionId,
+    expectedName,
+  )
 }
 
-async function getCollectionNameFromTree(collectionId: string): Promise<string | null> {
+async function _getCollectionNameFromTree(collectionId: string): Promise<string | null> {
   return await browser.execute((id: string) => {
     const row = document.querySelector<HTMLElement>(`[data-test-id="collection-tree:collection-row:${id}"]`)
     return row?.textContent?.trim() ?? null

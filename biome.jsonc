@@ -9,6 +9,7 @@
     "ignoreUnknown": true,
     "includes": [
       "src-ui/src/**/*",
+      "src-common/**/*",
       "__tests__/**/*",
       "!src-tauri",
       "!node_modules",
@@ -22,7 +23,7 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.test.ts", "**/*.test.tsx", "src-ui/test/*.ts"],
+      "includes": ["**/*.test.ts", "**/*.test.tsx", "src-ui/test/*.ts", "src-common/e2e/**/*.ts"],
       "linter": {
         "rules": {
           "correctness": {
@@ -36,6 +37,9 @@
             "noNonNullAssertion": "off"
           }
         }
+      },
+      "javascript": {
+        "globals": ["browser", "$", "$$"]
       }
     },
     {

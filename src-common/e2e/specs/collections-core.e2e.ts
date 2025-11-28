@@ -1,4 +1,4 @@
-import {expect} from "@wdio/globals"
+import { expect } from "@wdio/globals"
 
 import {
   clickByTestId,
@@ -66,7 +66,7 @@ describe("[CRITICAL] Collections Management & Storage", () => {
       await clickByTestId(`collection-menu:item:delete:${idC}`)
 
       const dialog = await getElementByTestId("delete-dialog")
-      await dialog.waitForDisplayed({timeout: 5000})
+      await dialog.waitForDisplayed({ timeout: 5000 })
       await clickByTestId("delete-dialog:confirm-button")
       await waitForTestIdToDisappear("delete-dialog")
       await logTestTime("Collections Management - deleted collection C")
@@ -132,7 +132,7 @@ describe("[CRITICAL] Collections Management & Storage", () => {
 
       const collectionId = await waitForCollectionIdByName(collectionName)
       const collectionRow = await getElementByTestId(`collection-tree:collection-row:${collectionId}`)
-      await collectionRow.waitForDisplayed({timeout: 10000})
+      await collectionRow.waitForDisplayed({ timeout: 10000 })
       await logTestTime("Collection Flow - collection created and displayed")
 
       // Step 2: Create scratch request via title bar
@@ -180,9 +180,7 @@ describe("[CRITICAL] Collections Management & Storage", () => {
 
 async function resolveOrderedCollectionIds(): Promise<string[]> {
   return await browser.execute((scratchId: string) => {
-    const rows = Array.from(
-      document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]')
-    )
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'))
     const ids = rows
       .map((row) => row.getAttribute("data-test-id")?.split(":").pop())
       .filter((id): id is string => !!id && id !== scratchId)
@@ -193,7 +191,9 @@ async function resolveOrderedCollectionIds(): Promise<string[]> {
 
 async function cleanupCollections(ids: string[]): Promise<void> {
   for (const id of ids) {
-    if (!id) continue
+    if (!id) {
+      continue
+    }
     try {
       await openCollectionMenu(id)
       await clickByTestId(`collection-menu:item:delete:${id}`)
@@ -210,16 +210,22 @@ async function cleanupCollections(ids: string[]): Promise<void> {
   }
 }
 
-async function isCollectionNamedInTree(collectionId: string, expectedName: string): Promise<boolean> {
-  return await browser.execute((id: string, name: string) => {
-    const row = document.querySelector<HTMLElement>(`[data-test-id="collection-tree:collection-row:${id}"]`)
-    if (!row) return false
-    const text = row.textContent?.trim() || ""
-    return text.includes(name)
-  }, collectionId, expectedName)
+async function _isCollectionNamedInTree(collectionId: string, expectedName: string): Promise<boolean> {
+  return await browser.execute(
+    (id: string, name: string) => {
+      const row = document.querySelector<HTMLElement>(`[data-test-id="collection-tree:collection-row:${id}"]`)
+      if (!row) {
+        return false
+      }
+      const text = row.textContent?.trim() || ""
+      return text.includes(name)
+    },
+    collectionId,
+    expectedName,
+  )
 }
 
-async function getCollectionNameFromTree(collectionId: string): Promise<string | null> {
+async function _getCollectionNameFromTree(collectionId: string): Promise<string | null> {
   return await browser.execute((id: string) => {
     const row = document.querySelector<HTMLElement>(`[data-test-id="collection-tree:collection-row:${id}"]`)
     return row?.textContent?.trim() ?? null
@@ -232,7 +238,7 @@ async function isCollectionPresent(collectionId: string): Promise<boolean> {
   }, collectionId)
 }
 
-async function getOpenRequestIds(): Promise<Set<string>> {
+async function _getOpenRequestIds(): Promise<Set<string>> {
   const ids = await browser.execute(() => {
     const tabs = Array.from(document.querySelectorAll('[data-test-id^="tab:"]'))
     return tabs.map((tab) => tab.getAttribute("data-request-id")).filter(Boolean) as string[]
@@ -240,7 +246,7 @@ async function getOpenRequestIds(): Promise<Set<string>> {
   return new Set(ids)
 }
 
-async function waitForNewCollectionRequest(
+async function _waitForNewCollectionRequest(
   collectionId: string,
   knownRequestIds: Set<string>,
   timeout = 15000,
@@ -248,18 +254,22 @@ async function waitForNewCollectionRequest(
   let result: { requestId: string; tabKey: string } | null = null
   await browser.waitUntil(
     async () => {
-      const candidate = await browser.execute((targetCollectionId: string, knownIds: string[]) => {
-        const tabs = Array.from(document.querySelectorAll('[data-test-id^="tab:"]'))
-        for (const tab of tabs) {
-          const collId = tab.getAttribute("data-collection-id")
-          const reqId = tab.getAttribute("data-request-id")
-          const tabKey = tab.getAttribute("data-test-id")?.split(":")[1]
-          if (collId === targetCollectionId && reqId && !knownIds.includes(reqId) && tabKey) {
-            return {requestId: reqId, tabKey}
+      const candidate = await browser.execute(
+        (targetCollectionId: string, knownIds: string[]) => {
+          const tabs = Array.from(document.querySelectorAll('[data-test-id^="tab:"]'))
+          for (const tab of tabs) {
+            const collId = tab.getAttribute("data-collection-id")
+            const reqId = tab.getAttribute("data-request-id")
+            const tabKey = tab.getAttribute("data-test-id")?.split(":")[1]
+            if (collId === targetCollectionId && reqId && !knownIds.includes(reqId) && tabKey) {
+              return { requestId: reqId, tabKey }
+            }
           }
-        }
-        return null
-      }, collectionId, Array.from(knownRequestIds))
+          return null
+        },
+        collectionId,
+        Array.from(knownRequestIds),
+      )
 
       if (candidate) {
         result = candidate
@@ -280,25 +290,29 @@ async function waitForNewCollectionRequest(
   return result
 }
 
-async function waitForNewScratchRequest(
+async function _waitForNewScratchRequest(
   knownRequestIds: Set<string>,
   timeout = 15000,
 ): Promise<{ requestId: string; tabKey: string }> {
   let result: { requestId: string; tabKey: string } | null = null
   await browser.waitUntil(
     async () => {
-      const candidate = await browser.execute((scratchId: string, knownIds: string[]) => {
-        const tabs = Array.from(document.querySelectorAll('[data-test-id^="tab:"]'))
-        for (const tab of tabs) {
-          const collId = tab.getAttribute("data-collection-id")
-          const reqId = tab.getAttribute("data-request-id")
-          const tabKey = tab.getAttribute("data-test-id")?.split(":")[1]
-          if (collId === scratchId && reqId && !knownIds.includes(reqId) && tabKey) {
-            return {requestId: reqId, tabKey}
+      const candidate = await browser.execute(
+        (scratchId: string, knownIds: string[]) => {
+          const tabs = Array.from(document.querySelectorAll('[data-test-id^="tab:"]'))
+          for (const tab of tabs) {
+            const collId = tab.getAttribute("data-collection-id")
+            const reqId = tab.getAttribute("data-request-id")
+            const tabKey = tab.getAttribute("data-test-id")?.split(":")[1]
+            if (collId === scratchId && reqId && !knownIds.includes(reqId) && tabKey) {
+              return { requestId: reqId, tabKey }
+            }
           }
-        }
-        return null
-      }, SCRATCH_COLLECTION_ID, Array.from(knownRequestIds))
+          return null
+        },
+        SCRATCH_COLLECTION_ID,
+        Array.from(knownRequestIds),
+      )
 
       if (candidate) {
         result = candidate
@@ -319,18 +333,20 @@ async function waitForNewScratchRequest(
   return result
 }
 
-async function waitForTabSnapshot(tabKey: string, timeout = 10000): Promise<OpenTabSnapshot | undefined> {
+async function _waitForTabSnapshot(tabKey: string, timeout = 10000): Promise<OpenTabSnapshot | undefined> {
   let resolved: OpenTabSnapshot | undefined
   await browser.waitUntil(
     async () => {
       const tab = await getElementByTestId(`tab:${tabKey}`, 1000).catch(() => null)
-      if (!tab) return false
+      if (!tab) {
+        return false
+      }
       const exists = await tab.isDisplayed().catch(() => false)
       if (exists) {
         const requestId = await tab.getAttribute("data-request-id")
         const collectionId = await tab.getAttribute("data-collection-id")
         if (requestId && collectionId) {
-          resolved = {tabKey, requestId, collectionId}
+          resolved = { tabKey, requestId, collectionId }
           return true
         }
       }
@@ -345,11 +361,11 @@ async function waitForTabSnapshot(tabKey: string, timeout = 10000): Promise<Open
   return resolved
 }
 
-async function waitForRequestPlacement(collectionId: string, requestId: string, timeout = 10000): Promise<void> {
+async function _waitForRequestPlacement(collectionId: string, requestId: string, timeout = 10000): Promise<void> {
   await browser.waitUntil(
     async () =>
       await browser.execute(
-        ({targetCollectionId, targetRequestId}) => {
+        ({ targetCollectionId, targetRequestId }) => {
           const selector = `[data-test-id="collection-tree:request-row:${targetRequestId}"]`
           const element = document.querySelector(selector) as HTMLElement | null
           if (!element) {
@@ -357,7 +373,7 @@ async function waitForRequestPlacement(collectionId: string, requestId: string, 
           }
           return element.getAttribute("data-collection-id") === targetCollectionId
         },
-        {targetCollectionId: collectionId, targetRequestId: requestId},
+        { targetCollectionId: collectionId, targetRequestId: requestId },
       ),
     {
       timeout,
@@ -367,15 +383,15 @@ async function waitForRequestPlacement(collectionId: string, requestId: string, 
   )
 }
 
-async function ensureRequestRemovedFromScratch(requestId: string, timeout = 10000): Promise<void> {
+async function _ensureRequestRemovedFromScratch(requestId: string, timeout = 10000): Promise<void> {
   await browser.waitUntil(
     async () =>
       await browser.execute(
-        ({targetRequestId, scratchId}) => {
+        ({ targetRequestId, scratchId }) => {
           const selector = `[data-test-id="collection-tree:request-row:${targetRequestId}"][data-collection-id="${scratchId}"]`
           return !document.querySelector(selector)
         },
-        {targetRequestId: requestId, scratchId: SCRATCH_COLLECTION_ID},
+        { targetRequestId: requestId, scratchId: SCRATCH_COLLECTION_ID },
       ),
     {
       timeout,

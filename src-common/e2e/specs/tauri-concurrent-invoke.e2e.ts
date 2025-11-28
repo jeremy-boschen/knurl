@@ -40,6 +40,7 @@
  */
 
 import { expect } from "@wdio/globals"
+
 import { ensureWorkspaceReady } from "../support/ui"
 
 describe("[SUPPLEMENTAL] Tauri WebDriver Concurrency Bug", () => {
@@ -71,7 +72,7 @@ describe("[SUPPLEMENTAL] Tauri WebDriver Concurrency Bug", () => {
 
             // If Tauri is available, invoke the echo_command
             const { invoke } = tauriCore
-            const result = await invoke('echo_command', {
+            const result = await invoke("echo_command", {
               message: `Concurrent command ${index}`,
             })
             callback({

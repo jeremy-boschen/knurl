@@ -10,6 +10,7 @@
  */
 
 import { expect } from "@wdio/globals"
+
 import {
   clickByTestId,
   ensureWorkspaceReady,
@@ -76,22 +77,30 @@ describe("setValue() Verification for React Controlled Inputs", () => {
       async () => {
         const responseText = await browser.execute(() => {
           const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-          if (!responseBody) return ""
+          if (!responseBody) {
+            return ""
+          }
           const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-          if (!codeEditor) return ""
+          if (!codeEditor) {
+            return ""
+          }
           const content = codeEditor.querySelector(".cm-content")
           return content ? content.textContent : codeEditor.textContent
         })
         return responseText.includes("authorization") || responseText.includes("testuser")
       },
-      { timeout: 5000 }
+      { timeout: 5000 },
     )
 
     const responseText = await browser.execute(() => {
       const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-      if (!responseBody) return ""
+      if (!responseBody) {
+        return ""
+      }
       const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-      if (!codeEditor) return ""
+      if (!codeEditor) {
+        return ""
+      }
       const content = codeEditor.querySelector(".cm-content")
       return content ? content.textContent : codeEditor.textContent
     })

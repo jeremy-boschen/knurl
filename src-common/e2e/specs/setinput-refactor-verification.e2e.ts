@@ -6,9 +6,10 @@
  */
 
 import { expect } from "@wdio/globals"
+
 import {
-  clickByTestId,
   clearInputText,
+  clickByTestId,
   ensureWorkspaceReady,
   getElementByTestId,
   openNewRequestViaUI,
@@ -78,22 +79,30 @@ describe("[SUPPLEMENTAL] Refactored Input Helpers", () => {
       async () => {
         const responseText = await browser.execute(() => {
           const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-          if (!responseBody) return ""
+          if (!responseBody) {
+            return ""
+          }
           const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-          if (!codeEditor) return ""
+          if (!codeEditor) {
+            return ""
+          }
           const content = codeEditor.querySelector(".cm-content")
           return content ? content.textContent : codeEditor.textContent
         })
         return responseText.includes("authorization") || responseText.includes("testuser")
       },
-      { timeout: 10000 }
+      { timeout: 10000 },
     )
 
     const responseText = await browser.execute(() => {
       const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-      if (!responseBody) return ""
+      if (!responseBody) {
+        return ""
+      }
       const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-      if (!codeEditor) return ""
+      if (!codeEditor) {
+        return ""
+      }
       const content = codeEditor.querySelector(".cm-content")
       return content ? content.textContent : codeEditor.textContent
     })
