@@ -425,10 +425,10 @@ async function handleOnPrepare() {
     VITE_E2E_STUB_OAUTH: "0",
   }
 
-  const iconGeneration = spawnSync("node", ["scripts/build/generate-knurl-icon.mjs"], {
+  const iconGeneration = spawnSync("node", ["scripts/build/generate-icons.mjs"], {
     cwd: process.cwd(),
     shell: true,
-    stdio: "ignore",
+    stdio: "inherit",
   })
 
   if (iconGeneration.status !== 0) {
