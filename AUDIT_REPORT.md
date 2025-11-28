@@ -188,7 +188,7 @@
 ### TypeScript Usage & Type Safety
 
 **Strengths:**
-- Strict TypeScript configuration (`tsconfig.app.json`):
+- Strict TypeScript configuration (`tsconfig.ui.json`):
   - `strict: true`
   - `noImplicitOverride: true`
   - `noUncheckedIndexedAccess: true`
