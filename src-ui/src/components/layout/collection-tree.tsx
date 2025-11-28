@@ -1,6 +1,7 @@
-import React, { Profiler, useCallback, useDeferredValue, useMemo } from "react"
+import React, { Profiler, Suspense, useCallback, useDeferredValue, useMemo } from "react"
 
 import {
+  closestCenter,
   type CollisionDetection,
   DndContext,
   type DragEndEvent,
@@ -8,36 +9,174 @@ import {
   type DragStartEvent,
   KeyboardSensor,
   PointerSensor,
+  pointerWithin,
+  rectIntersection,
+  useDroppable,
   useSensor,
   useSensors,
 } from "@dnd-kit/core"
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 import { capitalize } from "es-toolkit"
-import { EllipsisIcon, FolderClosedIcon, FolderOpenIcon } from "lucide-react"
+import {
+  AlertTriangleIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  EllipsisIcon,
+  FolderClosedIcon,
+  FolderOpenIcon,
+  MoreHorizontalIcon,
+} from "lucide-react"
 
-import { CollectionRow, CollectionRowSearchable } from "@/components/layout/collection-tree/collection-row"
-import { DndTreeProvider } from "@/components/layout/dnd-tree-context"
+import ErrorBoundary from "@/components/error/error-boundary"
+import { DndTreeProvider, useDndTreeContext, useOptionalDndTreeContext } from "@/components/layout/dnd-tree-context"
 import DeleteDialog from "@/components/shared/delete-dialog"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { HttpBadge } from "@/components/ui/knurl"
+import { CollectionMenuContent } from "@/components/ui/knurl/collection-menu"
+import { FolderMenuContent } from "@/components/ui/knurl/folder-menu"
 import RenameDialog from "@/components/ui/knurl/rename-dialog"
+import { RequestMenuContent } from "@/components/ui/knurl/request-menu"
+import { buildFolderOptions, type FolderOption } from "@/lib/collections/folder-options"
 import { onProfilerRender } from "@/lib/profiler-bridge"
-import { useApplication, useCollections, useOpenTabs, useSidebar, useUtilitySheets } from "@/state"
+import { cn, isNotEmpty } from "@/lib/utils"
+import {
+  collectionsApi,
+  isScratchCollection,
+  useApplication,
+  useCollection,
+  useCollectionFromCache,
+  useCollections,
+  useOpenTabs,
+  useSidebar,
+  useUtilitySheets,
+} from "@/state"
+import type { CollectionCache, RequestState } from "@/types"
 import { RootCollectionFolderId } from "@/types"
-import type {
-  ActionId,
-  ActionPayload,
-  ClearScratchContext,
-  DeleteContext,
-  DialogProps,
-  DragPayload,
-  DropPosition,
-  FolderCreateContext,
-  RenameContext,
-} from "./collection-tree/actions/action-types"
-import { createCollisionDetectionStrategy } from "./collection-tree/utils/dnd-collision"
-import { calculateDropPosition } from "./collection-tree/utils/drop-position"
+
+export type RenameContext =
+  | {
+      kind: "request"
+      collectionId: string
+      requestId: string
+    }
+  | {
+      kind: "collection"
+      collectionId: string
+      requestId: never
+    }
+  | {
+      kind: "folder"
+      collectionId: string
+      folderId: string
+    }
+
+export type DeleteContext =
+  | {
+      kind: "request"
+      collectionId: string
+      requestId: string
+    }
+  | {
+      kind: "collection"
+      collectionId: string
+      requestId: never
+    }
+  | {
+      kind: "folder"
+      collectionId: string
+      folderId: string
+    }
+
+export type ClearScratchContext = {
+  collectionId: string
+}
+
+export type FolderCreateContext = {
+  collectionId: string
+  parentId: string | null
+}
+
+type FolderDragData = {
+  type: "folder-item"
+  collectionId: string
+  folderId: string
+  parentId: string
+  siblings: string[]
+  childIds: string[]
+}
+
+type CollectionDragData = {
+  type: "collection"
+  collectionId: string
+}
+
+type RequestDragData = {
+  type: "request-item"
+  collectionId: string
+  requestId: string
+  folderId: string
+  siblings: string[]
+}
+
+type DragPayload = FolderDragData | CollectionDragData | RequestDragData
+export type DropPosition = "top" | "bottom" | "middle" | null
+
+export type DialogProps =
+  | { action: "rename"; name: string; title: string; description: React.ReactNode; context: RenameContext }
+  | { action: "delete"; name: string; title: string; description: React.ReactNode; context: DeleteContext }
+  | {
+      action: "clear-scratch"
+      name: string
+      title: string
+      description: React.ReactNode
+      context: ClearScratchContext
+    }
+  | { action: "export"; context: string }
+  | {
+      action: "folder-create"
+      name: string
+      title: string
+      description: React.ReactNode
+      context: FolderCreateContext
+    }
 
 const MAX_COLLECTIONS_WHEN_COLLAPSED = 10
+
+export type ActionId =
+  | "select"
+  | "select:expand"
+  | "rename"
+  | "manage-settings"
+  | "export"
+  | "delete"
+  | "clear-scratch"
+  | "copy"
+  | "duplicate"
+  | "request:move"
+  | "request:new"
+  | "folder:new"
+  | "folder:rename"
+  | "folder:delete"
+
+export type ActionPayload = {
+  actionId: ActionId
+  kind: string
+  collectionId?: string
+  requestId?: string
+  folderId?: string
+  parentId?: string | null
+  targetFolderId?: string
+  name?: string
+}
 
 type CollectionsTreeProps = {
   searchTerm: string | undefined
@@ -72,7 +211,22 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
   )
 
   // Memoize collision detection strategy
-  const collisionDetectionStrategy: CollisionDetection = useMemo(() => createCollisionDetectionStrategy(), [])
+  const collisionDetectionStrategy: CollisionDetection = useMemo(
+    () => (args) => {
+      const pointerCollisions = pointerWithin(args)
+      if (pointerCollisions.length > 0) {
+        return pointerCollisions
+      }
+
+      const rectCollisions = rectIntersection(args)
+      if (rectCollisions.length > 0) {
+        return rectCollisions
+      }
+
+      return closestCenter(args)
+    },
+    [],
+  )
 
   ///
   /// Expanded and selected state of each CollectionRow. Managed here because so we can transition
@@ -101,6 +255,200 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
   ///
   const [activeId, setActiveId] = React.useState<string | null>(null)
   const [dropIndicator, setDropIndicator] = React.useState<{ id: string; position: DropPosition } | null>(null)
+
+  // Handler functions must be declared before the callbacks that use them
+  const handleDelete = async (ctx: DeleteContext) => {
+    if (ctx.kind === "request") {
+      // Close the tab if it's open
+      const tab = requestTabsApi.getOpenTab(ctx.collectionId, ctx.requestId)
+      if (tab) {
+        requestTabsApi.removeTab(tab.tabId)
+      }
+      collectionsApi().deleteRequest(ctx.collectionId, ctx.requestId)
+    } else if (ctx.kind === "collection") {
+      collectionsApi().removeCollection(ctx.collectionId)
+    } else if (ctx.kind === "folder") {
+      const collection = useApplication.getState().collectionsState.cache[ctx.collectionId]
+      if (!collection) {
+        return
+      }
+
+      const collectRequestIds = (folderId: string, acc: string[]) => {
+        const folder = collection.folders[folderId]
+        if (!folder) {
+          return acc
+        }
+        acc.push(...folder.requestIds)
+        for (const childId of folder.childFolderIds) {
+          collectRequestIds(childId, acc)
+        }
+        return acc
+      }
+
+      const requestIds = collectRequestIds(ctx.folderId, [])
+
+      for (const requestId of requestIds) {
+        const tab = requestTabsApi.getOpenTab(ctx.collectionId, requestId)
+        if (tab) {
+          requestTabsApi.removeTab(tab.tabId)
+        }
+      }
+
+      collectionsApi().deleteFolder(ctx.collectionId, ctx.folderId)
+    }
+  }
+
+  const handleSelectAction = async (
+    actionId: "select" | "select:expand",
+    collectionId: string | undefined,
+    requestId: string | undefined,
+    kind: string,
+  ) => {
+    // Always expand the sidebar when a collection/request is selected
+    expandSidebar()
+
+    if (collectionId) {
+      // If we're expanding the sidebar because a folder was clicked, and the folder clicked was already open,
+      // then we don't want to toggle it.
+      if (actionId === "select:expand" && rowState.opened[collectionId]) {
+        return
+      }
+
+      setRowState((state) => ({
+        current: {
+          collectionId,
+          requestId,
+        },
+        opened: {
+          ...state.opened,
+          // If selecting a request, the collection is always open; otherwise we're toggling the collection
+          [collectionId]: kind === "request" ? true : !state.opened[collectionId],
+        },
+      }))
+
+      if (requestId) {
+        try {
+          await requestTabsApi.loadTab(collectionId, requestId)
+          requestTabsApi.openRequestTab(collectionId, requestId)
+        } catch (error) {
+          console.error("Failed to open request tab", error)
+        }
+      }
+    }
+  }
+
+  const handleClearScratchDialog = (collectionId: string | undefined, name: string | undefined) => {
+    setDialogProps({
+      action: "clear-scratch",
+      name,
+      title: "Clear All Requests",
+      description: (
+        <>
+          Are you sure you want to clear all requests from the <span className="text-lg text-primary">{name}</span>{" "}
+          collection?
+        </>
+      ),
+      context: {
+        collectionId,
+      },
+    })
+  }
+
+  const handleDeleteOrRenameDialog = (
+    actionId: "delete" | "rename",
+    kind: string,
+    collectionId: string | undefined,
+    requestId: string | undefined,
+    folderId: string | undefined,
+    name: string | undefined,
+    domEvent: (Event & { ctrlKey?: boolean; metaKey?: boolean }) | undefined,
+  ) => {
+    if (kind === "folder") {
+      if (!collectionId || !folderId) {
+        return
+      }
+      setDialogProps({
+        action: actionId,
+        name,
+        title: `${capitalize(actionId)} Folder`,
+        description:
+          actionId === "rename" ? (
+            <>
+              Rename the <span className="text-lg text-primary">{name}</span> folder?
+            </>
+          ) : (
+            <>
+              Deleting the <span className="text-lg text-primary">{name}</span> folder will remove all nested folders
+              and requests. This cannot be undone.
+            </>
+          ),
+        context: {
+          kind: "folder",
+          collectionId,
+          folderId,
+        },
+      })
+      return
+    }
+
+    const hasModifier =
+      actionId === "delete" && domEvent && ((domEvent.ctrlKey ?? false) || (domEvent.metaKey ?? false))
+    if (hasModifier) {
+      void handleDelete({
+        kind,
+        collectionId,
+        requestId,
+      })
+
+      return
+    }
+
+    setDialogProps({
+      action: actionId,
+      name,
+      title: `${capitalize(actionId)} ${capitalize(kind)}`,
+      description:
+        actionId === "rename" ? (
+          <>
+            Rename the <span className="text-lg text-primary">{name}</span> {kind}?
+          </>
+        ) : (
+          <>
+            Are you sure you want to delete the <span className="text-lg text-primary">{name}</span> {kind}?
+          </>
+        ),
+      context: {
+        kind,
+        collectionId,
+        requestId,
+      },
+    })
+  }
+
+  const handleDuplicateRequest = async (collectionId: string | undefined, requestId: string | undefined) => {
+    if (collectionId && requestId) {
+      try {
+        await requestTabsApi.loadTab(collectionId, requestId)
+        collectionsApi().duplicateRequest(collectionId, requestId)
+      } catch (error) {
+        console.error("Failed to duplicate request", error)
+      }
+    }
+  }
+
+  const handleCopyRequest = async (collectionId: string | undefined, requestId: string | undefined) => {
+    if (collectionId && requestId) {
+      try {
+        await requestTabsApi.loadTab(collectionId, requestId)
+        const request = collectionsApi().getRequest(collectionId, requestId)
+        if (request) {
+          void navigator.clipboard.writeText(JSON.stringify(request, null, 2))
+        }
+      } catch (error) {
+        console.error("Failed to copy request", error)
+      }
+    }
+  }
 
   const handleAction = async (
     input: ActionPayload | Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>,
@@ -185,119 +533,16 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
     switch (actionId) {
       case "select:expand":
       case "select": {
-        // Always expand the sidebar when a collection/request is selected
-        expandSidebar()
-
-        if (collectionId) {
-          // If we're expanding the sidebar because a folder was clicked, and the folder clicked was already open,
-          // then we don't want to toggle it.
-          if (actionId === "select:expand" && rowState.opened[collectionId]) {
-            return
-          }
-
-          setRowState((state) => ({
-            current: {
-              collectionId,
-              requestId,
-            },
-            opened: {
-              ...state.opened,
-              // If selecting a request, the collection is always open; otherwise we're toggling the collection
-              [collectionId]: kind === "request" ? true : !state.opened[collectionId],
-            },
-          }))
-
-          if (requestId) {
-            try {
-              await requestTabsApi.loadTab(collectionId, requestId)
-              requestTabsApi.openRequestTab(collectionId, requestId)
-            } catch (error) {
-              console.error("Failed to open request tab", error)
-            }
-          }
-        }
+        await handleSelectAction(actionId, collectionId, requestId, kind)
         break
       }
       case "clear-scratch": {
-        setDialogProps({
-          action: "clear-scratch",
-          name,
-          title: "Clear All Requests",
-          description: (
-            <>
-              Are you sure you want to clear all requests from the <span className="text-lg text-primary">{name}</span>{" "}
-              collection?
-            </>
-          ),
-          context: {
-            collectionId,
-          },
-        })
+        handleClearScratchDialog(collectionId, name)
         break
       }
       case "delete":
       case "rename": {
-        if (kind === "folder") {
-          const folderId = dataset.folderId
-          if (!collectionId || !folderId) {
-            return
-          }
-          setDialogProps({
-            action: actionId,
-            name,
-            title: `${capitalize(actionId)} Folder`,
-            description:
-              actionId === "rename" ? (
-                <>
-                  Rename the <span className="text-lg text-primary">{name}</span> folder?
-                </>
-              ) : (
-                <>
-                  Deleting the <span className="text-lg text-primary">{name}</span> folder will remove all nested
-                  folders and requests. This cannot be undone.
-                </>
-              ),
-            context: {
-              kind: "folder",
-              collectionId,
-              folderId,
-            },
-          })
-          break
-        }
-
-        const hasModifier =
-          actionId === "delete" && domEvent && ((domEvent.ctrlKey ?? false) || (domEvent.metaKey ?? false))
-        if (hasModifier) {
-          void handleDelete({
-            kind,
-            collectionId,
-            requestId,
-          })
-
-          return
-        }
-
-        setDialogProps({
-          action: actionId,
-          name,
-          title: `${capitalize(actionId)} ${capitalize(kind)}`,
-          description:
-            actionId === "rename" ? (
-              <>
-                Rename the <span className="text-lg text-primary">{name}</span> {kind}?
-              </>
-            ) : (
-              <>
-                Are you sure you want to delete the <span className="text-lg text-primary">{name}</span> {kind}?
-              </>
-            ),
-          context: {
-            kind,
-            collectionId,
-            requestId,
-          },
-        })
+        handleDeleteOrRenameDialog(actionId, kind, collectionId, requestId, dataset.folderId, name, domEvent)
         break
       }
       case "manage-settings": {
@@ -319,28 +564,11 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
         break
       }
       case "duplicate": {
-        if (collectionId && requestId) {
-          try {
-            await requestTabsApi.loadTab(collectionId, requestId)
-            collectionsApi().duplicateRequest(collectionId, requestId)
-          } catch (error) {
-            console.error("Failed to duplicate request", error)
-          }
-        }
+        await handleDuplicateRequest(collectionId, requestId)
         break
       }
       case "copy": {
-        if (collectionId && requestId) {
-          try {
-            await requestTabsApi.loadTab(collectionId, requestId)
-            const request = collectionsApi().getRequest(collectionId, requestId)
-            if (request) {
-              void navigator.clipboard.writeText(JSON.stringify(request, null, 2))
-            }
-          } catch (error) {
-            console.error("Failed to copy request", error)
-          }
-        }
+        await handleCopyRequest(collectionId, requestId)
         break
       }
       case "request:move": {
@@ -431,47 +659,6 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
     collectionsApi().clearScratchCollection()
   }
 
-  const handleDelete = async (ctx: DeleteContext) => {
-    if (ctx.kind === "request") {
-      // Close the tab if it's open
-      const tab = requestTabsApi.getOpenTab(ctx.collectionId, ctx.requestId)
-      if (tab) {
-        requestTabsApi.removeTab(tab.tabId)
-      }
-      collectionsApi().deleteRequest(ctx.collectionId, ctx.requestId)
-    } else if (ctx.kind === "collection") {
-      collectionsApi().removeCollection(ctx.collectionId)
-    } else if (ctx.kind === "folder") {
-      const collection = useApplication.getState().collectionsState.cache[ctx.collectionId]
-      if (!collection) {
-        return
-      }
-
-      const collectRequestIds = (folderId: string, acc: string[]) => {
-        const folder = collection.folders[folderId]
-        if (!folder) {
-          return acc
-        }
-        acc.push(...folder.requestIds)
-        for (const childId of folder.childFolderIds) {
-          collectRequestIds(childId, acc)
-        }
-        return acc
-      }
-
-      const requestIds = collectRequestIds(ctx.folderId, [])
-
-      for (const requestId of requestIds) {
-        const tab = requestTabsApi.getOpenTab(ctx.collectionId, requestId)
-        if (tab) {
-          requestTabsApi.removeTab(tab.tabId)
-        }
-      }
-
-      collectionsApi().deleteFolder(ctx.collectionId, ctx.folderId)
-    }
-  }
-
   const handleFolderCreate = (name: string, ctx: FolderCreateContext) => {
     collectionsApi().createFolder(ctx.collectionId, ctx.parentId, name)
   }
@@ -499,7 +686,38 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
     const activeData = active.data.current as DragPayload | undefined
     const overData = over.data.current as DragPayload | undefined
 
-    const position = calculateDropPosition(event, activeData, overData)
+    if (
+      (activeData?.type === "request-item" || activeData?.type === "folder-item") &&
+      overData?.type === "collection"
+    ) {
+      setDropIndicator({ id: over.id as string, position: "middle" })
+      return
+    }
+
+    if (activeData?.type === "request-item" && overData?.type === "folder-item") {
+      setDropIndicator({ id: over.id as string, position: "middle" })
+      return
+    }
+
+    const overRect = over.rect
+    const activeRect = event.active.rect.current.translated
+    const pointerY = activeRect ? activeRect.top + activeRect.height / 2 : overRect.top + overRect.height / 2
+    const topBoundary = overRect.top + overRect.height / 3
+    const bottomBoundary = overRect.top + (overRect.height * 2) / 3
+
+    let position: DropPosition = null
+    if (pointerY < topBoundary) {
+      position = "top"
+    } else if (pointerY > bottomBoundary) {
+      position = "bottom"
+    } else {
+      position = "middle"
+    }
+
+    if (activeData?.type === "request-item" && (overData?.type === "folder-item" || overData?.type === "collection")) {
+      position = "middle"
+    }
+
     setDropIndicator({ id: over.id as string, position })
   }
 
@@ -587,7 +805,7 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
   // Normalize query once
   const query = (searchTerm ?? "").trim().toLowerCase()
   const deferredQuery = useDeferredValue(query)
-  const contextValue = useMemo(() => ({ activeId, dropIndicator }), [activeId, dropIndicator])
+  const contextValue = { activeId, dropIndicator }
 
   const collapsedContent = (
     <div className="flex flex-col items-center space-y-2 py-2 overflow-y-auto">
@@ -723,5 +941,644 @@ export function CollectionTree({ searchTerm }: CollectionsTreeProps) {
     <Profiler id="CollectionTree" onRender={onProfilerRender}>
       {isCollapsed ? collapsedContent : expandedContent}
     </Profiler>
+  )
+}
+
+type CollectionRowProps = {
+  collectionId: string
+  collectionName: string
+  open: boolean
+  onAction: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+}
+
+function CollectionRow({ collectionId, collectionName, open, onAction }: CollectionRowProps) {
+  const { dropIndicator } = useDndTreeContext()
+  const isOver = dropIndicator?.id === collectionId
+  const dropPosition = isOver ? dropIndicator.position : null
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: collectionId,
+    data: {
+      type: "collection",
+      collectionId,
+    } satisfies CollectionDragData,
+  })
+  const { setNodeRef: setDropRef } = useDroppable({
+    id: collectionId,
+    data: {
+      type: "collection",
+      collectionId,
+    },
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+  return (
+    <div key={collectionId} className={cn("mb-2 relative")} ref={setNodeRef} style={style}>
+      {isOver && dropPosition !== "middle" && (
+        <>
+          {dropPosition === "top" && <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary z-10" />}
+          {dropPosition === "bottom" && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary z-10" />}
+        </>
+      )}
+      <div
+        role="treeitem"
+        tabIndex={0}
+        id={collectionId}
+        ref={setDropRef}
+        className={cn(
+          "group/col relative flex w-full cursor-pointer items-center justify-between rounded p-2 hover:bg-accent has-[button[data-state=open]]:bg-accent",
+          isDragging && "opacity-50",
+          isOver && dropPosition === "middle" && "bg-primary/10",
+        )}
+        data-action-id="select"
+        data-kind="collection"
+        data-collection-id={collectionId}
+        onClick={onAction}
+        onKeyDown={onAction}
+        data-test-id={`collection-tree:collection-row:${collectionId}`}
+      >
+        <div className="flex flex-1 items-center space-x-2">
+          <div
+            className="tree-offset-flex hover:cursor-grab active:cursor-grabbing"
+            title="Drag to reorder"
+            {...attributes}
+            {...listeners}
+          >
+            {open ? (
+              <>
+                <ChevronDownIcon className="h-3 w-3 text-primary" />
+                <FolderOpenIcon className="h-4 w-4 text-primary" />
+              </>
+            ) : (
+              <>
+                <ChevronRightIcon className="h-3 w-3 text-primary" />
+                <FolderClosedIcon className="h-4 w-4 text-primary" />
+              </>
+            )}
+            <span className="text-sm">{collectionName}</span>
+          </div>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 dropdown-trigger group-hover/col:opacity-100 transition-none"
+              data-test-id={`collection-tree:collection-row:menu-button:${collectionId}`}
+            >
+              <MoreHorizontalIcon className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <CollectionMenuContent collection={{ id: collectionId, name: collectionName }} onAction={onAction} />
+        </DropdownMenu>
+      </div>
+
+      {open && (
+        <div className="ml-6 space-y-1">
+          <ErrorBoundary
+            fallback={(error) => (
+              <Alert variant="destructive">
+                <AlertTriangleIcon className="h-4 w-4" />
+                <AlertTitle>Collection {collectionName} could not be loaded</AlertTitle>
+                <AlertDescription>
+                  <p>{error?.message ?? "An unexpected error occurred while loading the collection."}</p>
+                </AlertDescription>
+              </Alert>
+            )}
+          >
+            <Suspense name="collection" fallback={<div />}>
+              <CollectionContent collectionId={collectionId} onAction={onAction} />
+            </Suspense>
+          </ErrorBoundary>
+        </div>
+      )}
+    </div>
+  )
+}
+
+type CollectionRowSearchableProps = {
+  collectionId: string
+  collectionName: string
+  query: string
+  onAction: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+}
+
+function CollectionRowSearchable({ collectionId, collectionName, query, onAction }: CollectionRowSearchableProps) {
+  const {
+    state: { collection },
+  } = useCollectionFromCache(collectionId)
+
+  React.useEffect(() => {
+    if (!collection) {
+      void collectionsApi().loadCollection(collectionId)
+    }
+  }, [collection, collectionId])
+
+  const nameMatches = collectionName.toLowerCase().includes(query)
+  const matchingRequests = React.useMemo(() => {
+    const reqs = Object.values(collection?.requests ?? {})
+    if (!query) {
+      return reqs
+    }
+    return reqs.filter((r) => [r.name, r.method, r.url ?? ""].some((v) => v.toLowerCase().includes(query)))
+  }, [collection, query])
+  const folderOptions = React.useMemo(() => (collection ? buildFolderOptions(collection) : []), [collection])
+
+  if (!collection) {
+    return (
+      <div role="tree" className="px-3 py-2 text-sm text-muted-foreground">
+        Loading {collectionName}…
+      </div>
+    )
+  }
+
+  // If neither the collection name nor any of its requests match, skip rendering entirely
+  if (!nameMatches && matchingRequests.length === 0) {
+    return null
+  }
+
+  return (
+    <div role="tree">
+      <div
+        role="treeitem"
+        tabIndex={0}
+        aria-expanded={true}
+        className={cn(
+          "group/col relative flex w-full cursor-pointer items-center justify-between rounded p-2 hover:bg-accent has-[button[data-state=open]]:bg-accent",
+        )}
+        data-action-id="select:expand"
+        data-kind="collection"
+        data-collection-id={collectionId}
+        onClick={onAction}
+        onKeyDown={onAction}
+      >
+        <div className="flex items-center space-x-2">
+          <div className="tree-offset-flex hover:cursor-grab active:cursor-grabbing">
+            <ChevronDownIcon className="h-4 w-4 text-foreground" />
+            <span className="pt-1 text-sm leading-none">{collectionName}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 dropdown-trigger group-hover/col:opacity-100">
+                <MoreHorizontalIcon className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <CollectionMenuContent collection={{ id: collectionId, name: collectionName }} onAction={onAction} />
+          </DropdownMenu>
+        </div>
+      </div>
+
+      <div className="ml-6 space-y-1">
+        <ErrorBoundary
+          fallback={(error) => (
+            <Alert variant="destructive">
+              <AlertTriangleIcon className="h-4 w-4" />
+              <AlertTitle>Collection {collectionName} could not be loaded</AlertTitle>
+              <AlertDescription>
+                <p>{error?.message ?? "An unexpected error occurred while loading the collection."}</p>
+              </AlertDescription>
+            </Alert>
+          )}
+        >
+          <RequestList
+            collectionId={collectionId}
+            folderId={RootCollectionFolderId}
+            requests={matchingRequests}
+            folderOptions={folderOptions}
+            onAction={onAction}
+            filterQuery={query}
+          />
+        </ErrorBoundary>
+      </div>
+    </div>
+  )
+}
+
+type RequestListProps = {
+  collectionId: string
+  folderId: string
+  requests: RequestState[]
+  folderOptions: FolderOption[]
+  onAction: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+  filterQuery?: string
+}
+
+function RequestList({
+  collectionId,
+  folderId,
+  requests: sourceRequests,
+  folderOptions,
+  onAction,
+  filterQuery,
+}: RequestListProps) {
+  const allRequests = sourceRequests
+
+  const moveTargets = React.useMemo(
+    () => folderOptions.filter((option) => option.id !== folderId),
+    [folderOptions, folderId],
+  )
+
+  const folderOptionMap = React.useMemo(() => {
+    return new Map(folderOptions.map((option) => [option.id, option.path]))
+  }, [folderOptions])
+
+  const showFolderContext = Boolean(filterQuery)
+
+  const q = (filterQuery ?? "").trim().toLowerCase()
+  const requests = React.useMemo(() => {
+    if (!q) {
+      return allRequests
+    }
+    return allRequests.filter((r) => [r.name, r.method, r.url ?? ""].some((v) => v.toLowerCase().includes(q)))
+  }, [allRequests, q])
+
+  const requestOrder = React.useMemo(() => requests.map((item) => item.id), [requests])
+
+  const folderPathFor = React.useCallback(
+    (request: RequestState) => {
+      if (!showFolderContext) {
+        return undefined
+      }
+      const rawPath = folderOptionMap.get(request.folderId ?? "")
+      if (!rawPath) {
+        return undefined
+      }
+      const trimmed = rawPath.replace(/^Root\s*\/\s*/i, "")
+      return trimmed.length > 0 ? trimmed : undefined
+    },
+    [folderOptionMap, showFolderContext],
+  )
+
+  // Disable DnD while filtering to avoid confusing reorder behavior on subsets
+  if (q) {
+    return (
+      <div>
+        {requests.map((r) => (
+          <RequestRow
+            key={r.id}
+            r={r}
+            collectionId={collectionId}
+            folderId={folderId}
+            onAction={onAction}
+            dndDisabled={true}
+            moveTargets={moveTargets}
+            siblings={requestOrder}
+            folderPath={folderPathFor(r)}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <SortableContext items={requestOrder} strategy={verticalListSortingStrategy}>
+        {requests.map((r) => (
+          <RequestRow
+            key={r.id}
+            r={r}
+            collectionId={collectionId}
+            folderId={folderId}
+            onAction={onAction}
+            moveTargets={moveTargets}
+            siblings={requestOrder}
+            folderPath={folderPathFor(r)}
+          />
+        ))}
+      </SortableContext>
+    </div>
+  )
+}
+
+type CollectionContentProps = {
+  collectionId: string
+  onAction: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+}
+
+function CollectionContent({ collectionId, onAction }: CollectionContentProps) {
+  const {
+    state: { collection },
+  } = useCollection(collectionId)
+  const rootFolder = collection.folders[RootCollectionFolderId]
+  const rootRequests =
+    rootFolder?.requestIds.map((id) => collection.requests[id]).filter((r): r is RequestState => !!r) ?? []
+  const folderOptions = React.useMemo(() => buildFolderOptions(collection), [collection])
+
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
+    id: `folder-root-${collectionId}`,
+    data: {
+      type: "folder-drop",
+      collectionId,
+      folderId: RootCollectionFolderId,
+      childIds: rootFolder?.childFolderIds ? [...rootFolder.childFolderIds] : [],
+    },
+  })
+
+  return (
+    <div
+      ref={setDropRef}
+      className={cn("space-y-1", isOver && "rounded-md border border-dashed border-primary/50 bg-primary/5")}
+    >
+      <RequestList
+        collectionId={collectionId}
+        folderId={RootCollectionFolderId}
+        requests={rootRequests}
+        folderOptions={folderOptions}
+        onAction={onAction}
+      />
+
+      <SortableContext items={rootFolder?.childFolderIds ?? []} strategy={verticalListSortingStrategy}>
+        {rootFolder?.childFolderIds.map((folderId) => (
+          <CollectionFolderBranch
+            key={folderId}
+            collection={collection}
+            collectionId={collectionId}
+            folderId={folderId}
+            depth={0}
+            folderOptions={folderOptions}
+            onAction={onAction}
+          />
+        ))}
+      </SortableContext>
+    </div>
+  )
+}
+
+type CollectionFolderBranchProps = {
+  collection: CollectionCache
+  collectionId: string
+  folderId: string
+  depth: number
+  folderOptions: FolderOption[]
+  onAction: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+}
+
+function CollectionFolderBranch({
+  collection,
+  collectionId,
+  folderId,
+  depth,
+  folderOptions,
+  onAction,
+}: CollectionFolderBranchProps) {
+  const { dropIndicator } = useDndTreeContext()
+  const isOver = dropIndicator?.id === folderId
+  const dropPosition = isOver ? dropIndicator.position : null
+  const folder = collection.folders[folderId]
+  const parentId = folder?.parentId ?? RootCollectionFolderId
+  const parentNode = collection.folders[parentId]
+  const siblingOrder = parentNode?.childFolderIds ? [...parentNode.childFolderIds] : []
+  const childFolderIds = folder?.childFolderIds ? [...folder.childFolderIds] : []
+  const [open, setOpen] = React.useState(true)
+  const isScratch = isScratchCollection(collectionId)
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: folderId,
+    data: {
+      type: "folder-item",
+      collectionId,
+      folderId,
+      parentId,
+      siblings: siblingOrder,
+      childIds: childFolderIds,
+    } satisfies FolderDragData,
+    disabled: isScratch,
+  })
+  const { setNodeRef: setFolderDropRef } = useDroppable({
+    id: folderId,
+    data: {
+      type: "folder-item",
+      collectionId,
+      folderId,
+      parentId,
+      childIds: childFolderIds,
+    },
+  })
+
+  const style = React.useMemo(
+    () => ({
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    }),
+    [transform, transition, isDragging],
+  )
+
+  if (!folder) {
+    return null
+  }
+
+  const requests = folder.requestIds.map((id) => collection.requests[id]).filter((r): r is RequestState => !!r)
+
+  const toggle = () => setOpen((prev) => !prev)
+
+  return (
+    <div role="tree" className="space-y-1" ref={setNodeRef} style={style}>
+      <div
+        role="treeitem"
+        tabIndex={0}
+        aria-expanded={open}
+        ref={setFolderDropRef}
+        className={cn(
+          "group/col relative flex w-full cursor-pointer items-center justify-between rounded p-2 hover:bg-accent",
+          isDragging && "opacity-50",
+          isOver && dropPosition === "middle" && "bg-primary/10",
+        )}
+        data-action-id="select:expand"
+        data-kind="folder"
+        data-collection-id={collectionId}
+        data-folder-id={folderId}
+        onClick={toggle}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault()
+            toggle()
+          }
+        }}
+        style={{ marginLeft: depth * 12 }}
+      >
+        {isOver && dropPosition === "top" && <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary z-10" />}
+        {isOver && dropPosition === "bottom" && (
+          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary z-10" />
+        )}
+        <div className="flex flex-1 items-center space-x-2">
+          <div
+            className={cn("tree-offset-flex", !isScratch && "hover:cursor-grab active:cursor-grabbing")}
+            title={isScratch ? undefined : "Drag to move folder"}
+            {...(!isScratch ? { ...attributes, ...listeners } : {})}
+          >
+            {open ? (
+              <FolderOpenIcon className="h-3 w-3 text-primary" />
+            ) : (
+              <FolderClosedIcon className="h-3 w-3 text-primary" />
+            )}
+            <span className="text-sm font-medium">{folder.name}</span>
+          </div>
+        </div>
+
+        {!isScratchCollection(collectionId) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 p-0 opacity-0 transition-opacity group-hover/col:opacity-100"
+                data-test-id={`collection-tree:folder-row:menu-button:${folderId}`}
+              >
+                <MoreHorizontalIcon className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <FolderMenuContent collectionId={collectionId} folder={folder} onAction={(payload) => onAction(payload)} />
+          </DropdownMenu>
+        )}
+      </div>
+
+      {open && (
+        <div className="ml-5 space-y-1">
+          <RequestList
+            collectionId={collectionId}
+            folderId={folderId}
+            requests={requests}
+            folderOptions={folderOptions}
+            onAction={onAction}
+          />
+          <SortableContext items={folder.childFolderIds} strategy={verticalListSortingStrategy}>
+            {folder.childFolderIds.map((childId) => (
+              <CollectionFolderBranch
+                key={childId}
+                collection={collection}
+                collectionId={collectionId}
+                folderId={childId}
+                depth={depth + 1}
+                folderOptions={folderOptions}
+                onAction={onAction}
+              />
+            ))}
+          </SortableContext>
+        </div>
+      )}
+    </div>
+  )
+}
+
+type RequestRowProps = {
+  r: RequestState
+  collectionId: string
+  folderId: string
+  onAction: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
+  dndDisabled?: boolean
+  moveTargets: FolderOption[]
+  siblings: string[]
+  folderPath?: string
+}
+
+function RequestRow({
+  r,
+  collectionId,
+  folderId,
+  onAction,
+  dndDisabled = false,
+  moveTargets = [],
+  siblings,
+  folderPath,
+}: RequestRowProps) {
+  const dndContext = useOptionalDndTreeContext()
+  const dropIndicator = dndContext?.dropIndicator ?? null
+  const isOver = dropIndicator?.id === r.id
+  const dropPosition = isOver ? (dropIndicator?.position ?? null) : null
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: r.id,
+    data: {
+      type: "request-item",
+      collectionId,
+      requestId: r.id,
+      folderId,
+      siblings,
+    } satisfies RequestDragData,
+    disabled: isScratchCollection(collectionId) || dndDisabled,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  const isScratch = isScratchCollection(collectionId)
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      role="treeitem"
+      tabIndex={0}
+      className={cn(
+        "group/col relative flex w-full cursor-pointer items-center justify-between rounded p-2 hover:bg-accent has-[button[data-state=open]]:bg-accent",
+        isDragging && "opacity-50",
+        isOver && dropPosition === "middle" && "bg-primary/10",
+      )}
+      data-testid="collection-request-row"
+      data-action-id="select"
+      data-kind="request"
+      data-collection-id={collectionId}
+      data-request-id={r.id}
+      data-folder-id={folderId}
+      onClick={onAction}
+      onKeyDown={onAction}
+      data-test-id={`collection-tree:request-row:${r.id}`}
+    >
+      {isOver && dropPosition === "top" && <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary z-10" />}
+      {isOver && dropPosition === "bottom" && (
+        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary z-10" />
+      )}
+      <div className="flex flex-1 items-start space-x-2">
+        <div
+          className={cn("tree-offset-stack", !isScratch && !dndDisabled && "hover:cursor-grab active:cursor-grabbing")}
+          title={
+            isScratchCollection(collectionId)
+              ? "Scratch requests cannot be reordered"
+              : dndDisabled
+                ? "Reordering disabled while filtering"
+                : "Drag to reorder"
+          }
+          {...(!isScratch && !dndDisabled ? { ...attributes, ...listeners } : {})}
+        >
+          <div className="flex items-center space-x-2">
+            <div className="relative">
+              <HttpBadge method={r.method} className={cn(isNotEmpty(r.patch) && "unsaved-changes")} />
+            </div>
+            <span className="pt-1 text-sm leading-none">{r.name}</span>
+          </div>
+          {folderPath && <span className="pl-6 text-xs text-muted-foreground max-w-64 truncate">{folderPath}</span>}
+        </div>
+      </div>
+
+      <div className="flex items-center space-x-1">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 dropdown-trigger group-hover/col:opacity-100 transition-none"
+              data-test-id={`collection-tree:request-row:menu-button:${r.id}`}
+            >
+              <MoreHorizontalIcon className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <RequestMenuContent
+            collectionId={collectionId}
+            requestId={r.id}
+            requestName={r.name}
+            isScratch={isScratch}
+            moveTargets={moveTargets.map((target) => ({ id: target.id, path: target.path }))}
+            onAction={(payload) => onAction(payload)}
+          />
+        </DropdownMenu>
+      </div>
+    </div>
   )
 }
