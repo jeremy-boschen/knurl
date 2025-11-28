@@ -11,8 +11,9 @@ import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu
 import { FolderMenuContent } from "@/components/ui/knurl/folder-menu"
 import type { FolderOption } from "@/lib/collections/folder-options"
 import { cn } from "@/lib/utils"
-import { RootCollectionFolderId, isScratchCollection } from "@/state/application"
+import { isScratchCollection } from "@/state/collections"
 import type { CollectionCache, RequestState } from "@/types/collections"
+import { RootCollectionFolderId } from "@/types"
 
 import type { FolderDragData } from "./actions/action-types"
 import { RequestList } from "./request-list"

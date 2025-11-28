@@ -11,7 +11,7 @@ import { HttpBadge } from "@/components/ui/knurl"
 import { RequestMenuContent } from "@/components/ui/knurl/request-menu"
 import type { FolderOption } from "@/lib/collections/folder-options"
 import { cn, isNotEmpty } from "@/lib/utils"
-import { isScratchCollection } from "@/state/application"
+import { isScratchCollection } from "@/state/collections"
 import type { RequestState } from "@/types/request"
 
 import type { RequestDragData } from "./actions/action-types"

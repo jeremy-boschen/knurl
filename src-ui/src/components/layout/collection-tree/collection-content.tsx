@@ -5,7 +5,8 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 
 import { buildFolderOptions } from "@/lib/collections/folder-options"
 import { cn } from "@/lib/utils"
-import { RootCollectionFolderId, useCollection } from "@/state/application"
+import { useCollection } from "@/state/application"
+import { RootCollectionFolderId } from "@/types"
 import type { RequestState } from "@/types/request"
 
 import { CollectionFolderBranch } from "./folder-branch"

@@ -20,7 +20,8 @@ import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu
 import { CollectionMenuContent } from "@/components/ui/knurl/collection-menu"
 import { buildFolderOptions } from "@/lib/collections/folder-options"
 import { cn } from "@/lib/utils"
-import { RootCollectionFolderId, collectionsApi, useCollectionFromCache } from "@/state/application"
+import { collectionsApi, useCollectionFromCache } from "@/state/application"
+import { RootCollectionFolderId } from "@/types"
 
 import type { CollectionDragData } from "./actions/action-types"
 import { CollectionContent } from "./collection-content"
