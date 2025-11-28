@@ -1,4 +1,4 @@
-import {expect} from "@wdio/globals"
+import { expect } from "@wdio/globals"
 
 import {
   clickByTestId,
@@ -13,7 +13,7 @@ import {
   selectOptionByTestId,
   setInputText,
   waitForRequestEditor,
-  waitForResponseContaining
+  waitForResponseContaining,
 } from "../support/ui"
 
 /**
@@ -26,23 +26,16 @@ async function setBasicAuth(username: string, password: string): Promise<void> {
   await setInputText("request-auth-panel:basic-auth-password-input", password)
 }
 
-async function setBearerAuth(
-  token: string,
-  scheme?: string,
-  placement?: "header" | "query" | "cookie"
-): Promise<void> {
+async function setBearerAuth(token: string, scheme?: string, placement?: "header" | "query" | "cookie"): Promise<void> {
   await selectAuthType("bearer")
   await setInputText("request-auth-panel:bearer-auth-token-input", token)
 
   if (scheme) {
     await selectOptionByTestId(
       "request-auth-panel:bearer-auth-scheme-select",
-      `request-auth-panel:bearer-auth-scheme-${scheme}`
+      `request-auth-panel:bearer-auth-scheme-${scheme}`,
     )
-    const schemeInput = await getElementByTestId(
-      "request-auth-panel:bearer-auth-custom-scheme-input",
-      5000
-    )
+    const schemeInput = await getElementByTestId("request-auth-panel:bearer-auth-custom-scheme-input", 5000)
     await expect(schemeInput).toBeDefined()
     await setInputText("request-auth-panel:bearer-auth-custom-scheme-input", scheme)
   }
@@ -52,13 +45,9 @@ async function setBearerAuth(
   }
 }
 
-async function setApiKeyAuth(
-  key: string,
-  value: string,
-  placement: "header" | "query" | "cookie"
-): Promise<void> {
+async function setApiKeyAuth(key: string, value: string, placement: "header" | "query" | "cookie"): Promise<void> {
   await selectAuthType("apiKey")
-  await getElementByTestId("request-auth-panel:api-key-auth-form", 5000, {initialDelay: 200})
+  await getElementByTestId("request-auth-panel:api-key-auth-form", 5000, { initialDelay: 200 })
   await setInputText("request-auth-panel:api-key-auth-key-input", key)
   await setInputText("request-auth-panel:api-key-auth-value-input", value)
   await browser.pause(300)
@@ -68,10 +57,9 @@ async function setApiKeyAuth(
 async function configureAuthPlacement(
   authType: "bearer" | "apiKey",
   placement: "header" | "query" | "cookie",
-  placementName: string
+  placementName: string,
 ): Promise<void> {
-  const placementPrefix =
-    authType === "bearer" ? "request-auth-panel:bearer-auth" : "request-auth-panel:api-key-auth"
+  const placementPrefix = authType === "bearer" ? "request-auth-panel:bearer-auth" : "request-auth-panel:api-key-auth"
   const placementSelectTestId = `${placementPrefix}-placement-select`
   const placementOptionTestId = `${placementPrefix}-placement-option:${placement}`
   const placementNameInputTestId = `${placementPrefix}-placement-name-input`
@@ -82,7 +70,7 @@ async function configureAuthPlacement(
   await browser.pause(200)
 }
 
-async function setOAuth2Field(fieldTestId: string, value: string): Promise<void> {
+async function _setOAuth2Field(fieldTestId: string, value: string): Promise<void> {
   await getElementByTestId(fieldTestId, 5000)
   await setInputText(fieldTestId, value)
 }
@@ -161,7 +149,7 @@ describe("[CRITICAL] Authentication Strategies", () => {
       await selectAuthType("bearer")
       await selectOptionByTestId(
         "request-auth-panel:bearer-auth-scheme-select",
-        "request-auth-panel:bearer-auth-scheme-custom"
+        "request-auth-panel:bearer-auth-scheme-custom",
       )
       await setInputText("request-auth-panel:bearer-auth-custom-scheme-input", customScheme)
       await setInputText("request-auth-panel:bearer-auth-token-input", customToken)
@@ -238,7 +226,7 @@ describe("[CRITICAL] Authentication Strategies", () => {
           const responseBody = await getResponseBodyText()
           return responseBody.length > 0
         },
-        {timeout: 10000}
+        { timeout: 10000 },
       )
 
       const responseText = await getResponseBodyText()
@@ -313,7 +301,7 @@ describe("[CRITICAL] Authentication Strategies", () => {
           const text = await getResponseBodyText()
           return text.length > 0 ? text : null
         },
-        {timeout: 5000}
+        { timeout: 5000 },
       )
 
       // Verify the response exists (switching to No Auth worked)
@@ -345,7 +333,9 @@ describe("[CRITICAL] Authentication Strategies", () => {
 
       // Verify auth configuration persists in the UI
       const finalToken = await browser.execute(() => {
-        const input = document.querySelector('[data-test-id="request-auth-panel:bearer-auth-token-input"]') as HTMLInputElement
+        const input = document.querySelector(
+          '[data-test-id="request-auth-panel:bearer-auth-token-input"]',
+        ) as HTMLInputElement
         return input ? input.value : ""
       })
 
@@ -407,7 +397,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
 
   it("performs client_credentials grant flow", async () => {
     // Create a new request
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
 
     // Set the request URL
     await setInputText("request-workspace:url-input", testEndpoint)
@@ -445,11 +435,14 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
     await setInputText("oauth2-editor:scope-input", "openid profile offline_access")
 
     // Set client authentication to body (as expected by the mock server)
-    await selectOptionByTestId("oauth2-editor:client-authentication-select", "oauth2-editor:client-authentication-option:body")
+    await selectOptionByTestId(
+      "oauth2-editor:client-authentication-select",
+      "oauth2-editor:client-authentication-option:body",
+    )
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
-    await sendBtn.waitForClickable({timeout: 5000})
+    await sendBtn.waitForClickable({ timeout: 5000 })
 
     // Click Send button
     await clickByTestId("request-workspace:send-button")
@@ -466,7 +459,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
       {
         timeout: 10000,
         timeoutMsg: "Response did not arrive within timeout",
-      }
+      },
     )
 
     // Verify response viewer appeared with content
@@ -476,7 +469,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
 
   it("performs authorization_code with PKCE flow", async () => {
     // Create a new request
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
 
     // Set the request URL
     await setInputText("request-workspace:url-input", testEndpoint)
@@ -523,11 +516,14 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
     await setInputText("oauth2-editor:scope-input", "openid profile offline_access")
 
     // Set client authentication to basic
-    await selectOptionByTestId("oauth2-editor:client-authentication-select", "oauth2-editor:client-authentication-option:basic")
+    await selectOptionByTestId(
+      "oauth2-editor:client-authentication-select",
+      "oauth2-editor:client-authentication-option:basic",
+    )
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
-    await sendBtn.waitForClickable({timeout: 5000})
+    await sendBtn.waitForClickable({ timeout: 5000 })
 
     // Click Send button
     await clickByTestId("request-workspace:send-button")
@@ -544,7 +540,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
       {
         timeout: 15000,
         timeoutMsg: "Response did not arrive within timeout (authorization_code flow may require browser interaction)",
-      }
+      },
     )
 
     // Verify response viewer appeared with content
@@ -554,7 +550,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
 
   it("performs device_code grant flow with polling", async () => {
     // Create a new request
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
 
     // Set the request URL
     await setInputText("request-workspace:url-input", testEndpoint)
@@ -581,7 +577,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
 
     // Verify and set Token URL field (required for all grant types)
     const tokenUrlField = await getElementByTestId("oauth2-editor:token-url-input", 5000)
-    await tokenUrlField.waitForDisplayed({timeout: 5000})
+    await tokenUrlField.waitForDisplayed({ timeout: 5000 })
     await setInputText("oauth2-editor:token-url-input", baseAuthConfig.tokenUrl)
 
     // Set Client ID (use public client for device code flow)
@@ -591,11 +587,14 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
     await setInputText("oauth2-editor:scope-input", "openid profile")
 
     // Set client authentication to body
-    await selectOptionByTestId("oauth2-editor:client-authentication-select", "oauth2-editor:client-authentication-option:body")
+    await selectOptionByTestId(
+      "oauth2-editor:client-authentication-select",
+      "oauth2-editor:client-authentication-option:body",
+    )
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
-    await sendBtn.waitForClickable({timeout: 5000})
+    await sendBtn.waitForClickable({ timeout: 5000 })
 
     // Click Send button
     await clickByTestId("request-workspace:send-button")
@@ -613,7 +612,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
       {
         timeout: 20000,
         timeoutMsg: "Response did not arrive within timeout (device_code flow with polling may take longer)",
-      }
+      },
     )
 
     // Verify response viewer appeared with content
@@ -623,7 +622,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
 
   it("performs refresh_token grant flow", async () => {
     // Create a new request
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
 
     // Set the request URL
     await setInputText("request-workspace:url-input", testEndpoint)
@@ -663,7 +662,10 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
     await setInputText("oauth2-editor:refresh-token-input", mockRefreshToken)
 
     // Set client authentication to body
-    await selectOptionByTestId("oauth2-editor:client-authentication-select", "oauth2-editor:client-authentication-option:body")
+    await selectOptionByTestId(
+      "oauth2-editor:client-authentication-select",
+      "oauth2-editor:client-authentication-option:body",
+    )
 
     // Verify the configuration is set correctly by checking field values
     const tokenUrlValue = await browser.execute(() => {
@@ -689,7 +691,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
 
   it("auto-discovery populates OAuth2 configuration from OpenID Connect endpoint", async () => {
     // Create a new request
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
 
     // Set the request URL
     await setInputText("request-workspace:url-input", testEndpoint)
@@ -733,7 +735,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
       {
         timeout: 5000,
         timeoutMsg: "Auth URL was not populated by discovery",
-      }
+      },
     )
     await expect(authUrlField).toContain("authorize")
 
@@ -752,7 +754,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
 
   it("auto-discovery shows error alert on invalid discovery URL", async () => {
     // Create a new request
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
 
     // Set the request URL
     await setInputText("request-workspace:url-input", testEndpoint)
@@ -800,7 +802,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
       {
         timeout: 5000,
         timeoutMsg: "Discovery error alert did not appear within timeout",
-      }
+      },
     )
 
     // Verify the error alert is displayed
@@ -900,25 +902,33 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
       async () => {
         const responseText = await browser.execute(() => {
           const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-          if (!responseBody) return ""
+          if (!responseBody) {
+            return ""
+          }
           const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-          if (!codeEditor) return ""
+          if (!codeEditor) {
+            return ""
+          }
           const content = codeEditor.querySelector(".cm-content")
-          return content ? (content.textContent || codeEditor.textContent) : codeEditor.textContent
+          return content ? content.textContent || codeEditor.textContent : codeEditor.textContent
         })
         return responseText && responseText.length > 0
       },
-      {timeout: 15000}
+      { timeout: 15000 },
     )
 
     // Verify the inherited auth was applied
     const responseText = await browser.execute(() => {
       const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-      if (!responseBody) return ""
+      if (!responseBody) {
+        return ""
+      }
       const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-      if (!codeEditor) return ""
+      if (!codeEditor) {
+        return ""
+      }
       const content = codeEditor.querySelector(".cm-content")
-      return content ? (content.textContent || codeEditor.textContent) : codeEditor.textContent
+      return content ? content.textContent || codeEditor.textContent : codeEditor.textContent
     })
 
     // Check that a response was received (request was sent successfully with inherited auth)
@@ -947,7 +957,10 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     await setInputText("collection-auth:bearer-auth-token-input", collectionToken)
 
     // Ensure Header placement is selected
-    await selectOptionByTestId("collection-auth:bearer-auth-placement-select", "collection-auth:bearer-auth-placement-option:header")
+    await selectOptionByTestId(
+      "collection-auth:bearer-auth-placement-select",
+      "collection-auth:bearer-auth-placement-option:header",
+    )
 
     // Close settings sheet
     await browser.keys(["Escape"])
@@ -988,25 +1001,33 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
       async () => {
         const responseText = await browser.execute(() => {
           const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-          if (!responseBody) return ""
+          if (!responseBody) {
+            return ""
+          }
           const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-          if (!codeEditor) return ""
+          if (!codeEditor) {
+            return ""
+          }
           const content = codeEditor.querySelector(".cm-content")
-          return content ? (content.textContent || codeEditor.textContent) : codeEditor.textContent
+          return content ? content.textContent || codeEditor.textContent : codeEditor.textContent
         })
         return responseText && responseText.length > 0
       },
-      {timeout: 15000}
+      { timeout: 15000 },
     )
 
     // Verify response was received (request was sent successfully with inherited auth)
     const responseText = await browser.execute(() => {
       const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-      if (!responseBody) return ""
+      if (!responseBody) {
+        return ""
+      }
       const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-      if (!codeEditor) return ""
+      if (!codeEditor) {
+        return ""
+      }
       const content = codeEditor.querySelector(".cm-content")
-      return content ? (content.textContent || codeEditor.textContent) : codeEditor.textContent
+      return content ? content.textContent || codeEditor.textContent : codeEditor.textContent
     })
 
     await expect(responseText).toBeTruthy()
@@ -1036,7 +1057,10 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     await setInputText("collection-auth:api-key-auth-value-input", headerValue)
 
     // Ensure Header placement is selected
-    await selectOptionByTestId("collection-auth:api-key-auth-placement-select", "collection-auth:api-key-auth-placement-option:header")
+    await selectOptionByTestId(
+      "collection-auth:api-key-auth-placement-select",
+      "collection-auth:api-key-auth-placement-option:header",
+    )
 
     // Set the header name for the placement
     await setInputText("collection-auth:api-key-auth-placement-name-input", headerName)
@@ -1084,7 +1108,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
         })
         return responseBody
       },
-      {timeout: 15000}
+      { timeout: 15000 },
     )
 
     // Verify response exists (request with inherited auth was sent successfully)
@@ -1168,25 +1192,33 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
       async () => {
         const responseText = await browser.execute(() => {
           const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-          if (!responseBody) return ""
+          if (!responseBody) {
+            return ""
+          }
           const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-          if (!codeEditor) return ""
+          if (!codeEditor) {
+            return ""
+          }
           const content = codeEditor.querySelector(".cm-content")
-          return content ? (content.textContent || codeEditor.textContent) : codeEditor.textContent
+          return content ? content.textContent || codeEditor.textContent : codeEditor.textContent
         })
         return responseText && responseText.length > 0
       },
-      {timeout: 15000}
+      { timeout: 15000 },
     )
 
     // Verify response was received (request was sent successfully with inherited OAuth2 auth)
     const responseText = await browser.execute(() => {
       const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-      if (!responseBody) return ""
+      if (!responseBody) {
+        return ""
+      }
       const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-      if (!codeEditor) return ""
+      if (!codeEditor) {
+        return ""
+      }
       const content = codeEditor.querySelector(".cm-content")
-      return content ? (content.textContent || codeEditor.textContent) : codeEditor.textContent
+      return content ? content.textContent || codeEditor.textContent : codeEditor.textContent
     })
 
     await expect(responseText).toBeTruthy()

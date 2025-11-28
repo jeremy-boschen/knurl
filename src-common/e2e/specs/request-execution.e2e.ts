@@ -1,7 +1,13 @@
 import { expect } from "@wdio/globals"
 
-import { waitForRequestEditor } from "../support/ui"
-import { clickByTestId, ensureWorkspaceReady, openNewRequestViaUI, setInputText, getElementByTestId } from "../support/ui"
+import {
+  clickByTestId,
+  ensureWorkspaceReady,
+  getElementByTestId,
+  openNewRequestViaUI,
+  setInputText,
+  waitForRequestEditor,
+} from "../support/ui"
 
 /**
  * Minimal smoke tests for request execution.
@@ -9,11 +15,11 @@ import { clickByTestId, ensureWorkspaceReady, openNewRequestViaUI, setInputText,
  * is covered in unit tests (response-viewer.test.tsx, error handling, etc).
  */
 describe("[CRITICAL] Request Execution & Responses: Smoke Tests", () => {
-  let tabKey: string
+  let _tabKey: string
 
   before(async () => {
     await ensureWorkspaceReady()
-    tabKey = await openNewRequestViaUI()
+    _tabKey = await openNewRequestViaUI()
     await waitForRequestEditor()
   })
 

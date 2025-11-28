@@ -12,14 +12,14 @@
  * - Import sheet UI is properly rendered
  */
 
-import { expect } from '@wdio/globals'
-import * as fs from 'fs'
+import * as fs from "node:fs"
+import { expect } from "@wdio/globals"
 
-import { ensureWorkspaceReady, getElementByTestId, clickByTestId } from '../support/ui'
+import { clickByTestId, ensureWorkspaceReady, getElementByTestId } from "../support/ui"
 
-describe('Collection Import from OpenAPI', () => {
+describe("Collection Import from OpenAPI", () => {
   const state = {
-    fileContent: '',
+    fileContent: "",
   }
 
   before(async () => {
@@ -29,23 +29,23 @@ describe('Collection Import from OpenAPI', () => {
 
     // Read the OpenAPI fixture file for reference
     // The test runs from project root, so path is relative to that
-    const fixturePath = './test/fixtures/sample-api.openapi.json'
+    const fixturePath = "./test/fixtures/sample-api.openapi.json"
     console.log(`[TEST] ${new Date().toISOString()} Reading fixture from ${fixturePath}`)
     if (!fs.existsSync(fixturePath)) {
       throw new Error(`Fixture file not found: ${fixturePath}`)
     }
-    state.fileContent = fs.readFileSync(fixturePath, 'utf-8')
+    state.fileContent = fs.readFileSync(fixturePath, "utf-8")
     console.log(`[TEST] ${new Date().toISOString()} Fixture loaded, ${state.fileContent.length} bytes`)
   })
 
-  it('expands sidebar if needed', async () => {
+  it("expands sidebar if needed", async () => {
     console.log(`[TEST] ${new Date().toISOString()} Starting sidebar expansion check`)
     // First, try to expand the sidebar if it's collapsed
     try {
-      const expandButton = await getElementByTestId('sidebar:expand-button', 2000).catch(() => null)
+      const expandButton = await getElementByTestId("sidebar:expand-button", 2000).catch(() => null)
       console.log(`[TEST] ${new Date().toISOString()} Expand button found: ${!!expandButton}`)
       if (expandButton) {
-        await clickByTestId('sidebar:expand-button')
+        await clickByTestId("sidebar:expand-button")
         console.log(`[TEST] ${new Date().toISOString()} Expand button clicked`)
       }
     } catch {
@@ -53,17 +53,17 @@ describe('Collection Import from OpenAPI', () => {
     }
   })
 
-  it('opens import dialog from sidebar button', async () => {
+  it("opens import dialog from sidebar button", async () => {
     console.log(`[TEST] ${new Date().toISOString()} Starting import dialog open`)
     // Click the import button from sidebar
-    const importButton = await getElementByTestId('sidebar:import-collection-button')
+    const importButton = await getElementByTestId("sidebar:import-collection-button")
     console.log(`[TEST] ${new Date().toISOString()} Import button found`)
     await expect(importButton).toBeTruthy()
-    await clickByTestId('sidebar:import-collection-button')
+    await clickByTestId("sidebar:import-collection-button")
     console.log(`[TEST] ${new Date().toISOString()} Import button clicked`)
   })
 
-  it('pastes OpenAPI content from clipboard and imports', async () => {
+  it("pastes OpenAPI content from clipboard and imports", async () => {
     console.log(`[TEST] ${new Date().toISOString()} Starting clipboard paste test`)
 
     // Set clipboard content using the E2E bridge
@@ -89,11 +89,11 @@ describe('Collection Import from OpenAPI', () => {
     await expect(clipboardSet).toBe(true)
 
     // Click the paste button
-    const pasteButton = await getElementByTestId('import-source:paste-button')
+    const pasteButton = await getElementByTestId("import-source:paste-button")
     await expect(pasteButton).toBeTruthy()
     console.log(`[TEST] ${new Date().toISOString()} Paste button found`)
 
-    await clickByTestId('import-source:paste-button')
+    await clickByTestId("import-source:paste-button")
     console.log(`[TEST] ${new Date().toISOString()} Paste button clicked`)
 
     // Wait for the import to parse and preview to render
@@ -119,7 +119,7 @@ describe('Collection Import from OpenAPI', () => {
     await expect(previewLoaded).toBe(true)
   })
 
-  it('verifies app is responsive', async () => {
+  it("verifies app is responsive", async () => {
     // Verify the app is still responsive after opening import dialog
     const title = await browser.getTitle()
     await expect(title).toMatch(/KNURL|Knurl/)

@@ -1,16 +1,16 @@
 import { expect } from "@wdio/globals"
 
 import {
-  ensureWorkspaceReady,
-  clickByTestId,
-  getElementByTestId,
-  setInputText,
-  openNewRequestViaUI,
-  waitForCollectionIdByName,
   clearSidebarSearch,
+  clickByTestId,
+  createCollection,
+  ensureWorkspaceReady,
+  getElementByTestId,
+  openNewRequestViaUI,
+  setInputText,
+  waitForCollectionIdByName,
+  waitForRequestEditor,
 } from "../support/ui"
-import { createCollection } from "../support/ui"
-import { waitForRequestEditor } from "../support/ui"
 
 /**
  * React Profiler metric types matching src/lib/profiler-bridge.ts
@@ -154,7 +154,7 @@ describe("Large Collections Performance", () => {
     // Find the expand toggle button for the newly created collection
     const expandToggleIds = await browser.execute(() => {
       const toggles = Array.from(document.querySelectorAll('[data-test-id^="collection-tree:expand-toggle:"]'))
-      return toggles.map(el => el.getAttribute("data-test-id")).filter(Boolean)
+      return toggles.map((el) => el.getAttribute("data-test-id")).filter(Boolean)
     })
 
     if (expandToggleIds.length > 0) {
@@ -164,7 +164,6 @@ describe("Large Collections Performance", () => {
 
       // Expand should be instant
       expect(expandTime).toBeLessThan(500)
-
 
       // Verify toggle is still displayed
       if (expandToggleIds.length > 0) {
@@ -182,7 +181,9 @@ describe("Large Collections Performance", () => {
     const collectionId = await createCollection(originalName)
 
     // Find the collection row in the sidebar
-    const rowElement = await getElementByTestId(`collection-tree:collection-row:${collectionId}`, 5000).catch(() => null)
+    const rowElement = await getElementByTestId(`collection-tree:collection-row:${collectionId}`, 5000).catch(
+      () => null,
+    )
 
     if (rowElement && (await rowElement.isDisplayed())) {
       // Right-click or use context menu to rename (simplified: just verify we can interact with it)
@@ -220,7 +221,9 @@ describe("Large Collections Performance", () => {
     const collectionId = await createCollection(collectionToDelete)
 
     // Find and delete the collection via UI
-    const rowElement = await getElementByTestId(`collection-tree:collection-row:${collectionId}`, 5000).catch(() => null)
+    const rowElement = await getElementByTestId(`collection-tree:collection-row:${collectionId}`, 5000).catch(
+      () => null,
+    )
 
     if (rowElement && (await rowElement.isDisplayed())) {
       // Right-click to open context menu (if available) or find delete button
@@ -232,7 +235,7 @@ describe("Large Collections Performance", () => {
         await rowElement.rightClick()
         const deleteOptionId = await browser.execute(() => {
           const opts = Array.from(document.querySelectorAll('[data-test-id*="delete"]'))
-          return opts.map(el => el.getAttribute("data-test-id")).filter(Boolean)
+          return opts.map((el) => el.getAttribute("data-test-id")).filter(Boolean)
         })
         if (deleteOptionId.length > 0 && deleteOptionId[0]) {
           const deleteOption = await getElementByTestId(deleteOptionId[0], 5000).catch(() => null)
@@ -312,9 +315,7 @@ describe("Large Payload Handling", () => {
     expect(await responseHeading.isDisplayed()).toBe(true)
 
     const sizeText = await browser.execute(() => {
-      const label = Array.from(document.querySelectorAll("span")).find(
-        el => el.textContent?.trim() === "Size:",
-      )
+      const label = Array.from(document.querySelectorAll("span")).find((el) => el.textContent?.trim() === "Size:")
       const value = label?.nextElementSibling as HTMLElement | null
       return value?.textContent ?? null
     })
@@ -424,7 +425,7 @@ describe("React Profiler Metrics", () => {
     expect(metrics.length).toBeGreaterThan(0)
 
     // Should have at least one mount phase
-    const mounts = metrics.filter(m => m.phase === "mount")
+    const mounts = metrics.filter((m) => m.phase === "mount")
     expect(mounts.length).toBeGreaterThan(0)
 
     // Initial mount should be reasonably fast (< 500ms)
@@ -433,7 +434,7 @@ describe("React Profiler Metrics", () => {
   })
 
   it("measures RequestHeadersPanel render time on field edits", async () => {
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
     await waitForRequestEditor()
     await clearProfilerMetrics()
 
@@ -450,7 +451,7 @@ describe("React Profiler Metrics", () => {
   })
 
   it("measures ResponseViewer render time for JSON responses", async () => {
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
     await waitForRequestEditor()
     await clearProfilerMetrics()
 
@@ -471,7 +472,7 @@ describe("React Profiler Metrics", () => {
   })
 
   it("measures RequestParametersPanel render time on parameter changes", async () => {
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
     await waitForRequestEditor()
     await clearProfilerMetrics()
 
@@ -493,7 +494,7 @@ describe("React Profiler Metrics", () => {
   })
 
   it("measures RequestBodyPanel render time when changing body type", async () => {
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
     await waitForRequestEditor()
     await clearProfilerMetrics()
 
@@ -514,7 +515,7 @@ describe("React Profiler Metrics", () => {
   })
 
   it("measures LogsList render time for response logs", async () => {
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
     await waitForRequestEditor()
     await clearProfilerMetrics()
 

@@ -21,7 +21,9 @@ export async function executeRequest(request: RequestState, environmentId?: stri
   return browser.execute(
     async (req, envId) => {
       const bridge = (window as any).__KNURL_INTEGRATION_BRIDGE__
-      if (!bridge) throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+      if (!bridge) {
+        throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+      }
       return bridge.executeRequest(req, envId)
     },
     request,
@@ -35,7 +37,9 @@ export async function executeRequest(request: RequestState, environmentId?: stri
 export async function loadAppData(filePath: string): Promise<any> {
   return browser.execute(async (path) => {
     const bridge = (window as any).__KNURL_INTEGRATION_BRIDGE__
-    if (!bridge) throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+    if (!bridge) {
+      throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+    }
     return bridge.loadAppData(path)
   }, filePath)
 }
@@ -47,7 +51,9 @@ export async function saveAppData(filePath: string, data: any): Promise<void> {
   return browser.execute(
     async (path, d) => {
       const bridge = (window as any).__KNURL_INTEGRATION_BRIDGE__
-      if (!bridge) throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+      if (!bridge) {
+        throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+      }
       return bridge.saveAppData(path, d)
     },
     filePath,
@@ -61,7 +67,9 @@ export async function saveAppData(filePath: string, data: any): Promise<void> {
 export async function deleteAppData(filePath: string): Promise<void> {
   return browser.execute(async (path) => {
     const bridge = (window as any).__KNURL_INTEGRATION_BRIDGE__
-    if (!bridge) throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+    if (!bridge) {
+      throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+    }
     return bridge.deleteAppData(path)
   }, filePath)
 }
@@ -72,7 +80,9 @@ export async function deleteAppData(filePath: string): Promise<void> {
 export async function getAppDataDir(): Promise<string> {
   return browser.execute(async () => {
     const bridge = (window as any).__KNURL_INTEGRATION_BRIDGE__
-    if (!bridge) throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+    if (!bridge) {
+      throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+    }
     return bridge.getAppDataDir()
   })
 }
@@ -83,7 +93,9 @@ export async function getAppDataDir(): Promise<string> {
 export async function getWorkspaceSnapshot(): Promise<any> {
   return browser.execute(async () => {
     const bridge = (window as any).__KNURL_INTEGRATION_BRIDGE__
-    if (!bridge) throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+    if (!bridge) {
+      throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+    }
     return bridge.getWorkspaceSnapshot()
   })
 }
@@ -94,7 +106,9 @@ export async function getWorkspaceSnapshot(): Promise<any> {
 export async function getCollectionsIndex(): Promise<any[]> {
   return browser.execute(async () => {
     const bridge = (window as any).__KNURL_INTEGRATION_BRIDGE__
-    if (!bridge) throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+    if (!bridge) {
+      throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+    }
     return bridge.getCollectionsIndex()
   })
 }
@@ -103,40 +117,37 @@ export async function getCollectionsIndex(): Promise<any[]> {
  * Get full collection data by ID
  */
 export async function getCollection(collectionId: string): Promise<any> {
-  return browser.execute(
-    async (id) => {
-      const bridge = (window as any).__KNURL_INTEGRATION_BRIDGE__
-      if (!bridge) throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
-      return bridge.getCollection(id)
-    },
-    collectionId,
-  )
+  return browser.execute(async (id) => {
+    const bridge = (window as any).__KNURL_INTEGRATION_BRIDGE__
+    if (!bridge) {
+      throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+    }
+    return bridge.getCollection(id)
+  }, collectionId)
 }
 
 /**
  * Create a new collection
  */
 export async function createCollection(name: string): Promise<string> {
-  return browser.execute(
-    async (n) => {
-      const bridge = (window as any).__KNURL_INTEGRATION_BRIDGE__
-      if (!bridge) throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
-      return bridge.createCollection(n)
-    },
-    name,
-  )
+  return browser.execute(async (n) => {
+    const bridge = (window as any).__KNURL_INTEGRATION_BRIDGE__
+    if (!bridge) {
+      throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+    }
+    return bridge.createCollection(n)
+  }, name)
 }
 
 /**
  * Delete a collection
  */
 export async function deleteCollection(collectionId: string): Promise<void> {
-  return browser.execute(
-    async (id) => {
-      const bridge = (window as any).__KNURL_INTEGRATION_BRIDGE__
-      if (!bridge) throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
-      return bridge.deleteCollection(id)
-    },
-    collectionId,
-  )
+  return browser.execute(async (id) => {
+    const bridge = (window as any).__KNURL_INTEGRATION_BRIDGE__
+    if (!bridge) {
+      throw new Error("Integration bridge not available. Is VITE_INTEGRATION_ENABLED set?")
+    }
+    return bridge.deleteCollection(id)
+  }, collectionId)
 }

@@ -3,7 +3,7 @@
  * These replace polling and arbitrary browser.pause() delays
  */
 
-import type { KnurlEvent, RequestUiEvent } from '@/lib/events'
+import type { KnurlEvent, RequestUiEvent } from "@/lib/events"
 
 /**
  * Wait for an event matching a specific type and optional action
@@ -14,8 +14,8 @@ import type { KnurlEvent, RequestUiEvent } from '@/lib/events'
  * @returns Event payload
  */
 export async function waitForEvent<T extends KnurlEvent>(
-  type: T['type'],
-  action?: T['action'],
+  type: T["type"],
+  action?: T["action"],
   timeout = 15000,
 ): Promise<T> {
   const startTime = Date.now()
@@ -53,9 +53,7 @@ export async function waitForEvent<T extends KnurlEvent>(
     await browser.pause(pollInterval)
   }
 
-  throw new Error(
-    `Timeout waiting for event ${type}${action ? ':' + action : ''} after ${timeout}ms`,
-  )
+  throw new Error(`Timeout waiting for event ${type}${action ? `:${action}` : ""} after ${timeout}ms`)
 }
 
 /**
@@ -66,13 +64,13 @@ export async function waitForTabOpened(): Promise<{
   requestId: string
   collectionId: string
 }> {
-  const event = (await waitForEvent('requestUi', 'opened')) as RequestUiEvent
+  const event = (await waitForEvent("requestUi", "opened")) as RequestUiEvent
   if (!event.tabId || !event.requestId) {
-    throw new Error('Tab opened event missing required fields: tabId, requestId')
+    throw new Error("Tab opened event missing required fields: tabId, requestId")
   }
   return {
     tabId: event.tabId,
     requestId: event.requestId,
-    collectionId: event.collectionId || 'scratch',
+    collectionId: event.collectionId || "scratch",
   }
 }

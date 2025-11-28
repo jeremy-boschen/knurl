@@ -1,15 +1,14 @@
 import { expect } from "@wdio/globals"
 
-import { createCollection } from "../support/ui"
-import { waitForRequestEditor } from "../support/ui"
 import {
   clickByTestId,
+  createCollection,
   ensureWorkspaceReady,
   getElementByTestId,
   openNewRequestViaUI,
   resetOverlays,
   setInputText,
-  waitForActiveRequestTabChange,
+  waitForRequestEditor,
   waitForTestIdToDisappear,
 } from "../support/ui"
 
@@ -120,7 +119,7 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
 
   it("clones an existing request", async () => {
     // Create and save a request first
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
     await waitForRequestEditor()
 
     const uniqueUrl = `https://api.example.com/clone-test/${Date.now()}`
@@ -156,10 +155,13 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
       await requestElement.click({ button: 2 })
 
       // Look for clone option in context menu
-      const cloneOption = await browser.execute(() => {
+      const _cloneOption = await browser.execute(() => {
         const menus = document.querySelectorAll('[role="menu"], [role="menuitem"]')
         for (const menu of menus) {
-          if (menu.textContent?.toLowerCase().includes("clone") || menu.textContent?.toLowerCase().includes("duplicate")) {
+          if (
+            menu.textContent?.toLowerCase().includes("clone") ||
+            menu.textContent?.toLowerCase().includes("duplicate")
+          ) {
             return true
           }
         }
@@ -173,7 +175,7 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
 
   it("opens multiple tabs for different requests", async () => {
     // Create first request
-    const tab1Key = await openNewRequestViaUI()
+    const _tab1Key = await openNewRequestViaUI()
     await waitForRequestEditor()
     await setInputText("request-workspace:url-input", `https://api.example.com/first/${Date.now()}`)
 
@@ -190,7 +192,7 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
     await waitForTestIdToDisappear("save-request-dialog")
 
     // Create second request
-    const tab2Key = await openNewRequestViaUI()
+    const _tab2Key = await openNewRequestViaUI()
     await waitForRequestEditor()
     await setInputText("request-workspace:url-input", `https://api.example.com/second/${Date.now()}`)
 
@@ -220,7 +222,7 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
     await waitForRequestEditor()
     await setInputText("request-workspace:url-input", `https://api.example.com/tab1/${Date.now()}`)
 
-    const tab2Key = await openNewRequestViaUI()
+    const _tab2Key = await openNewRequestViaUI()
     await waitForRequestEditor()
     await setInputText("request-workspace:url-input", `https://api.example.com/tab2/${Date.now()}`)
 
@@ -252,7 +254,7 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
     await setInputText("request-workspace:url-input", originalUrl)
 
     // Switch to a new tab
-    const tab2Key = await openNewRequestViaUI()
+    const _tab2Key = await openNewRequestViaUI()
     await waitForRequestEditor()
 
     // Switch back to tab 1
@@ -269,7 +271,7 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
   })
 
   it("replaces variable placeholders in request", async () => {
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
     await waitForRequestEditor()
 
     // Set a URL with variable placeholder
@@ -286,7 +288,7 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
   })
 
   it("supports environment variable interpolation in URL", async () => {
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
     await waitForRequestEditor()
 
     // Set a URL with environment variable syntax
@@ -303,16 +305,22 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
   })
 
   it("shows unsaved indicator when request is modified", async () => {
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
     await waitForRequestEditor()
 
     // Make a change
     await setInputText("request-workspace:url-input", `https://api.example.com/change/${Date.now()}`)
 
     // Look for unsaved indicator (usually a dot, asterisk, or modified state)
-    const hasUnsavedIndicator = await browser.execute(() => {
-      const tabElement = document.querySelector('[data-test-id="request-tab:' + document.querySelector('[data-state="active"][data-tab-key]')?.getAttribute('data-tab-key') + '"]')
-      if (!tabElement) return false
+    const _hasUnsavedIndicator = await browser.execute(() => {
+      const tabElement = document.querySelector(
+        '[data-test-id="request-tab:' +
+          document.querySelector('[data-state="active"][data-tab-key]')?.getAttribute("data-tab-key") +
+          '"]',
+      )
+      if (!tabElement) {
+        return false
+      }
       const text = tabElement.textContent ?? ""
       const classList = Array.from(tabElement.classList)
       // Check for unsaved indicators
@@ -324,7 +332,7 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
   })
 
   it("handles special characters in request parameters", async () => {
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
     await waitForRequestEditor()
 
     // Set URL with special characters in query
@@ -342,7 +350,7 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
   })
 
   it("preserves request state across multiple edits", async () => {
-    const tabKey = await openNewRequestViaUI()
+    const _tabKey = await openNewRequestViaUI()
     await waitForRequestEditor()
 
     // Set initial URL
@@ -373,7 +381,6 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
 
   console.log("✅ Request Authoring Advanced tests completed")
 })
-
 
 describe("[CRITICAL] Multi-Tab Unsaved Edits Management", () => {
   let tab1Key: string
@@ -408,7 +415,7 @@ describe("[CRITICAL] Multi-Tab Unsaved Edits Management", () => {
 
     // Verify tab 1 URL is intact
     const urlInput = await getElementByTestId("request-workspace:url-input")
-    let urlValue = await urlInput.getValue()
+    const urlValue = await urlInput.getValue()
     expect(urlValue).toContain("endpoint1")
 
     // Switch back to tab 3
@@ -509,7 +516,7 @@ describe("[CRITICAL] Multi-Tab Unsaved Edits Management", () => {
 
     // Check for unsaved indicator (typically a dot or asterisk in tab title)
     const tabElement = await getElementByTestId(`request-tab:${tab1Key}`, 5000).catch(() => null)
-    const tabText = await tabElement?.getText()
+    const _tabText = await tabElement?.getText()
 
     // Many UIs show * or a dot for unsaved changes
     // This test verifies the tab reflects the unsaved state somehow
@@ -536,9 +543,12 @@ describe("Scratch Collection UX", () => {
     const SCRATCH_COLLECTION_ID = "scratch"
 
     // Verify scratch collection exists in tree
-    const scratchExists = await browser.execute(({ collectionId }) => {
-      return !!document.querySelector(`[data-test-id="collection-tree:collection-row:${collectionId}"]`)
-    }, { collectionId: SCRATCH_COLLECTION_ID })
+    const scratchExists = await browser.execute(
+      ({ collectionId }) => {
+        return !!document.querySelector(`[data-test-id="collection-tree:collection-row:${collectionId}"]`)
+      },
+      { collectionId: SCRATCH_COLLECTION_ID },
+    )
 
     expect(scratchExists).toBe(true)
   })
@@ -556,7 +566,7 @@ describe("Scratch Collection UX", () => {
     expect(collectionIdBefore).toBe(SCRATCH_COLLECTION_ID)
 
     // Create a new tab and verify we can navigate back
-    const newTab = await openNewRequestViaUI()
+    const _newTab = await openNewRequestViaUI()
     await waitForRequestEditor()
 
     // Verify original tab still exists
@@ -591,16 +601,16 @@ describe("Scratch Collection UX", () => {
 })
 
 describe("[CRITICAL] Request Tab Context Menu", () => {
-  let tab1Key: string
+  let _tab1Key: string
   let tab2Key: string
-  let tab3Key: string
+  let _tab3Key: string
 
   before(async () => {
     await ensureWorkspaceReady()
     await resetOverlays()
 
     // Create three tabs for testing context menu
-    tab1Key = await openNewRequestViaUI()
+    _tab1Key = await openNewRequestViaUI()
     await waitForRequestEditor()
     await setInputText("request-workspace:url-input", "https://api.example.com/tab1")
 
@@ -608,7 +618,7 @@ describe("[CRITICAL] Request Tab Context Menu", () => {
     await waitForRequestEditor()
     await setInputText("request-workspace:url-input", "https://api.example.com/tab2")
 
-    tab3Key = await openNewRequestViaUI()
+    _tab3Key = await openNewRequestViaUI()
     await waitForRequestEditor()
     await setInputText("request-workspace:url-input", "https://api.example.com/tab3")
   })
@@ -625,7 +635,9 @@ describe("[CRITICAL] Request Tab Context Menu", () => {
 
     // Verify menu items exist
     const closeItem = await getElementByTestId("request-tab-bar:context-menu:close", 5000).catch(() => null)
-    const closeOthersItem = await getElementByTestId("request-tab-bar:context-menu:close-others", 5000).catch(() => null)
+    const closeOthersItem = await getElementByTestId("request-tab-bar:context-menu:close-others", 5000).catch(
+      () => null,
+    )
     const closeLeftItem = await getElementByTestId("request-tab-bar:context-menu:close-left", 5000).catch(() => null)
     const closeRightItem = await getElementByTestId("request-tab-bar:context-menu:close-right", 5000).catch(() => null)
     const closeAllItem = await getElementByTestId("request-tab-bar:context-menu:close-all", 5000).catch(() => null)
@@ -665,7 +677,7 @@ describe("[CRITICAL] Request Tab Context Menu", () => {
 
 // Helper functions
 
-async function selectMethod(method: string): Promise<void> {
+async function _selectMethod(method: string): Promise<void> {
   await clickByTestId("request-workspace:method-select")
 
   // Wait for dropdown to open and find the option
@@ -673,17 +685,17 @@ async function selectMethod(method: string): Promise<void> {
     async () => {
       const optionId = await browser.execute((targetMethod) => {
         const options = Array.from(document.querySelectorAll('[role="option"]'))
-        const option = options.find(el => el.textContent?.trim() === targetMethod)
+        const option = options.find((el) => el.textContent?.trim() === targetMethod)
         return option?.getAttribute("data-test-id") || null
       }, method)
       return optionId !== null
     },
-    { timeout: 5000, interval: 100 }
+    { timeout: 5000, interval: 100 },
   )
 
   const optionId = await browser.execute((targetMethod) => {
     const options = Array.from(document.querySelectorAll('[role="option"]'))
-    const option = options.find(el => el.textContent?.trim() === targetMethod)
+    const option = options.find((el) => el.textContent?.trim() === targetMethod)
     return option?.getAttribute("data-test-id") || null
   }, method)
 
@@ -697,16 +709,16 @@ async function selectMethod(method: string): Promise<void> {
   }
 }
 
-async function openParamsMenu(): Promise<void> {
+async function _openParamsMenu(): Promise<void> {
   await openDropdownForTab("request-editor:params-tab")
 }
 
-async function openHeadersMenu(): Promise<void> {
+async function _openHeadersMenu(): Promise<void> {
   const trigger = await getDropdownTrigger("request-editor:headers-tab")
   await trigger.click()
 }
 
-async function openBodyMenu(): Promise<void> {
+async function _openBodyMenu(): Promise<void> {
   await openDropdownForTab("request-editor:body-tab")
 }
 
@@ -834,7 +846,7 @@ async function seedScratchRequest(): Promise<{ requestId: string; tabKey: string
     throw new Error(`Seed tab ${tabKey} not attached to scratch collection`)
   }
 
-  const requestId = await tabElement?.getAttribute("data-request-id") || ""
+  const requestId = (await tabElement?.getAttribute("data-request-id")) || ""
   return { requestId, tabKey }
 }
 

@@ -4,15 +4,15 @@ import {
   appendInputText,
   clickByTestId,
   ensureAppReady,
+  ensureWorkspaceReady,
   expectTextContent,
+  getElementByTestId,
   navigateTo,
   selectMenuActionById,
   selectOptionByTestId,
   setCheckboxState,
   setInputText,
   setSwitchState,
-  ensureWorkspaceReady,
-  getElementByTestId,
 } from "../support/ui"
 
 describe("[SUPPLEMENTAL] Settings & UI Customization", () => {

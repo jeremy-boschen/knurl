@@ -1,7 +1,7 @@
 import { expect } from "@wdio/globals"
 
-import { openNewRequestViaUI, ensureWorkspaceReady } from "../support/ui"
-import { waitForTabOpened, waitForEvent } from "../support/events"
+import { waitForEvent, waitForTabOpened } from "../support/events"
+import { ensureWorkspaceReady, openNewRequestViaUI } from "../support/ui"
 
 describe("[SUPPLEMENTAL] Event System", () => {
   describe("RequestUi Events", () => {

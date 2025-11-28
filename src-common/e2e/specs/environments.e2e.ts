@@ -1,6 +1,15 @@
 import { expect } from "@wdio/globals"
 
-import { createCollection, waitForRequestEditor, clickByTestId, ensureWorkspaceReady, getElementByTestId, resetOverlays, setInputText, waitForActiveRequestTab } from "../support/ui"
+import {
+  clickByTestId,
+  createCollection,
+  ensureWorkspaceReady,
+  getElementByTestId,
+  resetOverlays,
+  setInputText,
+  waitForActiveRequestTab,
+  waitForRequestEditor,
+} from "../support/ui"
 
 describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
   const state: {
@@ -48,7 +57,9 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
     // We extract the ID from the test-id attribute: environment-list:item:XXXX
     const environmentIdElement = await browser.execute(() => {
       const cards = Array.from(document.querySelectorAll('[data-test-id^="environment-list:item:"]'))
-      if (cards.length === 0) return null
+      if (cards.length === 0) {
+        return null
+      }
       const latestCard = cards[cards.length - 1]
       const testId = latestCard?.getAttribute("data-test-id")
       return testId?.split(":").pop() ?? null
@@ -86,7 +97,9 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
 
     // Click the secure toggle for the variable
     const secureToggleSelector = await browser.execute(() => {
-      const toggles = Array.from(document.querySelectorAll('[data-test-id^="environment-editor:variable-secure-toggle:"]'))
+      const toggles = Array.from(
+        document.querySelectorAll('[data-test-id^="environment-editor:variable-secure-toggle:"]'),
+      )
       return toggles[toggles.length - 1]?.getAttribute("data-test-id") ?? null
     })
     if (secureToggleSelector) {

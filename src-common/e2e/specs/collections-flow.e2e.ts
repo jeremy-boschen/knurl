@@ -1,14 +1,14 @@
 import { expect } from "@wdio/globals"
 
-import { waitForRequestEditor } from "../support/ui"
-import { clickVisibleNewCollectionButton, waitForCollectionIdByName } from "../support/ui"
 import {
   clickByTestId,
+  clickVisibleNewCollectionButton,
   ensureWorkspaceReady,
   getElementByTestId,
   openNewRequestViaUI,
-  selectOptionByTestId,
   setInputText,
+  waitForCollectionIdByName,
+  waitForRequestEditor,
   waitForTestIdToDisappear,
 } from "../support/ui"
 
@@ -264,7 +264,9 @@ async function waitForTabSnapshot(tabKey: string, timeout = 10000): Promise<Open
       const exists = await tab.isDisplayed().catch(() => false)
       if (exists) {
         const requestId = await tab.getAttribute("data-tab-id")
-        if (!requestId) return false
+        if (!requestId) {
+          return false
+        }
 
         // For collection ID, we need to look it up from the request tree
         // If the request isn't in the tree yet, default to scratch
@@ -291,7 +293,7 @@ async function waitForTabSnapshot(tabKey: string, timeout = 10000): Promise<Open
   return resolved
 }
 
-async function waitForRequestPlacement(collectionId: string, requestId: string, timeout = 10000): Promise<void> {
+async function _waitForRequestPlacement(collectionId: string, requestId: string, timeout = 10000): Promise<void> {
   await browser.waitUntil(
     async () =>
       await browser.execute(
@@ -313,7 +315,7 @@ async function waitForRequestPlacement(collectionId: string, requestId: string, 
   )
 }
 
-async function ensureRequestRemovedFromScratch(requestId: string, timeout = 10000): Promise<void> {
+async function _ensureRequestRemovedFromScratch(requestId: string, timeout = 10000): Promise<void> {
   await browser.waitUntil(
     async () =>
       await browser.execute(
