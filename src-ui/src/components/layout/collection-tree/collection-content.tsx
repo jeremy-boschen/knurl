@@ -17,7 +17,7 @@ export type CollectionContentProps = {
   onAction: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
 }
 
-export function CollectionContent({ collectionId, onAction }: CollectionContentProps) {
+export const CollectionContent = React.memo(function CollectionContent({ collectionId, onAction }: CollectionContentProps) {
   const {
     state: { collection },
   } = useCollection(collectionId)
@@ -64,4 +64,4 @@ export function CollectionContent({ collectionId, onAction }: CollectionContentP
       </SortableContext>
     </div>
   )
-}
+})

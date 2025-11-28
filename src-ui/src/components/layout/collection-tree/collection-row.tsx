@@ -34,113 +34,124 @@ export type CollectionRowProps = {
   onAction: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
 }
 
-export function CollectionRow({ collectionId, collectionName, open, onAction }: CollectionRowProps) {
-  const { dropIndicator } = useDndTreeContext()
-  const isOver = dropIndicator?.id === collectionId
-  const dropPosition = isOver ? dropIndicator.position : null
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: collectionId,
-    data: {
-      type: "collection",
-      collectionId,
-    } satisfies CollectionDragData,
-  })
-  const { setNodeRef: setDropRef } = useDroppable({
-    id: collectionId,
-    data: {
-      type: "collection",
-      collectionId,
-    },
-  })
+export const CollectionRow = React.memo(
+  function CollectionRow({ collectionId, collectionName, open, onAction }: CollectionRowProps) {
+    const { dropIndicator } = useDndTreeContext()
+    const isOver = dropIndicator?.id === collectionId
+    const dropPosition = isOver ? dropIndicator.position : null
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+      id: collectionId,
+      data: {
+        type: "collection",
+        collectionId,
+      } satisfies CollectionDragData,
+    })
+    const { setNodeRef: setDropRef } = useDroppable({
+      id: collectionId,
+      data: {
+        type: "collection",
+        collectionId,
+      },
+    })
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  }
-  return (
-    <div key={collectionId} className={cn("mb-2 relative")} ref={setNodeRef} style={style}>
-      {isOver && dropPosition !== "middle" && (
-        <>
-          {dropPosition === "top" && <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary z-10" />}
-          {dropPosition === "bottom" && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary z-10" />}
-        </>
-      )}
-      <div
-        role="treeitem"
-        tabIndex={0}
-        id={collectionId}
-        ref={setDropRef}
-        className={cn(
-          "group/col relative flex w-full cursor-pointer items-center justify-between rounded p-2 hover:bg-accent has-[button[data-state=open]]:bg-accent",
-          isDragging && "opacity-50",
-          isOver && dropPosition === "middle" && "bg-primary/10",
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    }
+    return (
+      <div key={collectionId} className={cn("mb-2 relative")} ref={setNodeRef} style={style}>
+        {isOver && dropPosition !== "middle" && (
+          <>
+            {dropPosition === "top" && <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary z-10" />}
+            {dropPosition === "bottom" && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary z-10" />}
+          </>
         )}
-        data-action-id="select"
-        data-kind="collection"
-        data-collection-id={collectionId}
-        onClick={onAction}
-        onKeyDown={onAction}
-        data-test-id={`collection-tree:collection-row:${collectionId}`}
-      >
-        <div className="flex flex-1 items-center space-x-2">
-          <div
-            className="tree-offset-flex hover:cursor-grab active:cursor-grabbing"
-            title="Drag to reorder"
-            {...attributes}
-            {...listeners}
-          >
-            {open ? (
-              <>
-                <ChevronDownIcon className="h-3 w-3 text-primary" />
-                <FolderOpenIcon className="h-4 w-4 text-primary" />
-              </>
-            ) : (
-              <>
-                <ChevronRightIcon className="h-3 w-3 text-primary" />
-                <FolderClosedIcon className="h-4 w-4 text-primary" />
-              </>
-            )}
-            <span className="text-sm">{collectionName}</span>
-          </div>
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 dropdown-trigger group-hover/col:opacity-100 transition-none"
-              data-test-id={`collection-tree:collection-row:menu-button:${collectionId}`}
+        <div
+          role="treeitem"
+          tabIndex={0}
+          id={collectionId}
+          ref={setDropRef}
+          className={cn(
+            "group/col relative flex w-full cursor-pointer items-center justify-between rounded p-2 hover:bg-accent has-[button[data-state=open]]:bg-accent",
+            isDragging && "opacity-50",
+            isOver && dropPosition === "middle" && "bg-primary/10",
+          )}
+          data-action-id="select"
+          data-kind="collection"
+          data-collection-id={collectionId}
+          onClick={onAction}
+          onKeyDown={onAction}
+          data-test-id={`collection-tree:collection-row:${collectionId}`}
+        >
+          <div className="flex flex-1 items-center space-x-2">
+            <div
+              className="tree-offset-flex hover:cursor-grab active:cursor-grabbing"
+              title="Drag to reorder"
+              {...attributes}
+              {...listeners}
             >
-              <MoreHorizontalIcon className="h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <CollectionMenuContent collection={{ id: collectionId, name: collectionName }} onAction={onAction} />
-        </DropdownMenu>
-      </div>
-
-      {open && (
-        <div className="ml-6 space-y-1">
-          <ErrorBoundary
-            fallback={(error) => (
-              <Alert variant="destructive">
-                <AlertTriangleIcon className="h-4 w-4" />
-                <AlertTitle>Collection {collectionName} could not be loaded</AlertTitle>
-                <AlertDescription>
-                  <p>{error?.message ?? "An unexpected error occurred while loading the collection."}</p>
-                </AlertDescription>
-              </Alert>
-            )}
-          >
-            <Suspense name="collection" fallback={<div />}>
-              <CollectionContent collectionId={collectionId} onAction={onAction} />
-            </Suspense>
-          </ErrorBoundary>
+              {open ? (
+                <>
+                  <ChevronDownIcon className="h-3 w-3 text-primary" />
+                  <FolderOpenIcon className="h-4 w-4 text-primary" />
+                </>
+              ) : (
+                <>
+                  <ChevronRightIcon className="h-3 w-3 text-primary" />
+                  <FolderClosedIcon className="h-4 w-4 text-primary" />
+                </>
+              )}
+              <span className="text-sm">{collectionName}</span>
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 dropdown-trigger group-hover/col:opacity-100 transition-none"
+                data-test-id={`collection-tree:collection-row:menu-button:${collectionId}`}
+              >
+                <MoreHorizontalIcon className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <CollectionMenuContent collection={{ id: collectionId, name: collectionName }} onAction={onAction} />
+          </DropdownMenu>
         </div>
-      )}
-    </div>
-  )
-}
+
+        {open && (
+          <div className="ml-6 space-y-1">
+            <ErrorBoundary
+              fallback={(error) => (
+                <Alert variant="destructive">
+                  <AlertTriangleIcon className="h-4 w-4" />
+                  <AlertTitle>Collection {collectionName} could not be loaded</AlertTitle>
+                  <AlertDescription>
+                    <p>{error?.message ?? "An unexpected error occurred while loading the collection."}</p>
+                  </AlertDescription>
+                </Alert>
+              )}
+            >
+              <Suspense name="collection" fallback={<div />}>
+                <CollectionContent collectionId={collectionId} onAction={onAction} />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+        )}
+      </div>
+    )
+  },
+  (prev, next) => {
+    // Custom comparator: only re-render if these specific props changed
+    return (
+      prev.collectionId === next.collectionId &&
+      prev.collectionName === next.collectionName &&
+      prev.open === next.open
+      // Note: onAction is intentionally not compared as it comes from parent and may change frequently
+    )
+  },
+)
 
 export type CollectionRowSearchableProps = {
   collectionId: string

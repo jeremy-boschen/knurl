@@ -27,7 +27,7 @@ export type CollectionFolderBranchProps = {
   onAction: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
 }
 
-export function CollectionFolderBranch({
+export const CollectionFolderBranch = React.memo(function CollectionFolderBranch({
   collection,
   collectionId,
   folderId,
@@ -172,4 +172,11 @@ export function CollectionFolderBranch({
       )}
     </div>
   )
-}
+}, (prev, next) => {
+  // For FolderBranch, re-render if collection or folderId changed
+  // This preserves internal state while avoiding unnecessary re-renders
+  return prev.collection === next.collection &&
+    prev.folderId === next.folderId &&
+    prev.collectionId === next.collectionId &&
+    prev.depth === next.depth
+})
