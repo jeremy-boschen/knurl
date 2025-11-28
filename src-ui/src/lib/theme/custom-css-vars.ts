@@ -34,6 +34,9 @@ function sanitizeCustomValue(value: string | undefined): string | undefined {
 
   // Use only the first line to avoid comments or stray declarations getting concatenated.
   let sanitized = value.split("\n", 1)[0]
+  if (sanitized === undefined) {
+    return undefined
+  }
 
   // Strip anything after a block comment closer that might have been captured.
   const commentClose = sanitized.indexOf("*/")
