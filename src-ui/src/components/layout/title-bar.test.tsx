@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 
 import * as State from "@/state"
+import type { RequestTabsApi } from "@/types"
 
 const getCurrentWindow = vi.fn()
 
@@ -35,7 +36,7 @@ describe("TitleBar", () => {
   })
 
   const setupState = (options: { hasActiveTab: boolean }) => {
-    const requestTabsApi = { createRequestTab: vi.fn() }
+    const requestTabsApi = { createRequestTab: vi.fn() } as unknown as RequestTabsApi
     openTabsSpy.mockReturnValue({
       state: { openTabs: [] },
       actions: { requestTabsApi },
