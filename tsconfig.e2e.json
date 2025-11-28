@@ -6,17 +6,26 @@
       "expect-webdriverio",
       "@types/mocha"
     ],
-    "target": "es2022",
+    "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "baseUrl": "..",
+    "baseUrl": ".",
     "paths": {
       "@/*": ["src-ui/src/*"],
       "@test/*": ["src-common/e2e/*"]
     },
+    "strict": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "useUnknownInCatchVariables": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": false,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "strict": true,
     "skipLibCheck": true
-  }
+  },
+  "include": [
+    "src-common/e2e/**/*",
+    "test/**/*.ts"
+  ]
 }
