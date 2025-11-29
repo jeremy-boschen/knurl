@@ -11,6 +11,7 @@ export const loadApplication = (async () => {
 
 export * from "./application"
 export * from "./collections"
+export * from "./dialogs"
 export * from "./request-tabs"
 export * from "./settings"
 export * from "./sidebar"
