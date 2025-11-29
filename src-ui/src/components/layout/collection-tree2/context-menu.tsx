@@ -88,7 +88,7 @@ export function CollectionTreeContextMenu() {
   }
 
   const openRenameDialog = (kind: "request" | "folder" | "collection", name: string) => {
-    // biome-ignore lint/style/noNonNullAssertion: activeMenuItem is guaranteed to be non-null
+    // biome-ignore lint/style/noNonNullAssertion: activeMenuItem is guaranteed by calling code
     const context: RenameContext =
       kind === "request"
         ? {
@@ -121,7 +121,7 @@ export function CollectionTreeContextMenu() {
   }
 
   const openDeleteDialog = (kind: "request" | "folder" | "collection", name: string) => {
-    // biome-ignore lint/style/noNonNullAssertion: activeMenuItem is guaranteed to be non-null
+    // biome-ignore lint/style/noNonNullAssertion: activeMenuItem is guaranteed by calling code
     const context: DeleteContext =
       kind === "request"
         ? {
