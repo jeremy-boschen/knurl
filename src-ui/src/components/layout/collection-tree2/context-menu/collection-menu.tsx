@@ -5,7 +5,6 @@ import { Edit2Icon, FolderPlusIcon, GlobeIcon, PlusIcon, Trash2Icon, UploadIcon 
 import { ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
 import { collectionsApi, dialogsApi, utilitySheetsApi } from "@/state"
 import { RootCollectionFolderId } from "@/types"
-
 import type { ActiveMenuItem } from "./types"
 
 interface CollectionMenuProps {
@@ -17,8 +16,10 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
     dialogsApi().showCreateRequestDialog({
       collectionId: item.collectionId,
       parentId: RootCollectionFolderId,
-      onConfirm: (context) => {
+      onConfirm: async (context) => {
         try {
+          await collectionsApi().loadCollection(item.collectionId)
+
           collectionsApi().createRequest(item.collectionId, {
             name: context.name,
             folderId: RootCollectionFolderId,
@@ -34,8 +35,10 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
     dialogsApi().showCreateFolderDialog({
       collectionId: item.collectionId,
       parentId: RootCollectionFolderId,
-      onConfirm: (context) => {
+      onConfirm: async (context) => {
         try {
+          await collectionsApi().loadCollection(item.collectionId)
+
           collectionsApi().createFolder(item.collectionId, RootCollectionFolderId, context.name)
         } catch (error) {
           console.error("Failed to create folder", error)
@@ -54,14 +57,22 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
       ),
       context: { kind: "collection", collectionId: item.collectionId },
       name: item.name,
-      onConfirm: (ctx, newName) => {
-        collectionsApi().updateCollection(ctx.collectionId, { name: newName })
+      onConfirm: async (ctx, newName) => {
+        try {
+          await collectionsApi().loadCollection(item.collectionId)
+
+          collectionsApi().updateCollection(ctx.collectionId, { name: newName })
+        } catch (error) {
+          console.error("Failed to rename collection", error)
+        }
       },
     })
   }, [item])
 
-  const handleOpenSettings = useCallback(() => {
+  const handleOpenSettings = useCallback(async () => {
     try {
+      await collectionsApi().loadCollection(item.collectionId)
+
       utilitySheetsApi().openSheet({
         type: "collection-settings",
         context: { collectionId: item.collectionId },
@@ -71,8 +82,10 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
     }
   }, [item])
 
-  const handleOpenExport = useCallback(() => {
+  const handleOpenExport = useCallback(async () => {
     try {
+      await collectionsApi().loadCollection(item.collectionId)
+
       utilitySheetsApi().openSheet({ type: "export", context: { collectionId: item.collectionId } })
     } catch (error) {
       console.error("Failed to open export sheet", error)
@@ -88,8 +101,14 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
         </>
       ),
       context: { kind: "collection", collectionId: item.collectionId },
-      onConfirm: (ctx) => {
-        collectionsApi().removeCollection(ctx.collectionId)
+      onConfirm: async (ctx) => {
+        try {
+          await collectionsApi().loadCollection(item.collectionId)
+
+          collectionsApi().removeCollection(ctx.collectionId)
+        } catch (error) {
+          console.error("Failed to delete collection", error)
+        }
       },
     })
   }, [item])
