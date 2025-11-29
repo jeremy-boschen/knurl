@@ -15,7 +15,8 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
   const {
     state: { collection },
   } = useCollectionFromCache(collectionId)
-  const folder = collection.folders[folderId]
+  // biome-ignore lint/style/noNonNullAssertion: Safe
+  const folder = collection.folders[folderId]!
 
   const [isOpen, setIsOpen] = useState(false)
   const [isSelected, setIsSelected] = useState(false)
@@ -47,7 +48,7 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
 
       {isOpen ? (
         <div className="ml-3 space-y-1">
-          <RequestItemList collectionId={collectionId} folder={folder} requestIds={folder.requestIds} />
+          <RequestItemList collectionId={collectionId} folder={folder} />
 
           {folder.childFolderIds.map((childFolderId) => (
             <FolderItemList key={childFolderId} collectionId={collectionId} folderId={childFolderId} />

@@ -20,12 +20,12 @@ export function FolderItemList({ collectionId, folderId }: FolderItemListProps) 
   const isRoot = folderId === RootCollectionFolderId
 
   return (
-    <div className={`space-y-1 ${isRoot ? "" : "ml-3"}`} data-folder-id={folderId}>
+    <div className={`space-y-1 ${isRoot ? "" : "ml-2"}`} data-folder-id={folderId}>
       {!isRoot ? <FolderItem collectionId={collectionId} folderId={folderId} /> : null}
 
       {isRoot ? (
         <>
-          <RequestItemList collectionId={collectionId} folder={folder} requestIds={folder.requestIds} />
+          <RequestItemList collectionId={collectionId} folder={folder} />
 
           {folder.childFolderIds.map((childFolderId) => (
             <FolderItemList key={childFolderId} collectionId={collectionId} folderId={childFolderId} />

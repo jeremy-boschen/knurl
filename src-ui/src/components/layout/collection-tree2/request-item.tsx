@@ -12,6 +12,9 @@ export function RequestItem({ collectionId, requestId }: RequestItemProps) {
     state: { collection },
   } = useCollectionFromCache(collectionId)
   const request = collection.requests[requestId]
+  if (!request) {
+    return null
+  }
 
   return (
     <div
