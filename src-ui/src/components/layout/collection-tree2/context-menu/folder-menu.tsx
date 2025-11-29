@@ -1,6 +1,6 @@
 import { useCallback } from "react"
 
-import { Edit2Icon, FolderPlusIcon, Trash2Icon } from "lucide-react"
+import { Edit2Icon, FolderPlusIcon, PlusIcon, Trash2Icon } from "lucide-react"
 
 import { ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
 import { collectionsApi, dialogsApi } from "@/state"
@@ -28,6 +28,23 @@ export function FolderMenu({ item }: FolderMenuProps) {
       name: item.name,
       onConfirm: (ctx, newName) => {
         collectionsApi().renameFolder(ctx.collectionId, ctx.folderId, newName)
+      },
+    })
+  }, [item])
+
+  const handleCreateRequest = useCallback(() => {
+    dialogsApi().showCreateRequestDialog({
+      collectionId: item.collectionId,
+      parentId: item.folderId,
+      onConfirm: (context) => {
+        try {
+          collectionsApi().createRequest(item.collectionId, {
+            name: context.name,
+            folderId: item.folderId,
+          })
+        } catch (error) {
+          console.error("Failed to create request", error)
+        }
       },
     })
   }, [item])
@@ -67,13 +84,18 @@ export function FolderMenu({ item }: FolderMenuProps) {
 
   return (
     <ContextMenuContent className="w-48">
-      <ContextMenuItem onClick={handleRename}>
-        <Edit2Icon className="h-4 w-4" />
-        Rename Folder
+      <ContextMenuItem onClick={handleCreateRequest}>
+        <PlusIcon className="h-4 w-4" />
+        New Request
       </ContextMenuItem>
       <ContextMenuItem onClick={handleCreateFolder}>
         <FolderPlusIcon className="h-4 w-4" />
         New Folder
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem onClick={handleRename}>
+        <Edit2Icon className="h-4 w-4" />
+        Rename Folder
       </ContextMenuItem>
       <ContextMenuSeparator />
       <ContextMenuItem onClick={handleDelete} variant="destructive">
