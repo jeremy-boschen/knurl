@@ -1,6 +1,6 @@
 import { useCollections } from "@/state"
-import { CollectionTreeContextMenu } from "./context-menu"
 import { CollectionItem } from "./collection-item"
+import { CollectionContextMenu } from "./context-menu"
 
 export function CollectionTree2() {
   const {
@@ -8,12 +8,12 @@ export function CollectionTree2() {
   } = useCollections()
 
   return (
-    <CollectionTreeContextMenu>
+    <CollectionContextMenu>
       <div className="space-y-2" role="tree">
         {collectionsIndex.map((entry) => (
           <CollectionItem key={entry.id} collectionId={entry.id} collectionName={entry.name} />
         ))}
       </div>
-    </CollectionTreeContextMenu>
+    </CollectionContextMenu>
   )
 }

@@ -1,31 +1,50 @@
-import type { ReactNode } from "react"
+// noinspection DuplicatedCode
+
+import type { MouseEvent, ReactNode } from "react"
 import { useState } from "react"
 
-import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu"
-import { ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
 import DeleteDialog from "@/components/shared/delete-dialog"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
 import RenameDialog from "@/components/ui/knurl/rename-dialog"
 import { RequestContextMenuContent } from "@/components/ui/knurl/request-context-menu"
 import { collectionsApi } from "@/state"
 import type { DeleteContext, DialogProps, RenameContext } from "./types"
 
-export type ActiveMenuItem = {
-  collectionId: string
-  requestId?: string
-  folderId?: string
-  kind: "collection" | "folder" | "request"
-  name: string
-} | null
+export type ActiveMenuItem =
+  | {
+      kind: "collection"
+      collectionId: string
+      name: string
+    }
+  | {
+      kind: "folder"
+      collectionId: string
+      folderId: string
+      name: string
+    }
+  | {
+      kind: "request"
+      collectionId: string
+      requestId: string
+      name: string
+    }
+  | null
 
-export type CollectionTreeContextMenuProps = {
+export type CollectionContextMenuProps = {
   children: ReactNode
 }
 
-export function CollectionTreeContextMenu({ children }: CollectionTreeContextMenuProps) {
+export function CollectionContextMenu({ children }: CollectionContextMenuProps) {
   const [activeMenuItem, setActiveMenuItem] = useState<ActiveMenuItem>(null)
   const [dialogProps, setDialogProps] = useState<DialogProps | null>(null)
 
-  const handleContextMenuOpen = (event: React.MouseEvent<HTMLDivElement>) => {
+  const handleContextMenuOpen = (event: MouseEvent<HTMLDivElement>) => {
     // Walk up the tree to find the data attributes
     let target: HTMLElement | null = event.target as HTMLElement | null
     while (target && !target.dataset.kind) {
@@ -42,17 +61,25 @@ export function CollectionTreeContextMenu({ children }: CollectionTreeContextMen
     const kind = target.dataset.kind
     const name = target.dataset.name
 
-    if (!collectionId || !kind) {
+    if (!collectionId || !kind || !name) {
       return
     }
 
-    setActiveMenuItem({
-      collectionId,
-      requestId,
-      folderId,
-      kind: kind as "collection" | "folder" | "request",
-      name: name || "Unknown",
-    })
+    switch (kind) {
+      case "collection":
+        setActiveMenuItem({ kind, collectionId, name })
+        break
+      case "folder":
+        if (folderId) {
+          setActiveMenuItem({ kind, collectionId, folderId, name })
+        }
+        break
+      case "request":
+        if (requestId) {
+          setActiveMenuItem({ kind, collectionId, requestId, name })
+        }
+        break
+    }
   }
 
   const handleContextMenuClose = (open: boolean) => {
@@ -87,66 +114,88 @@ export function CollectionTreeContextMenu({ children }: CollectionTreeContextMen
     setDialogProps(null)
   }
 
-  const openRenameDialog = (kind: "request" | "folder" | "collection", name: string) => {
-    // biome-ignore lint/style/noNonNullAssertion: activeMenuItem is guaranteed by calling code
-    const context: RenameContext =
-      kind === "request"
-        ? {
-            kind: "request",
-            collectionId: activeMenuItem!.collectionId,
-            // biome-ignore lint/style/noNonNullAssertion: requestId is present for request kind
-            requestId: activeMenuItem!.requestId!,
-          }
-        : kind === "folder"
-          ? {
-              kind: "folder",
-              collectionId: activeMenuItem!.collectionId,
-              // biome-ignore lint/style/noNonNullAssertion: folderId is present for folder kind
-              folderId: activeMenuItem!.folderId!,
-            }
-          : { kind: "collection", collectionId: activeMenuItem!.collectionId }
+  const openRenameDialog = () => {
+    if (!activeMenuItem) {
+      return
+    }
+
+    let context: RenameContext
+    let kindName: string
+
+    switch (activeMenuItem.kind) {
+      case "request":
+        context = {
+          kind: "request",
+          collectionId: activeMenuItem.collectionId,
+          requestId: activeMenuItem.requestId,
+        }
+        kindName = "Request"
+        break
+      case "folder":
+        context = {
+          kind: "folder",
+          collectionId: activeMenuItem.collectionId,
+          folderId: activeMenuItem.folderId,
+        }
+        kindName = "Folder"
+        break
+      case "collection":
+        context = { kind: "collection", collectionId: activeMenuItem.collectionId }
+        kindName = "Collection"
+        break
+    }
 
     setDialogProps({
       action: "rename",
-      name,
-      title: `Rename ${kind === "request" ? "Request" : kind === "folder" ? "Folder" : "Collection"}`,
+      name: activeMenuItem.name,
+      title: `Rename ${kindName}`,
       description: (
         <>
-          Rename the <span className="text-lg text-primary">{name}</span>{" "}
-          {kind === "request" ? "request" : kind === "folder" ? "folder" : "collection"}?
+          Rename the <span className="text-lg text-primary">{activeMenuItem.name}</span> {kindName.toLowerCase()}?
         </>
       ),
       context,
     })
   }
 
-  const openDeleteDialog = (kind: "request" | "folder" | "collection", name: string) => {
-    // biome-ignore lint/style/noNonNullAssertion: activeMenuItem is guaranteed by calling code
-    const context: DeleteContext =
-      kind === "request"
-        ? {
-            kind: "request",
-            collectionId: activeMenuItem!.collectionId,
-            // biome-ignore lint/style/noNonNullAssertion: requestId is present for request kind
-            requestId: activeMenuItem!.requestId!,
-          }
-        : kind === "folder"
-          ? {
-              kind: "folder",
-              collectionId: activeMenuItem!.collectionId,
-              // biome-ignore lint/style/noNonNullAssertion: folderId is present for folder kind
-              folderId: activeMenuItem!.folderId!,
-            }
-          : { kind: "collection", collectionId: activeMenuItem!.collectionId }
+  const openDeleteDialog = () => {
+    if (!activeMenuItem) {
+      return
+    }
+    let context: DeleteContext
+    let kindName: string
+
+    switch (activeMenuItem.kind) {
+      case "request":
+        context = {
+          kind: "request",
+          collectionId: activeMenuItem.collectionId,
+          requestId: activeMenuItem.requestId,
+        }
+        kindName = "Request"
+        break
+      case "folder":
+        context = {
+          kind: "folder",
+          collectionId: activeMenuItem.collectionId,
+          folderId: activeMenuItem.folderId,
+        }
+        kindName = "Folder"
+        break
+      case "collection":
+        context = { kind: "collection", collectionId: activeMenuItem.collectionId }
+        kindName = "Collection"
+        break
+    }
 
     setDialogProps({
       action: "delete",
-      name,
-      title: `Delete ${kind === "request" ? "Request" : kind === "folder" ? "Folder" : "Collection"}`,
+      name: activeMenuItem.name,
+      title: `Delete ${kindName}`,
       description: (
         <>
-          Are you sure you want to delete the <span className="text-lg text-primary">{name}</span>{" "}
-          {kind === "request" ? "request" : kind === "folder" ? "folder" : "collection"}?
+          Are you sure you want to delete the <span className="text-lg text-primary">{activeMenuItem.name}</span>{" "}
+          {kindName.toLowerCase()}?
         </>
       ),
       context,
@@ -189,47 +238,40 @@ export function CollectionTreeContextMenu({ children }: CollectionTreeContextMen
 }
 
 function renderContextMenuContent(
-  activeMenuItem: ActiveMenuItem,
-  openRenameDialog: (kind: "request" | "folder" | "collection", name: string) => void,
-  openDeleteDialog: (kind: "request" | "folder" | "collection", name: string) => void,
+  activeMenuItem: NonNullable<ActiveMenuItem>,
+  openRenameDialog: () => void,
+  openDeleteDialog: () => void,
 ) {
-  if (!activeMenuItem) {
-    return null
-  }
-
-  if (activeMenuItem.kind === "request") {
-    // biome-ignore lint/style/noNonNullAssertion: requestId is present for request kind
-    const requestId = activeMenuItem.requestId!
-    return (
-      <RequestContextMenuContent
-        collectionId={activeMenuItem.collectionId}
-        requestId={requestId}
-        requestName={activeMenuItem.name}
-        onRename={() => openRenameDialog("request", activeMenuItem.name)}
-        onDelete={() => openDeleteDialog("request", activeMenuItem.name)}
-      />
-    )
-  } else if (activeMenuItem.kind === "folder") {
-    return (
-      <ContextMenuContent className="w-48">
-        <ContextMenuItem onClick={() => openRenameDialog("folder", activeMenuItem.name)}>Rename Folder</ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem onClick={() => openDeleteDialog("folder", activeMenuItem.name)} variant="destructive">
-          Delete Folder
-        </ContextMenuItem>
-      </ContextMenuContent>
-    )
-  } else {
-    return (
-      <ContextMenuContent className="w-48">
-        <ContextMenuItem onClick={() => openRenameDialog("collection", activeMenuItem.name)}>
-          Rename Collection
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem onClick={() => openDeleteDialog("collection", activeMenuItem.name)} variant="destructive">
-          Delete Collection
-        </ContextMenuItem>
-      </ContextMenuContent>
-    )
+  switch (activeMenuItem.kind) {
+    case "request":
+      return (
+        <RequestContextMenuContent
+          collectionId={activeMenuItem.collectionId}
+          requestId={activeMenuItem.requestId}
+          requestName={activeMenuItem.name}
+          onRename={openRenameDialog}
+          onDelete={openDeleteDialog}
+        />
+      )
+    case "folder":
+      return (
+        <ContextMenuContent className="w-48">
+          <ContextMenuItem onClick={openRenameDialog}>Rename Folder</ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={openDeleteDialog} variant="destructive">
+            Delete Folder
+          </ContextMenuItem>
+        </ContextMenuContent>
+      )
+    case "collection":
+      return (
+        <ContextMenuContent className="w-48">
+          <ContextMenuItem onClick={openRenameDialog}>Rename Collection</ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={openDeleteDialog} variant="destructive">
+            Delete Collection
+          </ContextMenuItem>
+        </ContextMenuContent>
+      )
   }
 }
