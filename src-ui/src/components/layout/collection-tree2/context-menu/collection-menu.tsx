@@ -16,6 +16,7 @@ interface CollectionMenuProps {
 export function CollectionMenu({ item }: CollectionMenuProps) {
   const dialogs = useDialogs()
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: dialogs is stable from Zustand
   const handleCreateRequest = useCallback(() => {
     dialogs.showCreateRequestDialog({
       collectionId: item.collectionId,
@@ -28,8 +29,9 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
         }
       },
     })
-  }, [item, dialogs])
+  }, [item])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: dialogs is stable from Zustand
   const handleCreateFolder = useCallback(() => {
     dialogs.showCreateFolderDialog({
       collectionId: item.collectionId,
@@ -42,8 +44,9 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
         }
       },
     })
-  }, [item, dialogs])
+  }, [item])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: dialogs is stable from Zustand
   const handleRename = useCallback(() => {
     dialogs.showRenameDialog({
       title: "Rename Collection",
@@ -58,7 +61,7 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
         collectionsApi().updateCollection(ctx.collectionId, { name: newName })
       },
     })
-  }, [item, dialogs])
+  }, [item])
 
   const handleOpenSettings = useCallback(() => {
     try {
@@ -79,6 +82,7 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
     }
   }, [item])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: dialogs is stable from Zustand
   const handleDelete = useCallback(() => {
     dialogs.showDeleteDialog({
       title: "Delete Collection",
@@ -92,7 +96,7 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
         collectionsApi().removeCollection(ctx.collectionId)
       },
     })
-  }, [item, dialogs])
+  }, [item])
 
   return (
     <ContextMenuContent className="w-56">

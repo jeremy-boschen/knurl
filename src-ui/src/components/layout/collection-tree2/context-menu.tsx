@@ -1,10 +1,7 @@
 import type { MouseEvent, ReactNode } from "react"
 import { useState } from "react"
 
-import {
-  ContextMenu,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu"
+import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu"
 
 import { CollectionMenu } from "./context-menu/collection-menu"
 import { FolderMenu } from "./context-menu/folder-menu"
