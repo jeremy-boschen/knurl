@@ -6,7 +6,7 @@ type CollectionTreeContextMenuContentProps = {
   activeMenuItem: ActiveMenuItem
 }
 
-export function CollectionTreeContextMenuContent({ activeMenuItem }: CollectionTreeContextMenuContentProps) {
+export function ContextMenuContentProvider({ activeMenuItem }: CollectionTreeContextMenuContentProps) {
   if (!activeMenuItem) {
     return null
   }

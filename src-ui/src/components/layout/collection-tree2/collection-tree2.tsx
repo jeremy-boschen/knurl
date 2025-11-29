@@ -3,7 +3,7 @@ import React, { useState } from "react"
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu"
 import { useCollections } from "@/state"
 import { CollectionItem } from "./collection-item"
-import { CollectionTreeContextMenuContent } from "./collection-tree-context-menu"
+import { ContextMenuContentProvider } from "./context-menu"
 
 export type ActiveMenuItem = {
   collectionId: string
@@ -19,9 +19,8 @@ export function CollectionTree2() {
   } = useCollections()
 
   const [activeMenuItem, setActiveMenuItem] = useState<ActiveMenuItem>(null)
-  const treeRef = React.useRef<HTMLDivElement>(null)
 
-  const handleContextMenu = React.useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+  const handleContextMenuOpen = React.useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     // Walk up the tree to find the data attributes
     let target: HTMLElement | null = event.target as HTMLElement | null
     while (target && !target.dataset.kind) {
@@ -51,16 +50,22 @@ export function CollectionTree2() {
     })
   }, [])
 
+  const handleContextMenuClose = (open: boolean) => {
+    if (!open) {
+      setActiveMenuItem(null)
+    }
+  }
+
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild onContextMenu={handleContextMenu}>
-        <div ref={treeRef} className="space-y-2" role="tree">
+    <ContextMenu onOpenChange={handleContextMenuClose}>
+      <ContextMenuTrigger asChild onContextMenu={handleContextMenuOpen}>
+        <div className="space-y-2" role="tree">
           {collectionsIndex.map((entry) => (
             <CollectionItem key={entry.id} collectionId={entry.id} collectionName={entry.name} />
           ))}
         </div>
       </ContextMenuTrigger>
-      {activeMenuItem && <CollectionTreeContextMenuContent activeMenuItem={activeMenuItem} />}
+      {activeMenuItem && <ContextMenuContentProvider activeMenuItem={activeMenuItem} />}
     </ContextMenu>
   )
 }

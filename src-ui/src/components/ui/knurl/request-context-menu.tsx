@@ -1,3 +1,4 @@
+import { writeText } from "@tauri-apps/plugin-clipboard-manager"
 import { CopyIcon, Edit2Icon, FolderOpenIcon, Trash2Icon } from "lucide-react"
 
 import {
@@ -8,7 +9,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
 } from "@/components/ui/context-menu"
-import { ScratchCollectionId } from "@/state"
+import { collectionsApi, ScratchCollectionId } from "@/state"
 
 export type RequestContextMenuContentProps = {
   collectionId: string
@@ -31,7 +32,11 @@ export function RequestContextMenuContent({
   }
 
   const handleDuplicate = () => {
-    // TODO: Implement duplicate handler
+    try {
+      collectionsApi().duplicateRequest(collectionId, requestId)
+    } catch (error) {
+      console.error(`Failed to duplicate collectionId:${collectionId} request:${requestId}`, error)
+    }
   }
 
   const handleMove = (_targetFolderId: string) => {
@@ -39,7 +44,14 @@ export function RequestContextMenuContent({
   }
 
   const handleCopy = () => {
-    // TODO: Implement copy as JSON handler
+    try {
+      const request = collectionsApi().getRequest(collectionId, requestId)
+      if (request) {
+        void writeText(JSON.stringify(request, null, 2))
+      }
+    } catch (error) {
+      console.error(`Failed to copy collectionId:${collectionId} request:${requestId}`, error)
+    }
   }
 
   const handleDelete = () => {
