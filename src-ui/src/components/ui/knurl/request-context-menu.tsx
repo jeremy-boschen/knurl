@@ -8,7 +8,6 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
 } from "@/components/ui/context-menu"
-import { collectionsApi } from "@/state"
 
 export type RequestContextMenuContentProps = {
   collectionId: string
@@ -35,7 +34,7 @@ export function RequestContextMenuContent({
     // TODO: Implement duplicate handler
   }
 
-  const handleMove = (targetFolderId: string) => {
+  const handleMove = (_targetFolderId: string) => {
     // TODO: Implement move handler
   }
 
