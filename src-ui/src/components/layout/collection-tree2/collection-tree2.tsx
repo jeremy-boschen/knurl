@@ -9,7 +9,7 @@ export function CollectionTree2() {
   return (
     <div className="collection-tree2 space-y-2" role="tree">
       {collectionsIndex.map((entry) => (
-        <CollectionItem key={entry.id} collectionId={entry.id} />
+        <CollectionItem key={entry.id} collectionId={entry.id} collectionName={entry.name} />
       ))}
     </div>
   )
