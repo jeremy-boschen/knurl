@@ -21,12 +21,7 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
   }
 
   return (
-    <div
-      data-collection-id={collectionId}
-      role="treeitem"
-      aria-expanded={isOpen}
-      tabIndex={0}
-    >
+    <div data-collection-id={collectionId} role="treeitem" aria-expanded={isOpen} tabIndex={0}>
       <button
         type="button"
         onClick={handleToggle}
@@ -47,13 +42,7 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
 
       {isOpen ? (
         <div className="ml-6 space-y-1">
-          <Suspense
-            fallback={
-              <div className="px-2 py-1 text-sm text-muted-foreground">
-                Loading collection...
-              </div>
-            }
-          >
+          <Suspense fallback={<div className="px-2 py-1 text-sm text-muted-foreground">Loading collection...</div>}>
             <CollectionItemBody collectionId={collectionId} />
           </Suspense>
         </div>
