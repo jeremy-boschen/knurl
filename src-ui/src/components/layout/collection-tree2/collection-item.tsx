@@ -52,9 +52,7 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
 }
 
 function CollectionItemBody({ collectionId }: { collectionId: string }) {
-  const {
-    state: { collection },
-  } = useCollection(collectionId)
+  useCollection(collectionId)
 
   return <FolderItemList collectionId={collectionId} folderId={RootCollectionFolderId} />
 }

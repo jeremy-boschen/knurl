@@ -8,7 +8,9 @@ type RequestItemProps = {
 }
 
 export function RequestItem({ collectionId, requestId }: RequestItemProps) {
-  const { state: { collection } } = useCollectionFromCache(collectionId)
+  const {
+    state: { collection },
+  } = useCollectionFromCache(collectionId)
   const request = collection.requests[requestId]
 
   return (

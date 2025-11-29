@@ -12,7 +12,9 @@ type FolderItemProps = {
 }
 
 export function FolderItem({ collectionId, folderId }: FolderItemProps) {
-  const { state: { collection } } = useCollectionFromCache(collectionId)
+  const {
+    state: { collection },
+  } = useCollectionFromCache(collectionId)
   const folder = collection.folders[folderId]
 
   const [isOpen, setIsOpen] = useState(false)

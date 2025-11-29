@@ -9,7 +9,9 @@ type FolderItemListProps = {
 }
 
 export function FolderItemList({ collectionId, folderId }: FolderItemListProps) {
-  const { state: { collection } } = useCollectionFromCache(collectionId)
+  const {
+    state: { collection },
+  } = useCollectionFromCache(collectionId)
   const folder = collection.folders[folderId]
   if (!folder) {
     return null
