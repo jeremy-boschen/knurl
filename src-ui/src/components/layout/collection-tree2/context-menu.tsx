@@ -16,7 +16,6 @@ import {
 import { collectionsApi, utilitySheetsApi } from "@/state"
 import { useDialogs } from "@/hooks/useDialogs"
 import { RootCollectionFolderId } from "@/types"
-import type { DeleteContext, RenameContext } from "./types"
 
 export type ActiveMenuItem =
   | {
@@ -90,204 +89,42 @@ export function CollectionContextMenu({ children }: CollectionContextMenuProps) 
     }
   }
 
-  const openCreateFolderDialog = () => {
-    if (!activeMenuItem) {
-      return
-    }
-
-    const parentId = activeMenuItem.kind === "folder" ? activeMenuItem.folderId : RootCollectionFolderId
-
-    dialogs.showCreateFolderDialog({
-      collectionId: activeMenuItem.collectionId,
-      parentId,
-      onConfirm: (context) => {
-        try {
-          collectionsApi().createFolder(context.collectionId, parentId, context.name)
-        } catch (error) {
-          console.error("Failed to create folder", error)
-        }
-      },
-    })
-  }
-
-  const openCreateRequestDialog = () => {
-    if (!activeMenuItem || activeMenuItem.kind !== "collection") {
-      return
-    }
-
-    dialogs.showCreateRequestDialog({
-      collectionId: activeMenuItem.collectionId,
-      parentId: RootCollectionFolderId,
-      onConfirm: (context) => {
-        try {
-          collectionsApi().createRequest(activeMenuItem.collectionId, RootCollectionFolderId, context.name)
-        } catch (error) {
-          console.error("Failed to create request", error)
-        }
-      },
-    })
-  }
-
-  const openExportDialog = () => {
-    if (!activeMenuItem || activeMenuItem.kind !== "collection") {
-      return
-    }
-
-    try {
-      utilitySheetsApi().openSheet({ type: "export", context: { collectionId: activeMenuItem.collectionId } })
-    } catch (error) {
-      console.error("Failed to open export sheet", error)
-    }
-  }
-
-  const openSettingsDialog = () => {
-    if (!activeMenuItem || activeMenuItem.kind !== "collection") {
-      return
-    }
-
-    try {
-      utilitySheetsApi().openSheet({ type: "collection-settings", context: { collectionId: activeMenuItem.collectionId } })
-    } catch (error) {
-      console.error("Failed to open collection settings", error)
-    }
-  }
-
-  const openRenameDialog = () => {
-    if (!activeMenuItem) {
-      return
-    }
-
-    let context: RenameContext
-    let kindName: string
-
-    switch (activeMenuItem.kind) {
-      case "request":
-        context = {
-          kind: "request",
-          collectionId: activeMenuItem.collectionId,
-          requestId: activeMenuItem.requestId,
-        }
-        kindName = "Request"
-        break
-      case "folder":
-        context = {
-          kind: "folder",
-          collectionId: activeMenuItem.collectionId,
-          folderId: activeMenuItem.folderId,
-        }
-        kindName = "Folder"
-        break
-      case "collection":
-        context = { kind: "collection", collectionId: activeMenuItem.collectionId }
-        kindName = "Collection"
-        break
-    }
-
-    dialogs.showRenameDialog({
-      title: `Rename ${kindName}`,
-      description: (
-        <>
-          Rename the <span className="text-lg text-primary">{activeMenuItem.name}</span> {kindName.toLowerCase()}?
-        </>
-      ),
-      context,
-      name: activeMenuItem.name,
-      onConfirm: (ctx, newName) => {
-        if (ctx.kind === "request") {
-          collectionsApi().updateRequest(ctx.collectionId, ctx.requestId, { name: newName })
-        } else if (ctx.kind === "collection") {
-          collectionsApi().updateCollection(ctx.collectionId, { name: newName })
-        } else if (ctx.kind === "folder") {
-          collectionsApi().renameFolder(ctx.collectionId, ctx.folderId, newName)
-        }
-      },
-    })
-  }
-
-  const openDeleteDialog = () => {
-    if (!activeMenuItem) {
-      return
-    }
-    let context: DeleteContext
-    let kindName: string
-
-    switch (activeMenuItem.kind) {
-      case "request":
-        context = {
-          kind: "request",
-          collectionId: activeMenuItem.collectionId,
-          requestId: activeMenuItem.requestId,
-        }
-        kindName = "Request"
-        break
-      case "folder":
-        context = {
-          kind: "folder",
-          collectionId: activeMenuItem.collectionId,
-          folderId: activeMenuItem.folderId,
-        }
-        kindName = "Folder"
-        break
-      case "collection":
-        context = { kind: "collection", collectionId: activeMenuItem.collectionId }
-        kindName = "Collection"
-        break
-    }
-
-    dialogs.showDeleteDialog({
-      title: `Delete ${kindName}`,
-      description: (
-        <>
-          Are you sure you want to delete the <span className="text-lg text-primary">{activeMenuItem.name}</span>{" "}
-          {kindName.toLowerCase()}?
-        </>
-      ),
-      context,
-      onConfirm: (ctx) => {
-        if (ctx.kind === "request") {
-          collectionsApi().deleteRequest(ctx.collectionId, ctx.requestId)
-        } else if (ctx.kind === "collection") {
-          collectionsApi().removeCollection(ctx.collectionId)
-        } else if (ctx.kind === "folder") {
-          collectionsApi().deleteFolder(ctx.collectionId, ctx.folderId)
-        }
-      },
-    })
-  }
-
   return (
     <ContextMenu onOpenChange={handleContextMenuClose}>
       <ContextMenuTrigger asChild onContextMenu={handleContextMenuOpen}>
         {children}
       </ContextMenuTrigger>
-      {activeMenuItem &&
-        renderContextMenuContent(
-          activeMenuItem,
-          openRenameDialog,
-          openDeleteDialog,
-          openCreateFolderDialog,
-          openCreateRequestDialog,
-          openExportDialog,
-          openSettingsDialog,
-        )}
+      {activeMenuItem && renderContextMenuContent(activeMenuItem, dialogs)}
     </ContextMenu>
   )
 }
 
-function renderContextMenuContent(
-  activeMenuItem: NonNullable<ActiveMenuItem>,
-  openRenameDialog: () => void,
-  openDeleteDialog: () => void,
-  openCreateFolderDialog: () => void,
-  openCreateRequestDialog: () => void,
-  openExportDialog: () => void,
-  openSettingsDialog: () => void,
-) {
+function renderContextMenuContent(activeMenuItem: NonNullable<ActiveMenuItem>, dialogs: ReturnType<typeof useDialogs>) {
   switch (activeMenuItem.kind) {
     case "request":
       return (
         <ContextMenuContent className="w-48">
-          <ContextMenuItem onClick={openRenameDialog}>
+          <ContextMenuItem
+            onClick={() => {
+              dialogs.showRenameDialog({
+                title: "Rename Request",
+                description: (
+                  <>
+                    Rename the <span className="text-lg text-primary">{activeMenuItem.name}</span> request?
+                  </>
+                ),
+                context: {
+                  kind: "request",
+                  collectionId: activeMenuItem.collectionId,
+                  requestId: activeMenuItem.requestId,
+                },
+                name: activeMenuItem.name,
+                onConfirm: (ctx, newName) => {
+                  collectionsApi().updateRequest(ctx.collectionId, ctx.requestId, { name: newName })
+                },
+              })
+            }}
+          >
             <Edit2Icon className="h-4 w-4" />
             Rename
           </ContextMenuItem>
@@ -320,7 +157,28 @@ function renderContextMenuContent(
             Copy as JSON
           </ContextMenuItem>
           <ContextMenuSeparator />
-          <ContextMenuItem onClick={openDeleteDialog} variant="destructive">
+          <ContextMenuItem
+            onClick={() => {
+              dialogs.showDeleteDialog({
+                title: "Delete Request",
+                description: (
+                  <>
+                    Are you sure you want to delete the <span className="text-lg text-primary">{activeMenuItem.name}</span>{" "}
+                    request?
+                  </>
+                ),
+                context: {
+                  kind: "request",
+                  collectionId: activeMenuItem.collectionId,
+                  requestId: activeMenuItem.requestId,
+                },
+                onConfirm: (ctx) => {
+                  collectionsApi().deleteRequest(ctx.collectionId, ctx.requestId)
+                },
+              })
+            }}
+            variant="destructive"
+          >
             <Trash2Icon className="h-4 w-4" />
             Delete
           </ContextMenuItem>
@@ -329,16 +187,71 @@ function renderContextMenuContent(
     case "folder":
       return (
         <ContextMenuContent className="w-48">
-          <ContextMenuItem onClick={openRenameDialog}>
+          <ContextMenuItem
+            onClick={() => {
+              dialogs.showRenameDialog({
+                title: "Rename Folder",
+                description: (
+                  <>
+                    Rename the <span className="text-lg text-primary">{activeMenuItem.name}</span> folder?
+                  </>
+                ),
+                context: {
+                  kind: "folder",
+                  collectionId: activeMenuItem.collectionId,
+                  folderId: activeMenuItem.folderId,
+                },
+                name: activeMenuItem.name,
+                onConfirm: (ctx, newName) => {
+                  collectionsApi().renameFolder(ctx.collectionId, ctx.folderId, newName)
+                },
+              })
+            }}
+          >
             <Edit2Icon className="h-4 w-4" />
             Rename Folder
           </ContextMenuItem>
-          <ContextMenuItem onClick={openCreateFolderDialog}>
+          <ContextMenuItem
+            onClick={() => {
+              dialogs.showCreateFolderDialog({
+                collectionId: activeMenuItem.collectionId,
+                parentId: activeMenuItem.folderId,
+                onConfirm: (context) => {
+                  try {
+                    collectionsApi().createFolder(context.collectionId, activeMenuItem.folderId, context.name)
+                  } catch (error) {
+                    console.error("Failed to create folder", error)
+                  }
+                },
+              })
+            }}
+          >
             <FolderPlusIcon className="h-4 w-4" />
             New Folder
           </ContextMenuItem>
           <ContextMenuSeparator />
-          <ContextMenuItem onClick={openDeleteDialog} variant="destructive">
+          <ContextMenuItem
+            onClick={() => {
+              dialogs.showDeleteDialog({
+                title: "Delete Folder",
+                description: (
+                  <>
+                    Are you sure you want to delete the <span className="text-lg text-primary">{activeMenuItem.name}</span>{" "}
+                    folder?
+                  </>
+                ),
+                context: {
+                  kind: "folder",
+                  collectionId: activeMenuItem.collectionId,
+                  folderId: activeMenuItem.folderId,
+                },
+                onConfirm: (ctx) => {
+                  collectionsApi().deleteFolder(ctx.collectionId, ctx.folderId)
+                },
+              })
+            }}
+            variant="destructive"
+          >
             <Trash2Icon className="h-4 w-4" />
             Delete Folder
           </ContextMenuItem>
@@ -347,29 +260,109 @@ function renderContextMenuContent(
     case "collection":
       return (
         <ContextMenuContent className="w-56">
-          <ContextMenuItem onClick={openCreateRequestDialog}>
+          <ContextMenuItem
+            onClick={() => {
+              dialogs.showCreateRequestDialog({
+                collectionId: activeMenuItem.collectionId,
+                parentId: RootCollectionFolderId,
+                onConfirm: (context) => {
+                  try {
+                    collectionsApi().createRequest(activeMenuItem.collectionId, RootCollectionFolderId, context.name)
+                  } catch (error) {
+                    console.error("Failed to create request", error)
+                  }
+                },
+              })
+            }}
+          >
             <PlusIcon className="h-4 w-4" />
             New Request
           </ContextMenuItem>
-          <ContextMenuItem onClick={openCreateFolderDialog}>
+          <ContextMenuItem
+            onClick={() => {
+              dialogs.showCreateFolderDialog({
+                collectionId: activeMenuItem.collectionId,
+                parentId: RootCollectionFolderId,
+                onConfirm: (context) => {
+                  try {
+                    collectionsApi().createFolder(activeMenuItem.collectionId, RootCollectionFolderId, context.name)
+                  } catch (error) {
+                    console.error("Failed to create folder", error)
+                  }
+                },
+              })
+            }}
+          >
             <FolderPlusIcon className="h-4 w-4" />
             New Folder
           </ContextMenuItem>
           <ContextMenuSeparator />
-          <ContextMenuItem onClick={openRenameDialog}>
+          <ContextMenuItem
+            onClick={() => {
+              dialogs.showRenameDialog({
+                title: "Rename Collection",
+                description: (
+                  <>
+                    Rename the <span className="text-lg text-primary">{activeMenuItem.name}</span> collection?
+                  </>
+                ),
+                context: { kind: "collection", collectionId: activeMenuItem.collectionId },
+                name: activeMenuItem.name,
+                onConfirm: (ctx, newName) => {
+                  collectionsApi().updateCollection(ctx.collectionId, { name: newName })
+                },
+              })
+            }}
+          >
             <Edit2Icon className="h-4 w-4" />
             Rename Collection
           </ContextMenuItem>
-          <ContextMenuItem onClick={openSettingsDialog}>
+          <ContextMenuItem
+            onClick={() => {
+              try {
+                utilitySheetsApi().openSheet({
+                  type: "collection-settings",
+                  context: { collectionId: activeMenuItem.collectionId },
+                })
+              } catch (error) {
+                console.error("Failed to open collection settings", error)
+              }
+            }}
+          >
             <GlobeIcon className="h-4 w-4" />
             Manage Settings
           </ContextMenuItem>
-          <ContextMenuItem onClick={openExportDialog}>
+          <ContextMenuItem
+            onClick={() => {
+              try {
+                utilitySheetsApi().openSheet({ type: "export", context: { collectionId: activeMenuItem.collectionId } })
+              } catch (error) {
+                console.error("Failed to open export sheet", error)
+              }
+            }}
+          >
             <UploadIcon className="h-4 w-4" />
             Export Collection
           </ContextMenuItem>
           <ContextMenuSeparator />
-          <ContextMenuItem onClick={openDeleteDialog} variant="destructive">
+          <ContextMenuItem
+            onClick={() => {
+              dialogs.showDeleteDialog({
+                title: "Delete Collection",
+                description: (
+                  <>
+                    Are you sure you want to delete the <span className="text-lg text-primary">{activeMenuItem.name}</span>{" "}
+                    collection?
+                  </>
+                ),
+                context: { kind: "collection", collectionId: activeMenuItem.collectionId },
+                onConfirm: (ctx) => {
+                  collectionsApi().removeCollection(ctx.collectionId)
+                },
+              })
+            }}
+            variant="destructive"
+          >
             <Trash2Icon className="h-4 w-4" />
             Delete Collection
           </ContextMenuItem>
