@@ -16,6 +16,8 @@ export type RequestContextMenuContentProps = {
   requestId: string
   requestName: string
   moveTargets?: { id: string; path: string }[]
+  onRename?: () => void
+  onDelete?: () => void
 }
 
 export function RequestContextMenuContent({
@@ -23,12 +25,14 @@ export function RequestContextMenuContent({
   requestId,
   requestName,
   moveTargets = [],
+  onRename,
+  onDelete,
 }: RequestContextMenuContentProps) {
   const isScratch = collectionId === ScratchCollectionId
   const hasMoveTargets = !isScratch && moveTargets.length > 0
 
   const handleRename = () => {
-    // TODO: Implement rename handler
+    onRename?.()
   }
 
   const handleDuplicate = () => {
@@ -55,7 +59,7 @@ export function RequestContextMenuContent({
   }
 
   const handleDelete = () => {
-    // TODO: Implement delete handler
+    onDelete?.()
   }
 
   return (
