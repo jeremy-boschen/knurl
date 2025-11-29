@@ -54,6 +54,10 @@ export type RequestTabsState = z.infer<typeof zRequestTabsState>
 export interface RequestTabsApi {
   getOpenTabs(): RequestTabState[]
 
+  isOpenCollection(collectionId: string): boolean
+
+  isOpenRequest(collectionId: string, requestId: string): boolean
+
   getOpenTab(collectionId: string, requestId: string): RequestTabState | null
 
   getActiveTab(): RequestTabState | null

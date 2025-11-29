@@ -91,9 +91,9 @@ type HookResult<State, Actions> = {
   actions: Actions
 }
 
-const getSidebarApi = () => useApplication.getState().sidebarApi
-const getRequestTabsApi = () => useApplication.getState().requestTabsApi
-const getUtilitySheetsApi = () => useApplication.getState().utilitySheetsApi
+export const getSidebarApi = () => useApplication.getState().sidebarApi
+export const getRequestTabsApi = () => useApplication.getState().requestTabsApi
+export const getUtilitySheetsApi = () => useApplication.getState().utilitySheetsApi
 const requireLoadedCollection = (state: Application, collectionId: string) => {
   const collection = state.collectionsState.cache[collectionId]
   assert(collection, `Collection ${collectionId} must be loaded before use`)

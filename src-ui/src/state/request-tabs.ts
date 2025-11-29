@@ -5,8 +5,8 @@ import type { StateCreator, StoreApi } from "zustand"
 import type { AppError } from "@/bindings/knurl"
 import { cancelHttpRequest, deleteFile, getAuthenticationResult } from "@/bindings/knurl"
 import { assert, isNotEmpty, nonNull } from "@/lib"
-import { eventBus } from "@/lib/event-emitter"
 import { resolveRequestVariables } from "@/lib/environments"
+import { eventBus } from "@/lib/event-emitter"
 import { generateUniqueId } from "@/lib/utils"
 import {
   createAuthPhase,
@@ -80,6 +80,19 @@ export const requestTabsSliceCreator: StateCreator<
         Object.values(get().requestTabsState.openTabs).find(
           (t) => t.collectionId === collectionId && t.requestId === requestId,
         ) ?? null
+      )
+    },
+
+    isOpenCollection(collectionId: string): boolean {
+      return undefined !== Object.values(get().requestTabsState.openTabs).find((t) => t.collectionId === collectionId)
+    },
+
+    isOpenRequest(collectionId: string, requestId: string): boolean {
+      return (
+        undefined !==
+        Object.values(get().requestTabsState.openTabs).find(
+          (t) => t.collectionId === collectionId && t.requestId === requestId,
+        )
       )
     },
 
