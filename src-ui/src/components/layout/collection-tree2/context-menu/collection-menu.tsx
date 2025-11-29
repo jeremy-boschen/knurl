@@ -19,7 +19,10 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
       parentId: RootCollectionFolderId,
       onConfirm: (context) => {
         try {
-          collectionsApi().createRequest(item.collectionId, RootCollectionFolderId, context.name)
+          collectionsApi().createRequest(item.collectionId, {
+            name: context.name,
+            folderId: RootCollectionFolderId,
+          })
         } catch (error) {
           console.error("Failed to create request", error)
         }
