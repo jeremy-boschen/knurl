@@ -16,7 +16,6 @@ interface RequestMenuProps {
 export function RequestMenu({ item }: RequestMenuProps) {
   const dialogs = useDialogs()
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: dialogs is stable from Zustand
   const handleRename = useCallback(() => {
     dialogs.showRenameDialog({
       title: "Rename Request",
@@ -35,7 +34,7 @@ export function RequestMenu({ item }: RequestMenuProps) {
         collectionsApi().updateRequest(ctx.collectionId, ctx.requestId, { name: newName })
       },
     })
-  }, [item])
+  }, [item, dialogs])
 
   const handleDuplicate = useCallback(() => {
     try {
@@ -56,7 +55,6 @@ export function RequestMenu({ item }: RequestMenuProps) {
     }
   }, [item])
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: dialogs is stable from Zustand
   const handleDelete = useCallback(() => {
     dialogs.showDeleteDialog({
       title: "Delete Request",
@@ -74,7 +72,7 @@ export function RequestMenu({ item }: RequestMenuProps) {
         collectionsApi().deleteRequest(ctx.collectionId, ctx.requestId)
       },
     })
-  }, [item])
+  }, [item, dialogs])
 
   return (
     <ContextMenuContent className="w-48">

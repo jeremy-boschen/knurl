@@ -15,7 +15,6 @@ interface FolderMenuProps {
 export function FolderMenu({ item }: FolderMenuProps) {
   const dialogs = useDialogs()
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: dialogs is stable from Zustand
   const handleRename = useCallback(() => {
     dialogs.showRenameDialog({
       title: "Rename Folder",
@@ -34,9 +33,8 @@ export function FolderMenu({ item }: FolderMenuProps) {
         collectionsApi().renameFolder(ctx.collectionId, ctx.folderId, newName)
       },
     })
-  }, [item])
+  }, [item, dialogs])
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: dialogs is stable from Zustand
   const handleCreateFolder = useCallback(() => {
     dialogs.showCreateFolderDialog({
       collectionId: item.collectionId,
@@ -49,9 +47,8 @@ export function FolderMenu({ item }: FolderMenuProps) {
         }
       },
     })
-  }, [item])
+  }, [item, dialogs])
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: dialogs is stable from Zustand
   const handleDelete = useCallback(() => {
     dialogs.showDeleteDialog({
       title: "Delete Folder",
@@ -69,7 +66,7 @@ export function FolderMenu({ item }: FolderMenuProps) {
         collectionsApi().deleteFolder(ctx.collectionId, ctx.folderId)
       },
     })
-  }, [item])
+  }, [item, dialogs])
 
   return (
     <ContextMenuContent className="w-48">
