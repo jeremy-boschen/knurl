@@ -8,12 +8,10 @@ import { FolderItemList } from "./folder-item-list"
 
 type CollectionItemProps = {
   collectionId: string
+  collectionName: string
 }
 
-export function CollectionItem({ collectionId }: CollectionItemProps) {
-  const {
-    state: { collection },
-  } = useCollection(collectionId)
+export function CollectionItem({ collectionId, collectionName }: CollectionItemProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isSelected, setIsSelected] = useState(false)
 
@@ -21,8 +19,6 @@ export function CollectionItem({ collectionId }: CollectionItemProps) {
     setIsOpen((prev) => !prev)
     setIsSelected((prev) => !prev)
   }
-
-  const label = collection.name ?? "Collection"
 
   return (
     <div
@@ -46,7 +42,7 @@ export function CollectionItem({ collectionId }: CollectionItemProps) {
           <span aria-hidden className="collection-item__icon text-primary">
             <FolderClosedIcon className="h-4 w-4" />
           </span>
-          <span className="collection-item__name">{label}</span>
+          <span className="collection-item__name">{collectionName}</span>
         </span>
       </button>
 
