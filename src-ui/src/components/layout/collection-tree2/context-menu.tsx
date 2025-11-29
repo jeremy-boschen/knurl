@@ -11,7 +11,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
 import { RequestContextMenuContent } from "@/components/ui/knurl/request-context-menu"
-import { collectionsApi, useApplication } from "@/state"
+import { collectionsApi } from "@/state"
 import { useDialogs } from "@/hooks/useDialogs"
 import type { DeleteContext, RenameContext } from "./types"
 
@@ -192,11 +192,11 @@ export function CollectionContextMenu({ children }: CollectionContextMenuProps) 
 
   return (
     <ContextMenu onOpenChange={handleContextMenuClose}>
-        <ContextMenuTrigger asChild onContextMenu={handleContextMenuOpen}>
-          {children}
-        </ContextMenuTrigger>
-        {activeMenuItem && renderContextMenuContent(activeMenuItem, openRenameDialog, openDeleteDialog)}
-      </ContextMenu>
+      <ContextMenuTrigger asChild onContextMenu={handleContextMenuOpen}>
+        {children}
+      </ContextMenuTrigger>
+      {activeMenuItem && renderContextMenuContent(activeMenuItem, openRenameDialog, openDeleteDialog)}
+    </ContextMenu>
   )
 }
 

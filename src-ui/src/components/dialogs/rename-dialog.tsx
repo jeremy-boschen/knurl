@@ -22,15 +22,7 @@ export type RenameDialogProps = {
   context: RenameContext
 }
 
-export function RenameDialog({
-  open,
-  title,
-  description,
-  name,
-  onConfirm,
-  onCancel,
-  context,
-}: RenameDialogProps) {
+export function RenameDialog({ open, title, description, name, onConfirm, onCancel, context }: RenameDialogProps) {
   const [newName, setNewName] = useState(name)
 
   const handleConfirm = async () => {

@@ -46,40 +46,16 @@ export function DialogHost() {
       )
 
     case "create-collection":
-      return (
-        <CreateCollectionDialog
-          open={true}
-          onConfirm={activeDialog.onConfirm}
-          onCancel={dialogsApi.closeDialog}
-        />
-      )
+      return <CreateCollectionDialog open={true} onConfirm={activeDialog.onConfirm} onCancel={dialogsApi.closeDialog} />
 
     case "create-folder":
-      return (
-        <CreateFolderDialog
-          open={true}
-          onConfirm={activeDialog.onConfirm}
-          onCancel={dialogsApi.closeDialog}
-        />
-      )
+      return <CreateFolderDialog open={true} onConfirm={activeDialog.onConfirm} onCancel={dialogsApi.closeDialog} />
 
     case "create-request":
-      return (
-        <CreateRequestDialog
-          open={true}
-          onConfirm={activeDialog.onConfirm}
-          onCancel={dialogsApi.closeDialog}
-        />
-      )
+      return <CreateRequestDialog open={true} onConfirm={activeDialog.onConfirm} onCancel={dialogsApi.closeDialog} />
 
     case "save-request":
-      return (
-        <SaveRequestDialog
-          open={true}
-          onConfirm={activeDialog.onConfirm}
-          onCancel={dialogsApi.closeDialog}
-        />
-      )
+      return <SaveRequestDialog open={true} onConfirm={activeDialog.onConfirm} onCancel={dialogsApi.closeDialog} />
 
     default:
       return null

@@ -1,11 +1,6 @@
 import type { StateCreator } from "zustand"
 
-import type {
-  Application,
-  DeleteContext,
-  DialogProps,
-  RenameContext,
-} from "@/types"
+import type { Application, DeleteContext, RenameContext } from "@/types"
 
 export type ActiveDialog =
   | {
@@ -65,9 +60,7 @@ export interface DialogsApi {
     onConfirm: (context: RenameContext, newName: string) => void | Promise<void>
   }): void
 
-  showCreateCollectionDialog(props: {
-    onConfirm: (context: { name: string }) => void | Promise<void>
-  }): void
+  showCreateCollectionDialog(props: { onConfirm: (context: { name: string }) => void | Promise<void> }): void
 
   showCreateFolderDialog(props: {
     collectionId: string

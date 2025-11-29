@@ -10,13 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export type SaveRequestDialogProps = {
   open: boolean
@@ -25,7 +19,9 @@ export type SaveRequestDialogProps = {
 }
 
 export function SaveRequestDialog({ open, onConfirm, onCancel }: SaveRequestDialogProps) {
-  const { state: { collectionsIndex } } = useCollections()
+  const {
+    state: { collectionsIndex },
+  } = useCollections()
   const [selectedCollectionId, setSelectedCollectionId] = useState<string>("")
 
   const handleConfirm = async () => {
