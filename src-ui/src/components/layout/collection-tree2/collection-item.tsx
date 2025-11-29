@@ -56,5 +56,5 @@ function CollectionItemBody({ collectionId }: { collectionId: string }) {
     state: { collection },
   } = useCollection(collectionId)
 
-  return <FolderItemList collection={collection} folderId={RootCollectionFolderId} />
+  return <FolderItemList collectionId={collectionId} folderId={RootCollectionFolderId} />
 }

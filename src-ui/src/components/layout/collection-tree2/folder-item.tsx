@@ -2,16 +2,19 @@ import { useState } from "react"
 
 import { ChevronDownIcon, ChevronRightIcon, FolderClosedIcon } from "lucide-react"
 
-import type { CollectionCache, CollectionFolderNode } from "@/types"
+import { useCollectionFromCache } from "@/state"
 import { FolderItemList } from "./folder-item-list"
 import { RequestItemList } from "./request-item-list"
 
 type FolderItemProps = {
-  collection: CollectionCache
-  folder: CollectionFolderNode
+  collectionId: string
+  folderId: string
 }
 
-export function FolderItem({ collection, folder }: FolderItemProps) {
+export function FolderItem({ collectionId, folderId }: FolderItemProps) {
+  const { state: { collection } } = useCollectionFromCache(collectionId)
+  const folder = collection.folders[folderId]
+
   const [isOpen, setIsOpen] = useState(false)
   const [isSelected, setIsSelected] = useState(false)
 
@@ -22,7 +25,7 @@ export function FolderItem({ collection, folder }: FolderItemProps) {
 
   return (
     <div>
-      <div data-folder-id={folder.id} role="treeitem" aria-expanded={isOpen} tabIndex={0}>
+      <div data-folder-id={folderId} role="treeitem" aria-expanded={isOpen} tabIndex={0}>
         <button
           type="button"
           onClick={handleToggle}
@@ -42,10 +45,10 @@ export function FolderItem({ collection, folder }: FolderItemProps) {
 
       {isOpen ? (
         <div className="ml-3 space-y-1">
-          <RequestItemList collection={collection} folder={folder} requestIds={folder.requestIds} />
+          <RequestItemList collectionId={collectionId} folder={folder} requestIds={folder.requestIds} />
 
           {folder.childFolderIds.map((childFolderId) => (
-            <FolderItemList key={childFolderId} collection={collection} folderId={childFolderId} />
+            <FolderItemList key={childFolderId} collectionId={collectionId} folderId={childFolderId} />
           ))}
         </div>
       ) : null}

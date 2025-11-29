@@ -730,7 +730,7 @@ export const useRequestOptions = (tabId: string): HookResult<RequestOptionsState
 //
 
 type CollectionCacheState = {
-  collection: CollectionCache | undefined
+  collection: CollectionCache
 }
 
 type CollectionCacheActions = {
@@ -744,7 +744,8 @@ type CollectionCacheActions = {
 export const useCollectionFromCache = (
   collectionId: string,
 ): HookResult<CollectionCacheState, CollectionCacheActions> => {
-  const collection = useApplication((app) => app.collectionsState.cache[collectionId])
+  // biome-ignore lint/style/noNonNullAssertion: Used only where we've ensured a collection is already loaded. If it's not, we will blow up intentionally to catch the error
+  const collection = useApplication((app) => app.collectionsState.cache[collectionId]!)
 
   return {
     state: {

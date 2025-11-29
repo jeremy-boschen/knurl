@@ -1,16 +1,20 @@
 import { FileTextIcon } from "lucide-react"
 
-import type { RequestState } from "@/types"
+import { useCollectionFromCache } from "@/state"
 
 type RequestItemProps = {
-  request: RequestState
+  collectionId: string
+  requestId: string
 }
 
-export function RequestItem({ request }: RequestItemProps) {
+export function RequestItem({ collectionId, requestId }: RequestItemProps) {
+  const { state: { collection } } = useCollectionFromCache(collectionId)
+  const request = collection.requests[requestId]
+
   return (
     <div
       className="flex items-center space-x-2 rounded px-2 py-1 text-sm text-muted-foreground hover:bg-muted"
-      data-request-id={request.id}
+      data-request-id={requestId}
       role="treeitem"
       tabIndex={0}
     >
