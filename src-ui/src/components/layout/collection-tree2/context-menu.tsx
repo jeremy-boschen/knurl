@@ -4,7 +4,7 @@ import type { MouseEvent, ReactNode } from "react"
 import { useState } from "react"
 
 import { writeText } from "@tauri-apps/plugin-clipboard-manager"
-import { CopyIcon, Edit2Icon, Trash2Icon } from "lucide-react"
+import { CopyIcon, Edit2Icon, FolderPlusIcon, GlobeIcon, PlusIcon, Trash2Icon, UploadIcon } from "lucide-react"
 
 import {
   ContextMenu,
@@ -13,8 +13,9 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
-import { collectionsApi } from "@/state"
+import { collectionsApi, utilitySheetsApi } from "@/state"
 import { useDialogs } from "@/hooks/useDialogs"
+import { RootCollectionFolderId } from "@/types"
 import type { DeleteContext, RenameContext } from "./types"
 
 export type ActiveMenuItem =
@@ -86,6 +87,68 @@ export function CollectionContextMenu({ children }: CollectionContextMenuProps) 
   const handleContextMenuClose = (open: boolean) => {
     if (!open) {
       setActiveMenuItem(null)
+    }
+  }
+
+  const openCreateFolderDialog = () => {
+    if (!activeMenuItem) {
+      return
+    }
+
+    const parentId = activeMenuItem.kind === "folder" ? activeMenuItem.folderId : RootCollectionFolderId
+
+    dialogs.showCreateFolderDialog({
+      collectionId: activeMenuItem.collectionId,
+      parentId,
+      onConfirm: (context) => {
+        try {
+          collectionsApi().createFolder(context.collectionId, parentId, context.name)
+        } catch (error) {
+          console.error("Failed to create folder", error)
+        }
+      },
+    })
+  }
+
+  const openCreateRequestDialog = () => {
+    if (!activeMenuItem || activeMenuItem.kind !== "collection") {
+      return
+    }
+
+    dialogs.showCreateRequestDialog({
+      collectionId: activeMenuItem.collectionId,
+      parentId: RootCollectionFolderId,
+      onConfirm: (context) => {
+        try {
+          collectionsApi().createRequest(activeMenuItem.collectionId, RootCollectionFolderId, context.name)
+        } catch (error) {
+          console.error("Failed to create request", error)
+        }
+      },
+    })
+  }
+
+  const openExportDialog = () => {
+    if (!activeMenuItem || activeMenuItem.kind !== "collection") {
+      return
+    }
+
+    try {
+      utilitySheetsApi().openSheet({ type: "export", context: { collectionId: activeMenuItem.collectionId } })
+    } catch (error) {
+      console.error("Failed to open export sheet", error)
+    }
+  }
+
+  const openSettingsDialog = () => {
+    if (!activeMenuItem || activeMenuItem.kind !== "collection") {
+      return
+    }
+
+    try {
+      utilitySheetsApi().openSheet({ type: "collection-settings", context: { collectionId: activeMenuItem.collectionId } })
+    } catch (error) {
+      console.error("Failed to open collection settings", error)
     }
   }
 
@@ -197,7 +260,16 @@ export function CollectionContextMenu({ children }: CollectionContextMenuProps) 
       <ContextMenuTrigger asChild onContextMenu={handleContextMenuOpen}>
         {children}
       </ContextMenuTrigger>
-      {activeMenuItem && renderContextMenuContent(activeMenuItem, openRenameDialog, openDeleteDialog)}
+      {activeMenuItem &&
+        renderContextMenuContent(
+          activeMenuItem,
+          openRenameDialog,
+          openDeleteDialog,
+          openCreateFolderDialog,
+          openCreateRequestDialog,
+          openExportDialog,
+          openSettingsDialog,
+        )}
     </ContextMenu>
   )
 }
@@ -206,6 +278,10 @@ function renderContextMenuContent(
   activeMenuItem: NonNullable<ActiveMenuItem>,
   openRenameDialog: () => void,
   openDeleteDialog: () => void,
+  openCreateFolderDialog: () => void,
+  openCreateRequestDialog: () => void,
+  openExportDialog: () => void,
+  openSettingsDialog: () => void,
 ) {
   switch (activeMenuItem.kind) {
     case "request":
@@ -253,19 +329,48 @@ function renderContextMenuContent(
     case "folder":
       return (
         <ContextMenuContent className="w-48">
-          <ContextMenuItem onClick={openRenameDialog}>Rename Folder</ContextMenuItem>
+          <ContextMenuItem onClick={openRenameDialog}>
+            <Edit2Icon className="h-4 w-4" />
+            Rename Folder
+          </ContextMenuItem>
+          <ContextMenuItem onClick={openCreateFolderDialog}>
+            <FolderPlusIcon className="h-4 w-4" />
+            New Folder
+          </ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem onClick={openDeleteDialog} variant="destructive">
+            <Trash2Icon className="h-4 w-4" />
             Delete Folder
           </ContextMenuItem>
         </ContextMenuContent>
       )
     case "collection":
       return (
-        <ContextMenuContent className="w-48">
-          <ContextMenuItem onClick={openRenameDialog}>Rename Collection</ContextMenuItem>
+        <ContextMenuContent className="w-56">
+          <ContextMenuItem onClick={openCreateRequestDialog}>
+            <PlusIcon className="h-4 w-4" />
+            New Request
+          </ContextMenuItem>
+          <ContextMenuItem onClick={openCreateFolderDialog}>
+            <FolderPlusIcon className="h-4 w-4" />
+            New Folder
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={openRenameDialog}>
+            <Edit2Icon className="h-4 w-4" />
+            Rename Collection
+          </ContextMenuItem>
+          <ContextMenuItem onClick={openSettingsDialog}>
+            <GlobeIcon className="h-4 w-4" />
+            Manage Settings
+          </ContextMenuItem>
+          <ContextMenuItem onClick={openExportDialog}>
+            <UploadIcon className="h-4 w-4" />
+            Export Collection
+          </ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem onClick={openDeleteDialog} variant="destructive">
+            <Trash2Icon className="h-4 w-4" />
             Delete Collection
           </ContextMenuItem>
         </ContextMenuContent>
