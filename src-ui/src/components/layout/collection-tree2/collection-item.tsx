@@ -41,7 +41,7 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
       </button>
 
       {isOpen ? (
-        <div className="ml-6 space-y-1">
+        <div className="ml-3 space-y-1">
           <Suspense fallback={<div className="px-2 py-1 text-sm text-muted-foreground">Loading collection...</div>}>
             <CollectionItemBody collectionId={collectionId} />
           </Suspense>

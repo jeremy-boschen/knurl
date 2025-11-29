@@ -17,7 +17,7 @@ export function FolderItemList({ collection, folderId }: FolderItemListProps) {
   const isRoot = folderId === RootCollectionFolderId
 
   return (
-    <div className={`space-y-1 ${isRoot ? "" : "ml-4"}`} data-folder-id={folderId}>
+    <div className={`space-y-1 ${isRoot ? "" : "ml-3"}`} data-folder-id={folderId}>
       {!isRoot ? <FolderItem collection={collection} folder={folder} /> : null}
 
       {isRoot ? (

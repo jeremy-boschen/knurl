@@ -13,7 +13,7 @@ export function RequestItemList({ collection, folder, requestIds }: RequestItemL
   }
 
   return (
-    <div className="space-y-1 pl-4" data-folder-id={folder.id}>
+    <div className="space-y-1 pl-2" data-folder-id={folder.id}>
       {requestIds.map((requestId) => {
         const request = collection.requests[requestId]
         if (!request) {

@@ -41,7 +41,7 @@ export function FolderItem({ collection, folder }: FolderItemProps) {
       </div>
 
       {isOpen ? (
-        <div className="ml-4 space-y-1">
+        <div className="ml-3 space-y-1">
           <RequestItemList collection={collection} folder={folder} requestIds={folder.requestIds} />
 
           {folder.childFolderIds.map((childFolderId) => (
