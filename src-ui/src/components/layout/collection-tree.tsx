@@ -66,7 +66,7 @@ import { CollectionMenuContent } from "@/components/ui/knurl/collection-menu"
 import { FolderMenuContent } from "@/components/ui/knurl/folder-menu"
 import RenameDialog from "@/components/ui/knurl/rename-dialog"
 import { RequestMenuContent } from "@/components/ui/knurl/request-menu"
-import { buildFolderOptions, type FolderOption } from "@/lib/collections/folder-options"
+import { buildFolderOptions } from "@/lib/collections/folder-options"
 import { onProfilerRender } from "@/lib/profiler-bridge"
 import { cn, isNotEmpty } from "@/lib/utils"
 import {
@@ -80,7 +80,7 @@ import {
   useSidebar,
   useUtilitySheets,
 } from "@/state"
-import type { CollectionCache, RequestState } from "@/types"
+import type { RequestState } from "@/types"
 import { RootCollectionFolderId } from "@/types"
 
 const MAX_COLLECTIONS_WHEN_COLLAPSED = 10
