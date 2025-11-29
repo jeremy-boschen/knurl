@@ -31,12 +31,7 @@ export function CollectionItem({ collectionId }: CollectionItemProps) {
   const label = entry?.name ?? "Collection"
 
   return (
-    <div
-      className="collection-item relative"
-      data-collection-id={collectionId}
-      role="treeitem"
-      aria-expanded={isOpen}
-    >
+    <div className="collection-item relative" data-collection-id={collectionId} role="treeitem" aria-expanded={isOpen}>
       <button
         type="button"
         onClick={handleToggle}
@@ -57,9 +52,15 @@ export function CollectionItem({ collectionId }: CollectionItemProps) {
 
       {isOpen ? (
         <div className="ml-6 space-y-1">
-          <Suspense fallback={<div className="collection-item__loading px-2 py-1 text-sm text-muted-foreground">Loading collection...</div>}>
-          <CollectionItemBody collectionId={collectionId} />
-        </Suspense>
+          <Suspense
+            fallback={
+              <div className="collection-item__loading px-2 py-1 text-sm text-muted-foreground">
+                Loading collection...
+              </div>
+            }
+          >
+            <CollectionItemBody collectionId={collectionId} />
+          </Suspense>
         </div>
       ) : null}
     </div>
