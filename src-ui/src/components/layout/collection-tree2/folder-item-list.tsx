@@ -1,8 +1,5 @@
-import React from "react"
-
 import type { CollectionCache } from "@/types"
 import { RootCollectionFolderId } from "@/types"
-
 import { FolderItem } from "./folder-item"
 import { RequestItemList } from "./request-item-list"
 
@@ -13,16 +10,14 @@ type FolderItemListProps = {
 
 export function FolderItemList({ collection, folderId }: FolderItemListProps) {
   const folder = collection.folders[folderId]
-  if (!folder) return null
+  if (!folder) {
+    return null
+  }
 
   const isRoot = folderId === RootCollectionFolderId
 
   return (
-    <div
-      className={`folder-item-list space-y-1 ${isRoot ? "" : "ml-4"}`}
-      data-folder-id={folderId}
-      role={isRoot ? undefined : "group"}
-    >
+    <div className={`folder-item-list space-y-1 ${isRoot ? "" : "ml-4"}`} data-folder-id={folderId}>
       {!isRoot ? <FolderItem folder={folder} /> : null}
 
       <RequestItemList collection={collection} folder={folder} requestIds={folder.requestIds} />

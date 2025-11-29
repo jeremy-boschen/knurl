@@ -1,5 +1,8 @@
 import type React from "react"
 
+import type { FolderOption } from "@/lib/collections/folder-options"
+import type { CollectionCache, RequestState } from "@/types"
+
 export type RenameContext =
   | {
       kind: "request"
@@ -137,8 +140,8 @@ export type CollectionRowSearchableProps = {
 export type RequestListProps = {
   collectionId: string
   folderId: string
-  requests: any[]
-  folderOptions: any[]
+  requests: RequestState[]
+  folderOptions: FolderOption[]
   onRowSelect: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
   onMenuAction: (payload: ActionPayload) => void
   filterQuery?: string
@@ -151,23 +154,23 @@ export type CollectionContentProps = {
 }
 
 export type CollectionFolderBranchProps = {
-  collection: any
+  collection: CollectionCache
   collectionId: string
   folderId: string
   depth: number
-  folderOptions: any[]
+  folderOptions: FolderOption[]
   onRowSelect: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
   onMenuAction: (payload: ActionPayload) => void
 }
 
 export type RequestRowProps = {
-  r: any
+  r: RequestState
   collectionId: string
   folderId: string
   onRowSelect: (event: Event | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void
   onMenuAction: (payload: ActionPayload) => void
   dndDisabled?: boolean
-  moveTargets: any[]
+  moveTargets: FolderOption[]
   siblings: string[]
   folderPath?: string
 }

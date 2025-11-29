@@ -1,5 +1,3 @@
-import React from "react"
-
 import { FolderClosedIcon } from "lucide-react"
 
 import type { CollectionFolderNode } from "@/types"
@@ -15,6 +13,7 @@ export function FolderItem({ folder }: FolderItemProps) {
       data-folder-id={folder.id}
       role="treeitem"
       aria-expanded
+      tabIndex={0}
     >
       <span aria-hidden className="folder-item__icon text-primary">
         <FolderClosedIcon className="h-3.5 w-3.5" />
