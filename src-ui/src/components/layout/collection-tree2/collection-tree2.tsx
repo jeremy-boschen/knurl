@@ -1,7 +1,4 @@
-import React from "react"
-
 import { useCollections } from "@/state"
-
 import { CollectionItem } from "./collection-item"
 
 export function CollectionTree2() {

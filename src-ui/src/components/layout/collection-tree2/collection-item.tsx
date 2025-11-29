@@ -1,10 +1,9 @@
-import React, { Suspense } from "react"
+import { Suspense, useMemo, useState } from "react"
 
 import { ChevronDownIcon, ChevronRightIcon, FolderClosedIcon } from "lucide-react"
 
 import { useCollection, useCollections } from "@/state"
 import { RootCollectionFolderId } from "@/types"
-
 import { FolderItemList } from "./folder-item-list"
 
 type CollectionItemProps = {
@@ -15,10 +14,10 @@ export function CollectionItem({ collectionId }: CollectionItemProps) {
   const {
     state: { collectionsIndex },
   } = useCollections()
-  const [isOpen, setIsOpen] = React.useState(false)
-  const [isSelected, setIsSelected] = React.useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  const [isSelected, setIsSelected] = useState(false)
 
-  const entry = React.useMemo(
+  const entry = useMemo(
     () => collectionsIndex.index.find((item) => item.id === collectionId),
     [collectionId, collectionsIndex],
   )
@@ -31,7 +30,13 @@ export function CollectionItem({ collectionId }: CollectionItemProps) {
   const label = entry?.name ?? "Collection"
 
   return (
-    <div className="collection-item relative" data-collection-id={collectionId} role="treeitem" aria-expanded={isOpen}>
+    <div
+      className="collection-item relative"
+      data-collection-id={collectionId}
+      role="treeitem"
+      aria-expanded={isOpen}
+      tabIndex={0}
+    >
       <button
         type="button"
         onClick={handleToggle}
