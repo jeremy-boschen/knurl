@@ -13,6 +13,18 @@ export type ActiveMenuItem = {
   name: string
 } | null
 
+const TreeContextMenuProvider = React.createContext<{
+  setActiveMenuItem: (item: ActiveMenuItem) => void
+} | null>(null)
+
+export const useTreeContextMenu = () => {
+  const context = React.useContext(TreeContextMenuProvider)
+  if (!context) {
+    throw new Error("useTreeContextMenu must be used within CollectionTree2")
+  }
+  return context
+}
+
 export function CollectionTree2() {
   const {
     state: { collectionsIndex },
@@ -21,7 +33,15 @@ export function CollectionTree2() {
   const [activeMenuItem, setActiveMenuItem] = useState<ActiveMenuItem>(null)
 
   const handleContextMenu = React.useCallback((event: React.MouseEvent) => {
-    const target = event.currentTarget as HTMLElement | null
+    event.preventDefault()
+    event.stopPropagation()
+
+    // Walk up the tree to find the data attributes
+    let target: HTMLElement | null = event.target as HTMLElement | null
+    while (target && !target.dataset.kind) {
+      target = target.parentElement
+    }
+
     if (!target) {
       return
     }
@@ -46,15 +66,17 @@ export function CollectionTree2() {
   }, [])
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <div className="space-y-2" role="tree" onContextMenu={handleContextMenu}>
-          {collectionsIndex.map((entry) => (
-            <CollectionItem key={entry.id} collectionId={entry.id} collectionName={entry.name} />
-          ))}
-        </div>
-      </ContextMenuTrigger>
-      {activeMenuItem && <CollectionTreeContextMenuContent activeMenuItem={activeMenuItem} />}
-    </ContextMenu>
+    <TreeContextMenuProvider.Provider value={{ setActiveMenuItem }}>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div className="space-y-2" role="tree" onContextMenu={handleContextMenu}>
+            {collectionsIndex.map((entry) => (
+              <CollectionItem key={entry.id} collectionId={entry.id} collectionName={entry.name} />
+            ))}
+          </div>
+        </ContextMenuTrigger>
+        {activeMenuItem && <CollectionTreeContextMenuContent activeMenuItem={activeMenuItem} />}
+      </ContextMenu>
+    </TreeContextMenuProvider.Provider>
   )
 }

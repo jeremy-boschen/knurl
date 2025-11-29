@@ -2,7 +2,6 @@ import { Suspense, useState } from "react"
 
 import { ChevronDownIcon, ChevronRightIcon, FolderClosedIcon } from "lucide-react"
 
-import { ContextMenuTrigger } from "@/components/ui/context-menu"
 import { useCollection } from "@/state"
 import { RootCollectionFolderId } from "@/types"
 import { FolderItemList } from "./folder-item-list"
@@ -20,21 +19,20 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
   }
 
   return (
-    <ContextMenuTrigger asChild>
-      <div
-        data-collection-id={collectionId}
-        data-kind="collection"
-        data-name={collectionName}
-        role="treeitem"
+    <div
+      data-collection-id={collectionId}
+      data-kind="collection"
+      data-name={collectionName}
+      role="treeitem"
+      aria-expanded={isOpen}
+      tabIndex={0}
+    >
+      <button
+        type="button"
+        onClick={handleToggle}
+        className="group flex w-full items-center justify-between rounded p-2 text-sm hover:bg-accent"
         aria-expanded={isOpen}
-        tabIndex={0}
       >
-        <button
-          type="button"
-          onClick={handleToggle}
-          className="group flex w-full items-center justify-between rounded p-2 text-sm hover:bg-accent"
-          aria-expanded={isOpen}
-        >
         <span className="flex items-center space-x-2">
           <span aria-hidden className="text-primary">
             {isOpen ? <ChevronDownIcon className="h-3 w-3" /> : <ChevronRightIcon className="h-3 w-3" />}
@@ -46,15 +44,14 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
         </span>
       </button>
 
-        {isOpen ? (
-          <div className="ml-3 space-y-1">
-            <Suspense fallback={<div className="px-2 py-1 text-sm text-muted-foreground">Loading collection...</div>}>
-              <CollectionItemBody collectionId={collectionId} />
-            </Suspense>
-          </div>
-        ) : null}
-      </div>
-    </ContextMenuTrigger>
+      {isOpen ? (
+        <div className="ml-3 space-y-1">
+          <Suspense fallback={<div className="px-2 py-1 text-sm text-muted-foreground">Loading collection...</div>}>
+            <CollectionItemBody collectionId={collectionId} />
+          </Suspense>
+        </div>
+      ) : null}
+    </div>
   )
 }
 
