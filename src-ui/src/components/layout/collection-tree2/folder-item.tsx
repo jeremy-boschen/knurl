@@ -19,11 +19,9 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
   const folder = collection.folders[folderId]!
 
   const [isOpen, setIsOpen] = useState(false)
-  const [isSelected, setIsSelected] = useState(false)
 
   const handleToggle = () => {
     setIsOpen((prev) => !prev)
-    setIsSelected((prev) => !prev)
   }
 
   return (
@@ -33,7 +31,6 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
           type="button"
           onClick={handleToggle}
           className="flex w-full items-center space-x-2 rounded px-2 py-1 text-sm text-muted-foreground hover:bg-muted"
-          aria-pressed={isSelected}
           aria-expanded={isOpen}
         >
           <span aria-hidden className="text-primary">

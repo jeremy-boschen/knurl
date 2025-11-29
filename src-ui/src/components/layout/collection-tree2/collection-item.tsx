@@ -13,11 +13,9 @@ type CollectionItemProps = {
 
 export function CollectionItem({ collectionId, collectionName }: CollectionItemProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [isSelected, setIsSelected] = useState(false)
 
   const handleToggle = () => {
     setIsOpen((prev) => !prev)
-    setIsSelected((prev) => !prev)
   }
 
   return (
@@ -26,7 +24,6 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
         type="button"
         onClick={handleToggle}
         className="group flex w-full items-center justify-between rounded p-2 text-sm hover:bg-accent"
-        aria-pressed={isSelected}
         aria-expanded={isOpen}
       >
         <span className="flex items-center space-x-2">
