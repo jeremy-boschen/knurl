@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import { useState } from "react"
 
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu"
@@ -5,9 +6,8 @@ import { ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/com
 import DeleteDialog from "@/components/shared/delete-dialog"
 import RenameDialog from "@/components/ui/knurl/rename-dialog"
 import { RequestContextMenuContent } from "@/components/ui/knurl/request-context-menu"
-import { collectionsApi, useCollections } from "@/state"
+import { collectionsApi } from "@/state"
 import type { DeleteContext, DialogProps, RenameContext } from "./types"
-import { CollectionItem } from "./collection-item"
 
 export type ActiveMenuItem = {
   collectionId: string
@@ -17,11 +17,11 @@ export type ActiveMenuItem = {
   name: string
 } | null
 
-export function CollectionTreeContextMenu() {
-  const {
-    state: { collectionsIndex },
-  } = useCollections()
+export type CollectionTreeContextMenuProps = {
+  children: ReactNode
+}
 
+export function CollectionTreeContextMenu({ children }: CollectionTreeContextMenuProps) {
   const [activeMenuItem, setActiveMenuItem] = useState<ActiveMenuItem>(null)
   const [dialogProps, setDialogProps] = useState<DialogProps | null>(null)
 
@@ -180,11 +180,7 @@ export function CollectionTreeContextMenu() {
 
       <ContextMenu onOpenChange={handleContextMenuClose}>
         <ContextMenuTrigger asChild onContextMenu={handleContextMenuOpen}>
-          <div className="space-y-2" role="tree">
-            {collectionsIndex.map((entry) => (
-              <CollectionItem key={entry.id} collectionId={entry.id} collectionName={entry.name} />
-            ))}
-          </div>
+          {children}
         </ContextMenuTrigger>
         {activeMenuItem && renderContextMenuContent(activeMenuItem, openRenameDialog, openDeleteDialog)}
       </ContextMenu>
