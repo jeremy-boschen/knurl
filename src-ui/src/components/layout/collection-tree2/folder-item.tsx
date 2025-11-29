@@ -9,16 +9,16 @@ type FolderItemProps = {
 export function FolderItem({ folder }: FolderItemProps) {
   return (
     <div
-      className="folder-item flex items-center space-x-2 rounded px-2 py-1 text-sm text-muted-foreground hover:bg-muted"
+      className="flex items-center space-x-2 rounded px-2 py-1 text-sm text-muted-foreground hover:bg-muted"
       data-folder-id={folder.id}
       role="treeitem"
       aria-expanded
       tabIndex={0}
     >
-      <span aria-hidden className="folder-item__icon text-primary">
+      <span aria-hidden className="text-primary">
         <FolderClosedIcon className="h-3.5 w-3.5" />
       </span>
-      <span className="folder-item__name">{folder.name}</span>
+      <span>{folder.name}</span>
     </div>
   )
 }

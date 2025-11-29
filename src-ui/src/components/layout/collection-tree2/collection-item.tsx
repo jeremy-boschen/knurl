@@ -22,7 +22,6 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
 
   return (
     <div
-      className="collection-item relative"
       data-collection-id={collectionId}
       role="treeitem"
       aria-expanded={isOpen}
@@ -31,18 +30,18 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
       <button
         type="button"
         onClick={handleToggle}
-        className="collection-item__header group flex w-full items-center justify-between rounded p-2 text-sm hover:bg-accent"
+        className="group flex w-full items-center justify-between rounded p-2 text-sm hover:bg-accent"
         aria-pressed={isSelected}
         aria-expanded={isOpen}
       >
         <span className="flex items-center space-x-2">
-          <span aria-hidden className="collection-item__chevron text-primary">
+          <span aria-hidden className="text-primary">
             {isOpen ? <ChevronDownIcon className="h-3 w-3" /> : <ChevronRightIcon className="h-3 w-3" />}
           </span>
-          <span aria-hidden className="collection-item__icon text-primary">
+          <span aria-hidden className="text-primary">
             <FolderClosedIcon className="h-4 w-4" />
           </span>
-          <span className="collection-item__name">{collectionName}</span>
+          <span>{collectionName}</span>
         </span>
       </button>
 
@@ -50,7 +49,7 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
         <div className="ml-6 space-y-1">
           <Suspense
             fallback={
-              <div className="collection-item__loading px-2 py-1 text-sm text-muted-foreground">
+              <div className="px-2 py-1 text-sm text-muted-foreground">
                 Loading collection...
               </div>
             }
