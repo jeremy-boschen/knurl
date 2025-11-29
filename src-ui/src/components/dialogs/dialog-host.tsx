@@ -1,3 +1,4 @@
+import type { Application, DialogsApi } from "@/types"
 import { useApplication } from "@/state/application"
 import { DeleteDialog } from "./delete-dialog"
 import { RenameDialog } from "./rename-dialog"
@@ -6,14 +7,12 @@ import { CreateFolderDialog } from "./create-folder-dialog"
 import { CreateRequestDialog } from "./create-request-dialog"
 import { SaveRequestDialog } from "./save-request-dialog"
 
+const selectDialogState = (app: Application) => app.dialogsState.activeDialog
+const selectDialogsApi = (app: Application): DialogsApi => app.dialogsApi
+
 export function DialogHost() {
-  const {
-    state: { activeDialog },
-    actions: { dialogsApi },
-  } = useApplication((app) => ({
-    state: { activeDialog: app.dialogsState.activeDialog },
-    actions: { dialogsApi: app.dialogsApi },
-  }))
+  const activeDialog = useApplication(selectDialogState)
+  const dialogsApi = useApplication(selectDialogsApi)
 
   if (!activeDialog) {
     return null
