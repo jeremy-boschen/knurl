@@ -9,7 +9,7 @@ type RequestItemProps = {
   requestId: string
 }
 
-const handleSelectRequest = async (event: React.MouseEvent | React.KeyboardEvent) => {
+const handleRequestClick = async (event: React.MouseEvent | React.KeyboardEvent) => {
   if ("key" in event && event.key !== "Enter" && event.key !== " ") {
     return
   }
@@ -46,7 +46,7 @@ export function RequestItem({ collectionId, requestId }: RequestItemProps) {
       data-request-id={requestId}
       role="treeitem"
       tabIndex={0}
-      onClick={handleSelectRequest}
+      onClick={handleRequestClick}
     >
       <span aria-hidden className="text-primary">
         <HttpBadge method={request.method} className={cn(isNotEmpty(request.patch) && "unsaved-changes")} />
