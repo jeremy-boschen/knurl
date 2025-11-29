@@ -31,27 +31,36 @@ export function CollectionItem({ collectionId }: CollectionItemProps) {
   const label = entry?.name ?? "Collection"
 
   return (
-    <div className="collection-item" data-collection-id={collectionId} role="treeitem" aria-expanded={isOpen}>
+    <div
+      className="collection-item relative"
+      data-collection-id={collectionId}
+      role="treeitem"
+      aria-expanded={isOpen}
+    >
       <button
         type="button"
         onClick={handleToggle}
-        className="collection-item__header"
+        className="collection-item__header group flex w-full items-center justify-between rounded p-2 text-sm hover:bg-accent"
         aria-pressed={isSelected}
         aria-expanded={isOpen}
       >
-        <span aria-hidden className="collection-item__chevron">
-          {isOpen ? <ChevronDownIcon size={14} /> : <ChevronRightIcon size={14} />}
+        <span className="flex items-center space-x-2">
+          <span aria-hidden className="collection-item__chevron text-primary">
+            {isOpen ? <ChevronDownIcon className="h-3 w-3" /> : <ChevronRightIcon className="h-3 w-3" />}
+          </span>
+          <span aria-hidden className="collection-item__icon text-primary">
+            <FolderClosedIcon className="h-4 w-4" />
+          </span>
+          <span className="collection-item__name">{label}</span>
         </span>
-        <span aria-hidden className="collection-item__icon">
-          <FolderClosedIcon size={14} />
-        </span>
-        <span className="collection-item__name">{label}</span>
       </button>
 
       {isOpen ? (
-        <Suspense fallback={<div className="collection-item__loading">Loading collection...</div>}>
+        <div className="ml-6 space-y-1">
+          <Suspense fallback={<div className="collection-item__loading px-2 py-1 text-sm text-muted-foreground">Loading collection...</div>}>
           <CollectionItemBody collectionId={collectionId} />
         </Suspense>
+        </div>
       ) : null}
     </div>
   )

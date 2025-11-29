@@ -10,7 +10,7 @@ export function CollectionTree2() {
   } = useCollections()
 
   return (
-    <div className="collection-tree2" role="tree">
+    <div className="collection-tree2 space-y-2" role="tree">
       {collectionsIndex.index.map((entry) => (
         <CollectionItem key={entry.id} collectionId={entry.id} />
       ))}

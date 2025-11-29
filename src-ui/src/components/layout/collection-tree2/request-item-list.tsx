@@ -14,7 +14,7 @@ export function RequestItemList({ collection, folder, requestIds }: RequestItemL
   if (!requestIds || requestIds.length === 0) return null
 
   return (
-    <div className="request-item-list" data-folder-id={folder.id} role="group">
+    <div className="request-item-list space-y-1 pl-4" data-folder-id={folder.id} role="group">
       {requestIds.map((requestId) => {
         const request = collection.requests[requestId]
         if (!request) return null
