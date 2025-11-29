@@ -3,6 +3,9 @@
 import type { MouseEvent, ReactNode } from "react"
 import { useState } from "react"
 
+import { writeText } from "@tauri-apps/plugin-clipboard-manager"
+import { CopyIcon, Edit2Icon, Trash2Icon } from "lucide-react"
+
 import {
   ContextMenu,
   ContextMenuContent,
@@ -10,7 +13,6 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
-import { RequestContextMenuContent } from "@/components/ui/knurl/request-context-menu"
 import { collectionsApi } from "@/state"
 import { useDialogs } from "@/hooks/useDialogs"
 import type { DeleteContext, RenameContext } from "./types"
@@ -208,13 +210,45 @@ function renderContextMenuContent(
   switch (activeMenuItem.kind) {
     case "request":
       return (
-        <RequestContextMenuContent
-          collectionId={activeMenuItem.collectionId}
-          requestId={activeMenuItem.requestId}
-          requestName={activeMenuItem.name}
-          onRename={openRenameDialog}
-          onDelete={openDeleteDialog}
-        />
+        <ContextMenuContent className="w-48">
+          <ContextMenuItem onClick={openRenameDialog}>
+            <Edit2Icon className="h-4 w-4" />
+            Rename
+          </ContextMenuItem>
+          <ContextMenuItem
+            onClick={() => {
+              try {
+                collectionsApi().duplicateRequest(activeMenuItem.collectionId, activeMenuItem.requestId)
+              } catch (error) {
+                console.error(`Failed to duplicate request:${activeMenuItem.requestId}`, error)
+              }
+            }}
+          >
+            <CopyIcon className="h-4 w-4" />
+            Duplicate
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem
+            onClick={() => {
+              try {
+                const request = collectionsApi().getRequest(activeMenuItem.collectionId, activeMenuItem.requestId)
+                if (request) {
+                  void writeText(JSON.stringify(request, null, 2))
+                }
+              } catch (error) {
+                console.error(`Failed to copy request:${activeMenuItem.requestId}`, error)
+              }
+            }}
+          >
+            <CopyIcon className="h-4 w-4" />
+            Copy as JSON
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={openDeleteDialog} variant="destructive">
+            <Trash2Icon className="h-4 w-4" />
+            Delete
+          </ContextMenuItem>
+        </ContextMenuContent>
       )
     case "folder":
       return (
