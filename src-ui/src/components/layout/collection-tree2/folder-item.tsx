@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { ChevronDownIcon, ChevronRightIcon, FolderClosedIcon } from "lucide-react"
+import { FolderClosedIcon } from "lucide-react"
 
 import { useCollectionFromCache } from "@/state"
 import { FolderItemList } from "./folder-item-list"
@@ -15,7 +15,8 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
   const {
     state: { collection },
   } = useCollectionFromCache(collectionId)
-  const folder = collection.folders[folderId]
+  // biome-ignore lint/style/noNonNullAssertion: Safe
+  const folder = collection.folders[folderId]!
 
   const [isOpen, setIsOpen] = useState(false)
   const [isSelected, setIsSelected] = useState(false)
@@ -36,9 +37,6 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
           aria-expanded={isOpen}
         >
           <span aria-hidden className="text-primary">
-            {isOpen ? <ChevronDownIcon className="h-3.5 w-3.5" /> : <ChevronRightIcon className="h-3.5 w-3.5" />}
-          </span>
-          <span aria-hidden className="text-primary">
             <FolderClosedIcon className="h-3.5 w-3.5" />
           </span>
           <span>{folder.name}</span>
@@ -47,7 +45,7 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
 
       {isOpen ? (
         <div className="ml-3 space-y-1">
-          <RequestItemList collectionId={collectionId} folder={folder} requestIds={folder.requestIds} />
+          <RequestItemList collectionId={collectionId} folder={folder} />
 
           {folder.childFolderIds.map((childFolderId) => (
             <FolderItemList key={childFolderId} collectionId={collectionId} folderId={childFolderId} />

@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/knurl"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
 import { useSidebar, utilitySheetsApi } from "@/state"
+import { CollectionTree } from "./collection-tree"
 import { CollectionTree2 } from "./collection-tree2"
 import { ModeToggle } from "./mode-toggle"
 
@@ -193,6 +194,10 @@ export default function Sidebar() {
           </Tooltip>
         </header>
       )}
+
+      <div className="flex-1 overflow-y-auto bg-sidebar">
+        <CollectionTree />
+      </div>
 
       <div className="flex-1 overflow-y-auto bg-sidebar">
         <CollectionTree2 />
