@@ -3,8 +3,7 @@ import { useCallback } from "react"
 import { Edit2Icon, FolderPlusIcon, Trash2Icon } from "lucide-react"
 
 import { ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
-import { collectionsApi } from "@/state"
-import { useDialogs } from "@/hooks/useDialogs"
+import { collectionsApi, dialogsApi } from "@/state"
 
 import type { ActiveMenuItem } from "./types"
 
@@ -13,10 +12,8 @@ interface FolderMenuProps {
 }
 
 export function FolderMenu({ item }: FolderMenuProps) {
-  const dialogs = useDialogs()
-
   const handleRename = useCallback(() => {
-    dialogs.showRenameDialog({
+    dialogsApi().showRenameDialog({
       title: "Rename Folder",
       description: (
         <>
@@ -33,10 +30,10 @@ export function FolderMenu({ item }: FolderMenuProps) {
         collectionsApi().renameFolder(ctx.collectionId, ctx.folderId, newName)
       },
     })
-  }, [item, dialogs])
+  }, [item])
 
   const handleCreateFolder = useCallback(() => {
-    dialogs.showCreateFolderDialog({
+    dialogsApi().showCreateFolderDialog({
       collectionId: item.collectionId,
       parentId: item.folderId,
       onConfirm: (context) => {
@@ -47,10 +44,10 @@ export function FolderMenu({ item }: FolderMenuProps) {
         }
       },
     })
-  }, [item, dialogs])
+  }, [item])
 
   const handleDelete = useCallback(() => {
-    dialogs.showDeleteDialog({
+    dialogsApi().showDeleteDialog({
       title: "Delete Folder",
       description: (
         <>
@@ -66,7 +63,7 @@ export function FolderMenu({ item }: FolderMenuProps) {
         collectionsApi().deleteFolder(ctx.collectionId, ctx.folderId)
       },
     })
-  }, [item, dialogs])
+  }, [item])
 
   return (
     <ContextMenuContent className="w-48">

@@ -3,8 +3,7 @@ import { useCallback } from "react"
 import { Edit2Icon, FolderPlusIcon, GlobeIcon, PlusIcon, Trash2Icon, UploadIcon } from "lucide-react"
 
 import { ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
-import { collectionsApi, utilitySheetsApi } from "@/state"
-import { useDialogs } from "@/hooks/useDialogs"
+import { collectionsApi, dialogsApi, utilitySheetsApi } from "@/state"
 import { RootCollectionFolderId } from "@/types"
 
 import type { ActiveMenuItem } from "./types"
@@ -14,10 +13,8 @@ interface CollectionMenuProps {
 }
 
 export function CollectionMenu({ item }: CollectionMenuProps) {
-  const dialogs = useDialogs()
-
   const handleCreateRequest = useCallback(() => {
-    dialogs.showCreateRequestDialog({
+    dialogsApi().showCreateRequestDialog({
       collectionId: item.collectionId,
       parentId: RootCollectionFolderId,
       onConfirm: (context) => {
@@ -28,10 +25,10 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
         }
       },
     })
-  }, [item, dialogs])
+  }, [item])
 
   const handleCreateFolder = useCallback(() => {
-    dialogs.showCreateFolderDialog({
+    dialogsApi().showCreateFolderDialog({
       collectionId: item.collectionId,
       parentId: RootCollectionFolderId,
       onConfirm: (context) => {
@@ -42,10 +39,10 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
         }
       },
     })
-  }, [item, dialogs])
+  }, [item])
 
   const handleRename = useCallback(() => {
-    dialogs.showRenameDialog({
+    dialogsApi().showRenameDialog({
       title: "Rename Collection",
       description: (
         <>
@@ -58,7 +55,7 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
         collectionsApi().updateCollection(ctx.collectionId, { name: newName })
       },
     })
-  }, [item, dialogs])
+  }, [item])
 
   const handleOpenSettings = useCallback(() => {
     try {
@@ -80,7 +77,7 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
   }, [item])
 
   const handleDelete = useCallback(() => {
-    dialogs.showDeleteDialog({
+    dialogsApi().showDeleteDialog({
       title: "Delete Collection",
       description: (
         <>
@@ -92,7 +89,7 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
         collectionsApi().removeCollection(ctx.collectionId)
       },
     })
-  }, [item, dialogs])
+  }, [item])
 
   return (
     <ContextMenuContent className="w-56">

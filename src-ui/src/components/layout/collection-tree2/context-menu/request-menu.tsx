@@ -4,8 +4,7 @@ import { writeText } from "@tauri-apps/plugin-clipboard-manager"
 import { CopyIcon, Edit2Icon, Trash2Icon } from "lucide-react"
 
 import { ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
-import { collectionsApi } from "@/state"
-import { useDialogs } from "@/hooks/useDialogs"
+import { collectionsApi, dialogsApi } from "@/state"
 
 import type { ActiveMenuItem } from "./types"
 
@@ -14,10 +13,8 @@ interface RequestMenuProps {
 }
 
 export function RequestMenu({ item }: RequestMenuProps) {
-  const dialogs = useDialogs()
-
   const handleRename = useCallback(() => {
-    dialogs.showRenameDialog({
+    dialogsApi().showRenameDialog({
       title: "Rename Request",
       description: (
         <>
@@ -34,7 +31,7 @@ export function RequestMenu({ item }: RequestMenuProps) {
         collectionsApi().updateRequest(ctx.collectionId, ctx.requestId, { name: newName })
       },
     })
-  }, [item, dialogs])
+  }, [item])
 
   const handleDuplicate = useCallback(() => {
     try {
@@ -56,7 +53,7 @@ export function RequestMenu({ item }: RequestMenuProps) {
   }, [item])
 
   const handleDelete = useCallback(() => {
-    dialogs.showDeleteDialog({
+    dialogsApi().showDeleteDialog({
       title: "Delete Request",
       description: (
         <>
@@ -72,7 +69,7 @@ export function RequestMenu({ item }: RequestMenuProps) {
         collectionsApi().deleteRequest(ctx.collectionId, ctx.requestId)
       },
     })
-  }, [item, dialogs])
+  }, [item])
 
   return (
     <ContextMenuContent className="w-48">
