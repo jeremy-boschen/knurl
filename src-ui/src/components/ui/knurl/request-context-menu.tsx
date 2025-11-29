@@ -1,0 +1,129 @@
+import { CopyIcon, Edit2Icon, FolderOpenIcon, Trash2Icon } from "lucide-react"
+
+import {
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+} from "@/components/ui/context-menu"
+import { collectionsApi } from "@/state"
+
+export type RequestContextMenuContentProps = {
+  collectionId: string
+  requestId: string
+  requestName: string
+  isScratch: boolean
+  moveTargets?: { id: string; path: string }[]
+}
+
+export function RequestContextMenuContent({
+  collectionId,
+  requestId,
+  requestName,
+  isScratch,
+  moveTargets = [],
+}: RequestContextMenuContentProps) {
+  const hasMoveTargets = !isScratch && moveTargets.length > 0
+
+  const handleRename = () => {
+    // TODO: Implement rename handler
+  }
+
+  const handleDuplicate = () => {
+    // TODO: Implement duplicate handler
+  }
+
+  const handleMove = (targetFolderId: string) => {
+    // TODO: Implement move handler
+  }
+
+  const handleCopy = () => {
+    // TODO: Implement copy as JSON handler
+  }
+
+  const handleDelete = () => {
+    // TODO: Implement delete handler
+  }
+
+  return (
+    <ContextMenuContent className="w-48">
+      {!isScratch && (
+        <>
+          <ContextMenuItem
+            onClick={handleRename}
+            data-action-id="rename"
+            data-kind="request"
+            data-collection-id={collectionId}
+            data-request-id={requestId}
+            data-name={requestName}
+          >
+            <Edit2Icon className="h-4 w-4" />
+            Rename
+          </ContextMenuItem>
+          <ContextMenuItem
+            onClick={handleDuplicate}
+            data-action-id="duplicate"
+            data-kind="request"
+            data-collection-id={collectionId}
+            data-request-id={requestId}
+            data-name={requestName}
+          >
+            <CopyIcon className="h-4 w-4" />
+            Duplicate
+          </ContextMenuItem>
+          {hasMoveTargets && (
+            <ContextMenuSub>
+              <ContextMenuSubTrigger>
+                <FolderOpenIcon className="h-4 w-4" />
+                Move to Folder
+              </ContextMenuSubTrigger>
+              <ContextMenuSubContent className="w-48">
+                {moveTargets.map((target) => (
+                  <ContextMenuItem
+                    key={target.id}
+                    onClick={() => handleMove(target.id)}
+                    data-action-id="request:move"
+                    data-kind="request"
+                    data-collection-id={collectionId}
+                    data-request-id={requestId}
+                    data-target-folder-id={target.id}
+                    data-name={requestName}
+                  >
+                    {target.path}
+                  </ContextMenuItem>
+                ))}
+              </ContextMenuSubContent>
+            </ContextMenuSub>
+          )}
+          <ContextMenuSeparator />
+        </>
+      )}
+      <ContextMenuItem
+        onClick={handleCopy}
+        data-action-id="copy"
+        data-kind="request"
+        data-collection-id={collectionId}
+        data-request-id={requestId}
+        data-name={requestName}
+      >
+        <CopyIcon className="h-4 w-4" />
+        Copy as JSON
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem
+        variant="destructive"
+        onClick={handleDelete}
+        data-action-id="delete"
+        data-kind="request"
+        data-collection-id={collectionId}
+        data-request-id={requestId}
+        data-name={requestName}
+      >
+        <Trash2Icon className="h-4 w-4" />
+        Delete
+      </ContextMenuItem>
+    </ContextMenuContent>
+  )
+}
