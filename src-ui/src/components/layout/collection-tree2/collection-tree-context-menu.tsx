@@ -1,4 +1,4 @@
-import { ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
+import { ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
 import { RequestContextMenuContent } from "@/components/ui/knurl/request-context-menu"
 import type { ActiveMenuItem } from "./collection-tree2"
 
@@ -25,7 +25,7 @@ export function CollectionTreeContextMenuContent({ activeMenuItem }: CollectionT
     }
     case "folder":
       return (
-        <>
+        <ContextMenuContent className="w-48">
           <ContextMenuItem onClick={() => console.log("Rename folder:", activeMenuItem.name)}>
             Rename Folder
           </ContextMenuItem>
@@ -33,11 +33,11 @@ export function CollectionTreeContextMenuContent({ activeMenuItem }: CollectionT
           <ContextMenuItem onClick={() => console.log("Delete folder:", activeMenuItem.name)} variant="destructive">
             Delete Folder
           </ContextMenuItem>
-        </>
+        </ContextMenuContent>
       )
     case "collection":
       return (
-        <>
+        <ContextMenuContent className="w-48">
           <ContextMenuItem onClick={() => console.log("Rename collection:", activeMenuItem.name)}>
             Rename Collection
           </ContextMenuItem>
@@ -45,7 +45,7 @@ export function CollectionTreeContextMenuContent({ activeMenuItem }: CollectionT
           <ContextMenuItem onClick={() => console.log("Delete collection:", activeMenuItem.name)} variant="destructive">
             Delete Collection
           </ContextMenuItem>
-        </>
+        </ContextMenuContent>
       )
   }
 }
