@@ -26,7 +26,15 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
 
   return (
     <div>
-      <div data-collection-id={collectionId} data-folder-id={folderId} data-kind="folder" data-name={folder.name} role="treeitem" aria-expanded={isOpen} tabIndex={0}>
+      <div
+        data-collection-id={collectionId}
+        data-folder-id={folderId}
+        data-kind="folder"
+        data-name={folder.name}
+        role="treeitem"
+        aria-expanded={isOpen}
+        tabIndex={0}
+      >
         <button
           type="button"
           onClick={handleToggle}

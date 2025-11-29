@@ -54,9 +54,7 @@ export function CollectionTree2() {
           ))}
         </div>
       </ContextMenuTrigger>
-      {activeMenuItem && (
-        <CollectionTreeContextMenuContent activeMenuItem={activeMenuItem} />
-      )}
+      {activeMenuItem && <CollectionTreeContextMenuContent activeMenuItem={activeMenuItem} />}
     </ContextMenu>
   )
 }

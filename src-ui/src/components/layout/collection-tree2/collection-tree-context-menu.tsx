@@ -5,22 +5,23 @@ type CollectionTreeContextMenuContentProps = {
   activeMenuItem: ActiveMenuItem
 }
 
-export function CollectionTreeContextMenuContent({
-  activeMenuItem,
-}: CollectionTreeContextMenuContentProps) {
+export function CollectionTreeContextMenuContent({ activeMenuItem }: CollectionTreeContextMenuContentProps) {
   if (!activeMenuItem) {
     return null
   }
 
   switch (activeMenuItem.kind) {
-    case "request":
+    case "request": {
+      // biome-ignore lint/style/noNonNullAssertion: requestId is guaranteed for request kind
+      const requestId = activeMenuItem.requestId!
       return (
         <RequestContextMenuContent
           collectionId={activeMenuItem.collectionId}
-          requestId={activeMenuItem.requestId!}
+          requestId={requestId}
           requestName={activeMenuItem.name}
         />
       )
+    }
     case "folder":
       // TODO: Implement folder context menu
       return null
