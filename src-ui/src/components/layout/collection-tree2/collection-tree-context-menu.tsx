@@ -1,3 +1,4 @@
+import { ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
 import { RequestContextMenuContent } from "@/components/ui/knurl/request-context-menu"
 import type { ActiveMenuItem } from "./collection-tree2"
 
@@ -23,10 +24,28 @@ export function CollectionTreeContextMenuContent({ activeMenuItem }: CollectionT
       )
     }
     case "folder":
-      // TODO: Implement folder context menu
-      return null
+      return (
+        <>
+          <ContextMenuItem onClick={() => console.log("Rename folder:", activeMenuItem.name)}>
+            Rename Folder
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={() => console.log("Delete folder:", activeMenuItem.name)} variant="destructive">
+            Delete Folder
+          </ContextMenuItem>
+        </>
+      )
     case "collection":
-      // TODO: Implement collection context menu
-      return null
+      return (
+        <>
+          <ContextMenuItem onClick={() => console.log("Rename collection:", activeMenuItem.name)}>
+            Rename Collection
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={() => console.log("Delete collection:", activeMenuItem.name)} variant="destructive">
+            Delete Collection
+          </ContextMenuItem>
+        </>
+      )
   }
 }
