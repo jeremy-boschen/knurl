@@ -1,8 +1,8 @@
-import { Suspense, useMemo, useState } from "react"
+import { Suspense, useState } from "react"
 
 import { ChevronDownIcon, ChevronRightIcon, FolderClosedIcon } from "lucide-react"
 
-import { useCollection, useCollections } from "@/state"
+import { useCollection } from "@/state"
 import { RootCollectionFolderId } from "@/types"
 import { FolderItemList } from "./folder-item-list"
 
@@ -12,22 +12,17 @@ type CollectionItemProps = {
 
 export function CollectionItem({ collectionId }: CollectionItemProps) {
   const {
-    state: { collectionsIndex },
-  } = useCollections()
+    state: { collection },
+  } = useCollection(collectionId)
   const [isOpen, setIsOpen] = useState(false)
   const [isSelected, setIsSelected] = useState(false)
-
-  const entry = useMemo(
-    () => collectionsIndex.index.find((item) => item.id === collectionId),
-    [collectionId, collectionsIndex],
-  )
 
   const handleToggle = () => {
     setIsOpen((prev) => !prev)
     setIsSelected((prev) => !prev)
   }
 
-  const label = entry?.name ?? "Collection"
+  const label = collection.name ?? "Collection"
 
   return (
     <div
