@@ -19,7 +19,7 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
   }
 
   return (
-    <div data-collection-id={collectionId} role="treeitem" aria-expanded={isOpen} tabIndex={0}>
+    <div data-collection-id={collectionId} data-kind="collection" data-name={collectionName} role="treeitem" aria-expanded={isOpen} tabIndex={0}>
       <button
         type="button"
         onClick={handleToggle}

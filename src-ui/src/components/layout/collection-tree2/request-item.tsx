@@ -1,8 +1,6 @@
 import type React from "react"
 
-import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu"
 import { Clickable, HttpBadge } from "@/components/ui/knurl"
-import { RequestContextMenuContent } from "@/components/ui/knurl/request-context-menu"
 import { cn, isNotEmpty } from "@/lib"
 import { getRequestTabsApi, useCollectionFromCache } from "@/state"
 
@@ -42,24 +40,20 @@ export function RequestItem({ collectionId, requestId }: RequestItemProps) {
   }
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger>
-        <Clickable
-          className={cn("flex items-center space-x-2 rounded px-2 py-2 cursor-pointer text-sm hover:bg-muted")}
-          data-collection-id={collectionId}
-          data-request-id={requestId}
-          data-kind="request"
-          role="treeitem"
-          tabIndex={0}
-          onClick={handleRequestClick}
-        >
-          <span aria-hidden className="text-primary">
-            <HttpBadge method={request.method} className={cn(isNotEmpty(request.patch) && "unsaved-changes")} />
-          </span>
-          <span className="pt-1 text-sm leading-none">{request.name}</span>
-        </Clickable>
-      </ContextMenuTrigger>
-      <RequestContextMenuContent collectionId={collectionId} requestId={requestId} requestName={request.name} />
-    </ContextMenu>
+    <Clickable
+      className={cn("flex items-center space-x-2 rounded px-2 py-2 cursor-pointer text-sm hover:bg-muted")}
+      data-collection-id={collectionId}
+      data-request-id={requestId}
+      data-kind="request"
+      data-name={request.name}
+      role="treeitem"
+      tabIndex={0}
+      onClick={handleRequestClick}
+    >
+      <span aria-hidden className="text-primary">
+        <HttpBadge method={request.method} className={cn(isNotEmpty(request.patch) && "unsaved-changes")} />
+      </span>
+      <span className="pt-1 text-sm leading-none">{request.name}</span>
+    </Clickable>
   )
 }
