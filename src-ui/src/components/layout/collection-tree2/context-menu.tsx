@@ -3,7 +3,6 @@
 import type { MouseEvent, ReactNode } from "react"
 import { useState } from "react"
 
-import DeleteDialog from "@/components/shared/delete-dialog"
 import {
   ContextMenu,
   ContextMenuContent,
@@ -11,10 +10,10 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
-import RenameDialog from "@/components/ui/knurl/rename-dialog"
 import { RequestContextMenuContent } from "@/components/ui/knurl/request-context-menu"
-import { collectionsApi } from "@/state"
-import type { DeleteContext, DialogProps, RenameContext } from "./types"
+import { collectionsApi, useApplication } from "@/state"
+import { useDialogs } from "@/hooks/useDialogs"
+import type { DeleteContext, RenameContext } from "./types"
 
 export type ActiveMenuItem =
   | {
@@ -42,7 +41,7 @@ export type CollectionContextMenuProps = {
 
 export function CollectionContextMenu({ children }: CollectionContextMenuProps) {
   const [activeMenuItem, setActiveMenuItem] = useState<ActiveMenuItem>(null)
-  const [dialogProps, setDialogProps] = useState<DialogProps | null>(null)
+  const dialogs = useDialogs()
 
   const handleContextMenuOpen = (event: MouseEvent<HTMLDivElement>) => {
     // Walk up the tree to find the data attributes
@@ -88,32 +87,6 @@ export function CollectionContextMenu({ children }: CollectionContextMenuProps) 
     }
   }
 
-  const handleRename = (newName: string, ctx: RenameContext) => {
-    if (ctx.kind === "request") {
-      collectionsApi().updateRequest(ctx.collectionId, ctx.requestId, { name: newName })
-    } else if (ctx.kind === "collection") {
-      collectionsApi().updateCollection(ctx.collectionId, { name: newName })
-    } else if (ctx.kind === "folder") {
-      collectionsApi().renameFolder(ctx.collectionId, ctx.folderId, newName)
-    }
-    setDialogProps(null)
-  }
-
-  const handleDelete = async (ctx: DeleteContext) => {
-    if (ctx.kind === "request") {
-      collectionsApi().deleteRequest(ctx.collectionId, ctx.requestId)
-    } else if (ctx.kind === "collection") {
-      collectionsApi().removeCollection(ctx.collectionId)
-    } else if (ctx.kind === "folder") {
-      collectionsApi().deleteFolder(ctx.collectionId, ctx.folderId)
-    }
-    setDialogProps(null)
-  }
-
-  const handleCancel = () => {
-    setDialogProps(null)
-  }
-
   const openRenameDialog = () => {
     if (!activeMenuItem) {
       return
@@ -145,9 +118,7 @@ export function CollectionContextMenu({ children }: CollectionContextMenuProps) 
         break
     }
 
-    setDialogProps({
-      action: "rename",
-      name: activeMenuItem.name,
+    dialogs.showRenameDialog({
       title: `Rename ${kindName}`,
       description: (
         <>
@@ -155,6 +126,16 @@ export function CollectionContextMenu({ children }: CollectionContextMenuProps) 
         </>
       ),
       context,
+      name: activeMenuItem.name,
+      onConfirm: (ctx, newName) => {
+        if (ctx.kind === "request") {
+          collectionsApi().updateRequest(ctx.collectionId, ctx.requestId, { name: newName })
+        } else if (ctx.kind === "collection") {
+          collectionsApi().updateCollection(ctx.collectionId, { name: newName })
+        } else if (ctx.kind === "folder") {
+          collectionsApi().renameFolder(ctx.collectionId, ctx.folderId, newName)
+        }
+      },
     })
   }
 
@@ -188,9 +169,7 @@ export function CollectionContextMenu({ children }: CollectionContextMenuProps) 
         break
     }
 
-    setDialogProps({
-      action: "delete",
-      name: activeMenuItem.name,
+    dialogs.showDeleteDialog({
       title: `Delete ${kindName}`,
       description: (
         <>
@@ -199,41 +178,25 @@ export function CollectionContextMenu({ children }: CollectionContextMenuProps) 
         </>
       ),
       context,
+      onConfirm: (ctx) => {
+        if (ctx.kind === "request") {
+          collectionsApi().deleteRequest(ctx.collectionId, ctx.requestId)
+        } else if (ctx.kind === "collection") {
+          collectionsApi().removeCollection(ctx.collectionId)
+        } else if (ctx.kind === "folder") {
+          collectionsApi().deleteFolder(ctx.collectionId, ctx.folderId)
+        }
+      },
     })
   }
 
   return (
-    <>
-      {dialogProps?.action === "rename" && (
-        <RenameDialog
-          open={true}
-          title={dialogProps.title}
-          description={dialogProps.description}
-          name={dialogProps.name}
-          context={dialogProps.context}
-          onRename={handleRename}
-          onCancel={handleCancel}
-        />
-      )}
-
-      {dialogProps?.action === "delete" && (
-        <DeleteDialog
-          open={true}
-          title={dialogProps.title}
-          description={dialogProps.description}
-          context={dialogProps.context}
-          onDelete={handleDelete}
-          onCancel={handleCancel}
-        />
-      )}
-
-      <ContextMenu onOpenChange={handleContextMenuClose}>
+    <ContextMenu onOpenChange={handleContextMenuClose}>
         <ContextMenuTrigger asChild onContextMenu={handleContextMenuOpen}>
           {children}
         </ContextMenuTrigger>
         {activeMenuItem && renderContextMenuContent(activeMenuItem, openRenameDialog, openDeleteDialog)}
       </ContextMenu>
-    </>
   )
 }
 

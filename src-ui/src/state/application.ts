@@ -8,6 +8,7 @@ import { useShallow } from "zustand/shallow"
 import { assert, generateUniqueId } from "@/lib"
 import { formatWithPrettier } from "@/lib/prettier"
 import { createCredentialsCacheSlice } from "@/state/credentials"
+import { dialogsSliceCreator } from "@/state/dialogs"
 import { requestTabsSliceCreator } from "@/state/request-tabs"
 import { createSettingsSlice } from "@/state/settings"
 import { utilitySheetsSliceCreator } from "@/state/utility-sheets"
@@ -53,6 +54,7 @@ export const useApplication = create<Application>()(
         ...createSettingsSlice(set, get, store),
         ...createCredentialsCacheSlice(set, get, store),
         ...utilitySheetsSliceCreator(set, get, store),
+        ...dialogsSliceCreator(set, get, store),
       })),
     ),
   ),
@@ -68,6 +70,7 @@ export const credentialsCacheApi = (): CredentialsCacheApi => useApplication.get
 // const requestTabsApi = useApplication.getState().sidebarApi
 export const environmentsApi = () => useApplication.getState().collectionsApi
 export const utilitySheetsApi = () => useApplication.getState().utilitySheetsApi
+export const dialogsApi = () => useApplication.getState().dialogsApi
 
 ///
 /// Stable load collection promises for use in these hooks

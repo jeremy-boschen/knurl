@@ -2,6 +2,7 @@ import { useCallback } from "react"
 import { Panel, PanelGroup, ResizeHandle } from "@jeremy-boschen/react-adjustable-panels"
 
 import RequestWorkspace from "@/components/request/request-workspace"
+import { DialogHost } from "@/components/dialogs/dialog-host"
 import { UtilitySheetHost } from "@/components/utility-sheets/utility-sheet-host"
 import { cn } from "@/lib"
 import { useActiveTabId, useSidebar } from "@/state"
@@ -27,6 +28,7 @@ export default function AppLayout() {
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground" data-test-id="app-layout">
+      <DialogHost />
       <UtilitySheetHost />
       <div className="flex h-full flex-1 overflow-hidden">
         <PanelGroup ref={handlePanelGroupRef} direction="horizontal" className="flex h-full w-full">
