@@ -18,13 +18,17 @@ export function FolderItemList({ collection, folderId }: FolderItemListProps) {
 
   return (
     <div className={`space-y-1 ${isRoot ? "" : "ml-4"}`} data-folder-id={folderId}>
-      {!isRoot ? <FolderItem folder={folder} /> : null}
+      {!isRoot ? <FolderItem collection={collection} folder={folder} /> : null}
 
-      <RequestItemList collection={collection} folder={folder} requestIds={folder.requestIds} />
+      {isRoot ? (
+        <>
+          <RequestItemList collection={collection} folder={folder} requestIds={folder.requestIds} />
 
-      {folder.childFolderIds.map((childFolderId) => (
-        <FolderItemList key={childFolderId} collection={collection} folderId={childFolderId} />
-      ))}
+          {folder.childFolderIds.map((childFolderId) => (
+            <FolderItemList key={childFolderId} collection={collection} folderId={childFolderId} />
+          ))}
+        </>
+      ) : null}
     </div>
   )
 }
