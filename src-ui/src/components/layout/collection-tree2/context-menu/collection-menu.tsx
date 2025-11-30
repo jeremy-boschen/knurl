@@ -99,7 +99,7 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
 
       const collection = collectionsApi().getCollection(item.collectionId)
       if (collection) {
-        const { requestIndex, ...collectionData } = collection
+        const { requestIndex: _, ...collectionData } = collection
         void writeText(JSON.stringify(collectionData, null, 2))
       }
     } catch (error) {
