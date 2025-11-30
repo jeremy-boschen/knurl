@@ -97,6 +97,11 @@ export function RequestMenu({ item }: RequestMenuProps) {
 
   const folderPaths = useMemo(() => buildFolderPaths(collectionState.collection), [collectionState.collection])
 
+  const availableFolders = useMemo(
+    () => folderPaths.filter((folder) => folder.folderId !== currentFolderId),
+    [folderPaths, currentFolderId],
+  )
+
   const handleMoveToFolder = useCallback(
     (targetFolderId: string) => {
       try {
@@ -184,20 +189,17 @@ export function RequestMenu({ item }: RequestMenuProps) {
         </ContextMenuSubTrigger>
         <ContextMenuSubContent className="w-48">
           {currentFolderId !== RootCollectionFolderId && (
-            <ContextMenuItem onClick={() => handleMoveToFolder(RootCollectionFolderId)}>
-              Root
-            </ContextMenuItem>
+            <ContextMenuItem onClick={() => handleMoveToFolder(RootCollectionFolderId)}>Root</ContextMenuItem>
           )}
-          {folderPaths.map((folder) => (
+          {availableFolders.map((folder) => (
             <ContextMenuItem
               key={folder.folderId}
               onClick={() => handleMoveToFolder(folder.folderId)}
-              disabled={folder.folderId === currentFolderId}
             >
               {folder.path}
             </ContextMenuItem>
           ))}
-          {folderPaths.length === 0 && currentFolderId === RootCollectionFolderId && (
+          {availableFolders.length === 0 && currentFolderId === RootCollectionFolderId && (
             <div className="px-2 py-1.5 text-sm text-muted-foreground">No folders</div>
           )}
         </ContextMenuSubContent>
