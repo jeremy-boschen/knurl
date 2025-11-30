@@ -2,40 +2,7 @@ import type React from "react"
 
 import type { FolderOption } from "@/lib/collections/folder-options"
 import type { CollectionCache, RequestState } from "@/types"
-
-export type RenameContext =
-  | {
-      kind: "request"
-      collectionId: string
-      requestId: string
-    }
-  | {
-      kind: "collection"
-      collectionId: string
-      requestId: never
-    }
-  | {
-      kind: "folder"
-      collectionId: string
-      folderId: string
-    }
-
-export type DeleteContext =
-  | {
-      kind: "request"
-      collectionId: string
-      requestId: string
-    }
-  | {
-      kind: "collection"
-      collectionId: string
-      requestId: never
-    }
-  | {
-      kind: "folder"
-      collectionId: string
-      folderId: string
-    }
+import type { DeleteContext, RenameContext } from "@/types/dialogs"
 
 export type ClearScratchContext = {
   collectionId: string

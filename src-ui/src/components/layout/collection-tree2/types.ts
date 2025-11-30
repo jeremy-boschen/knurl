@@ -1,36 +1,6 @@
 import type React from "react"
 
-export type RenameContext =
-  | {
-      kind: "request"
-      collectionId: string
-      requestId: string
-    }
-  | {
-      kind: "collection"
-      collectionId: string
-    }
-  | {
-      kind: "folder"
-      collectionId: string
-      folderId: string
-    }
-
-export type DeleteContext =
-  | {
-      kind: "request"
-      collectionId: string
-      requestId: string
-    }
-  | {
-      kind: "collection"
-      collectionId: string
-    }
-  | {
-      kind: "folder"
-      collectionId: string
-      folderId: string
-    }
+import type { DeleteContext, RenameContext } from "@/types/dialogs"
 
 export type FolderCreateContext = {
   collectionId: string
