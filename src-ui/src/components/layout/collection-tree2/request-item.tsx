@@ -1,4 +1,3 @@
-import { useDeferredValue } from "react"
 import type React from "react"
 
 import { Clickable, HttpBadge } from "@/components/ui/knurl"
@@ -40,7 +39,6 @@ export function RequestItem({ collectionId, requestId }: RequestItemProps) {
     state: { searchTerm },
   } = useCollectionTree()
   const showableIds = useShowableIds(collection, searchTerm)
-  const deferredShowableIds = useDeferredValue(showableIds)
 
   const request = collection.requests[requestId]
   if (!request) {
@@ -48,7 +46,7 @@ export function RequestItem({ collectionId, requestId }: RequestItemProps) {
   }
 
   // If searching and request ID not in showable, don't render
-  if (deferredShowableIds && !deferredShowableIds.has(requestId)) {
+  if (showableIds && !showableIds.has(requestId)) {
     return null
   }
 

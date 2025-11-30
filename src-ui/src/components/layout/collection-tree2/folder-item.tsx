@@ -1,4 +1,4 @@
-import { useDeferredValue, useState } from "react"
+import { useState } from "react"
 
 import { FolderClosedIcon } from "lucide-react"
 
@@ -24,10 +24,9 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
     state: { searchTerm },
   } = useCollectionTree()
   const showableIds = useShowableIds(collection, searchTerm)
-  const deferredShowableIds = useDeferredValue(showableIds)
 
   // If searching and folder ID not in showable, don't render
-  if (deferredShowableIds && !deferredShowableIds.has(folderId)) {
+  if (showableIds && !showableIds.has(folderId)) {
     return null
   }
 

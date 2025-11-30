@@ -1,4 +1,4 @@
-import { Suspense, useDeferredValue, useState } from "react"
+import { Suspense, useState } from "react"
 
 import { ChevronDownIcon, ChevronRightIcon, FolderClosedIcon } from "lucide-react"
 
@@ -21,10 +21,9 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
     state: { searchTerm },
   } = useCollectionTree()
   const showableIds = useShowableIds(collection, searchTerm)
-  const deferredShowableIds = useDeferredValue(showableIds)
 
   // If searching and collection ID not in showable, don't render
-  if (deferredShowableIds && !deferredShowableIds.has(collectionId)) {
+  if (showableIds && !showableIds.has(collectionId)) {
     return null
   }
 
