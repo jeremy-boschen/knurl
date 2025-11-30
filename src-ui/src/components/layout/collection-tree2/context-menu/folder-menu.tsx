@@ -92,6 +92,11 @@ export function FolderMenu({ item }: FolderMenuProps) {
 
   const folderPaths = useMemo(() => buildFolderPaths(collectionState.collection), [collectionState.collection])
 
+  const availableFolders = useMemo(
+    () => folderPaths.filter((folder) => folder.folderId !== item.folderId && folder.folderId !== currentParentId),
+    [folderPaths, item.folderId, currentParentId],
+  )
+
   const handleMoveToFolder = useCallback(
     (targetParentId: string | null) => {
       try {
@@ -192,16 +197,15 @@ export function FolderMenu({ item }: FolderMenuProps) {
           {currentParentId !== RootCollectionFolderId && (
             <ContextMenuItem onClick={() => handleMoveToFolder(RootCollectionFolderId)}>Root</ContextMenuItem>
           )}
-          {folderPaths.map((folder) => (
+          {availableFolders.map((folder) => (
             <ContextMenuItem
               key={folder.folderId}
               onClick={() => handleMoveToFolder(folder.folderId)}
-              disabled={folder.folderId === currentParentId || folder.folderId === item.folderId}
             >
               {folder.path}
             </ContextMenuItem>
           ))}
-          {folderPaths.length === 0 && currentParentId === RootCollectionFolderId && (
+          {availableFolders.length === 0 && currentParentId === RootCollectionFolderId && (
             <div className="px-2 py-1.5 text-sm text-muted-foreground">No folders</div>
           )}
         </ContextMenuSubContent>
