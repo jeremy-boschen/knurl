@@ -18,11 +18,11 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
   const folder = collection.folders[folderId]!
 
   const {
-    state: { searchTerm, expandedIds },
+    state: { searchTerm, expandedIds = {} },
     actions: { toggleExpanded },
   } = useCollectionTree()
   const showableIds = useShowableIds(collection, searchTerm)
-  const isOpen = Boolean(expandedIds[folderId])
+  const isOpen = Boolean(expandedIds?.[folderId])
 
   // If filtering and folder not in showable set, don't render
   if (showableIds && !showableIds.has(folderId)) {
