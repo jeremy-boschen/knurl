@@ -184,7 +184,7 @@ export function RequestMenu({ item }: RequestMenuProps) {
         </ContextMenuSubTrigger>
         <ContextMenuSubContent className="w-48">
           {currentFolderId !== RootCollectionFolderId && (
-            <ContextMenuItem onClick={() => handleMoveToFolder(RootCollectionFolderId)} inset>
+            <ContextMenuItem onClick={() => handleMoveToFolder(RootCollectionFolderId)}>
               Root
             </ContextMenuItem>
           )}
@@ -193,7 +193,6 @@ export function RequestMenu({ item }: RequestMenuProps) {
               key={folder.folderId}
               onClick={() => handleMoveToFolder(folder.folderId)}
               disabled={folder.folderId === currentFolderId}
-              inset
             >
               {folder.path}
             </ContextMenuItem>
