@@ -190,15 +190,13 @@ export function FolderMenu({ item }: FolderMenuProps) {
         </ContextMenuSubTrigger>
         <ContextMenuSubContent className="w-48">
           {currentParentId !== RootCollectionFolderId && (
-            <ContextMenuItem onClick={() => handleMoveToFolder(RootCollectionFolderId)}>
-              Root
-            </ContextMenuItem>
+            <ContextMenuItem onClick={() => handleMoveToFolder(RootCollectionFolderId)}>Root</ContextMenuItem>
           )}
           {folderPaths.map((folder) => (
             <ContextMenuItem
               key={folder.folderId}
               onClick={() => handleMoveToFolder(folder.folderId)}
-              disabled={folder.folderId === currentParentId}
+              disabled={folder.folderId === currentParentId || folder.folderId === item.folderId}
             >
               {folder.path}
             </ContextMenuItem>
