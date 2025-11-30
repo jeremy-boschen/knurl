@@ -40,20 +40,38 @@ function buildFolderPaths(collection: ReturnType<typeof useCollection>["state"][
     return [...parentPath, folder.name]
   }
 
-  // Collect all folders
-  Object.entries(folderMap).forEach(([folderId, folder]) => {
-    if (folder.parentId !== null) {
-      // Skip root folder, only include nested folders
-      const pathParts = buildPath(folderId)
-      paths.push({
-        folderId,
-        path: pathParts.join(" / "),
-      })
+  // Recursively traverse folders in order using childFolderIds
+  const traverseFolder = (parentId: string | null) => {
+    const folder = parentId === null ? folderMap[Object.keys(folderMap)[0]] : folderMap[parentId]
+    if (!folder) {
+      return
     }
-  })
 
-  // Sort by path
-  paths.sort((a, b) => a.path.localeCompare(b.path))
+    const childIds =
+      parentId === null
+        ? Object.entries(folderMap)
+            .filter(([, f]) => f.parentId === null)
+            .sort((a, b) => a[1].order - b[1].order)
+            .map(([id]) => id)
+        : folder.childFolderIds
+
+    for (const childId of childIds) {
+      const child = folderMap[childId]
+      if (child && child.parentId !== null) {
+        // Skip root, only include nested folders
+        const pathParts = buildPath(childId)
+        paths.push({
+          folderId: childId,
+          path: pathParts.join(" / "),
+        })
+      }
+      // Recurse into children
+      traverseFolder(childId)
+    }
+  }
+
+  // Start traversal from root
+  traverseFolder(null)
   return paths
 }
 
