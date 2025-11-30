@@ -1,4 +1,4 @@
-import type { Collection, RequestState } from "@/types"
+import type { Collection } from "@/types"
 
 /**
  * Computes the set of showable IDs for collection tree filtering.
