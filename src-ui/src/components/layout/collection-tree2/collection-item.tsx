@@ -17,11 +17,11 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
     state: { collection },
   } = useCollection(collectionId)
   const {
-    state: { searchTerm, expandedIds = {} },
+    state: { searchTerm, expandedIds },
     actions: { toggleExpanded },
   } = useCollectionTree()
   const showableIds = useShowableIds(collection, searchTerm)
-  const isOpen = Boolean(expandedIds?.[collectionId])
+  const isOpen = Boolean(expandedIds[collectionId])
 
   // If filtering and collection has no matches, don't render
   if (showableIds && showableIds.size === 0) {

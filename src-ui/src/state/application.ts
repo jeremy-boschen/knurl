@@ -193,23 +193,27 @@ export const useSidebar = (): HookResult<SidebarHookState, SidebarHookActions> =
 
 type CollectionTreeHookState = {
   searchTerm: string
+  expandedIds: Record<string, boolean>
 }
 
 type CollectionTreeHookActions = {
-  collectionTreeApi: CollectionTreeApi
+  toggleExpanded: (id: string) => void
+  setExpanded: (id: string, expanded: boolean) => void
   setSearchTerm: (term: string) => void
   clearSearch: () => void
 }
 
 export const useCollectionTree = (): HookResult<CollectionTreeHookState, CollectionTreeHookActions> => {
-  const searchTerm = useApplication((state) => state.collectionTreeState.searchTerm)
+  const collectionTreeState = useApplication((state) => state.collectionTreeState)
 
   return {
     state: {
-      searchTerm,
+      searchTerm: collectionTreeState.searchTerm,
+      expandedIds: collectionTreeState.expandedIds ?? {},
     },
     actions: {
-      collectionTreeApi: getCollectionTreeApi(),
+      toggleExpanded: (id: string) => getCollectionTreeApi().toggleExpanded(id),
+      setExpanded: (id: string, expanded: boolean) => getCollectionTreeApi().setExpanded(id, expanded),
       setSearchTerm: (term: string) => getCollectionTreeApi().setSearchTerm(term),
       clearSearch: () => getCollectionTreeApi().clearSearch(),
     },
