@@ -1,8 +1,10 @@
+import { useDeferredValue } from "react"
 import type React from "react"
 
 import { Clickable, HttpBadge } from "@/components/ui/knurl"
 import { cn, isNotEmpty } from "@/lib"
-import { getRequestTabsApi, useCollectionFromCache } from "@/state"
+import { getRequestTabsApi, useCollectionFromCache, useCollectionTree } from "@/state"
+import { useShowableIds } from "@/hooks/use-showable-ids"
 
 type RequestItemProps = {
   collectionId: string
@@ -34,8 +36,19 @@ export function RequestItem({ collectionId, requestId }: RequestItemProps) {
   const {
     state: { collection },
   } = useCollectionFromCache(collectionId)
+  const {
+    state: { searchTerm },
+  } = useCollectionTree()
+  const showableIds = useShowableIds(collection, searchTerm)
+  const deferredShowableIds = useDeferredValue(showableIds)
+
   const request = collection.requests[requestId]
   if (!request) {
+    return null
+  }
+
+  // If searching and request ID not in showable, don't render
+  if (deferredShowableIds && !deferredShowableIds.has(requestId)) {
     return null
   }
 

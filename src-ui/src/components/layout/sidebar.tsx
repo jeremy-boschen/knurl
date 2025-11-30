@@ -16,7 +16,7 @@ import { KnurlIcon } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/knurl"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
-import { useSidebar, utilitySheetsApi } from "@/state"
+import { useSidebar, utilitySheetsApi, useCollectionTree } from "@/state"
 import { CollectionTree } from "./collection-tree"
 import { CollectionTree2 } from "./collection-tree2"
 import { ModeToggle } from "./mode-toggle"
@@ -28,7 +28,10 @@ export default function Sidebar() {
     state: { isCollapsed },
     actions: { collapseSidebar, expandSidebar },
   } = useSidebar()
-  const [searchTerm, setSearchTerm] = useState<string>("")
+  const {
+    state: { searchTerm },
+    actions: { setSearchTerm, clearSearch },
+  } = useCollectionTree()
   const searchRef = useRef<HTMLInputElement | null>(null)
   const [dialogProps, setDialogProps] = useState<DialogProps | null>(null)
 
@@ -141,7 +144,7 @@ export default function Sidebar() {
                   if (e.key === "Escape" && searchTerm) {
                     e.preventDefault()
                     e.stopPropagation()
-                    setSearchTerm("")
+                    clearSearch()
                     const el = searchRef.current
                     if (el) {
                       el.focus()
@@ -158,7 +161,7 @@ export default function Sidebar() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setSearchTerm("")
+                        clearSearch()
                         const el = searchRef.current
                         if (el) {
                           el.focus()

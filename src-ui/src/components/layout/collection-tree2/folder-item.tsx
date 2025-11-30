@@ -1,8 +1,9 @@
-import { useState } from "react"
+import { useDeferredValue, useState } from "react"
 
 import { FolderClosedIcon } from "lucide-react"
 
-import { useCollectionFromCache } from "@/state"
+import { useCollectionFromCache, useCollectionTree } from "@/state"
+import { useShowableIds } from "@/hooks/use-showable-ids"
 import { FolderItemList } from "./folder-item-list"
 import { RequestItemList } from "./request-item-list"
 
@@ -19,6 +20,16 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
   const folder = collection.folders[folderId]!
 
   const [isOpen, setIsOpen] = useState(false)
+  const {
+    state: { searchTerm },
+  } = useCollectionTree()
+  const showableIds = useShowableIds(collection, searchTerm)
+  const deferredShowableIds = useDeferredValue(showableIds)
+
+  // If searching and folder ID not in showable, don't render
+  if (deferredShowableIds && !deferredShowableIds.has(folderId)) {
+    return null
+  }
 
   const handleToggle = () => {
     setIsOpen((prev) => !prev)
