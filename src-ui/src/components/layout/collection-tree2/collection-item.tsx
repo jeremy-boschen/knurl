@@ -21,7 +21,7 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
     actions: { toggleExpanded },
   } = useCollectionTree()
   const showableIds = useShowableIds(collection, searchTerm)
-  const isOpen = expandedIds.has(collectionId)
+  const isOpen = Boolean(expandedIds[collectionId])
 
   // If filtering and collection has no matches, don't render
   if (showableIds && showableIds.size === 0) {

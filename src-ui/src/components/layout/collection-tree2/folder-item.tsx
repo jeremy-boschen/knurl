@@ -1,4 +1,3 @@
-
 import { FolderClosedIcon } from "lucide-react"
 
 import { useCollectionFromCache, useCollectionTree } from "@/state"
@@ -23,7 +22,7 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
     actions: { toggleExpanded },
   } = useCollectionTree()
   const showableIds = useShowableIds(collection, searchTerm)
-  const isOpen = expandedIds.has(folderId)
+  const isOpen = Boolean(expandedIds[folderId])
 
   // If filtering and folder not in showable set, don't render
   if (showableIds && !showableIds.has(folderId)) {

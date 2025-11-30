@@ -38,10 +38,10 @@ export const collectionTreeSliceCreator: StateCreator<
 
     toggleExpanded(id: string) {
       set((app) => {
-        if (app.collectionTreeState.expandedIds.has(id)) {
-          app.collectionTreeState.expandedIds.delete(id)
+        if (app.collectionTreeState.expandedIds[id]) {
+          delete app.collectionTreeState.expandedIds[id]
         } else {
-          app.collectionTreeState.expandedIds.add(id)
+          app.collectionTreeState.expandedIds[id] = true
         }
       })
     },
@@ -49,9 +49,9 @@ export const collectionTreeSliceCreator: StateCreator<
     setExpanded(id: string, expanded: boolean) {
       set((app) => {
         if (expanded) {
-          app.collectionTreeState.expandedIds.add(id)
+          app.collectionTreeState.expandedIds[id] = true
         } else {
-          app.collectionTreeState.expandedIds.delete(id)
+          delete app.collectionTreeState.expandedIds[id]
         }
       })
     },
@@ -60,7 +60,7 @@ export const collectionTreeSliceCreator: StateCreator<
   return {
     collectionTreeState: {
       searchTerm: "",
-      expandedIds: new Set(),
+      expandedIds: {},
     },
     collectionTreeApi,
   }

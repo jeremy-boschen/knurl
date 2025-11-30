@@ -3,11 +3,11 @@
  * This is a presentation layer state, not persisted to storage.
  *
  * searchTerm: The current search query entered by the user
- * expandedIds: Set of collection/folder IDs that are currently expanded
+ * expandedIds: Record of collection/folder IDs that are currently expanded (id -> true)
  */
 export type CollectionTreeState = {
   searchTerm: string
-  expandedIds: Set<string>
+  expandedIds: Record<string, boolean>
 }
 
 export interface CollectionTreeApi {
