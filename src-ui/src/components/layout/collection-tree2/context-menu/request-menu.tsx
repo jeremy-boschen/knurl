@@ -1,10 +1,19 @@
-import { useCallback } from "react"
+import { useCallback, useMemo } from "react"
 
 import { writeText } from "@tauri-apps/plugin-clipboard-manager"
-import { CopyIcon, Edit2Icon, Trash2Icon } from "lucide-react"
+import { CopyIcon, Edit2Icon, FolderIcon, Trash2Icon } from "lucide-react"
 
-import { ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
+import {
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+} from "@/components/ui/context-menu"
 import { collectionsApi, dialogsApi } from "@/state"
+import { useCollection } from "@/state/application"
+import { RootCollectionFolderId } from "@/types"
 
 import type { ActiveMenuItem } from "./types"
 
@@ -12,7 +21,75 @@ interface RequestMenuProps {
   item: Extract<ActiveMenuItem, { kind: "request" }>
 }
 
+type FolderPath = {
+  folderId: string
+  path: string
+}
+
+function buildFolderPaths(collection: ReturnType<typeof useCollection>["state"]["collection"]): FolderPath[] {
+  const paths: FolderPath[] = []
+  const folderMap = collection.folders
+
+  // Helper to build path for a folder
+  const buildPath = (folderId: string): string[] => {
+    const folder = folderMap[folderId]
+    if (!folder || folder.parentId === null) {
+      return folder ? [folder.name] : []
+    }
+    const parentPath = buildPath(folder.parentId)
+    return [...parentPath, folder.name]
+  }
+
+  // Collect all folders
+  Object.entries(folderMap).forEach(([folderId, folder]) => {
+    if (folder.parentId !== null) {
+      // Skip root folder, only include nested folders
+      const pathParts = buildPath(folderId)
+      paths.push({
+        folderId,
+        path: pathParts.join(" / "),
+      })
+    }
+  })
+
+  // Sort by path
+  paths.sort((a, b) => a.path.localeCompare(b.path))
+  return paths
+}
+
+function getCurrentRequestFolder(
+  collection: ReturnType<typeof useCollection>["state"]["collection"],
+  requestId: string,
+): string | null {
+  for (const [folderId, folder] of Object.entries(collection.folders)) {
+    if (folder.requestIds.includes(requestId)) {
+      return folderId
+    }
+  }
+  return null
+}
+
 export function RequestMenu({ item }: RequestMenuProps) {
+  const { state: collectionState } = useCollection(item.collectionId)
+
+  const currentFolderId = useMemo(
+    () => getCurrentRequestFolder(collectionState.collection, item.requestId),
+    [collectionState.collection, item.requestId],
+  )
+
+  const folderPaths = useMemo(() => buildFolderPaths(collectionState.collection), [collectionState.collection])
+
+  const handleMoveToFolder = useCallback(
+    (targetFolderId: string) => {
+      try {
+        collectionsApi().moveRequestToFolder(item.collectionId, item.requestId, targetFolderId)
+      } catch (error) {
+        console.error("Failed to move request", error)
+      }
+    },
+    [item.collectionId, item.requestId],
+  )
+
   const handleRename = useCallback(() => {
     dialogsApi().showRenameDialog({
       title: "Rename Request",
@@ -81,6 +158,30 @@ export function RequestMenu({ item }: RequestMenuProps) {
         <CopyIcon className="h-4 w-4" />
         Duplicate
       </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuSub>
+        <ContextMenuSubTrigger>
+          <FolderIcon className="h-4 w-4" />
+          Move to folder
+        </ContextMenuSubTrigger>
+        <ContextMenuSubContent className="w-48">
+          {currentFolderId !== RootCollectionFolderId && (
+            <ContextMenuItem onClick={() => handleMoveToFolder(RootCollectionFolderId)}>Root</ContextMenuItem>
+          )}
+          {folderPaths.map((folder) => (
+            <ContextMenuItem
+              key={folder.folderId}
+              onClick={() => handleMoveToFolder(folder.folderId)}
+              disabled={folder.folderId === currentFolderId}
+            >
+              {folder.path}
+            </ContextMenuItem>
+          ))}
+          {folderPaths.length === 0 && currentFolderId === RootCollectionFolderId && (
+            <div className="px-2 py-1.5 text-sm text-muted-foreground">No folders</div>
+          )}
+        </ContextMenuSubContent>
+      </ContextMenuSub>
       <ContextMenuSeparator />
       <ContextMenuItem onClick={handleCopyAsJson}>
         <CopyIcon className="h-4 w-4" />
