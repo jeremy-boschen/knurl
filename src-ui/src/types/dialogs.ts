@@ -35,16 +35,52 @@ export type ActiveDialog =
       kind: "delete"
       title: string
       description: React.ReactNode
-      context: DeleteContext
-      onConfirm: (context: DeleteContext) => void | Promise<void>
+      context: { kind: "request"; collectionId: string; requestId: string }
+      onConfirm: (context: { kind: "request"; collectionId: string; requestId: string }) => void | Promise<void>
+    }
+  | {
+      kind: "delete"
+      title: string
+      description: React.ReactNode
+      context: { kind: "collection"; collectionId: string }
+      onConfirm: (context: { kind: "collection"; collectionId: string }) => void | Promise<void>
+    }
+  | {
+      kind: "delete"
+      title: string
+      description: React.ReactNode
+      context: { kind: "folder"; collectionId: string; folderId: string }
+      onConfirm: (context: { kind: "folder"; collectionId: string; folderId: string }) => void | Promise<void>
     }
   | {
       kind: "rename"
       title: string
       description: React.ReactNode
-      context: RenameContext
+      context: { kind: "request"; collectionId: string; requestId: string }
       name: string
-      onConfirm: (context: RenameContext, newName: string) => void | Promise<void>
+      onConfirm: (
+        context: { kind: "request"; collectionId: string; requestId: string },
+        newName: string,
+      ) => void | Promise<void>
+    }
+  | {
+      kind: "rename"
+      title: string
+      description: React.ReactNode
+      context: { kind: "collection"; collectionId: string }
+      name: string
+      onConfirm: (context: { kind: "collection"; collectionId: string }, newName: string) => void | Promise<void>
+    }
+  | {
+      kind: "rename"
+      title: string
+      description: React.ReactNode
+      context: { kind: "folder"; collectionId: string; folderId: string }
+      name: string
+      onConfirm: (
+        context: { kind: "folder"; collectionId: string; folderId: string },
+        newName: string,
+      ) => void | Promise<void>
     }
   | {
       kind: "create-collection"
@@ -73,19 +109,19 @@ export type DialogsState = {
 }
 
 export interface DialogsApi {
-  showDeleteDialog(props: {
+  showDeleteDialog<T extends DeleteContext>(props: {
     title: string
     description: React.ReactNode
-    context: DeleteContext
-    onConfirm: (context: DeleteContext) => void | Promise<void>
+    context: T
+    onConfirm: (context: T) => void | Promise<void>
   }): void
 
-  showRenameDialog(props: {
+  showRenameDialog<T extends RenameContext>(props: {
     title: string
     description: React.ReactNode
-    context: RenameContext
+    context: T
     name: string
-    onConfirm: (context: RenameContext, newName: string) => void | Promise<void>
+    onConfirm: (context: T, newName: string) => void | Promise<void>
   }): void
 
   showCreateCollectionDialog(props: { onConfirm: (context: { name: string }) => void | Promise<void> }): void
