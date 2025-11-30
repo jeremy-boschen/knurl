@@ -3,12 +3,12 @@ import { useState } from "react"
 
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu"
 
-import { CollectionMenu } from "./context-menu/collection-menu"
-import { FolderMenu } from "./context-menu/folder-menu"
-import { RequestMenu } from "./context-menu/request-menu"
-import type { ActiveMenuItem } from "./context-menu/types"
+import { CollectionMenu } from "./collection-menu"
+import { FolderMenu } from "./folder-menu"
+import { RequestMenu } from "./request-menu"
+import type { ActiveMenuItem } from "./types"
 
-export type { ActiveMenuItem } from "./context-menu/types"
+export type { ActiveMenuItem } from "./types"
 
 export type CollectionContextMenuProps = {
   children: ReactNode
