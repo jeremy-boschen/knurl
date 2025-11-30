@@ -1,5 +1,6 @@
 // Central export file for all types
 export * from "./application"
+export * from "./collection-tree"
 export * from "./collections"
 export * from "./common"
 export * from "./credentials"

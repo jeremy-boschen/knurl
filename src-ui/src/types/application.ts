@@ -1,4 +1,5 @@
 import type {
+  CollectionTreeSlice,
   CollectionsSlice,
   CredentialsCacheSlice,
   DialogsSlice,
@@ -14,4 +15,5 @@ export type Application = CollectionsSlice &
   SettingsSlice &
   CredentialsCacheSlice &
   UtilitySheetsSlice &
-  DialogsSlice
+  DialogsSlice &
+  CollectionTreeSlice

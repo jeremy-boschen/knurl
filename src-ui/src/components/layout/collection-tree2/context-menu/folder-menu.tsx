@@ -198,10 +198,7 @@ export function FolderMenu({ item }: FolderMenuProps) {
             <ContextMenuItem onClick={() => handleMoveToFolder(RootCollectionFolderId)}>Root</ContextMenuItem>
           )}
           {availableFolders.map((folder) => (
-            <ContextMenuItem
-              key={folder.folderId}
-              onClick={() => handleMoveToFolder(folder.folderId)}
-            >
+            <ContextMenuItem key={folder.folderId} onClick={() => handleMoveToFolder(folder.folderId)}>
               {folder.path}
             </ContextMenuItem>
           ))}

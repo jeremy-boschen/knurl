@@ -41,6 +41,7 @@ import {
   zRequestPathParam,
 } from "@/types"
 import { withStorageManager } from "@/types/middleware/storage-manager"
+import { collectionTreeSliceCreator } from "./collection-tree"
 import { createCollectionsSlice, isScratchCollection } from "./collections"
 import { sidebarSliceCreator } from "./sidebar"
 
@@ -51,6 +52,7 @@ export const useApplication = create<Application>()(
         ...createCollectionsSlice(set, get, store),
         ...requestTabsSliceCreator(set, get, store),
         ...sidebarSliceCreator(set, get, store),
+        ...collectionTreeSliceCreator(set, get, store),
         ...createSettingsSlice(set, get, store),
         ...createCredentialsCacheSlice(set, get, store),
         ...utilitySheetsSliceCreator(set, get, store),
@@ -97,6 +99,7 @@ type HookResult<State, Actions> = {
 export const getSidebarApi = () => useApplication.getState().sidebarApi
 export const getRequestTabsApi = () => useApplication.getState().requestTabsApi
 export const getUtilitySheetsApi = () => useApplication.getState().utilitySheetsApi
+export const getCollectionTreeApi = () => useApplication.getState().collectionTreeApi
 const requireLoadedCollection = (state: Application, collectionId: string) => {
   const collection = state.collectionsState.cache[collectionId]
   assert(collection, `Collection ${collectionId} must be loaded before use`)
@@ -184,6 +187,31 @@ export const useSidebar = (): HookResult<SidebarHookState, SidebarHookActions> =
       collapseSidebar: () => getSidebarApi().collapseSidebar(),
       expandSidebar: () => getSidebarApi().expandSidebar(),
       setPanelGroupApi: (panel) => getSidebarApi().setPanelGroupApi(panel),
+    },
+  }
+}
+
+type CollectionTreeHookState = {
+  searchTerm: string
+}
+
+type CollectionTreeHookActions = {
+  collectionTreeApi: CollectionTreeApi
+  setSearchTerm: (term: string) => void
+  clearSearch: () => void
+}
+
+export const useCollectionTree = (): HookResult<CollectionTreeHookState, CollectionTreeHookActions> => {
+  const searchTerm = useApplication((state) => state.collectionTreeState.searchTerm)
+
+  return {
+    state: {
+      searchTerm,
+    },
+    actions: {
+      collectionTreeApi: getCollectionTreeApi(),
+      setSearchTerm: (term: string) => getCollectionTreeApi().setSearchTerm(term),
+      clearSearch: () => getCollectionTreeApi().clearSearch(),
     },
   }
 }
