@@ -1,39 +1,75 @@
-import { useDeferredValue, useMemo } from "react"
+import { useMemo } from "react"
 
-import { computeShowableIds } from "@/lib/collection-tree-filter"
 import type { Collection } from "@/types"
 
 /**
- * Hook to compute and defer showable IDs for collection tree filtering.
+ * Hook to compute showable IDs for collection tree filtering.
  *
  * Usage in components:
  * ```tsx
- * const deferredShowableIds = useShowableIds(collection, searchTerm)
- * if (deferredShowableIds && !deferredShowableIds.has(itemId)) return null
+ * const showableIds = useShowableIds(collection, searchTerm)
+ * if (showableIds && !showableIds.has(itemId)) return null
  * ```
  *
  * How it works:
- * 1. Takes the full collection and search term
- * 2. Computes which items should be shown (via computeShowableIds)
- * 3. Uses useDeferredValue to defer the computation to a lower priority
- * 4. Returns the deferred Set of showable IDs
+ * 1. Computes once when collection or searchTerm changes
+ * 2. Returns a Set of IDs that should be visible
+ * 3. Includes both matches AND their ancestors (so context is visible)
  *
  * Performance:
- * - The computation happens only when collection or searchTerm changes
- * - useDeferredValue defers re-renders, keeping the search input responsive
- * - Components can safely check `showableIds.has(id)` without blocking the UI
+ * - Single pass through collection structure O(n)
+ * - Set lookups are O(1)
+ * - Only recomputes when collection or searchTerm actually change
  *
  * Returns:
  * - null if no search term (everything is shown)
- * - Set<string> of showable IDs (deferred) if search term is active
+ * - Set<string> of showable IDs if search term is active
  */
 export function useShowableIds(collection: Collection, searchTerm: string): Set<string> | null {
-  const showableIds = useMemo(() => {
-    if (!searchTerm.trim()) {
+  return useMemo(() => {
+    const query = searchTerm.trim().toLowerCase()
+    if (!query) {
       return null
     }
-    return computeShowableIds(collection, searchTerm)
-  }, [collection, searchTerm])
 
-  return useDeferredValue(showableIds)
+    const showable = new Set<string>()
+    const ancestors = new Set<string>()
+
+    // Helper to add ancestors of a folder
+    const addFolderAncestors = (folderId: string) => {
+      let currentId: string | null = folderId
+      while (currentId !== null) {
+        ancestors.add(currentId)
+        const folder = collection.folders[currentId]
+        currentId = folder?.parentId ?? null
+      }
+    }
+
+    // Check if string matches query
+    const matches = (value: string): boolean => value.toLowerCase().includes(query)
+
+    // Find matching requests
+    for (const [requestId, request] of Object.entries(collection.requests)) {
+      if (matches(request.name) || matches(request.method) || matches(request.url ?? "")) {
+        showable.add(requestId)
+        // Mark request's folder and all ancestors
+        const folderId = request.folderId ?? ""
+        if (folderId) {
+          addFolderAncestors(folderId)
+        }
+      }
+    }
+
+    // Find matching folders
+    for (const [folderId, folder] of Object.entries(collection.folders)) {
+      if (matches(folder.name)) {
+        showable.add(folderId)
+        // Mark folder's ancestors
+        addFolderAncestors(folderId)
+      }
+    }
+
+    // Combine both sets
+    return new Set([...showable, ...ancestors])
+  }, [collection, searchTerm])
 }

@@ -1,41 +1,15 @@
-import { useState, useMemo } from "react"
+import { useState } from "react"
 
 import { FolderClosedIcon } from "lucide-react"
 
 import { useCollectionFromCache, useCollectionTree } from "@/state"
-import type { Collection, FolderState } from "@/types"
+import { useShowableIds } from "@/hooks/use-showable-ids"
 import { FolderItemList } from "./folder-item-list"
 import { RequestItemList } from "./request-item-list"
 
 type FolderItemProps = {
   collectionId: string
   folderId: string
-}
-
-// Helper to check if a folder or any of its descendants match the search
-function folderHasMatches(folder: FolderState, collection: Collection, query: string): boolean {
-  // Check if folder name matches
-  if (folder.name.toLowerCase().includes(query)) {
-    return true
-  }
-
-  // Check if any direct requests match
-  const directRequests = folder.requestIds.map((id) => collection.requests[id]).filter(Boolean)
-  if (
-    directRequests.some((r) => [r.name, r.method, r.url ?? ""].some((v) => v.toLowerCase().includes(query)))
-  ) {
-    return true
-  }
-
-  // Check if any child folders have matches (recursive)
-  for (const childId of folder.childFolderIds) {
-    const childFolder = collection.folders[childId]
-    if (childFolder && folderHasMatches(childFolder, collection, query)) {
-      return true
-    }
-  }
-
-  return false
 }
 
 export function FolderItem({ collectionId, folderId }: FolderItemProps) {
@@ -49,17 +23,10 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
   const {
     state: { searchTerm },
   } = useCollectionTree()
+  const showableIds = useShowableIds(collection, searchTerm)
 
-  // Check if this folder should be shown based on search
-  const shouldShow = useMemo(() => {
-    if (!searchTerm.trim()) {
-      return true
-    }
-    const query = searchTerm.trim().toLowerCase()
-    return folderHasMatches(folder, collection, query)
-  }, [folder, collection, searchTerm])
-
-  if (!shouldShow) {
+  // If filtering and folder not in showable set, don't render
+  if (showableIds && !showableIds.has(folderId)) {
     return null
   }
 
