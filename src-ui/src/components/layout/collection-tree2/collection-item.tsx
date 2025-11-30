@@ -1,15 +1,45 @@
-import { Suspense, useState } from "react"
+import { Suspense, useState, useMemo } from "react"
 
 import { ChevronDownIcon, ChevronRightIcon, FolderClosedIcon } from "lucide-react"
 
 import { useCollection, useCollectionTree } from "@/state"
 import { RootCollectionFolderId } from "@/types"
-import { useShowableIds } from "@/hooks/use-showable-ids"
+import type { Collection } from "@/types"
 import { FolderItemList } from "./folder-item-list"
 
 type CollectionItemProps = {
   collectionId: string
   collectionName: string
+}
+
+// Helper to check if a collection or any of its contents match the search
+function collectionHasMatches(collection: Collection, query: string): boolean {
+  // Check if collection name matches
+  if (collection.name.toLowerCase().includes(query)) {
+    return true
+  }
+
+  // Check if any request matches
+  for (const request of Object.values(collection.requests)) {
+    if (!request) {
+      continue
+    }
+    if ([request.name, request.method, request.url ?? ""].some((v) => v.toLowerCase().includes(query))) {
+      return true
+    }
+  }
+
+  // Check if any folder matches
+  for (const folder of Object.values(collection.folders)) {
+    if (!folder) {
+      continue
+    }
+    if (folder.name.toLowerCase().includes(query)) {
+      return true
+    }
+  }
+
+  return false
 }
 
 export function CollectionItem({ collectionId, collectionName }: CollectionItemProps) {
@@ -20,10 +50,17 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
   const {
     state: { searchTerm },
   } = useCollectionTree()
-  const showableIds = useShowableIds(collection, searchTerm)
 
-  // If searching and collection ID not in showable, don't render
-  if (showableIds && !showableIds.has(collectionId)) {
+  // Check if this collection should be shown based on search
+  const shouldShow = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return true
+    }
+    const query = searchTerm.trim().toLowerCase()
+    return collectionHasMatches(collection, query)
+  }, [collection, searchTerm])
+
+  if (!shouldShow) {
     return null
   }
 

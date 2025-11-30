@@ -3,7 +3,6 @@ import type React from "react"
 import { Clickable, HttpBadge } from "@/components/ui/knurl"
 import { cn, isNotEmpty } from "@/lib"
 import { getRequestTabsApi, useCollectionFromCache, useCollectionTree } from "@/state"
-import { useShowableIds } from "@/hooks/use-showable-ids"
 
 type RequestItemProps = {
   collectionId: string
@@ -38,16 +37,21 @@ export function RequestItem({ collectionId, requestId }: RequestItemProps) {
   const {
     state: { searchTerm },
   } = useCollectionTree()
-  const showableIds = useShowableIds(collection, searchTerm)
 
   const request = collection.requests[requestId]
   if (!request) {
     return null
   }
 
-  // If searching and request ID not in showable, don't render
-  if (showableIds && !showableIds.has(requestId)) {
-    return null
+  // Filter based on search term
+  if (searchTerm.trim()) {
+    const query = searchTerm.trim().toLowerCase()
+    const matches = [request.name, request.method, request.url ?? ""].some((v) =>
+      v.toLowerCase().includes(query),
+    )
+    if (!matches) {
+      return null
+    }
   }
 
   return (
