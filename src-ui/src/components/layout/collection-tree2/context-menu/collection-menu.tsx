@@ -99,7 +99,8 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
 
       const collection = collectionsApi().getCollection(item.collectionId)
       if (collection) {
-        void writeText(JSON.stringify(collection, null, 2))
+        const { requestIndex, ...collectionData } = collection
+        void writeText(JSON.stringify(collectionData, null, 2))
       }
     } catch (error) {
       console.error(`Failed to copy collection:${item.collectionId}`, error)
