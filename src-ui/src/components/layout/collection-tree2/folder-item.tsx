@@ -1,4 +1,3 @@
-import { useState } from "react"
 
 import { FolderClosedIcon } from "lucide-react"
 
@@ -19,11 +18,12 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
   // biome-ignore lint/style/noNonNullAssertion: Safe
   const folder = collection.folders[folderId]!
 
-  const [isOpen, setIsOpen] = useState(false)
   const {
-    state: { searchTerm },
+    state: { searchTerm, expandedIds },
+    actions: { toggleExpanded },
   } = useCollectionTree()
   const showableIds = useShowableIds(collection, searchTerm)
+  const isOpen = expandedIds.has(folderId)
 
   // If filtering and folder not in showable set, don't render
   if (showableIds && !showableIds.has(folderId)) {
@@ -31,7 +31,7 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
   }
 
   const handleToggle = () => {
-    setIsOpen((prev) => !prev)
+    toggleExpanded(folderId)
   }
 
   return (

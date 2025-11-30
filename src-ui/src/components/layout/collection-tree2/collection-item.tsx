@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react"
+import { Suspense } from "react"
 
 import { ChevronDownIcon, ChevronRightIcon, FolderClosedIcon } from "lucide-react"
 
@@ -13,14 +13,15 @@ type CollectionItemProps = {
 }
 
 export function CollectionItem({ collectionId, collectionName }: CollectionItemProps) {
-  const [isOpen, setIsOpen] = useState(false)
   const {
     state: { collection },
   } = useCollection(collectionId)
   const {
-    state: { searchTerm },
+    state: { searchTerm, expandedIds },
+    actions: { toggleExpanded },
   } = useCollectionTree()
   const showableIds = useShowableIds(collection, searchTerm)
+  const isOpen = expandedIds.has(collectionId)
 
   // If filtering and collection has no matches, don't render
   if (showableIds && showableIds.size === 0) {
@@ -28,7 +29,7 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
   }
 
   const handleToggle = () => {
-    setIsOpen((prev) => !prev)
+    toggleExpanded(collectionId)
   }
 
   return (

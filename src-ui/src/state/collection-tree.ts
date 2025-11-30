@@ -7,14 +7,15 @@ import type { Application, CollectionTreeApi, CollectionTreeSlice } from "@/type
  *
  * State:
  * - searchTerm: current search query
+ * - expandedIds: Set of collection/folder IDs that are currently expanded
  *
  * API:
  * - setSearchTerm: update search term
  * - clearSearch: clear search term
+ * - toggleExpanded: toggle expanded state for an ID
+ * - setExpanded: set expanded state explicitly
  *
- * Note: showableIds are computed per-collection in components via useShowableIds hook,
- * which uses useDeferredValue to keep the search input responsive while filtering
- * happens at lower priority.
+ * Note: showableIds are computed per-collection in components via useShowableIds hook.
  */
 export const collectionTreeSliceCreator: StateCreator<
   Application,
@@ -34,11 +35,32 @@ export const collectionTreeSliceCreator: StateCreator<
         app.collectionTreeState.searchTerm = ""
       })
     },
+
+    toggleExpanded(id: string) {
+      set((app) => {
+        if (app.collectionTreeState.expandedIds.has(id)) {
+          app.collectionTreeState.expandedIds.delete(id)
+        } else {
+          app.collectionTreeState.expandedIds.add(id)
+        }
+      })
+    },
+
+    setExpanded(id: string, expanded: boolean) {
+      set((app) => {
+        if (expanded) {
+          app.collectionTreeState.expandedIds.add(id)
+        } else {
+          app.collectionTreeState.expandedIds.delete(id)
+        }
+      })
+    },
   }
 
   return {
     collectionTreeState: {
       searchTerm: "",
+      expandedIds: new Set(),
     },
     collectionTreeApi,
   }
