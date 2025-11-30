@@ -1,6 +1,7 @@
 import { useCallback } from "react"
 
-import { Edit2Icon, FolderPlusIcon, GlobeIcon, PlusIcon, Trash2Icon, UploadIcon } from "lucide-react"
+import { writeText } from "@tauri-apps/plugin-clipboard-manager"
+import { CopyIcon, Edit2Icon, FolderPlusIcon, GlobeIcon, PlusIcon, Trash2Icon, UploadIcon } from "lucide-react"
 
 import { ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
 import { collectionsApi, dialogsApi, utilitySheetsApi } from "@/state"
@@ -92,6 +93,19 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
     }
   }, [item])
 
+  const handleCopyAsJson = useCallback(async () => {
+    try {
+      await collectionsApi().loadCollection(item.collectionId)
+
+      const collection = collectionsApi().getCollection(item.collectionId)
+      if (collection) {
+        void writeText(JSON.stringify(collection, null, 2))
+      }
+    } catch (error) {
+      console.error(`Failed to copy collection:${item.collectionId}`, error)
+    }
+  }, [item])
+
   const handleDelete = useCallback(() => {
     dialogsApi().showDeleteDialog({
       title: "Delete Collection",
@@ -135,6 +149,10 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
       <ContextMenuItem onClick={handleOpenExport}>
         <UploadIcon className="h-4 w-4" />
         Export Collection
+      </ContextMenuItem>
+      <ContextMenuItem onClick={handleCopyAsJson}>
+        <CopyIcon className="h-4 w-4" />
+        Copy as JSON
       </ContextMenuItem>
       <ContextMenuSeparator />
       <ContextMenuItem onClick={handleDelete} variant="destructive">
