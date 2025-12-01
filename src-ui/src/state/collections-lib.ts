@@ -411,33 +411,47 @@ export const normalizeCollection = (collection: Collection): CollectionCache => 
   )
 
   // Validate and fix request folder assignments
+  // Track which requests have been assigned to maintain disk order
+  const assignedRequests = new Set<string>()
   const requestsByFolder: Record<string, string[]> = {}
+
+  // First pass: preserve existing folder.requestIds order from disk
+  // Only keep requests that actually exist
   for (const folder of Object.values(folders)) {
     requestsByFolder[folder.id] = []
+    for (const requestId of folder.requestIds ?? []) {
+      if (requests[requestId]) {
+        const request = requests[requestId]
+        const folderId = request.folderId && folders[request.folderId] ? request.folderId : folder.id
+        request.folderId = folderId
+        if (folderId === folder.id) {
+          requestsByFolder[folder.id].push(requestId)
+          assignedRequests.add(requestId)
+        }
+      }
+    }
   }
 
+  // Second pass: fix any requests that reference non-existent folders
+  // and add any requests that weren't in any folder's requestIds array
   for (const request of Object.values(requests)) {
     const folderId = request.folderId && folders[request.folderId] ? request.folderId : RootCollectionFolderId
     request.folderId = folderId
-    if (!requestsByFolder[folderId]) {
-      requestsByFolder[folderId] = []
+
+    if (!assignedRequests.has(request.id)) {
+      if (!requestsByFolder[folderId]) {
+        requestsByFolder[folderId] = []
+      }
+      requestsByFolder[folderId].push(request.id)
+      assignedRequests.add(request.id)
     }
-    requestsByFolder[folderId].push(request.id)
   }
 
-  // Synchronize folder requestIds with actual requests
-  // Preserve the order from disk - requests are already sorted from migration/previous saves
+  // Synchronize folder requestIds with validated requests
+  // Preserve disk order - DO NOT SORT
   for (const folder of Object.values(folders)) {
-    const validRequests = new Set(requestsByFolder[folder.id])
-    // Keep existing order, only add/remove as needed
-    folder.requestIds = folder.requestIds.filter((id) => validRequests.has(id))
-    // Add any new requests that aren't in the list yet
-    for (const requestId of requestsByFolder[folder.id]) {
-      if (!folder.requestIds.includes(requestId)) {
-        folder.requestIds.push(requestId)
-      }
-    }
-    // Update order field to match current position (don't reorder, just update field)
+    folder.requestIds = requestsByFolder[folder.id] ?? []
+    // Update order field to match current position
     folder.requestIds.forEach((requestId, index) => {
       if (requests[requestId]) {
         requests[requestId].order = index + 1
