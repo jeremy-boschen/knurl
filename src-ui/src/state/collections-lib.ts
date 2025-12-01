@@ -410,31 +410,38 @@ export const normalizeCollection = (collection: Collection): CollectionCache => 
     Object.entries(collection.requests).map(([id, request]) => [id, { ...request }]),
   )
 
+  // Validate and fix request folder assignments
+  const requestsByFolder: Record<string, string[]> = {}
   for (const folder of Object.values(folders)) {
-    folder.requestIds = []
+    requestsByFolder[folder.id] = []
   }
 
-  let fallbackOrder = 0
   for (const request of Object.values(requests)) {
     const folderId = request.folderId && folders[request.folderId] ? request.folderId : RootCollectionFolderId
     request.folderId = folderId
-    if (request.order == null) {
-      fallbackOrder += 1
-      request.order = fallbackOrder
+    if (!requestsByFolder[folderId]) {
+      requestsByFolder[folderId] = []
     }
-    folders[folderId].requestIds.push(request.id)
+    requestsByFolder[folderId].push(request.id)
   }
 
+  // Synchronize folder requestIds with actual requests
+  // Preserve the order from disk - requests are already sorted from migration/previous saves
   for (const folder of Object.values(folders)) {
-    folder.requestIds.sort((a, b) => {
-      const ra = requests[a]
-      const rb = requests[b]
-      const oa = ra?.order ?? 0
-      const ob = rb?.order ?? 0
-      if (oa === ob) {
-        return a.localeCompare(b)
+    const validRequests = new Set(requestsByFolder[folder.id])
+    // Keep existing order, only add/remove as needed
+    folder.requestIds = folder.requestIds.filter((id) => validRequests.has(id))
+    // Add any new requests that aren't in the list yet
+    for (const requestId of requestsByFolder[folder.id]) {
+      if (!folder.requestIds.includes(requestId)) {
+        folder.requestIds.push(requestId)
       }
-      return oa - ob
+    }
+    // Update order field to match current position (don't reorder, just update field)
+    folder.requestIds.forEach((requestId, index) => {
+      if (requests[requestId]) {
+        requests[requestId].order = index + 1
+      }
     })
   }
 
@@ -534,19 +541,21 @@ export const findRequestInCollection = (
   return { folder, request }
 }
 
-export const insertRequestIntoFolder = (
-  collection: CollectionCache,
-  folderId: string,
-  request: RequestState,
-  position?: number,
-) => {
+export const insertRequestIntoFolder = (collection: CollectionCache, folderId: string, request: RequestState) => {
   const folder = getFolderOrThrow(collection, folderId)
   request.folderId = folderId
   collection.requests[request.id] = request
-  if (position == null || position < 0 || position > folder.requestIds.length) {
-    position = folder.requestIds.length
-  }
+
+  // Remove request from folder if it's already there
   folder.requestIds = folder.requestIds.filter((id) => id !== request.id)
+
+  // Always insert in alphabetical order (case-insensitive)
+  const insertIndex = folder.requestIds.findIndex((id) => {
+    const existingRequest = collection.requests[id]
+    return existingRequest && request.name.localeCompare(existingRequest.name, undefined, { sensitivity: "base" }) < 0
+  })
+  const position = insertIndex === -1 ? folder.requestIds.length : insertIndex
+
   folder.requestIds.splice(position, 0, request.id)
   folder.requestIds.forEach((id, index) => {
     const req = collection.requests[id]
@@ -573,27 +582,10 @@ export const moveRequestWithinCollection = (
   collection: CollectionCache,
   requestId: string,
   destinationFolderId: string,
-  position?: number,
 ) => {
   const destinationFolder = getFolderOrThrow(collection, destinationFolderId)
   const { request } = removeRequestFromFolder(collection, requestId)
-  insertRequestIntoFolder(collection, destinationFolder.id, request, position)
-}
-
-export const reorderFolderRequests = (collection: CollectionCache, folderId: string, orderedIds: string[]) => {
-  const folder = getFolderOrThrow(collection, folderId)
-  const allowed = orderedIds.filter((id) => collection.requests[id])
-  const seen = new Set(allowed)
-  const remaining = folder.requestIds.filter((id) => !seen.has(id))
-  folder.requestIds = [...allowed, ...remaining]
-  folder.requestIds.forEach((id, index) => {
-    const request = collection.requests[id]
-    if (request) {
-      request.order = index + 1
-      buildRequestIndexEntry(collection, id)
-    }
-  })
-  validateRequestIndex(collection)
+  insertRequestIntoFolder(collection, destinationFolder.id, request)
 }
 
 export const moveFolderNode = (
@@ -854,6 +846,13 @@ export const normalizeImportedCollection = (exported: ExportedCollection, overri
 
   for (const folder of Object.values(folders)) {
     folder.requestIds = folder.requestIds.filter((id) => requests[id])
+    // Sort requests alphabetically by name (case-insensitive)
+    folder.requestIds.sort((a, b) => {
+      const ra = requests[a]
+      const rb = requests[b]
+      return (ra?.name ?? "").localeCompare(rb?.name ?? "", undefined, { sensitivity: "base" })
+    })
+    // Assign order field based on sorted position
     folder.requestIds.forEach((requestId, index) => {
       const request = requests[requestId]
       if (request) {

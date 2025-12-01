@@ -74,17 +74,20 @@ export function createStorage<Schema>(options: StorageOptions<Schema>): FileStor
       }
 
       let { header, content } = parsedFile.data
+      let hasMigrated = false
 
       if (migrate && header.version !== version) {
-        console.debug(`Migrating file ${fileName} content version ${header.version} to version ${version}`)
+        console.log(`[storage] Migrating file ${fileName} content version ${header.version} to version ${version}`)
         try {
           content = await migrate({
             content,
             version: header.version,
             fileName,
           })
+          hasMigrated = true
+          console.log(`[storage] Migration completed for ${fileName}`)
         } catch (e) {
-          console.error(`Migration threw for ${fileName}:`, e)
+          console.error(`[storage] Migration threw for ${fileName}:`, e)
           throw e
         }
       }
@@ -104,11 +107,12 @@ export function createStorage<Schema>(options: StorageOptions<Schema>): FileStor
         return null
       }
 
-      // If we migrated any data, save it back to storage
-      if (migrate && header.version !== version) {
+      // If we migrated any data, save the migrated (before parsing) data back to storage
+      // This ensures Zod's parsing doesn't lose the migrated changes
+      if (hasMigrated) {
         console.debug(`Saving migrated file ${fileName} content`)
-        // Fire & Forget
-        void api.save(fileName, parsedState.data)
+        // Save the migrated content directly to preserve all changes
+        await api.save(fileName, content as Schema)
       }
 
       return parsedState.data

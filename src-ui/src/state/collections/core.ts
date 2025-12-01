@@ -132,11 +132,115 @@ export const CollectionIndexStorage = createStorage<CollectionsIndex["index"]>({
 })
 
 export const CollectionStorage = createStorage<Collection>({
-  version: 1,
+  version: 5,
   schema: zCollection,
   migrate: async (context: MigrateContext) => {
     const content = context.content as Partial<Collection>
-    // Add migration logic here if needed in the future
+
+    // v2: sort requests alphabetically within each folder
+    if (context.version < 2) {
+      const collection = content as Collection
+      if (collection.folders) {
+        for (const folder of Object.values(collection.folders)) {
+          if (folder.requestIds && folder.requestIds.length > 0) {
+            // Sort request IDs by their corresponding request names (case-insensitive)
+            folder.requestIds.sort((a, b) => {
+              const requestA = collection.requests?.[a]
+              const requestB = collection.requests?.[b]
+              if (!requestA || !requestB) {
+                return 0
+              }
+              return requestA.name.localeCompare(requestB.name, undefined, { sensitivity: "base" })
+            })
+            // Update order field on requests to match sorted position
+            folder.requestIds.forEach((requestId, index) => {
+              if (collection.requests?.[requestId]) {
+                collection.requests[requestId].order = index + 1
+              }
+            })
+          }
+        }
+      }
+    }
+
+    // v3: re-sort requests with case-insensitive comparison (fix for requests sorted case-sensitively)
+    if (context.version < 3) {
+      const collection = content as Collection
+      if (collection.folders) {
+        for (const folder of Object.values(collection.folders)) {
+          if (folder.requestIds && folder.requestIds.length > 0) {
+            // Re-sort request IDs by their corresponding request names (case-insensitive)
+            folder.requestIds.sort((a, b) => {
+              const requestA = collection.requests?.[a]
+              const requestB = collection.requests?.[b]
+              if (!requestA || !requestB) {
+                return 0
+              }
+              return requestA.name.localeCompare(requestB.name, undefined, { sensitivity: "base" })
+            })
+            // Update order field on requests to match sorted position
+            folder.requestIds.forEach((requestId, index) => {
+              if (collection.requests?.[requestId]) {
+                collection.requests[requestId].order = index + 1
+              }
+            })
+          }
+        }
+      }
+    }
+
+    // v4: ensure all collections have requests properly sorted (handles collections that bypassed v3 migration)
+    if (context.version < 4) {
+      const collection = content as Collection
+      if (collection.folders) {
+        for (const folder of Object.values(collection.folders)) {
+          if (folder.requestIds && folder.requestIds.length > 0) {
+            // Re-sort request IDs by their corresponding request names (case-insensitive)
+            folder.requestIds.sort((a, b) => {
+              const requestA = collection.requests?.[a]
+              const requestB = collection.requests?.[b]
+              if (!requestA || !requestB) {
+                return 0
+              }
+              return requestA.name.localeCompare(requestB.name, undefined, { sensitivity: "base" })
+            })
+            // Update order field on requests to match sorted position
+            folder.requestIds.forEach((requestId, index) => {
+              if (collection.requests?.[requestId]) {
+                collection.requests[requestId].order = index + 1
+              }
+            })
+          }
+        }
+      }
+    }
+
+    // v5: sort all requests alphabetically by name (now that normalizeCollection doesn't sort, we need to sort here)
+    if (context.version < 5) {
+      const collection = content as Collection
+      if (collection.folders) {
+        for (const folder of Object.values(collection.folders)) {
+          if (folder.requestIds && folder.requestIds.length > 0) {
+            // Sort request IDs by their corresponding request names (case-insensitive)
+            folder.requestIds.sort((a, b) => {
+              const requestA = collection.requests?.[a]
+              const requestB = collection.requests?.[b]
+              if (!requestA || !requestB) {
+                return 0
+              }
+              return requestA.name.localeCompare(requestB.name, undefined, { sensitivity: "base" })
+            })
+            // Update order field on requests to match sorted position
+            folder.requestIds.forEach((requestId, index) => {
+              if (collection.requests?.[requestId]) {
+                collection.requests[requestId].order = index + 1
+              }
+            })
+          }
+        }
+      }
+    }
+
     return content as Collection
   },
 })
