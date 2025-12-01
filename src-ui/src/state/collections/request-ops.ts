@@ -146,7 +146,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const draftCollection = app.collectionsState.cache[collectionId]
         assert(draftCollection, `Collection ${collectionId} missing from cache during request update`)
         const coll = touch(draftCollection)
-        const { request } = findRequestInCollection(coll, requestId)
+        const { request, folder } = findRequestInCollection(coll, requestId)
 
         // Handle folder movement
         const oldFolderId = request.folderId
@@ -155,12 +155,28 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         if (newFolderId && newFolderId !== oldFolderId) {
           // Remove from old folder
           removeRequestFromFolder(coll, requestId)
-          // Insert into new folder
+          // Insert into new folder (which handles sorting)
           insertRequestIntoFolder(coll, newFolderId, request)
         }
 
+        const oldName = request.name
         Object.assign(request, update)
         request.updated += 1
+
+        // If name changed (and folder didn't move, since that's handled above), re-sort the folder
+        if (update.name && oldName !== update.name && !newFolderId) {
+          folder.requestIds.sort((a, b) => {
+            const nameA = coll.requests[a]?.name ?? ""
+            const nameB = coll.requests[b]?.name ?? ""
+            return nameA.localeCompare(nameB, undefined, { sensitivity: "base" })
+          })
+          // Update order fields to match new positions
+          folder.requestIds.forEach((id, index) => {
+            if (coll.requests[id]) {
+              coll.requests[id].order = index + 1
+            }
+          })
+        }
       })
     },
 
@@ -406,13 +422,31 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
       assertCollectionLoaded(collectionId)
 
       set((app) => {
-        const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
+        const coll = app.collectionsState.cache[collectionId]
+        const { request, folder } = findRequestInCollection(coll, requestId)
+        const oldName = request.name
         const patch = ensureRequestPatch(request)
         patch.name = name
         if (request.name === name) {
           delete patch.name
         }
+        request.name = name
         request.updated += 1
+
+        // If name changed, re-sort the folder to maintain alphabetical order
+        if (oldName !== name) {
+          folder.requestIds.sort((a, b) => {
+            const nameA = coll.requests[a]?.name ?? ""
+            const nameB = coll.requests[b]?.name ?? ""
+            return nameA.localeCompare(nameB, undefined, { sensitivity: "base" })
+          })
+          // Update order fields to match new positions
+          folder.requestIds.forEach((id, index) => {
+            if (coll.requests[id]) {
+              coll.requests[id].order = index + 1
+            }
+          })
+        }
       })
     },
 
