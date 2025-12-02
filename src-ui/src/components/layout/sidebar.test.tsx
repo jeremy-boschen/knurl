@@ -18,7 +18,6 @@ vi.mock("@/state", () => ({
   useCollections: hoisted.useCollections,
 }))
 
-vi.mock("./collection-tree", () => ({ CollectionTree: () => <div data-testid="collection-tree" /> }))
 vi.mock("./collection-tree2/collection-tree2", () => ({ CollectionTree2: () => <div data-testid="collection-tree2" /> }))
 vi.mock("@/components/collection/new-collection-dialog", () => ({
   NewCollectionDialog: ({ open }: { open: boolean }) => (open ? <div data-testid="new-collection-dialog" /> : null),
