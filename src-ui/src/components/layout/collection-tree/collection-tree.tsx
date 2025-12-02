@@ -2,7 +2,7 @@ import { useCollections } from "@/state"
 import { CollectionItem } from "./collection-item"
 import { CollectionContextMenu } from "./context-menu"
 
-export function CollectionTree2() {
+export function CollectionTree() {
   const {
     state: { collectionsIndex },
   } = useCollections()

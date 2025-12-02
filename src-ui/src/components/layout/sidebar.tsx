@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/knurl"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
 import { useSidebar, utilitySheetsApi, useCollectionTree } from "@/state"
-import { CollectionTree2 } from "./collection-tree2"
+import { CollectionTree, CollectionTreeCollapsed } from "./collection-tree"
 import { ModeToggle } from "./mode-toggle"
 
 type DialogProps = { action: "new" }
@@ -198,7 +198,7 @@ export default function Sidebar() {
       )}
 
       <div className="flex-1 overflow-y-auto bg-sidebar">
-        <CollectionTree2 />
+        {isCollapsed ? <CollectionTreeCollapsed /> : <CollectionTree />}
       </div>
 
       {isCollapsed && (

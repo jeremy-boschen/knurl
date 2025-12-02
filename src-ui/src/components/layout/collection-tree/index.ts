@@ -1,5 +1,6 @@
 export { CollectionItem } from "./collection-item"
-export { CollectionTree2 } from "./collection-tree2"
+export { CollectionTree } from "./collection-tree"
+export { CollectionTreeCollapsed } from "./collection-tree-collapsed"
 export { FolderItem } from "./folder-item"
 export { FolderItemList } from "./folder-item-list"
 export { RequestItem } from "./request-item"
