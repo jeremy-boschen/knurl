@@ -1,6 +1,7 @@
 import { isEqual, merge } from "es-toolkit"
 
 import { assert, generateUniqueId } from "@/lib/utils"
+import { naturalSort } from "@/state/collections/sort-utils"
 import { zParse } from "@/state/utils"
 import {
   type Collection,
@@ -563,10 +564,10 @@ export const insertRequestIntoFolder = (collection: CollectionCache, folderId: s
   // Remove request from folder if it's already there
   folder.requestIds = folder.requestIds.filter((id) => id !== request.id)
 
-  // Always insert in alphabetical order (case-insensitive)
+  // Always insert in natural alphabetical order (e.g., r1 < r2 < r10)
   const insertIndex = folder.requestIds.findIndex((id) => {
     const existingRequest = collection.requests[id]
-    return existingRequest && request.name.localeCompare(existingRequest.name, undefined, { sensitivity: "base" }) < 0
+    return existingRequest && naturalSort(request.name, existingRequest.name) < 0
   })
   const position = insertIndex === -1 ? folder.requestIds.length : insertIndex
 

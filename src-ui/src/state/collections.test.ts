@@ -127,13 +127,16 @@ describe("collections patch and merge logic", () => {
     collectionsApi.setRequestName(col.id, req.id, "R")
     let r = collectionsApi.getRequest(col.id, req.id)
     expect(r.patch?.name).toBeUndefined()
-    // Actual change persists in patch
+    expect(r.name).toBe("R")
+    // Actual change updates the name directly, NOT in patch (names are not undoable)
     collectionsApi.setRequestName(col.id, req.id, "R2")
     r = collectionsApi.getRequest(col.id, req.id)
-    expect(r.patch?.name).toBe("R2")
-    // Changing back to base removes patch entry
+    expect(r.name).toBe("R2")
+    expect(r.patch?.name).toBeUndefined()
+    // Changing back updates name directly, NOT in patch
     collectionsApi.setRequestName(col.id, req.id, "R")
     r = collectionsApi.getRequest(col.id, req.id)
+    expect(r.name).toBe("R")
     expect(r.patch?.name).toBeUndefined()
   })
 
@@ -143,9 +146,11 @@ describe("collections patch and merge logic", () => {
     const req = collectionsApi.createRequest(col.id, {name: "First", url: ""})
     collectionsApi.setRequestName(col.id, req.id, "Second")
     let r = collectionsApi.getRequest(col.id, req.id)
-    expect(r.patch?.name).toBe("Second")
+    expect(r.name).toBe("Second")
+    expect(r.patch?.name).toBeUndefined()
     collectionsApi.setRequestName(col.id, req.id, "First")
     r = collectionsApi.getRequest(col.id, req.id)
+    expect(r.name).toBe("First")
     expect(r.patch?.name).toBeUndefined()
   })
 
