@@ -50,6 +50,40 @@ describe("naturalSort", () => {
     // All should be treated as equal in base sensitivity
     expect(sorted.length).toBe(3)
   })
+
+  it("handles lowercase before uppercase in mixed case (r < Untitled Request)", () => {
+    const items = ["Untitled Request", "r1", "r2"]
+    const sorted = items.sort(naturalSort)
+    expect(sorted).toEqual(["r1", "r2", "Untitled Request"])
+  })
+
+  it("handles uppercase before lowercase in mixed case (R < untitled)", () => {
+    const items = ["untitled request", "R1", "R2"]
+    const sorted = items.sort(naturalSort)
+    expect(sorted).toEqual(["R1", "R2", "untitled request"])
+  })
+
+  it("sorts Untitled Request correctly when mixed with various cases", () => {
+    const items = ["Untitled Request", "UNTITLED REQUEST", "untitled request", "r3", "R1"]
+    const sorted = items.sort(naturalSort)
+    // All three "untitled request" variants should be together, after R and r variants
+    expect(sorted[0]).toBe("R1")
+    expect(sorted[1]).toBe("r3")
+    // The untitled variants should be at the end, order among them doesn't matter for case-insensitive
+    expect(sorted.slice(2)).toContain("Untitled Request")
+  })
+
+  it("handles mixed case in real scenario: requests with Untitled", () => {
+    const items = ["Untitled Request", "Get Users", "get posts", "Add Item", "add comment"]
+    const sorted = items.sort(naturalSort)
+    // When case-insensitive, "Add" and "Get" come first (before "Untitled"), but order of
+    // identical case-insensitive groups (add vs Add, Get vs get) may vary by locale
+    expect(sorted[sorted.length - 1]).toBe("Untitled Request")
+    expect(sorted.slice(0, -1)).toContain("Add Item")
+    expect(sorted.slice(0, -1)).toContain("add comment")
+    expect(sorted.slice(0, -1)).toContain("Get Users")
+    expect(sorted.slice(0, -1)).toContain("get posts")
+  })
 })
 
 describe("requestSortStrategies", () => {
