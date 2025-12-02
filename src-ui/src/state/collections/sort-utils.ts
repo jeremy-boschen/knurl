@@ -30,8 +30,11 @@ export function naturalSort(a: string, b: string): number {
         // Continue to next part
       }
     } else {
-      // At least one part is text - use locale-aware comparison
-      const cmp = aPart.localeCompare(bPart, undefined, { sensitivity: "base" })
+      // At least one part is text - use case-insensitive comparison
+      // Convert to lowercase to ensure "r" < "Untitled Request" (not uppercase < lowercase)
+      const aLower = aPart.toLowerCase()
+      const bLower = bPart.toLowerCase()
+      const cmp = aLower.localeCompare(bLower, undefined, { sensitivity: "base" })
       if (cmp !== 0) {
         return cmp
       }
