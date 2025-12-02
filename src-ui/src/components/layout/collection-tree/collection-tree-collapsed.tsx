@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 
-import { ChevronDownIcon, ChevronRightIcon, FolderClosedIcon, FolderOpenIcon } from "lucide-react"
+import { FolderClosedIcon, FolderOpenIcon } from "lucide-react"
 
 import { useCollections, useCollectionTree, useSidebar } from "@/state"
 import { Button } from "@/components/ui/button"
@@ -44,22 +44,17 @@ export function CollectionTreeCollapsed() {
             key={entry.id}
             type="button"
             onClick={() => handleCollectionClick(entry.id)}
-            className="group flex w-full items-center justify-between rounded p-2 text-sm hover:bg-accent"
+            className="flex w-full items-center justify-center rounded p-2 hover:bg-accent"
             aria-expanded={isOpen}
             data-collection-id={entry.id}
             data-kind="collection"
             data-name={entry.name}
             role="treeitem"
             tabIndex={0}
+            title={entry.name}
           >
-            <span className="flex items-center space-x-2">
-              <span aria-hidden className="text-primary">
-                {isOpen ? <ChevronDownIcon className="h-3 w-3" /> : <ChevronRightIcon className="h-3 w-3" />}
-              </span>
-              <span aria-hidden className="text-primary">
-                {isOpen ? <FolderOpenIcon className="h-4 w-4" /> : <FolderClosedIcon className="h-4 w-4" />}
-              </span>
-              <span className="truncate">{entry.name}</span>
+            <span aria-hidden className="text-primary">
+              {isOpen ? <FolderOpenIcon className="h-4 w-4" /> : <FolderClosedIcon className="h-4 w-4" />}
             </span>
           </button>
         )
@@ -72,6 +67,7 @@ export function CollectionTreeCollapsed() {
           size="sm"
           onClick={handleMoreClick}
           className="w-full justify-center text-xs"
+          title="Show all collections"
         >
           ...
         </Button>
