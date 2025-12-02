@@ -1,0 +1,261 @@
+{
+  "content": {
+    "authentication": {
+      "type": "none"
+    },
+    "description": "",
+    "encryption": {
+      "algorithm": "aes-gcm"
+    },
+    "environments": {},
+    "folders": {
+      "Mkk2P87IWJdu": {
+        "childFolderIds": [],
+        "id": "Mkk2P87IWJdu",
+        "name": "f3",
+        "order": 4,
+        "parentId": "root",
+        "requestIds": []
+      },
+      "OcH1dkIF3N71": {
+        "childFolderIds": [],
+        "id": "OcH1dkIF3N71",
+        "name": "f2",
+        "order": 1,
+        "parentId": "root",
+        "requestIds": [
+          "tCgpmQELEURH",
+          "ylysmo7sZNCo"
+        ]
+      },
+      "Om1Se7xJn23G": {
+        "childFolderIds": [],
+        "id": "Om1Se7xJn23G",
+        "name": "f4",
+        "order": 3,
+        "parentId": "root",
+        "requestIds": []
+      },
+      "XlzjBA930SH8": {
+        "childFolderIds": [],
+        "id": "XlzjBA930SH8",
+        "name": "f1",
+        "order": 2,
+        "parentId": "root",
+        "requestIds": [
+          "iuERDqlQ54jm",
+          "zIc0SBiDuGYM",
+          "xcq8Zrgccl6J"
+        ]
+      },
+      "root": {
+        "childFolderIds": [
+          "OcH1dkIF3N71",
+          "XlzjBA930SH8",
+          "Om1Se7xJn23G",
+          "Mkk2P87IWJdu"
+        ],
+        "id": "root",
+        "name": "Root",
+        "order": 0,
+        "parentId": null,
+        "requestIds": [
+          "pBVn48SWf2ib",
+          "ObCLQGTSuVLR",
+          "1bGVmR7dbWzx"
+        ]
+      }
+    },
+    "id": "z0JSA3Hj26ph",
+    "name": "Test Collection 1",
+    "requests": {
+      "1bGVmR7dbWzx": {
+        "authentication": {
+          "type": "none"
+        },
+        "autoSave": false,
+        "body": {
+          "type": "none"
+        },
+        "collectionId": "z0JSA3Hj26ph",
+        "cookieParams": {},
+        "folderId": "root",
+        "headers": {},
+        "id": "1bGVmR7dbWzx",
+        "method": "GET",
+        "name": "r5",
+        "order": 5,
+        "patch": {},
+        "pathParams": {},
+        "queryParams": {},
+        "updated": 45,
+        "url": ""
+      },
+      "ObCLQGTSuVLR": {
+        "authentication": {
+          "type": "none"
+        },
+        "autoSave": false,
+        "body": {
+          "type": "none"
+        },
+        "collectionId": "z0JSA3Hj26ph",
+        "cookieParams": {},
+        "folderId": "root",
+        "headers": {},
+        "id": "ObCLQGTSuVLR",
+        "method": "GET",
+        "name": "r4",
+        "order": 4,
+        "patch": {},
+        "pathParams": {},
+        "queryParams": {},
+        "updated": 98,
+        "url": ""
+      },
+      "iuERDqlQ54jm": {
+        "authentication": {
+          "type": "none"
+        },
+        "autoSave": true,
+        "body": {
+          "type": "none"
+        },
+        "collectionId": "z0JSA3Hj26ph",
+        "cookieParams": {},
+        "folderId": "XlzjBA930SH8",
+        "headers": {},
+        "id": "iuERDqlQ54jm",
+        "method": "GET",
+        "name": "Untitled Request",
+        "options": {
+          "disableSsl": false
+        },
+        "order": 1,
+        "patch": {},
+        "pathParams": {},
+        "queryParams": {},
+        "updated": 81,
+        "url": "http://localhost"
+      },
+      "pBVn48SWf2ib": {
+        "authentication": {
+          "type": "none"
+        },
+        "autoSave": false,
+        "body": {
+          "type": "none"
+        },
+        "collectionId": "z0JSA3Hj26ph",
+        "cookieParams": {},
+        "folderId": "root",
+        "headers": {},
+        "id": "pBVn48SWf2ib",
+        "method": "GET",
+        "name": "r3",
+        "order": 3,
+        "patch": {},
+        "pathParams": {},
+        "queryParams": {},
+        "updated": 79,
+        "url": ""
+      },
+      "tCgpmQELEURH": {
+        "authentication": {
+          "type": "none"
+        },
+        "autoSave": true,
+        "body": {
+          "type": "none"
+        },
+        "collectionId": "z0JSA3Hj26ph",
+        "cookieParams": {},
+        "folderId": "OcH1dkIF3N71",
+        "headers": {},
+        "id": "tCgpmQELEURH",
+        "method": "GET",
+        "name": "Untitled Request",
+        "options": {
+          "disableSsl": false
+        },
+        "order": 1,
+        "patch": {},
+        "pathParams": {},
+        "queryParams": {},
+        "updated": 91,
+        "url": ""
+      },
+      "xcq8Zrgccl6J": {
+        "authentication": {
+          "type": "none"
+        },
+        "autoSave": false,
+        "body": {
+          "type": "none"
+        },
+        "collectionId": "z0JSA3Hj26ph",
+        "cookieParams": {},
+        "folderId": "XlzjBA930SH8",
+        "headers": {},
+        "id": "xcq8Zrgccl6J",
+        "method": "GET",
+        "name": "r1",
+        "order": 3,
+        "patch": {},
+        "pathParams": {},
+        "queryParams": {},
+        "updated": 124,
+        "url": ""
+      },
+      "ylysmo7sZNCo": {
+        "authentication": {
+          "type": "none"
+        },
+        "autoSave": false,
+        "body": {
+          "type": "none"
+        },
+        "collectionId": "z0JSA3Hj26ph",
+        "cookieParams": {},
+        "folderId": "OcH1dkIF3N71",
+        "headers": {},
+        "id": "ylysmo7sZNCo",
+        "method": "GET",
+        "name": "r2",
+        "order": 2,
+        "patch": {},
+        "pathParams": {},
+        "queryParams": {},
+        "updated": 72,
+        "url": ""
+      },
+      "zIc0SBiDuGYM": {
+        "authentication": {
+          "type": "none"
+        },
+        "autoSave": false,
+        "body": {
+          "type": "none"
+        },
+        "collectionId": "z0JSA3Hj26ph",
+        "cookieParams": {},
+        "folderId": "XlzjBA930SH8",
+        "headers": {},
+        "id": "zIc0SBiDuGYM",
+        "method": "GET",
+        "name": "Untitled Request",
+        "order": 2,
+        "patch": {},
+        "pathParams": {},
+        "queryParams": {},
+        "updated": 86,
+        "url": ""
+      }
+    },
+    "updated": "2025-12-02T21:16:15.831Z"
+  },
+  "header": {
+    "updated": "2025-12-02T21:16:21.013Z",
+    "version": 6
+  }
+}
