@@ -27,6 +27,7 @@ import {
   removeRequestFromFolder,
   reorderFolderRequests,
 } from "@/state/collections-lib"
+import { naturalSort } from "@/state/collections/sort-utils"
 import { zParse } from "@/state/utils"
 import {
   type Application,
@@ -174,7 +175,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
           folder.requestIds.sort((a, b) => {
             const nameA = coll.requests[a]?.name ?? ""
             const nameB = coll.requests[b]?.name ?? ""
-            return nameA.localeCompare(nameB, undefined, { sensitivity: "base" })
+            return naturalSort(nameA, nameB)
           })
           // Update order fields to match new positions
           folder.requestIds.forEach((id, index) => {
@@ -447,7 +448,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
           folder.requestIds.sort((a, b) => {
             const nameA = coll.requests[a]?.name ?? ""
             const nameB = coll.requests[b]?.name ?? ""
-            return nameA.localeCompare(nameB, undefined, { sensitivity: "base" })
+            return naturalSort(nameA, nameB)
           })
           // Update order fields to match new positions
           folder.requestIds.forEach((id, index) => {
