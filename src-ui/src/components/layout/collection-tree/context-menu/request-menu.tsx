@@ -187,20 +187,18 @@ export function RequestMenu({ item }: RequestMenuProps) {
           <FolderIcon className="h-4 w-4" />
           Move to folder
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-48 p-0 [&>*]:max-h-64 [&>*]:overflow-y-auto">
-          <div className="p-1">
-            {currentFolderId !== RootCollectionFolderId && (
-              <ContextMenuItem onClick={() => handleMoveToFolder(RootCollectionFolderId)}>Root</ContextMenuItem>
-            )}
-            {availableFolders.map((folder) => (
-              <ContextMenuItem key={folder.folderId} onClick={() => handleMoveToFolder(folder.folderId)}>
-                {folder.path}
-              </ContextMenuItem>
-            ))}
-            {availableFolders.length === 0 && currentFolderId === RootCollectionFolderId && (
-              <div className="px-2 py-1.5 text-sm text-muted-foreground">No folders</div>
-            )}
-          </div>
+        <ContextMenuSubContent className="!max-h-64 !overflow-y-auto w-48 p-1">
+          {currentFolderId !== RootCollectionFolderId && (
+            <ContextMenuItem onClick={() => handleMoveToFolder(RootCollectionFolderId)}>Root</ContextMenuItem>
+          )}
+          {availableFolders.map((folder) => (
+            <ContextMenuItem key={folder.folderId} onClick={() => handleMoveToFolder(folder.folderId)}>
+              {folder.path}
+            </ContextMenuItem>
+          ))}
+          {availableFolders.length === 0 && currentFolderId === RootCollectionFolderId && (
+            <div className="px-2 py-1.5 text-sm text-muted-foreground">No folders</div>
+          )}
         </ContextMenuSubContent>
       </ContextMenuSub>
       <ContextMenuSeparator />

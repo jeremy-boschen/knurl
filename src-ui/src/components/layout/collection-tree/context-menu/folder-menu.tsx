@@ -193,7 +193,7 @@ export function FolderMenu({ item }: FolderMenuProps) {
           <FolderIcon className="h-4 w-4" />
           Move to folder
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-48">
+        <ContextMenuSubContent className="!max-h-64 !overflow-y-auto w-48 p-1">
           {currentParentId !== RootCollectionFolderId && (
             <ContextMenuItem onClick={() => handleMoveToFolder(RootCollectionFolderId)}>Root</ContextMenuItem>
           )}
