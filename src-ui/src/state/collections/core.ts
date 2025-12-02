@@ -246,8 +246,10 @@ export const CollectionStorage = createStorage<Collection>({
     if (context.version < 6) {
       const collection = content as Collection
       if (collection.folders) {
-        for (const folder of Object.values(collection.folders)) {
-          if (folder.requestIds && folder.requestIds.length > 0) {
+        // Iterate by folder ID to ensure we're modifying the actual folder objects in the collection
+        for (const folderId in collection.folders) {
+          const folder = collection.folders[folderId]
+          if (folder?.requestIds && folder.requestIds.length > 0) {
             // Sort request IDs using natural sort
             folder.requestIds.sort((a, b) => {
               const requestA = collection.requests?.[a]
