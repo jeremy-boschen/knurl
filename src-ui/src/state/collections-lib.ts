@@ -449,10 +449,19 @@ export const normalizeCollection = (collection: Collection): CollectionCache => 
   }
 
   // Synchronize folder requestIds with validated requests
-  // Preserve disk order - DO NOT SORT
+  // Apply natural sort to ensure consistent ordering (e.g., r1 < r2 < r10, not r1 < r10 < r2)
   for (const folder of Object.values(folders)) {
     folder.requestIds = requestsByFolder[folder.id] ?? []
-    // Update order field to match current position
+    // Sort requests using natural sort for display consistency
+    folder.requestIds.sort((a, b) => {
+      const reqA = requests[a]
+      const reqB = requests[b]
+      if (!reqA || !reqB) {
+        return 0
+      }
+      return naturalSort(reqA.name, reqB.name)
+    })
+    // Update order field to match sorted position
     folder.requestIds.forEach((requestId, index) => {
       if (requests[requestId]) {
         requests[requestId].order = index + 1
