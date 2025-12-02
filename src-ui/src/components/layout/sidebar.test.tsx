@@ -18,7 +18,10 @@ vi.mock("@/state", () => ({
   useCollections: hoisted.useCollections,
 }))
 
-vi.mock("./collection-tree2/collection-tree2", () => ({ CollectionTree2: () => <div data-testid="collection-tree2" /> }))
+vi.mock("./collection-tree", () => ({
+  CollectionTree: () => <div data-testid="collection-tree" />,
+  CollectionTreeCollapsed: () => <div data-testid="collection-tree-collapsed" />,
+}))
 vi.mock("@/components/collection/new-collection-dialog", () => ({
   NewCollectionDialog: ({ open }: { open: boolean }) => (open ? <div data-testid="new-collection-dialog" /> : null),
 }))
@@ -51,9 +54,10 @@ const setupMocks = (config: SidebarConfig = {}) => {
   const clearSearch = vi.fn(() => {
     searchTermState = ""
   })
+  const toggleExpanded = vi.fn()
   hoisted.useCollectionTree.mockImplementation(() => ({
-    state: { searchTerm: searchTermState },
-    actions: { setSearchTerm, clearSearch },
+    state: { searchTerm: searchTermState, expandedIds: {} },
+    actions: { setSearchTerm, clearSearch, toggleExpanded },
   }))
 
   hoisted.useCollections.mockReturnValue({
