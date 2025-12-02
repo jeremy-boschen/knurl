@@ -592,6 +592,17 @@ export const removeRequestFromFolder = (
   return { folder, request }
 }
 
+export const reorderFolderRequests = (collection: CollectionCache, folderId: string, orderedIds: string[]): void => {
+  const folder = getFolderOrThrow(collection, folderId)
+  folder.requestIds = orderedIds
+  orderedIds.forEach((requestId, index) => {
+    const request = collection.requests[requestId]
+    if (request) {
+      request.order = index + 1
+    }
+  })
+}
+
 export const moveRequestWithinCollection = (
   collection: CollectionCache,
   requestId: string,

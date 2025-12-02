@@ -163,6 +163,12 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         Object.assign(request, update)
         request.updated += 1
 
+        // Block name from being in patch - name changes should never be patchable
+        // Use setRequestName instead for name changes
+        if (request.patch.name !== undefined) {
+          delete request.patch.name
+        }
+
         // If name changed (and folder didn't move, since that's handled above), re-sort the folder
         if (update.name && oldName !== update.name && !newFolderId) {
           folder.requestIds.sort((a, b) => {
@@ -425,13 +431,16 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const coll = app.collectionsState.cache[collectionId]
         const { request, folder } = findRequestInCollection(coll, requestId)
         const oldName = request.name
-        const patch = ensureRequestPatch(request)
-        patch.name = name
-        if (request.name === name) {
-          delete patch.name
-        }
+
+        // Update the request name directly - NEVER through patch
+        // Name changes trigger folder re-sort and should not be undoable/discardable
         request.name = name
         request.updated += 1
+
+        // Ensure patch.name is never set (blocking any patch-based name modifications)
+        if (request.patch.name !== undefined) {
+          delete request.patch.name
+        }
 
         // If name changed, re-sort the folder to maintain alphabetical order
         if (oldName !== name) {
