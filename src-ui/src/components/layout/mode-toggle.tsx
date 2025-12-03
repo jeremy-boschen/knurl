@@ -36,10 +36,10 @@ export const ModeToggle = React.memo(function ModeToggle() {
           onClick={handleThemeChange}
           data-test-id="sidebar:mode-toggle-button"
         >
-          <SunIcon className="h-[1.2rem] w-[1.2rem] scale-0 data-[theme=light]:scale-100" data-theme={theme} />
-          <MoonIcon className="absolute h-[1.2rem] w-[1.2rem] scale-0 data-[theme=dark]:scale-100" data-theme={theme} />
+          <SunIcon className="h-8 w-8 scale-0 data-[theme=light]:scale-100" data-theme={theme} />
+          <MoonIcon className="absolute h-8 w-8 scale-0 data-[theme=dark]:scale-100" data-theme={theme} />
           <MonitorCogIcon
-            className="absolute h-[1.2rem] w-[1.2rem] scale-0 data-[theme=system]:scale-100"
+            className="absolute h-8 w-8 scale-0 data-[theme=system]:scale-100"
             data-theme={theme}
           />
           <span className="sr-only">Toggle theme</span>

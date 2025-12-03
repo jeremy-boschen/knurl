@@ -56,7 +56,7 @@ export function CollectionTreeCollapsed() {
             title={entry.name}
           >
             <span aria-hidden className="text-primary">
-              {isOpen ? <FolderOpenIcon className="h-4 w-4" /> : <FolderClosedIcon className="h-4 w-4" />}
+              {isOpen ? <FolderOpenIcon className="h-8 w-8" /> : <FolderClosedIcon className="h-8 w-8" />}
             </span>
           </Button>
         )

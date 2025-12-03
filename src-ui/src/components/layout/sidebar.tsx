@@ -71,7 +71,7 @@ export default function Sidebar() {
                     className="h-8 w-8 p-1 text-primary hover:text-primary"
                     data-test-id="sidebar:import-collection-button"
                   >
-                    <DownloadIcon className="h-5 w-5" />
+                    <DownloadIcon className="h-8 w-8" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Import Collection</TooltipContent>
@@ -86,7 +86,7 @@ export default function Sidebar() {
                     data-testid="sidebar-new-collection"
                     data-test-id="sidebar:new-collection-button"
                   >
-                    <PlusIcon className="h-5 w-5" />
+                    <PlusIcon className="h-8 w-8" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>New Collection</TooltipContent>
@@ -100,7 +100,7 @@ export default function Sidebar() {
                     onClick={openSettingsDialog}
                     data-test-id="sidebar:settings-button"
                   >
-                    <SettingsIcon className="h-5 w-5" />
+                    <SettingsIcon className="h-8 w-8" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Settings</TooltipContent>
@@ -115,7 +115,7 @@ export default function Sidebar() {
                     onClick={collapseSidebar}
                     data-test-id="sidebar:collapse-button"
                   >
-                    <PanelLeftCloseIcon className="h-5 w-5" />
+                    <PanelLeftCloseIcon className="h-8 w-8" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Collapse Sidebar</TooltipContent>
@@ -192,7 +192,7 @@ export default function Sidebar() {
                 onClick={expandSidebar}
                 data-test-id="sidebar:expand-button"
               >
-                <PanelLeftOpenIcon className="h-5 w-5" />
+                <PanelLeftOpenIcon className="h-8 w-8" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Expand Sidebar</TooltipContent>
@@ -216,7 +216,7 @@ export default function Sidebar() {
                 data-testid="sidebar-new-collection"
                 data-test-id="sidebar:new-collection-button-collapsed"
               >
-                <PlusIcon className="h-5 w-5" />
+                <PlusIcon className="h-8 w-8" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>New Collection</TooltipContent>
@@ -230,7 +230,7 @@ export default function Sidebar() {
                 className="h-8 w-8 p-1 text-primary hover:text-primary"
                 data-test-id="sidebar:import-collection-button-collapsed"
               >
-                <DownloadIcon className="h-5 w-5" />
+                <DownloadIcon className="h-8 w-8" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Import Collection</TooltipContent>
@@ -244,7 +244,7 @@ export default function Sidebar() {
                 onClick={openSettingsDialog}
                 data-test-id="sidebar:settings-button-collapsed"
               >
-                <SettingsIcon className="h-5 w-5" />
+                <SettingsIcon className="h-8 w-8" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Settings</TooltipContent>
