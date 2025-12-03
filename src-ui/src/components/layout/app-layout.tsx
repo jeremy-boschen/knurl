@@ -14,31 +14,21 @@ export default function AppLayout() {
     state: { isCollapsed, panelGroupApi },
     actions: { setPanelGroupApi },
   } = useSidebar()
-  console.log("[AppLayout] render, isCollapsed:", isCollapsed)
   const activeTabId = useActiveTabId()
   const initialCollapsedRef = useRef(isCollapsed)
 
   // Sync Panel state with Zustand when isCollapsed changes
   // This handles initial load and sidebar button clicks (not onCollapse callbacks)
   useEffect(() => {
-    console.log("[AppLayout] useEffect: syncing Panel with isCollapsed:", isCollapsed)
     if (panelGroupApi) {
-      if (isCollapsed) {
-        console.log("[AppLayout] calling collapsePanel from useEffect")
-        panelGroupApi.collapsePanel(0)
-      } else {
-        console.log("[AppLayout] calling expandPanel from useEffect")
-        panelGroupApi.expandPanel(0)
-      }
+      isCollapsed ? panelGroupApi.collapsePanel(0) : panelGroupApi.expandPanel(0)
     }
   }, [isCollapsed, panelGroupApi])
 
-  const handleCollapsed = (collapsed: boolean) => {
-    console.log("[AppLayout] handleCollapsed called with:", collapsed, "current isCollapsed:", isCollapsed)
-    // DO NOT update Zustand state here. The Panel's onCollapse fires synchronously
-    // but Zustand updates are async. This creates a closure mismatch.
-    // Instead, sync happens via the useEffect above when Zustand state changes.
-    console.log("[AppLayout] Panel moved by library, onCollapse is not our source of truth")
+  const handleCollapsed = () => {
+    // onCollapse fires when user manually drags the panel divider to collapse/expand
+    // We don't update state here - Zustand is the source of truth, updated via sidebar buttons
+    // The useEffect above syncs the Panel with Zustand state
   }
 
   const handlePanelGroupRef = useCallback(setPanelGroupApi, [])

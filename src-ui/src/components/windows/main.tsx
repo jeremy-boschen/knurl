@@ -30,7 +30,6 @@ function LoadingSplash() {
 }
 
 function Router() {
-  console.log("[Router] render - about to enter Suspense")
   return (
     <Suspense fallback={<LoadingSplash />}>
       <Switch>
@@ -44,7 +43,6 @@ function Router() {
 }
 
 export function MainWindow() {
-  console.log("[MainWindow] render start")
   const {
     state: { requests },
   } = useSettings()
