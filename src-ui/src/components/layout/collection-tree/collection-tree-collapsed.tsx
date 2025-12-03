@@ -35,16 +35,18 @@ export function CollectionTreeCollapsed() {
   }
 
   return (
-    <div className="space-y-1" role="tree">
+    <div className="flex flex-col items-center gap-3 p-2" role="tree">
       {visibleCollections.map((entry) => {
         const isOpen = Boolean(expandedIds[entry.id])
 
         return (
-          <button
+          <Button
             key={entry.id}
             type="button"
             onClick={() => handleCollectionClick(entry.id)}
-            className="flex w-full items-center justify-center rounded p-2 hover:bg-accent"
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 text-primary hover:text-primary"
             aria-expanded={isOpen}
             data-collection-id={entry.id}
             data-kind="collection"
@@ -56,7 +58,7 @@ export function CollectionTreeCollapsed() {
             <span aria-hidden className="text-primary">
               {isOpen ? <FolderOpenIcon className="h-4 w-4" /> : <FolderClosedIcon className="h-4 w-4" />}
             </span>
-          </button>
+          </Button>
         )
       })}
 
@@ -66,7 +68,7 @@ export function CollectionTreeCollapsed() {
           variant="ghost"
           size="sm"
           onClick={handleMoreClick}
-          className="w-full justify-center text-xs"
+          className="h-6 w-6 p-0 text-primary hover:text-primary text-xs"
           title="Show all collections"
         >
           ...

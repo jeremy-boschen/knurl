@@ -56,9 +56,15 @@ export default function Sidebar() {
         <>
           <header className="flex h-10 flex-row items-center justify-between p-2">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-primary hover:text-primary"
+                disabled
+                data-test-id="sidebar:knurl-icon-expanded"
+              >
                 <KnurlIcon className="h-5 w-5" />
-              </div>
+              </Button>
               <h1 className="text-lg font-semibold text-primary">KNURL</h1>
             </div>
             <div className="flex items-center gap-2">
@@ -180,9 +186,20 @@ export default function Sidebar() {
         </>
       ) : (
         <header className="flex flex-col items-center justify-center gap-3 p-2">
-          <div className="flex h-7 w-7 items-center justify-center">
-            <KnurlIcon className="h-5 w-5" />
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-primary hover:text-primary"
+                disabled
+                data-test-id="sidebar:knurl-icon-collapsed"
+              >
+                <KnurlIcon className="h-5 w-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Knurl</TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
