@@ -115,10 +115,12 @@ type CollectionsHookActions = {
 }
 
 export const useCollections = (): HookResult<CollectionsHookState, CollectionsHookActions> => {
+  console.log('[useCollections] hook called')
   const collectionsIndex = useApplication(
     // Hide the scratch collection if it's empty
     useShallow((app) => app.collectionsState.index.filter((m) => m.count > 0 || !isScratchCollection(m.id))),
   )
+  console.log('[useCollections] returning', collectionsIndex.length, 'collections')
 
   return {
     state: {
@@ -140,9 +142,12 @@ type CollectionHookActions = {
 }
 
 export const useCollection = (collectionId: string): HookResult<CollectionHookState, CollectionHookActions> => {
+  console.log('[useCollection] hook called for collectionId:', collectionId)
   const collection = useApplication((app) => app.collectionsState.cache[collectionId])
+  console.log('[useCollection] collection loaded:', !!collection)
 
   if (!collection) {
+    console.log('[useCollection] collection not loaded, triggering suspension')
     resource(waitForLoadedCollection(collectionId))
   }
 

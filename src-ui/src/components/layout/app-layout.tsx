@@ -14,12 +14,15 @@ export default function AppLayout() {
     state: { isCollapsed },
     actions: { setPanelGroupApi, collapseSidebar, expandSidebar },
   } = useSidebar()
+  console.log('[AppLayout] render, isCollapsed:', isCollapsed)
   const activeTabId = useActiveTabId()
 
   const handleCollapsed = (collapsed: boolean) => {
+    console.log('[AppLayout] handleCollapsed called with:', collapsed)
     if (collapsed) {
       collapseSidebar()
     } else {
+      console.log('[AppLayout] calling expandSidebar')
       expandSidebar()
     }
   }
