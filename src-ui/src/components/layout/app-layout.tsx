@@ -18,20 +18,17 @@ export default function AppLayout() {
   const activeTabId = useActiveTabId()
 
   const handleCollapsed = (collapsed: boolean) => {
-    console.log("[AppLayout] handleCollapsed called with:", collapsed, "current isCollapsed:", isCollapsed)
-    // Only update state if it differs from current state to prevent feedback loop
-    // The Panel's onCollapse fires after the panel is already collapsed/expanded
-    if (collapsed !== isCollapsed) {
-      console.log("[AppLayout] State mismatch, updating Zustand")
-      if (collapsed) {
-        collapseSidebar()
-      } else {
-        console.log("[AppLayout] calling expandSidebar")
-        expandSidebar()
-      }
-    } else {
-      console.log("[AppLayout] State already in sync, skipping update")
-    }
+    console.log(
+      "[AppLayout] handleCollapsed called with:",
+      collapsed,
+      "current isCollapsed:",
+      isCollapsed,
+    )
+    // DO NOT update Zustand state here. The Panel's onCollapse fires AFTER the imperative
+    // API has already moved the panel. Zustand state should only be updated from user
+    // interactions (sidebar expand/collapse buttons), not from the Panel library's callbacks.
+    // This prevents feedback loops where the state change triggers onCollapse again.
+    console.log("[AppLayout] Panel moved by library, Zustand state already updated by user action")
   }
 
   const handlePanelGroupRef = useCallback(setPanelGroupApi, [])
