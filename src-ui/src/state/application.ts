@@ -38,7 +38,10 @@ import {
   toMergedRequest,
   type UtilitySheetsApi,
   zFormField,
+  zRequestCookieParam,
+  zRequestHeader,
   zRequestPathParam,
+  zRequestQueryParam,
 } from "@/types"
 import { withStorageManager } from "@/types/middleware/storage-manager"
 import { collectionTreeSliceCreator } from "./collection-tree"
@@ -559,7 +562,12 @@ export const useRequestParameters = (tabId: string): HookResult<RequestParameter
         collectionsApi().updateRequestPatchPathParam(activeTab.collectionId, activeTab.requestId, id, null),
       addQueryParam: () => {
         const id = generateUniqueId(8)
-        collectionsApi().updateRequestPatchQueryParam(activeTab.collectionId, activeTab.requestId, id, {})
+        collectionsApi().updateRequestPatchQueryParam(
+          activeTab.collectionId,
+          activeTab.requestId,
+          id,
+          zRequestQueryParam.parse({ id }),
+        )
       },
       addPathParam: () => {
         const id = generateUniqueId(8)
@@ -576,7 +584,12 @@ export const useRequestParameters = (tabId: string): HookResult<RequestParameter
         collectionsApi().updateRequestPatchCookieParam(activeTab.collectionId, activeTab.requestId, id, null),
       addCookieParam: () => {
         const id = generateUniqueId(8)
-        collectionsApi().updateRequestPatchCookieParam(activeTab.collectionId, activeTab.requestId, id, {})
+        collectionsApi().updateRequestPatchCookieParam(
+          activeTab.collectionId,
+          activeTab.requestId,
+          id,
+          zRequestCookieParam.parse({ id }),
+        )
       },
       reorderPathParams: (orderedIds: string[]) =>
         collectionsApi().reorderPathParams(activeTab.collectionId, activeTab.requestId, orderedIds),
@@ -619,7 +632,12 @@ export const useRequestHeaders = (tabId: string): HookResult<RequestHeadersState
         collectionsApi().updateRequestPatchHeader(activeTab.collectionId, activeTab.requestId, id, null),
       addHeader: () => {
         const id = generateUniqueId(8)
-        collectionsApi().updateRequestPatchHeader(activeTab.collectionId, activeTab.requestId, id, {})
+        collectionsApi().updateRequestPatchHeader(
+          activeTab.collectionId,
+          activeTab.requestId,
+          id,
+          zRequestHeader.parse({ id }),
+        )
       },
       reorderHeaders: (orderedIds: string[]) =>
         collectionsApi().reorderHeaders(activeTab.collectionId, activeTab.requestId, orderedIds),
