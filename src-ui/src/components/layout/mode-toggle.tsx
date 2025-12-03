@@ -32,7 +32,7 @@ export const ModeToggle = React.memo(function ModeToggle() {
         <Button
           variant="ghost"
           size="sm"
-          className="h-6 w-6 p-0 text-primary hover:text-primary"
+          className="h-8 w-8 p-1 text-primary hover:text-primary"
           onClick={handleThemeChange}
           data-test-id="sidebar:mode-toggle-button"
         >
