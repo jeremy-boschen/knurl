@@ -180,6 +180,9 @@ export default function Sidebar() {
         </>
       ) : (
         <header className="flex flex-col items-center justify-center gap-3 p-2">
+          <div className="flex h-7 w-7 items-center justify-center">
+            <KnurlIcon className="h-5 w-5" />
+          </div>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
