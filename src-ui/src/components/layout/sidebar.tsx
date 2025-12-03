@@ -23,12 +23,12 @@ import { ModeToggle } from "./mode-toggle"
 type DialogProps = { action: "new" }
 
 export default function Sidebar() {
-  console.log('[Sidebar] render start')
+  console.log("[Sidebar] render start")
   const {
     state: { isCollapsed },
     actions: { collapseSidebar, expandSidebar },
   } = useSidebar()
-  console.log('[Sidebar] isCollapsed:', isCollapsed)
+  console.log("[Sidebar] isCollapsed:", isCollapsed)
   const {
     state: { searchTerm },
     actions: { setSearchTerm, clearSearch },
@@ -37,7 +37,7 @@ export default function Sidebar() {
   const [dialogProps, setDialogProps] = useState<DialogProps | null>(null)
 
   const sheetsApi = utilitySheetsApi()
-  console.log('[Sidebar] render complete, showing:', isCollapsed ? 'collapsed view' : 'expanded view')
+  console.log("[Sidebar] render complete, showing:", isCollapsed ? "collapsed view" : "expanded view")
 
   const openImportCollectionDialog = () => {
     sheetsApi.openSheet({ type: "import" })
