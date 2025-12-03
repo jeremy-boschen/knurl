@@ -46,7 +46,7 @@ export function CollectionTreeCollapsed() {
             onClick={() => handleCollectionClick(entry.id)}
             variant="ghost"
             size="sm"
-            className="h-6 w-6 p-0 text-primary hover:text-primary"
+            className="h-8 w-8 p-1 text-primary hover:text-primary"
             aria-expanded={isOpen}
             data-collection-id={entry.id}
             data-kind="collection"
@@ -68,7 +68,7 @@ export function CollectionTreeCollapsed() {
           variant="ghost"
           size="sm"
           onClick={handleMoreClick}
-          className="h-6 w-6 p-0 text-primary hover:text-primary text-xs"
+          className="h-8 w-8 p-1 text-primary hover:text-primary text-xs"
           title="Show all collections"
         >
           ...

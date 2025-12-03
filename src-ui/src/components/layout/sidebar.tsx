@@ -56,15 +56,9 @@ export default function Sidebar() {
         <>
           <header className="flex h-10 flex-row items-center justify-between p-2">
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 text-primary hover:text-primary"
-                disabled
-                data-test-id="sidebar:knurl-icon-expanded"
-              >
+              <div className="flex h-6 w-6 items-center justify-center">
                 <KnurlIcon className="h-5 w-5" />
-              </Button>
+              </div>
               <h1 className="text-lg font-semibold text-primary">KNURL</h1>
             </div>
             <div className="flex items-center gap-2">
@@ -74,7 +68,7 @@ export default function Sidebar() {
                     variant="ghost"
                     size="icon"
                     onClick={openImportCollectionDialog}
-                    className="h-6 w-6 p-0 text-primary hover:text-primary"
+                    className="h-8 w-8 p-1 text-primary hover:text-primary"
                     data-test-id="sidebar:import-collection-button"
                   >
                     <DownloadIcon className="h-5 w-5" />
@@ -87,7 +81,7 @@ export default function Sidebar() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0 text-primary hover:text-primary"
+                    className="h-8 w-8 p-1 text-primary hover:text-primary"
                     onClick={() => setDialogProps({ action: "new" })}
                     data-testid="sidebar-new-collection"
                     data-test-id="sidebar:new-collection-button"
@@ -102,7 +96,7 @@ export default function Sidebar() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0 text-primary hover:text-primary"
+                    className="h-8 w-8 p-1 text-primary hover:text-primary"
                     onClick={openSettingsDialog}
                     data-test-id="sidebar:settings-button"
                   >
@@ -117,7 +111,7 @@ export default function Sidebar() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0 text-primary hover:text-primary"
+                    className="h-8 w-8 p-1 text-primary hover:text-primary"
                     onClick={collapseSidebar}
                     data-test-id="sidebar:collapse-button"
                   >
@@ -186,26 +180,15 @@ export default function Sidebar() {
         </>
       ) : (
         <header className="flex flex-col items-center justify-center gap-3 p-2">
+          <div className="flex h-6 w-6 items-center justify-center">
+            <KnurlIcon className="h-5 w-5" />
+          </div>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 w-6 p-0 text-primary hover:text-primary"
-                disabled
-                data-test-id="sidebar:knurl-icon-collapsed"
-              >
-                <KnurlIcon className="h-5 w-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Knurl</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 text-primary hover:text-primary"
+                className="h-8 w-8 p-1 text-primary hover:text-primary"
                 onClick={expandSidebar}
                 data-test-id="sidebar:expand-button"
               >
@@ -228,7 +211,7 @@ export default function Sidebar() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 w-6 p-0 text-primary hover:text-primary"
+                className="h-8 w-8 p-1 text-primary hover:text-primary"
                 onClick={openNewCollectionDialog}
                 data-testid="sidebar-new-collection"
                 data-test-id="sidebar:new-collection-button-collapsed"
@@ -244,7 +227,7 @@ export default function Sidebar() {
                 variant="ghost"
                 size="sm"
                 onClick={openImportCollectionDialog}
-                className="h-6 w-6 p-0 text-primary hover:text-primary"
+                className="h-8 w-8 p-1 text-primary hover:text-primary"
                 data-test-id="sidebar:import-collection-button-collapsed"
               >
                 <DownloadIcon className="h-5 w-5" />
@@ -257,7 +240,7 @@ export default function Sidebar() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 w-6 p-0 text-primary hover:text-primary"
+                className="h-8 w-8 p-1 text-primary hover:text-primary"
                 onClick={openSettingsDialog}
                 data-test-id="sidebar:settings-button-collapsed"
               >
