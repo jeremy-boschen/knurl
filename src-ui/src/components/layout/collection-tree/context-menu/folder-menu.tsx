@@ -1,6 +1,14 @@
 import { useCallback, useMemo } from "react"
 
-import { Edit2Icon, FolderPlusIcon, FolderIcon, PlusIcon, Trash2Icon } from "lucide-react"
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  Edit2Icon,
+  FolderPlusIcon,
+  FolderIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react"
 
 import {
   ContextMenuContent,
@@ -97,6 +105,45 @@ export function FolderMenu({ item }: FolderMenuProps) {
     [folderPaths, item.folderId, currentParentId],
   )
 
+  // Get sibling folders for move up/down
+  const siblingFolderIds = useMemo(() => {
+    const parentFolder =
+      collectionState.collection.folders[currentParentId || Object.keys(collectionState.collection.folders)[0]]
+    if (!parentFolder) {
+      return []
+    }
+    return parentFolder.childFolderIds || []
+  }, [collectionState.collection, currentParentId])
+
+  const currentSiblingIndex = useMemo(() => siblingFolderIds.indexOf(item.folderId), [siblingFolderIds, item.folderId])
+  const canMoveUp = useMemo(() => currentSiblingIndex > 0, [currentSiblingIndex])
+  const canMoveDown = useMemo(
+    () => currentSiblingIndex >= 0 && currentSiblingIndex < siblingFolderIds.length - 1,
+    [currentSiblingIndex, siblingFolderIds.length],
+  )
+
+  const handleMoveUp = useCallback(() => {
+    if (canMoveUp) {
+      const newOrder = [...siblingFolderIds]
+      ;[newOrder[currentSiblingIndex], newOrder[currentSiblingIndex - 1]] = [
+        newOrder[currentSiblingIndex - 1],
+        newOrder[currentSiblingIndex],
+      ]
+      collectionsApi().reorderFolders(item.collectionId, currentParentId, newOrder)
+    }
+  }, [canMoveUp, currentSiblingIndex, siblingFolderIds, item.collectionId, currentParentId])
+
+  const handleMoveDown = useCallback(() => {
+    if (canMoveDown) {
+      const newOrder = [...siblingFolderIds]
+      ;[newOrder[currentSiblingIndex], newOrder[currentSiblingIndex + 1]] = [
+        newOrder[currentSiblingIndex + 1],
+        newOrder[currentSiblingIndex],
+      ]
+      collectionsApi().reorderFolders(item.collectionId, currentParentId, newOrder)
+    }
+  }, [canMoveDown, currentSiblingIndex, siblingFolderIds, item.collectionId, currentParentId])
+
   const handleMoveToFolder = useCallback(
     (targetParentId: string | null) => {
       try {
@@ -188,12 +235,21 @@ export function FolderMenu({ item }: FolderMenuProps) {
         New Folder
       </ContextMenuItem>
       <ContextMenuSeparator />
+      <ContextMenuItem onClick={handleMoveUp} disabled={!canMoveUp}>
+        <ChevronUpIcon className="h-4 w-4" />
+        Move Up
+      </ContextMenuItem>
+      <ContextMenuItem onClick={handleMoveDown} disabled={!canMoveDown}>
+        <ChevronDownIcon className="h-4 w-4" />
+        Move Down
+      </ContextMenuItem>
+      <ContextMenuSeparator />
       <ContextMenuSub>
         <ContextMenuSubTrigger>
           <FolderIcon className="h-4 w-4" />
           Move to folder
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-48">
+        <ContextMenuSubContent className="!max-h-96 !overflow-y-auto w-48 p-1">
           {currentParentId !== RootCollectionFolderId && (
             <ContextMenuItem onClick={() => handleMoveToFolder(RootCollectionFolderId)}>Root</ContextMenuItem>
           )}

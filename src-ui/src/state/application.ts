@@ -525,6 +525,9 @@ type RequestParametersActions = {
   updateCookieParam: (id: string, updates: Partial<RequestCookieParam>) => void
   removeCookieParam: (id: string) => void
   addCookieParam: () => void
+  reorderPathParams: (orderedIds: string[]) => void
+  reorderQueryParams: (orderedIds: string[]) => void
+  reorderCookieParams: (orderedIds: string[]) => void
 }
 
 export const useRequestParameters = (tabId: string): HookResult<RequestParametersState, RequestParametersActions> => {
@@ -575,6 +578,12 @@ export const useRequestParameters = (tabId: string): HookResult<RequestParameter
         const id = generateUniqueId(8)
         collectionsApi().updateRequestPatchCookieParam(activeTab.collectionId, activeTab.requestId, id, {})
       },
+      reorderPathParams: (orderedIds: string[]) =>
+        collectionsApi().reorderPathParams(activeTab.collectionId, activeTab.requestId, orderedIds),
+      reorderQueryParams: (orderedIds: string[]) =>
+        collectionsApi().reorderQueryParams(activeTab.collectionId, activeTab.requestId, orderedIds),
+      reorderCookieParams: (orderedIds: string[]) =>
+        collectionsApi().reorderCookieParams(activeTab.collectionId, activeTab.requestId, orderedIds),
     },
   }
 }
@@ -588,6 +597,7 @@ type RequestHeadersActions = {
   updateHeader: (id: string, updates: Partial<RequestHeader>) => void
   removeHeader: (id: string) => void
   addHeader: () => void
+  reorderHeaders: (orderedIds: string[]) => void
 }
 
 export const useRequestHeaders = (tabId: string): HookResult<RequestHeadersState, RequestHeadersActions> => {
@@ -611,6 +621,8 @@ export const useRequestHeaders = (tabId: string): HookResult<RequestHeadersState
         const id = generateUniqueId(8)
         collectionsApi().updateRequestPatchHeader(activeTab.collectionId, activeTab.requestId, id, {})
       },
+      reorderHeaders: (orderedIds: string[]) =>
+        collectionsApi().reorderHeaders(activeTab.collectionId, activeTab.requestId, orderedIds),
     },
   }
 }

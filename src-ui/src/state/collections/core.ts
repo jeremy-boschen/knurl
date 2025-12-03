@@ -12,6 +12,7 @@ import type { StateCreator } from "zustand"
 
 import { isAppError } from "@/bindings/knurl"
 import { assert, generateUniqueId } from "@/lib/utils"
+import { naturalSort } from "@/state/collections/sort-utils"
 import {
   buildEnvironmentState,
   countCollectionRequests,
@@ -132,7 +133,7 @@ export const CollectionIndexStorage = createStorage<CollectionsIndex["index"]>({
 })
 
 export const CollectionStorage = createStorage<Collection>({
-  version: 5,
+  version: 6,
   schema: zCollection,
   migrate: async (context: MigrateContext) => {
     const content = context.content as Partial<Collection>
@@ -229,6 +230,34 @@ export const CollectionStorage = createStorage<Collection>({
                 return 0
               }
               return requestA.name.localeCompare(requestB.name, undefined, { sensitivity: "base" })
+            })
+            // Update order field on requests to match sorted position
+            folder.requestIds.forEach((requestId, index) => {
+              if (collection.requests?.[requestId]) {
+                collection.requests[requestId].order = index + 1
+              }
+            })
+          }
+        }
+      }
+    }
+
+    // v6: sort requests using natural sort (e.g., r1 < r2 < r10, not r1 < r10 < r2)
+    if (context.version < 6) {
+      const collection = content as Collection
+      if (collection.folders) {
+        // Iterate by folder ID to ensure we're modifying the actual folder objects in the collection
+        for (const folderId in collection.folders) {
+          const folder = collection.folders[folderId]
+          if (folder?.requestIds && folder.requestIds.length > 0) {
+            // Sort request IDs using natural sort
+            folder.requestIds.sort((a, b) => {
+              const requestA = collection.requests?.[a]
+              const requestB = collection.requests?.[b]
+              if (!requestA || !requestB) {
+                return 0
+              }
+              return naturalSort(requestA.name, requestB.name)
             })
             // Update order field on requests to match sorted position
             folder.requestIds.forEach((requestId, index) => {

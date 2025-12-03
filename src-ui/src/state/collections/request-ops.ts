@@ -27,6 +27,7 @@ import {
   removeRequestFromFolder,
   reorderFolderRequests,
 } from "@/state/collections-lib"
+import { naturalSort } from "@/state/collections/sort-utils"
 import { zParse } from "@/state/utils"
 import {
   type Application,
@@ -174,7 +175,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
           folder.requestIds.sort((a, b) => {
             const nameA = coll.requests[a]?.name ?? ""
             const nameB = coll.requests[b]?.name ?? ""
-            return nameA.localeCompare(nameB, undefined, { sensitivity: "base" })
+            return naturalSort(nameA, nameB)
           })
           // Update order fields to match new positions
           folder.requestIds.forEach((id, index) => {
@@ -239,8 +240,8 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const patch = ensureRequestPatch(request)
         ensureParamPatch(request, patch, "queryParams")
         if (update) {
-          // Always merge against the base param to get a canonical form
-          const baseParam = request.queryParams?.[id] ?? {}
+          // Merge against existing patch first (to preserve prior edits), then fall back to base
+          const baseParam = patch.queryParams?.[id] ?? request.queryParams?.[id] ?? {}
           // biome-ignore lint/style/noNonNullAssertion: ensureParamPatch guarantees queryParams exists
           patch.queryParams![id] = { ...baseParam, ...update, id }
         } else {
@@ -268,8 +269,8 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const patch = ensureRequestPatch(request)
         ensureParamPatch(request, patch, "pathParams")
         if (update) {
-          // Always merge against the base param to get a canonical form
-          const baseParam = request.pathParams?.[id] ?? {}
+          // Merge against existing patch first (to preserve prior edits), then fall back to base
+          const baseParam = patch.pathParams?.[id] ?? request.pathParams?.[id] ?? {}
           // biome-ignore lint/style/noNonNullAssertion: ensureParamPatch guarantees pathParams exists
           patch.pathParams![id] = { ...baseParam, ...update, id }
         } else {
@@ -297,8 +298,8 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const patch = ensureRequestPatch(request)
         ensureParamPatch(request, patch, "headers")
         if (update) {
-          // Always merge against the base header to get a canonical form
-          const baseHeader = request.headers?.[id] ?? {}
+          // Merge against existing patch first (to preserve prior edits), then fall back to base
+          const baseHeader = patch.headers?.[id] ?? request.headers?.[id] ?? {}
           // biome-ignore lint/style/noNonNullAssertion: ensureParamPatch guarantees headers exists
           patch.headers![id] = { ...baseHeader, ...update, id }
         } else {
@@ -447,7 +448,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
           folder.requestIds.sort((a, b) => {
             const nameA = coll.requests[a]?.name ?? ""
             const nameB = coll.requests[b]?.name ?? ""
-            return nameA.localeCompare(nameB, undefined, { sensitivity: "base" })
+            return naturalSort(nameA, nameB)
           })
           // Update order fields to match new positions
           folder.requestIds.forEach((id, index) => {

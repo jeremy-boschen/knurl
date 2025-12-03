@@ -127,13 +127,16 @@ describe("collections patch and merge logic", () => {
     collectionsApi.setRequestName(col.id, req.id, "R")
     let r = collectionsApi.getRequest(col.id, req.id)
     expect(r.patch?.name).toBeUndefined()
-    // Actual change persists in patch
+    expect(r.name).toBe("R")
+    // Actual change updates the name directly, NOT in patch (names are not undoable)
     collectionsApi.setRequestName(col.id, req.id, "R2")
     r = collectionsApi.getRequest(col.id, req.id)
-    expect(r.patch?.name).toBe("R2")
-    // Changing back to base removes patch entry
+    expect(r.name).toBe("R2")
+    expect(r.patch?.name).toBeUndefined()
+    // Changing back updates name directly, NOT in patch
     collectionsApi.setRequestName(col.id, req.id, "R")
     r = collectionsApi.getRequest(col.id, req.id)
+    expect(r.name).toBe("R")
     expect(r.patch?.name).toBeUndefined()
   })
 
@@ -143,9 +146,11 @@ describe("collections patch and merge logic", () => {
     const req = collectionsApi.createRequest(col.id, {name: "First", url: ""})
     collectionsApi.setRequestName(col.id, req.id, "Second")
     let r = collectionsApi.getRequest(col.id, req.id)
-    expect(r.patch?.name).toBe("Second")
+    expect(r.name).toBe("Second")
+    expect(r.patch?.name).toBeUndefined()
     collectionsApi.setRequestName(col.id, req.id, "First")
     r = collectionsApi.getRequest(col.id, req.id)
+    expect(r.name).toBe("First")
     expect(r.patch?.name).toBeUndefined()
   })
 
@@ -1269,5 +1274,56 @@ describe("environment management", () => {
 
     expect(devVar.value).toBe("http://localhost")
     expect(prodVar.value).toBe("https://api.prod.com")
+  })
+})
+
+describe("saveScratchRequest preserves patch data when moving to target collection", () => {
+  it("commits pending patch changes when moving from scratch to target collection", async () => {
+    const { collectionsApi } = useApplication.getState()
+    const targetCol = collectionsApi.addCollection("Target")
+    collectionsApi.getCollection(targetCol.id)
+    await collectionsApi.loadCollection(ScratchCollectionId) // Load scratch collection
+
+    // Create a request in scratch collection and make edits
+    const scratchReq = collectionsApi.createRequest(ScratchCollectionId, {
+      name: "Test Request",
+      url: "https://example.com",
+    })
+
+    // Make pending changes via patches
+    collectionsApi.setRequestUrl(ScratchCollectionId, scratchReq.id, "https://example.com/api")
+    collectionsApi.updateRequestPatchHeader(ScratchCollectionId, scratchReq.id, "h1", {
+      name: "Authorization",
+      value: "Bearer token123",
+      enabled: true,
+    })
+    collectionsApi.updateRequestPatchQueryParam(ScratchCollectionId, scratchReq.id, "q1", {
+      name: "key",
+      value: "value",
+      enabled: true,
+    })
+
+    // Verify patch exists before move
+    let scratchReqBefore = collectionsApi.getRequest(ScratchCollectionId, scratchReq.id)
+    expect(scratchReqBefore.patch?.url).toBe("https://example.com/api")
+    expect(scratchReqBefore.patch?.headers?.h1?.name).toBe("Authorization")
+    expect(scratchReqBefore.patch?.queryParams?.q1?.name).toBe("key")
+
+    // Move to target collection via saveScratchRequest
+    useApplication.setState((state) => {
+      saveScratchRequest(state, {
+        id: scratchReq.id,
+        collectionId: targetCol.id,
+        name: "Saved Request",
+      })
+    })
+
+    // Verify data was preserved in target collection
+    const targetReq = collectionsApi.getRequest(targetCol.id, scratchReq.id)
+    expect(targetReq.name).toBe("Saved Request")
+    expect(targetReq.url).toBe("https://example.com/api") // Patched URL should be committed
+    expect(targetReq.headers?.h1?.name).toBe("Authorization") // Header should be committed
+    expect(targetReq.queryParams?.q1?.name).toBe("key") // Query param should be committed
+    expect(targetReq.patch).toEqual({}) // Patch should be empty after commit
   })
 })

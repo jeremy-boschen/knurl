@@ -1,10 +1,20 @@
-import { useCallback } from "react"
+import { useCallback, useMemo } from "react"
 
 import { writeText } from "@tauri-apps/plugin-clipboard-manager"
-import { CopyIcon, Edit2Icon, FolderPlusIcon, GlobeIcon, PlusIcon, Trash2Icon, UploadIcon } from "lucide-react"
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  CopyIcon,
+  Edit2Icon,
+  FolderPlusIcon,
+  GlobeIcon,
+  PlusIcon,
+  Trash2Icon,
+  UploadIcon,
+} from "lucide-react"
 
 import { ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
-import { collectionsApi, dialogsApi, utilitySheetsApi } from "@/state"
+import { collectionsApi, dialogsApi, utilitySheetsApi, useCollections } from "@/state"
 import { RootCollectionFolderId } from "@/types"
 import type { ActiveMenuItem } from "./types"
 
@@ -13,6 +23,37 @@ interface CollectionMenuProps {
 }
 
 export function CollectionMenu({ item }: CollectionMenuProps) {
+  const {
+    state: { collectionsIndex },
+  } = useCollections()
+
+  const currentIndex = useMemo(
+    () => collectionsIndex.findIndex((entry) => entry.id === item.collectionId),
+    [collectionsIndex, item.collectionId],
+  )
+
+  const canMoveUp = useMemo(() => currentIndex > 0, [currentIndex])
+  const canMoveDown = useMemo(
+    () => currentIndex >= 0 && currentIndex < collectionsIndex.length - 1,
+    [currentIndex, collectionsIndex.length],
+  )
+
+  const handleMoveUp = useCallback(() => {
+    if (canMoveUp) {
+      const newOrder = [...collectionsIndex]
+      ;[newOrder[currentIndex], newOrder[currentIndex - 1]] = [newOrder[currentIndex - 1], newOrder[currentIndex]]
+      collectionsApi().reorderCollections(newOrder.map((e) => e.id))
+    }
+  }, [canMoveUp, currentIndex, collectionsIndex])
+
+  const handleMoveDown = useCallback(() => {
+    if (canMoveDown) {
+      const newOrder = [...collectionsIndex]
+      ;[newOrder[currentIndex], newOrder[currentIndex + 1]] = [newOrder[currentIndex + 1], newOrder[currentIndex]]
+      collectionsApi().reorderCollections(newOrder.map((e) => e.id))
+    }
+  }, [canMoveDown, currentIndex, collectionsIndex])
+
   const handleCreateRequest = useCallback(() => {
     dialogsApi().showCreateRequestDialog({
       collectionId: item.collectionId,
@@ -137,6 +178,15 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
       <ContextMenuItem onClick={handleCreateFolder}>
         <FolderPlusIcon className="h-4 w-4" />
         New Folder
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem onClick={handleMoveUp} disabled={!canMoveUp}>
+        <ChevronUpIcon className="h-4 w-4" />
+        Move Up
+      </ContextMenuItem>
+      <ContextMenuItem onClick={handleMoveDown} disabled={!canMoveDown}>
+        <ChevronDownIcon className="h-4 w-4" />
+        Move Down
       </ContextMenuItem>
       <ContextMenuSeparator />
       <ContextMenuItem onClick={handleRename}>

@@ -1,6 +1,7 @@
 import { isEqual, merge } from "es-toolkit"
 
 import { assert, generateUniqueId } from "@/lib/utils"
+import { naturalSort } from "@/state/collections/sort-utils"
 import { zParse } from "@/state/utils"
 import {
   type Collection,
@@ -221,8 +222,10 @@ export const ensureParamPatch = <K extends RequestParamKey>(
   if (baseRecord) {
     const parser = paramParsers[key]
     for (const [paramId, paramValue] of Object.entries(baseRecord)) {
+      // Ensure id is set, then parse to validate structure
+      // Spread as complete object (not Partial) to preserve all fields and avoid defaults
       created[paramId] = parser({
-        ...(paramValue as Partial<RequestParamValueMap[K]>),
+        ...(paramValue as RequestParamValueMap[K]),
         id: paramId,
       } as RequestParamValueMap[K])
     }
@@ -448,10 +451,19 @@ export const normalizeCollection = (collection: Collection): CollectionCache => 
   }
 
   // Synchronize folder requestIds with validated requests
-  // Preserve disk order - DO NOT SORT
+  // Apply natural sort to ensure consistent ordering (e.g., r1 < r2 < r10, not r1 < r10 < r2)
   for (const folder of Object.values(folders)) {
     folder.requestIds = requestsByFolder[folder.id] ?? []
-    // Update order field to match current position
+    // Sort requests using natural sort for display consistency
+    folder.requestIds.sort((a, b) => {
+      const reqA = requests[a]
+      const reqB = requests[b]
+      if (!reqA || !reqB) {
+        return 0
+      }
+      return naturalSort(reqA.name, reqB.name)
+    })
+    // Update order field to match sorted position
     folder.requestIds.forEach((requestId, index) => {
       if (requests[requestId]) {
         requests[requestId].order = index + 1
@@ -563,10 +575,10 @@ export const insertRequestIntoFolder = (collection: CollectionCache, folderId: s
   // Remove request from folder if it's already there
   folder.requestIds = folder.requestIds.filter((id) => id !== request.id)
 
-  // Always insert in alphabetical order (case-insensitive)
+  // Always insert in natural alphabetical order (e.g., r1 < r2 < r10)
   const insertIndex = folder.requestIds.findIndex((id) => {
     const existingRequest = collection.requests[id]
-    return existingRequest && request.name.localeCompare(existingRequest.name, undefined, { sensitivity: "base" }) < 0
+    return existingRequest && naturalSort(request.name, existingRequest.name) < 0
   })
   const position = insertIndex === -1 ? folder.requestIds.length : insertIndex
 

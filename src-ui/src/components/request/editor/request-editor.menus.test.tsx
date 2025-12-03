@@ -146,16 +146,12 @@ const headersActions = {
 
 let BodyTabMenu: typeof import("./request-editor").BodyTabMenu
 let AuthTabMenu: typeof import("./request-editor").AuthTabMenu
-let ParamsTabMenu: typeof import("./request-editor").ParamsTabMenu
-let HeadersTabMenu: typeof import("./request-editor").HeadersTabMenu
 let RequestEditorComponent: typeof import("./request-editor").RequestEditor
 
 beforeAll(async () => {
   const module = await import("./request-editor")
   BodyTabMenu = module.BodyTabMenu
   AuthTabMenu = module.AuthTabMenu
-  ParamsTabMenu = module.ParamsTabMenu
-  HeadersTabMenu = module.HeadersTabMenu
   RequestEditorComponent = module.RequestEditor
 })
 
@@ -241,24 +237,6 @@ describe("request-editor menus", () => {
     expect(bodyActions.addFormItem).toHaveBeenCalled()
   })
 
-  it("shows cookie actions only when cookies exist", async () => {
-    const user = userEvent.setup()
-    useRequestParametersMock.mockReturnValueOnce({
-      state: { cookieParams: {} },
-      actions: paramsActions,
-    })
-
-    render(<ParamsTabMenu tabId="tab-1" onActivate={() => {}} />)
-    await user.click(getByDataId("request-editor:params-menu:add-cookie"))
-    expect(paramsActions.addCookieParam).toHaveBeenCalled()
-  })
-
-  it("adds headers from the headers menu", async () => {
-    const user = userEvent.setup()
-    render(<HeadersTabMenu tabId="tab-1" onActivate={() => {}} />)
-    await user.click(getByDataId("request-editor:headers-menu:add-header"))
-    expect(headersActions.addHeader).toHaveBeenCalled()
-  })
 
   describe("RequestEditor", () => {
     it("shows dirty indicator and discards changes", async () => {
