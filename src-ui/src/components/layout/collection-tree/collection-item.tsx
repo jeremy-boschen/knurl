@@ -4,7 +4,6 @@ import { ChevronDownIcon, ChevronRightIcon, FolderClosedIcon, FolderOpenIcon } f
 
 import { useCollection, useCollectionTree } from "@/state"
 import { RootCollectionFolderId } from "@/types"
-import { useShowableIds } from "@/hooks/use-showable-ids"
 import { FolderItemList } from "./folder-item-list"
 
 type CollectionItemProps = {
@@ -14,19 +13,15 @@ type CollectionItemProps = {
 
 export function CollectionItem({ collectionId, collectionName }: CollectionItemProps) {
   const {
-    state: { collection },
-  } = useCollection(collectionId)
-  const {
-    state: { searchTerm, expandedIds },
+    state: { expandedIds },
     actions: { toggleExpanded },
   } = useCollectionTree()
-  const showableIds = useShowableIds(collection, searchTerm)
   const isOpen = Boolean(expandedIds[collectionId])
 
-  // If filtering and collection has no matches, don't render
-  if (showableIds && showableIds.size === 0) {
-    return null
-  }
+  // NOTE: We intentionally do NOT call useCollection() here to avoid loading all
+  // collections upfront. Collections should only be loaded when the user actually
+  // expands them in the tree. This is deferred to CollectionItemBody which is only
+  // rendered when isOpen is true.
 
   const handleToggle = () => {
     toggleExpanded(collectionId)
