@@ -1,4 +1,4 @@
-import { useCallback } from "react"
+import { useCallback, useEffect } from "react"
 import { Panel, PanelGroup, ResizeHandle } from "@jeremy-boschen/react-adjustable-panels"
 
 import RequestWorkspace from "@/components/request/request-workspace"
@@ -11,24 +11,33 @@ import Sidebar from "./sidebar"
 
 export default function AppLayout() {
   const {
-    state: { isCollapsed },
+    state: { isCollapsed, panelGroupApi },
     actions: { setPanelGroupApi, collapseSidebar, expandSidebar },
   } = useSidebar()
   console.log("[AppLayout] render, isCollapsed:", isCollapsed)
   const activeTabId = useActiveTabId()
 
+  // Sync Panel state with Zustand when isCollapsed changes
+  // This handles initial load and sidebar button clicks (not onCollapse callbacks)
+  useEffect(() => {
+    console.log("[AppLayout] useEffect: syncing Panel with isCollapsed:", isCollapsed)
+    if (panelGroupApi) {
+      if (isCollapsed) {
+        console.log("[AppLayout] calling collapsePanel from useEffect")
+        panelGroupApi.collapsePanel(0)
+      } else {
+        console.log("[AppLayout] calling expandPanel from useEffect")
+        panelGroupApi.expandPanel(0)
+      }
+    }
+  }, [isCollapsed, panelGroupApi])
+
   const handleCollapsed = (collapsed: boolean) => {
-    console.log(
-      "[AppLayout] handleCollapsed called with:",
-      collapsed,
-      "current isCollapsed:",
-      isCollapsed,
-    )
-    // DO NOT update Zustand state here. The Panel's onCollapse fires AFTER the imperative
-    // API has already moved the panel. Zustand state should only be updated from user
-    // interactions (sidebar expand/collapse buttons), not from the Panel library's callbacks.
-    // This prevents feedback loops where the state change triggers onCollapse again.
-    console.log("[AppLayout] Panel moved by library, Zustand state already updated by user action")
+    console.log("[AppLayout] handleCollapsed called with:", collapsed, "current isCollapsed:", isCollapsed)
+    // DO NOT update Zustand state here. The Panel's onCollapse fires synchronously
+    // but Zustand updates are async. This creates a closure mismatch.
+    // Instead, sync happens via the useEffect above when Zustand state changes.
+    console.log("[AppLayout] Panel moved by library, onCollapse is not our source of truth")
   }
 
   const handlePanelGroupRef = useCallback(setPanelGroupApi, [])
@@ -44,7 +53,6 @@ export default function AppLayout() {
             defaultSize="275px"
             minSize="275px"
             collapsedSize="50px"
-            defaultCollapsed={isCollapsed}
             onCollapse={handleCollapsed}
             className="overflow-hidden"
           >
