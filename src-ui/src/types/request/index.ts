@@ -183,10 +183,8 @@ export const isRequestBodyBinary = (request: RequestState): boolean => {
 }
 
 /**
- * Returns a RequestState with `patch` applied over the base,
- * where `headers` and `params` arrays in the patch **replace** the originals.
- * All other fields fall back to the base when not present in a patch.
- * The returned object omits `patch`. If no patch is present, the original request is returned.
+ * Returns a RequestState with `patch` applied over the base.
+ * If no patch is present, the original request is returned.
  */
 export function toMergedRequest(request: RequestState): RequestState {
   if (!request.patch || Object.keys(request.patch).length === 0) {
@@ -209,7 +207,7 @@ export function toMergedRequest(request: RequestState): RequestState {
     method: p.method ?? request.method,
     url: p.url ?? request.url,
 
-    // records: replace when the patch provides them
+    // records: when patch exists for param records, it replaces the base entirely
     headers: p.headers !== undefined ? p.headers : request.headers,
     queryParams: p.queryParams !== undefined ? p.queryParams : request.queryParams,
     pathParams: p.pathParams !== undefined ? p.pathParams : request.pathParams,

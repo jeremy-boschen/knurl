@@ -45,7 +45,7 @@ describe("RequestHeadersPanel", () => {
   it("updates header name/value and removes header", async () => {
     const user = userEvent.setup()
     const h = { id: "h1", name: "X-Test", value: "1", enabled: true, secure: false }
-    renderWith({ [h.id]: h }, { [h.id]: h })
+    const { container } = renderWith({ [h.id]: h }, { [h.id]: h })
 
     fireEvent.change(screen.getByPlaceholderText("Name"), { target: { value: "X-Updated" } })
     expect(actions.updateHeader).toHaveBeenCalledWith("h1", { name: "X-Updated" })
@@ -53,9 +53,13 @@ describe("RequestHeadersPanel", () => {
     fireEvent.change(screen.getByPlaceholderText("Value"), { target: { value: "2" } })
     expect(actions.updateHeader).toHaveBeenCalledWith("h1", { value: "2" })
 
-    // Click the last button in the row (delete)
-    const buttons = screen.getAllByRole("button")
-    await user.click(buttons[buttons.length - 1])
+    // Click the menu button to open the dropdown
+    const menuButton = container.querySelector('[data-test-id="request-headers-panel:menu-button:h1"]') as HTMLElement
+    await user.click(menuButton)
+
+    // Click the delete item in the menu
+    const deleteItem = container.querySelector('[data-test-id="request-headers-panel:menu-delete:h1"]') as HTMLElement
+    fireEvent.click(deleteItem)
     expect(actions.removeHeader).toHaveBeenCalledWith("h1")
   })
 
@@ -71,10 +75,15 @@ describe("RequestHeadersPanel", () => {
     await user.click(enabled)
     expect(actions.updateHeader).toHaveBeenCalledWith("h2", { enabled: true })
 
-    const secureToggle = container.querySelector(
-      '[data-test-id="request-headers-panel:secure-toggle:h2"]',
+    // Click the menu button to open dropdown
+    const menuButton = container.querySelector('[data-test-id="request-headers-panel:menu-button:h2"]') as HTMLElement
+    await user.click(menuButton)
+
+    // Click the Sensitive checkbox item
+    const sensitiveItem = container.querySelector(
+      '[data-test-id="request-headers-panel:menu-sensitive:h2"]',
     ) as HTMLElement
-    await user.click(secureToggle)
+    fireEvent.click(sensitiveItem)
     expect(actions.updateHeader).toHaveBeenCalledWith("h2", { secure: true })
   })
 
@@ -98,9 +107,9 @@ describe("RequestHeadersPanel", () => {
     const h = { id: "h4", name: "X", value: "v", enabled: true, secure: true }
     const { container } = renderWith({ [h.id]: h }, { [h.id]: { ...h, secure: false } })
 
-    const toggle = container.querySelector(
-      '[data-test-id="request-headers-panel:secure-toggle:h4"]',
+    const sensitiveRadioItem = container.querySelector(
+      '[data-test-id="request-headers-panel:menu-sensitive:h4"]',
     ) as HTMLElement
-    expect(toggle.className).toContain("unsaved-changes")
+    expect(sensitiveRadioItem.className).toContain("unsaved-changes")
   })
 })

@@ -150,6 +150,17 @@ export const saveScratchRequest = (
     return requestId
   }
 
+  // Commit any pending patch changes before moving
+  let committedRequest = request
+  if (request.patch && Object.keys(request.patch).length > 0) {
+    // Merge patch into the request
+    committedRequest = {
+      ...request,
+      ...request.patch,
+      patch: {},
+    }
+  }
+
   // Remove from source collection directly (in-state)
   const { folder: sourceFolder } = findRequestInCollection(sourceCollection, requestId)
   if (sourceFolder) {
@@ -166,7 +177,7 @@ export const saveScratchRequest = (
 
   // Create duplicate in destination collection (keeping the same ID)
   const newRequest = {
-    ...request,
+    ...committedRequest,
     id: requestId,
     collectionId: targetCollectionId,
     patch: {},

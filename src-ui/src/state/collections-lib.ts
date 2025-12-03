@@ -222,8 +222,10 @@ export const ensureParamPatch = <K extends RequestParamKey>(
   if (baseRecord) {
     const parser = paramParsers[key]
     for (const [paramId, paramValue] of Object.entries(baseRecord)) {
+      // Ensure id is set, then parse to validate structure
+      // Spread as complete object (not Partial) to preserve all fields and avoid defaults
       created[paramId] = parser({
-        ...(paramValue as Partial<RequestParamValueMap[K]>),
+        ...(paramValue as RequestParamValueMap[K]),
         id: paramId,
       } as RequestParamValueMap[K])
     }

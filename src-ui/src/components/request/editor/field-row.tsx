@@ -1,12 +1,18 @@
 import React, { type ReactNode } from "react"
 
-import { ShieldIcon, ShieldCheckIcon, Trash2Icon } from "lucide-react"
+import { EllipsisIcon, ChevronUpIcon, ChevronDownIcon, Trash2Icon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/knurl/input"
-import { Toggle } from "@/components/ui/toggle"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
 import { cn } from "@/lib"
 
 export type FieldRowProps = {
@@ -14,33 +20,43 @@ export type FieldRowProps = {
   onEnabledChange: (enabled: boolean) => void
   nameValue: string
   onNameChange: (name: string) => void
-  valueSlot: ReactNode
+  valueSlot?: ReactNode
+  valueInputProps?: React.ComponentProps<typeof Input>
   onDelete: () => void
   secure?: boolean
   onSecureChange?: (secure: boolean) => void
-  deleteTooltip?: string
+  onMoveUp?: () => void
+  onMoveDown?: () => void
+  canMoveUp?: boolean
+  canMoveDown?: boolean
   hasUnsavedEnabled?: boolean
   hasUnsavedName?: boolean
   hasUnsavedSecure?: boolean
 }
 
-export const FieldRow = React.memo(function FieldRow({
+function FieldRowComponent({
   enabled,
   onEnabledChange,
   nameValue,
   onNameChange,
   valueSlot,
+  valueInputProps,
   onDelete,
   secure,
   onSecureChange,
-  deleteTooltip = "Delete",
+  onMoveUp,
+  onMoveDown,
+  canMoveUp = false,
+  canMoveDown = false,
   hasUnsavedEnabled = false,
   hasUnsavedName = false,
   hasUnsavedSecure = false,
 }: FieldRowProps) {
+  const hasMenuActions = onSecureChange || onMoveUp || onMoveDown
+
   return (
     <div
-      className="grid grid-cols-[1.5rem_minmax(0,6fr)_minmax(0,8fr)_2rem_2rem] items-center gap-3 py-1 first:pt-0"
+      className="grid grid-cols-[1.5rem_minmax(0,6fr)_minmax(0,8fr)_2rem] items-center gap-3 py-1 first:pt-0"
       data-test-id="field-row"
     >
       <div className="flex h-9 items-center">
@@ -61,44 +77,75 @@ export const FieldRow = React.memo(function FieldRow({
           data-test-id="field-row:name-input"
         />
       </div>
-      <div className="min-w-0">{valueSlot}</div>
+      <div className="min-w-0">{valueInputProps ? <Input {...valueInputProps} /> : valueSlot}</div>
       <div className="flex justify-center">
-        {onSecureChange ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Toggle
-                size="sm"
-                variant="default"
-                pressed={secure}
-                onPressedChange={onSecureChange}
-                className={cn(hasUnsavedSecure && "unsaved-changes")}
-                data-test-id="field-row:secure-toggle"
+        {hasMenuActions ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8 p-0" data-test-id="field-row:menu-button">
+                <EllipsisIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {onSecureChange && (
+                <>
+                  <DropdownMenuCheckboxItem
+                    checked={secure}
+                    onCheckedChange={onSecureChange}
+                    className={cn(hasUnsavedSecure && "unsaved-changes")}
+                    data-test-id="field-row:menu-sensitive"
+                  >
+                    Sensitive
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              {(onMoveUp || onMoveDown) && (
+                <>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.preventDefault()
+                      onMoveUp?.()
+                    }}
+                    disabled={!canMoveUp}
+                    data-test-id="field-row:menu-move-up"
+                  >
+                    <ChevronUpIcon className="mr-2 h-4 w-4" />
+                    Move Up
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.preventDefault()
+                      onMoveDown?.()
+                    }}
+                    disabled={!canMoveDown}
+                    data-test-id="field-row:menu-move-down"
+                  >
+                    <ChevronDownIcon className="mr-2 h-4 w-4" />
+                    Move Down
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault()
+                  onDelete()
+                }}
+                className="text-destructive focus:text-destructive"
+                data-test-id="field-row:menu-delete"
               >
-                {secure ? <ShieldCheckIcon className="h-4 w-4" /> : <ShieldIcon className="h-4 w-4" />}
-              </Toggle>
-            </TooltipTrigger>
-            <TooltipContent>Encrypt value in storage</TooltipContent>
-          </Tooltip>
+                <Trash2Icon className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : (
           <div className="w-8" />
         )}
       </div>
-      <div className="flex justify-center">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant="destructive"
-              onClick={onDelete}
-              className="h-8 w-8 p-0"
-              data-test-id="field-row:delete-button"
-            >
-              <Trash2Icon className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{deleteTooltip}</TooltipContent>
-        </Tooltip>
-      </div>
     </div>
   )
-})
+}
+
+export const FieldRow = React.memo(FieldRowComponent)

@@ -266,4 +266,24 @@ export interface CollectionsApi extends CollectionsIndexApi, EnvironmentsApi {
    * Reorder requests within a specific folder.
    */
   reorderRequestsInFolder(collectionId: string, folderId: string, orderedIds: string[]): void
+
+  /**
+   * Reorder path parameters within a request.
+   */
+  reorderPathParams(collectionId: string, requestId: string, orderedIds: string[]): void
+
+  /**
+   * Reorder query parameters within a request.
+   */
+  reorderQueryParams(collectionId: string, requestId: string, orderedIds: string[]): void
+
+  /**
+   * Reorder headers within a request.
+   */
+  reorderHeaders(collectionId: string, requestId: string, orderedIds: string[]): void
+
+  /**
+   * Reorder cookie parameters within a request.
+   */
+  reorderCookieParams(collectionId: string, requestId: string, orderedIds: string[]): void
 }

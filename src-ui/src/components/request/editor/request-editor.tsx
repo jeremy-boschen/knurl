@@ -1,6 +1,6 @@
 import React, { cloneElement, type ReactElement, type ReactNode, Profiler } from "react"
 
-import { ChevronDownIcon, FilePlus2Icon, PlusIcon, TriangleAlertIcon, TypeIcon, UndoIcon } from "lucide-react"
+import { ChevronDownIcon, TriangleAlertIcon, TypeIcon, UndoIcon, FilePlus2Icon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { onProfilerRender } from "@/lib/profiler-bridge"
@@ -20,7 +20,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
 import { assert, createDefaultAuthConfig } from "@/lib"
-import { useCollections, useRequestBody, useRequestHeaders, useRequestParameters, useRequestTab } from "@/state"
+import { useCollections, useRequestBody, useRequestTab } from "@/state"
 import { generateUniqueId } from "@/lib/utils"
 import {
   CodeLanguages,
@@ -73,18 +73,12 @@ function RequestEditorComponent({ tabId }: RequestEditorProps) {
             <TabsList className="h-10 p-0 rounded-none space-x-2">
               <h2 className="text-lg font-medium mr-2 text-foreground">Request</h2>
               <div className="flex space-x-2">
-                <RequestTabTrigger
-                  value="params"
-                  label="Params"
-                  onActivate={() => setActiveRequestTab("params")}
-                  menu={<ParamsTabMenu tabId={tabId} />}
-                />
-                <RequestTabTrigger
-                  value="headers"
-                  label="Headers"
-                  onActivate={() => setActiveRequestTab("headers")}
-                  menu={<HeadersTabMenu tabId={tabId} />}
-                />
+                <TabsTrigger value="params" data-test-id="request-editor:params-tab">
+                  Params
+                </TabsTrigger>
+                <TabsTrigger value="headers" data-test-id="request-editor:headers-tab">
+                  Headers
+                </TabsTrigger>
                 <RequestTabTrigger
                   value="body"
                   label="Body"
@@ -208,62 +202,6 @@ function TabDropdown({ ariaLabel, children, onActivate, tabName }: TabDropdownPr
       </DropdownMenuTrigger>
       {children}
     </DropdownMenu>
-  )
-}
-
-export function ParamsTabMenu({ tabId, onActivate }: { tabId: string; onActivate: () => void }) {
-  const {
-    state: { cookieParams },
-    actions,
-  } = useRequestParameters(tabId)
-  const showCookieItem = cookieParams !== undefined
-
-  return (
-    <TabDropdown ariaLabel="Open parameters menu" onActivate={onActivate} tabName="params">
-      <DropdownMenuContent side="bottom" align="end" className="w-56" data-test-id="request-editor:params-menu">
-        <DropdownMenuItem
-          onSelect={() => void actions.addPathParam()}
-          data-test-id="request-editor:params-menu:add-path-param"
-        >
-          <PlusIcon className="mr-2 h-4 w-4" />
-          Add Path Parameter
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onSelect={() => void actions.addQueryParam()}
-          data-test-id="request-editor:params-menu:add-query-param"
-        >
-          <PlusIcon className="mr-2 h-4 w-4" />
-          Add Query Parameter
-        </DropdownMenuItem>
-        {showCookieItem && (
-          <DropdownMenuItem
-            onSelect={() => void actions.addCookieParam()}
-            data-test-id="request-editor:params-menu:add-cookie"
-          >
-            <PlusIcon className="mr-2 h-4 w-4" />
-            Add Cookie
-          </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </TabDropdown>
-  )
-}
-
-export function HeadersTabMenu({ tabId, onActivate }: { tabId: string; onActivate?: () => void }) {
-  const { actions } = useRequestHeaders(tabId)
-
-  return (
-    <TabDropdown ariaLabel="Open headers menu" onActivate={onActivate} tabName="headers">
-      <DropdownMenuContent side="bottom" align="end" className="w-48" data-test-id="request-editor:headers-menu">
-        <DropdownMenuItem
-          onSelect={() => void actions.addHeader()}
-          data-test-id="request-editor:headers-menu:add-header"
-        >
-          <PlusIcon className="mr-2 h-4 w-4" />
-          Add Header
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </TabDropdown>
   )
 }
 

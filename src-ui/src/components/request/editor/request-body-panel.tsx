@@ -1,12 +1,13 @@
-import React, { Profiler, useCallback, useEffect, useMemo, useRef, useOptimistic } from "react"
+import React, { Profiler, useCallback, useEffect, useMemo, useRef, useOptimistic, useTransition } from "react"
 
-import { CodeIcon } from "lucide-react"
+import { CodeIcon, TypeIcon, FilePlus2Icon } from "lucide-react"
 
 import { CodeEditor } from "@/components/editor/"
 import type { CodeEditorHandle } from "@/components/editor/code-editor"
 import { Button } from "@/components/ui/button"
 import { FileInput } from "@/components/ui/knurl"
 import { Input } from "@/components/ui/knurl/input"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
 import { cn } from "@/lib"
 import { onProfilerRender } from "@/lib/profiler-bridge"
 import { warmPrettier } from "@/lib/prettier"
@@ -97,6 +98,8 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
   } = useRequestBody(tabId)
   const editorRef = useRef<CodeEditorHandle | null>(null)
 
+  const [, startTransition] = useTransition()
+
   // Optimistic updates for instant feedback
   const [optimisticBody, updateBodyOptimistic] = useOptimistic(body, (state, changes: Record<string, unknown>) => ({
     ...state,
@@ -158,6 +161,20 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
     }
   }, [body.type, body.language])
 
+  const addFormField = useCallback(
+    (kind: "text" | "file") => {
+      if (kind === "text") {
+        actions.addFormItem()
+        return
+      }
+
+      const id = generateUniqueId(8)
+      actions.updateBody({ encoding: "multipart" })
+      actions.updateFormItem(id, { id, key: "", value: "", enabled: true, secure: false, kind: "file" })
+    },
+    [actions],
+  )
+
   return (
     <Profiler id="RequestBodyPanel" onRender={onProfilerRender}>
       <div className="flex flex-col gap-3 p-2 h-full overflow-y-auto min-h-0" data-test-id="request-body-panel">
@@ -205,7 +222,9 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
                 value={optimisticBody.content ?? ""}
                 language={optimisticBody.language ?? "text"}
                 onChange={(content) => {
-                  updateBodyOptimistic({ content })
+                  startTransition(() => {
+                    updateBodyOptimistic({ content })
+                  })
                   actions.updateBodyContent(content)
                 }}
                 lineNumbers={(optimisticBody.content?.length ?? 0) > 0}
@@ -217,8 +236,41 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
 
           {request.body.type === "form" && (
             <div className="flex h-full min-h-0 flex-col gap-3">
+              <div className="flex items-center gap-1">
+                <h4 className="text-sm font-semibold text-muted-foreground">Form Fields</h4>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => addFormField("text")}
+                      data-test-id="request-body-panel:add-text-field-button"
+                      className="h-6 px-2 gap-1"
+                    >
+                      <span className="text-xs">Text</span>
+                      <TypeIcon className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Add Text Field</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => addFormField("file")}
+                      data-test-id="request-body-panel:add-file-field-button"
+                      className="h-6 px-2 gap-1"
+                    >
+                      <span className="text-xs">File</span>
+                      <FilePlus2Icon className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Add File Field</TooltipContent>
+                </Tooltip>
+              </div>
               <section
-                className="flex flex-col gap-3 divide-y divide-border/10 mt-2"
+                className="flex flex-col gap-3 divide-y divide-border/10"
                 aria-label="Form fields dropzone"
                 onDragOver={(e) => {
                   if (e.dataTransfer) {
@@ -328,7 +380,6 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
                     onSecureChange={
                       item.kind === "text" ? (secure) => actions.updateFormItem(item.id, { secure }) : undefined
                     }
-                    deleteTooltip="Delete Form Field"
                     hasUnsavedEnabled={original?.formData?.[item.id]?.enabled !== body?.formData?.[item.id]?.enabled}
                     hasUnsavedName={original?.formData?.[item.id]?.key !== body?.formData?.[item.id]?.key}
                     hasUnsavedSecure={original?.formData?.[item.id]?.secure !== body?.formData?.[item.id]?.secure}
