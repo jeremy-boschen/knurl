@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef } from "react"
+import { useCallback } from "react"
+
 import { Panel, PanelGroup, ResizeHandle } from "@jeremy-boschen/react-adjustable-panels"
 
-import RequestWorkspace from "@/components/request/request-workspace"
 import { DialogHost } from "@/components/dialogs/dialog-host"
+import RequestWorkspace from "@/components/request/request-workspace"
 import { UtilitySheetHost } from "@/components/utility-sheets/utility-sheet-host"
 import { cn } from "@/lib"
 import { useActiveTabId, useSidebar } from "@/state"
@@ -11,24 +12,17 @@ import Sidebar from "./sidebar"
 
 export default function AppLayout() {
   const {
-    state: { isCollapsed, panelGroupApi },
-    actions: { setPanelGroupApi },
+    state: { isCollapsed },
+    actions: { setPanelGroupApi, collapseSidebar, expandSidebar },
   } = useSidebar()
   const activeTabId = useActiveTabId()
-  const initialCollapsedRef = useRef(isCollapsed)
 
-  // Sync Panel state with Zustand when isCollapsed changes
-  // This handles initial load and sidebar button clicks (not onCollapse callbacks)
-  useEffect(() => {
-    if (panelGroupApi) {
-      isCollapsed ? panelGroupApi.collapsePanel(0) : panelGroupApi.expandPanel(0)
+  const handleCollapsed = (collapsed: boolean) => {
+    if (collapsed) {
+      collapseSidebar()
+    } else {
+      expandSidebar()
     }
-  }, [isCollapsed, panelGroupApi])
-
-  const handleCollapsed = () => {
-    // onCollapse fires when user manually drags the panel divider to collapse/expand
-    // We don't update state here - Zustand is the source of truth, updated via sidebar buttons
-    // The useEffect above syncs the Panel with Zustand state
   }
 
   const handlePanelGroupRef = useCallback(setPanelGroupApi, [])
@@ -44,7 +38,7 @@ export default function AppLayout() {
             defaultSize="275px"
             minSize="275px"
             collapsedSize="50px"
-            defaultCollapsed={initialCollapsedRef.current}
+            defaultCollapsed={isCollapsed}
             onCollapse={handleCollapsed}
             className="overflow-hidden"
           >
