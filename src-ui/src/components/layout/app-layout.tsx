@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react"
+import { useCallback, useEffect, useRef } from "react"
 import { Panel, PanelGroup, ResizeHandle } from "@jeremy-boschen/react-adjustable-panels"
 
 import RequestWorkspace from "@/components/request/request-workspace"
@@ -12,10 +12,11 @@ import Sidebar from "./sidebar"
 export default function AppLayout() {
   const {
     state: { isCollapsed, panelGroupApi },
-    actions: { setPanelGroupApi, collapseSidebar, expandSidebar },
+    actions: { setPanelGroupApi },
   } = useSidebar()
   console.log("[AppLayout] render, isCollapsed:", isCollapsed)
   const activeTabId = useActiveTabId()
+  const initialCollapsedRef = useRef(isCollapsed)
 
   // Sync Panel state with Zustand when isCollapsed changes
   // This handles initial load and sidebar button clicks (not onCollapse callbacks)
@@ -53,6 +54,7 @@ export default function AppLayout() {
             defaultSize="275px"
             minSize="275px"
             collapsedSize="50px"
+            defaultCollapsed={initialCollapsedRef.current}
             onCollapse={handleCollapsed}
             className="overflow-hidden"
           >
