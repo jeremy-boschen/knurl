@@ -100,6 +100,33 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
 
   const [, startTransition] = useTransition()
 
+  // Form item reordering handlers
+  const handleFormItemMoveUp = useCallback(
+    (itemId: string) => {
+      const ids = Object.keys(body.formData ?? {})
+      const index = ids.indexOf(itemId)
+      if (index > 0) {
+        const newIds = [...ids]
+        ;[newIds[index - 1], newIds[index]] = [newIds[index], newIds[index - 1]]
+        actions.reorderFormItems(newIds)
+      }
+    },
+    [body.formData, actions],
+  )
+
+  const handleFormItemMoveDown = useCallback(
+    (itemId: string) => {
+      const ids = Object.keys(body.formData ?? {})
+      const index = ids.indexOf(itemId)
+      if (index < ids.length - 1) {
+        const newIds = [...ids]
+        ;[newIds[index], newIds[index + 1]] = [newIds[index + 1], newIds[index]]
+        actions.reorderFormItems(newIds)
+      }
+    },
+    [body.formData, actions],
+  )
+
   // Optimistic updates for instant feedback
   const [optimisticBody, updateBodyOptimistic] = useOptimistic(body, (state, changes: Record<string, unknown>) => ({
     ...state,
@@ -326,65 +353,73 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
                 }}
                 data-test-id="request-body-panel:form-section"
               >
-                {Object.values(body.formData ?? {}).map((item) => (
-                  <FieldRow
-                    key={item.id}
-                    enabled={item.enabled}
-                    onEnabledChange={(enabled) => actions.updateFormItem(item.id, { enabled })}
-                    nameValue={item.key}
-                    onNameChange={(key) => actions.updateFormItem(item.id, { key })}
-                    valueSlot={
-                      item.kind === "file" ? (
-                        <FileInput
-                          fileName={item.fileName ?? ""}
-                          contentType={item.contentType ?? ""}
-                          onFileChange={(path, name, mimeType) => {
-                            const detected = mimeType ?? guessContentTypeByExt(name)
-                            actions.updateFormItem(item.id, {
-                              kind: "file",
-                              fileName: name,
-                              filePath: path,
-                              contentType: detected,
-                              value: "",
-                            })
-                          }}
-                          onContentTypeChange={(ct) => actions.updateFormItem(item.id, { contentType: ct })}
-                          onClear={() =>
-                            actions.updateFormItem(item.id, {
-                              kind: "file",
-                              fileName: "",
-                              filePath: undefined,
-                              contentType: "",
-                              value: "",
-                            })
-                          }
-                          data-test-id={`request-body-panel:form-file-input:${item.id}`}
-                        />
-                      ) : (
-                        <Input
-                          type={item.secure ? "password" : "text"}
-                          placeholder="Value"
-                          value={item.value}
-                          onChange={(e) => actions.updateFormItem(item.id, { value: e.target.value })}
-                          className={cn(
-                            "font-mono",
-                            original?.formData?.[item.id]?.value !== body?.formData?.[item.id]?.value &&
-                              "unsaved-changes",
-                          )}
-                          data-test-id={`request-body-panel:form-value-input:${item.id}`}
-                        />
-                      )
-                    }
-                    onDelete={() => actions.removeFormItem(item.id)}
-                    secure={item.kind === "text" ? item.secure : undefined}
-                    onSecureChange={
-                      item.kind === "text" ? (secure) => actions.updateFormItem(item.id, { secure }) : undefined
-                    }
-                    hasUnsavedEnabled={original?.formData?.[item.id]?.enabled !== body?.formData?.[item.id]?.enabled}
-                    hasUnsavedName={original?.formData?.[item.id]?.key !== body?.formData?.[item.id]?.key}
-                    hasUnsavedSecure={original?.formData?.[item.id]?.secure !== body?.formData?.[item.id]?.secure}
-                  />
-                ))}
+                {Object.values(body.formData ?? {}).map((item) => {
+                  const itemIds = Object.keys(body.formData ?? {})
+                  const itemIndex = itemIds.indexOf(item.id)
+                  return (
+                    <FieldRow
+                      key={item.id}
+                      enabled={item.enabled}
+                      onEnabledChange={(enabled) => actions.updateFormItem(item.id, { enabled })}
+                      nameValue={item.key}
+                      onNameChange={(key) => actions.updateFormItem(item.id, { key })}
+                      valueSlot={
+                        item.kind === "file" ? (
+                          <FileInput
+                            fileName={item.fileName ?? ""}
+                            contentType={item.contentType ?? ""}
+                            onFileChange={(path, name, mimeType) => {
+                              const detected = mimeType ?? guessContentTypeByExt(name)
+                              actions.updateFormItem(item.id, {
+                                kind: "file",
+                                fileName: name,
+                                filePath: path,
+                                contentType: detected,
+                                value: "",
+                              })
+                            }}
+                            onContentTypeChange={(ct) => actions.updateFormItem(item.id, { contentType: ct })}
+                            onClear={() =>
+                              actions.updateFormItem(item.id, {
+                                kind: "file",
+                                fileName: "",
+                                filePath: undefined,
+                                contentType: "",
+                                value: "",
+                              })
+                            }
+                            data-test-id={`request-body-panel:form-file-input:${item.id}`}
+                          />
+                        ) : (
+                          <Input
+                            type={item.secure ? "password" : "text"}
+                            placeholder="Value"
+                            value={item.value}
+                            onChange={(e) => actions.updateFormItem(item.id, { value: e.target.value })}
+                            className={cn(
+                              "font-mono",
+                              original?.formData?.[item.id]?.value !== body?.formData?.[item.id]?.value &&
+                                "unsaved-changes",
+                            )}
+                            data-test-id={`request-body-panel:form-value-input:${item.id}`}
+                          />
+                        )
+                      }
+                      onDelete={() => actions.removeFormItem(item.id)}
+                      secure={item.kind === "text" ? item.secure : undefined}
+                      onSecureChange={
+                        item.kind === "text" ? (secure) => actions.updateFormItem(item.id, { secure }) : undefined
+                      }
+                      onMoveUp={() => handleFormItemMoveUp(item.id)}
+                      onMoveDown={() => handleFormItemMoveDown(item.id)}
+                      canMoveUp={itemIndex > 0}
+                      canMoveDown={itemIndex < itemIds.length - 1}
+                      hasUnsavedEnabled={original?.formData?.[item.id]?.enabled !== body?.formData?.[item.id]?.enabled}
+                      hasUnsavedName={original?.formData?.[item.id]?.key !== body?.formData?.[item.id]?.key}
+                      hasUnsavedSecure={original?.formData?.[item.id]?.secure !== body?.formData?.[item.id]?.secure}
+                    />
+                  )
+                })}
 
                 {Object.keys(body.formData ?? {}).length === 0 && (
                   <EmptyState message="No form items added yet. Click 'Add Form Item' to get started." />

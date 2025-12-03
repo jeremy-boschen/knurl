@@ -692,6 +692,7 @@ type RequestBodyActions = {
   updateFormItem: (id: string, updates: Partial<FormField>) => void
   removeFormItem: (id: string) => void
   addFormItem: () => void
+  reorderFormItems: (orderedIds: string[]) => void
   formatContent: () => Promise<void>
 }
 
@@ -727,6 +728,8 @@ export const useRequestBody = (tabId: string): HookResult<RequestBodyState, Requ
           zFormField.parse({ id }),
         )
       },
+      reorderFormItems: (orderedIds: string[]) =>
+        collectionsApi().reorderFormItems(activeTab.collectionId, activeTab.requestId, orderedIds),
       formatContent: async () => {
         const formatted = await formatWithPrettier(request.body.content ?? "", request.body.language ?? "text")
         void collectionsApi().updateRequestBody(activeTab.collectionId, activeTab.requestId, {

@@ -286,4 +286,9 @@ export interface CollectionsApi extends CollectionsIndexApi, EnvironmentsApi {
    * Reorder cookie parameters within a request.
    */
   reorderCookieParams(collectionId: string, requestId: string, orderedIds: string[]): void
+
+  /**
+   * Reorder form fields within a request body.
+   */
+  reorderFormItems(collectionId: string, requestId: string, orderedIds: string[]): void
 }

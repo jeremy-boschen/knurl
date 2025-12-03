@@ -555,5 +555,92 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         }
       })
     },
+
+    reorderPathParams(collectionId: string, requestId: string, orderedIds: string[]): void {
+      assertCollectionLoaded(collectionId)
+
+      set((app) => {
+        const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
+        const patch = ensureParamPatch(request, "pathParams")
+        const reorderedPathParams: Record<string, RequestPathParam> = {}
+        for (const id of orderedIds) {
+          const param = patch[id] ?? request.pathParams[id]
+          assert(param, `Path parameter ${id} not found during reorder`)
+          reorderedPathParams[id] = param
+        }
+        request.patch.pathParams = reorderedPathParams
+        request.updated += 1
+      })
+    },
+
+    reorderQueryParams(collectionId: string, requestId: string, orderedIds: string[]): void {
+      assertCollectionLoaded(collectionId)
+
+      set((app) => {
+        const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
+        const patch = ensureParamPatch(request, "queryParams")
+        const reorderedQueryParams: Record<string, RequestQueryParam> = {}
+        for (const id of orderedIds) {
+          const param = patch[id] ?? request.queryParams[id]
+          assert(param, `Query parameter ${id} not found during reorder`)
+          reorderedQueryParams[id] = param
+        }
+        request.patch.queryParams = reorderedQueryParams
+        request.updated += 1
+      })
+    },
+
+    reorderHeaders(collectionId: string, requestId: string, orderedIds: string[]): void {
+      assertCollectionLoaded(collectionId)
+
+      set((app) => {
+        const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
+        const patch = ensureParamPatch(request, "headers")
+        const reorderedHeaders: Record<string, RequestHeader> = {}
+        for (const id of orderedIds) {
+          const header = patch[id] ?? request.headers[id]
+          assert(header, `Header ${id} not found during reorder`)
+          reorderedHeaders[id] = header
+        }
+        request.patch.headers = reorderedHeaders
+        request.updated += 1
+      })
+    },
+
+    reorderCookieParams(collectionId: string, requestId: string, orderedIds: string[]): void {
+      assertCollectionLoaded(collectionId)
+
+      set((app) => {
+        const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
+        const patch = ensureParamPatch(request, "cookieParams")
+        const reorderedCookieParams: Record<string, RequestCookieParam> = {}
+        for (const id of orderedIds) {
+          const param = patch[id] ?? request.cookieParams[id]
+          assert(param, `Cookie parameter ${id} not found during reorder`)
+          reorderedCookieParams[id] = param
+        }
+        request.patch.cookieParams = reorderedCookieParams
+        request.updated += 1
+      })
+    },
+
+    reorderFormItems(collectionId: string, requestId: string, orderedIds: string[]): void {
+      assertCollectionLoaded(collectionId)
+
+      set((app) => {
+        const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
+        const patch = ensureRequestPatch(request)
+        const bodyPatch = ensureObjectPatch(request, patch, "body")
+        const formDataPatch = ensureObjectPatch(request, bodyPatch, "formData")
+        const reorderedFormItems: Record<string, FormField> = {}
+        for (const id of orderedIds) {
+          const item = formDataPatch[id] ?? request.body.formData?.[id]
+          assert(item, `Form item ${id} not found during reorder`)
+          reorderedFormItems[id] = item
+        }
+        bodyPatch.formData = reorderedFormItems
+        request.updated += 1
+      })
+    },
   }
 }
