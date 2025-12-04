@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 import { MaximizeIcon, MinusIcon, XIcon, SquareIcon } from "lucide-react"
 
@@ -13,12 +13,14 @@ export function WindowControlDropdownMenuContent({
 }) {
   const [isMaximized, setIsMaximized] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
+  const isLoadedRef = useRef(false)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const updateWindowState = async () => {
       const window = await getCurrentWindow()
       setIsMaximized(await window.isMaximized())
       setIsMinimized(await window.isMinimized())
+      isLoadedRef.current = true
     }
 
     updateWindowState()
@@ -49,7 +51,7 @@ export function WindowControlDropdownMenuContent({
     getCurrentWindow().close()
   }
 
-  const canRestore = isMaximized || isMinimized
+  const canRestore = isLoadedRef.current && (isMaximized || isMinimized)
 
   return (
     <DropdownMenuContent align={align} alignOffset={alignOffset} className="w-40">
