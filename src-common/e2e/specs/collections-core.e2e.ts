@@ -137,6 +137,13 @@ describe("[CRITICAL] Collections Management & Storage", () => {
 
       // Step 2: Create scratch request via title bar
       await logTestTime("Collection Flow - start scratch request (title bar)")
+      await browser.waitUntil(
+        async () => {
+          const btn = await $('[data-test-id="titlebar:new-request-button"]')
+          return await btn.isDisplayed().catch(() => false)
+        },
+        { timeout: 5000 },
+      )
       const scratchTabKey = await openNewRequestViaUI()
       await waitForRequestEditor()
       await logTestTime("Collection Flow - request editor ready")
