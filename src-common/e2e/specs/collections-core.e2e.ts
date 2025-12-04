@@ -135,12 +135,15 @@ describe("[CRITICAL] Collections Management & Storage", () => {
       await collectionRow.waitForDisplayed({ timeout: 10000 })
       await logTestTime("Collection Flow - collection created and displayed")
 
-      // Step 2: Create scratch request via title bar
-      await logTestTime("Collection Flow - start scratch request (title bar)")
+      // Step 2: Create scratch request via title bar or tab bar
+      await logTestTime("Collection Flow - start scratch request")
       await browser.waitUntil(
         async () => {
-          const btn = await $('[data-test-id="titlebar:new-request-button"]')
-          return await btn.isDisplayed().catch(() => false)
+          const titleBtn = await $('[data-test-id="titlebar:new-request-button"]')
+          const tabBarBtn = await $('[data-test-id="request-tab-bar:new-request-button"]')
+          const titleExists = await titleBtn.isDisplayed().catch(() => false)
+          const tabBarExists = await tabBarBtn.isDisplayed().catch(() => false)
+          return titleExists || tabBarExists
         },
         { timeout: 5000 },
       )
