@@ -101,15 +101,15 @@ files.forEach(file => {
 // Generate merged reports
 try {
   // Determine reporters from env or default
-  const requestedReporters = process.env.COVERAGE_REPORTERS 
+  const requestedReporters = process.env.COVERAGE_REPORTERS
     ? process.env.COVERAGE_REPORTERS.split(',').map(r => r.trim())
     : ['json', 'json-summary', 'lcov', 'text', 'text-summary', 'html']
 
   const reporter = createReporter()
   reporter.addAll(requestedReporters)
 
-  const mergedCoveragePath = path.join(projectRoot, 'coverage', 'merged')
-  reporter.write(normalizedMap)
+  const coverageDir = path.join(projectRoot, 'coverage')
+  reporter.write(normalizedMap, coverageDir)
 
   console.log(`\n✓ Generated merged coverage report`)
   console.log(`  Reports: ${requestedReporters.join(', ')}`)
