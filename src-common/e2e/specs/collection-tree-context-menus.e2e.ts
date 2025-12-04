@@ -2,7 +2,7 @@ import { expect } from "@wdio/globals"
 
 import { clickByTestId, createCollection, ensureWorkspaceReady, openCollectionMenu, resetOverlays } from "../support/ui"
 
-describe("[SUPPLEMENTAL] Collection Tree Context Menus", () => {
+describe("Collection Tree Context Menus", () => {
   const state = {
     collectionIds: [] as string[],
   }
@@ -77,6 +77,50 @@ describe("[SUPPLEMENTAL] Collection Tree Context Menus", () => {
       const col2Index = afterMoveOrder.indexOf(col2)
       // col1 should now be after col2
       expect(col2Index).toBe(col1Index - 1)
+    })
+  })
+
+  describe("Collection Menu - Critical Operations", () => {
+    it("[CRITICAL] deletes a collection", async () => {
+      const collectionId = await createCollection(`Delete Test ${Date.now()}`)
+      state.collectionIds.push(collectionId)
+
+      const beforeDelete = await getCollectionOrder()
+      expect(beforeDelete).toContain(collectionId)
+
+      await openCollectionMenu(collectionId)
+      await browser.pause(200)
+      await clickByTestId(`collection-menu:item:delete:${collectionId}`)
+
+      const deleteDialog = await browser.$("[data-test-id='delete-dialog']")
+      await deleteDialog.waitForDisplayed()
+      await clickByTestId("delete-dialog:confirm-button")
+
+      await browser.pause(300)
+      const afterDelete = await getCollectionOrder()
+      expect(afterDelete).not.toContain(collectionId)
+    })
+
+    it("[CRITICAL] renames a collection", async () => {
+      const collectionId = await createCollection(`Rename Test ${Date.now()}`)
+      state.collectionIds.push(collectionId)
+
+      await openCollectionMenu(collectionId)
+      await browser.pause(200)
+      await clickByTestId(`collection-menu:item:rename:${collectionId}`)
+
+      const renameDialog = await browser.$("[data-test-id='rename-dialog']")
+      await renameDialog.waitForDisplayed()
+
+      const input = await browser.$("[data-test-id='rename-dialog:name-input']")
+      await input.clearValue()
+      await input.setValue("Renamed Collection")
+      await clickByTestId("rename-dialog:confirm-button")
+
+      await browser.pause(300)
+      // Verify collection still exists after rename
+      const order = await getCollectionOrder()
+      expect(order).toContain(collectionId)
     })
   })
 })

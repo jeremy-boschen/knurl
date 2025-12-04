@@ -123,6 +123,14 @@ describe("[CRITICAL] Collections Management & Storage", () => {
 
       // Step 1: Create collection
       await logTestTime("Collection Flow - start create collection")
+
+      // Capture existing collection IDs before creation
+      const beforeIds = await browser.execute(() => {
+        return Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'))
+          .map((el) => el.getAttribute("data-test-id"))
+          .filter((id): id is string => Boolean(id))
+      })
+
       await clickVisibleNewCollectionButton()
       await getElementByTestId("new-collection-dialog")
       await setInputText("new-collection-dialog:name-input", collectionName)
@@ -130,13 +138,43 @@ describe("[CRITICAL] Collections Management & Storage", () => {
       await waitForTestIdToDisappear("new-collection-dialog")
       await logTestTime("Collection Flow - new collection dialog closed")
 
-      const collectionId = await waitForCollectionIdByName(collectionName)
+      // Wait for the new collection row to appear
+      const newTestId = await browser.waitUntil(
+        async () => {
+          const ids = await browser.execute(() => {
+            return Array.from(
+              document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'),
+            )
+              .map((el) => el.getAttribute("data-test-id"))
+              .filter((id): id is string => Boolean(id))
+          })
+          const diff = ids.filter((id) => !beforeIds.includes(id))
+          return diff[0] ?? null
+        },
+        {
+          timeout: 20000,
+          interval: 150,
+          timeoutMsg: "New collection row did not appear in sidebar",
+        },
+      )
+
+      const collectionId = newTestId.replace("collection-tree:collection-row:", "")
       const collectionRow = await getElementByTestId(`collection-tree:collection-row:${collectionId}`)
       await collectionRow.waitForDisplayed({ timeout: 10000 })
       await logTestTime("Collection Flow - collection created and displayed")
 
-      // Step 2: Create scratch request via title bar
-      await logTestTime("Collection Flow - start scratch request (title bar)")
+      // Step 2: Create scratch request via title bar or tab bar
+      await logTestTime("Collection Flow - start scratch request")
+      await browser.waitUntil(
+        async () => {
+          const titleBtn = await $('[data-test-id="titlebar:new-request-button"]')
+          const tabBarBtn = await $('[data-test-id="request-tab-bar:new-request-button"]')
+          const titleExists = await titleBtn.isDisplayed().catch(() => false)
+          const tabBarExists = await tabBarBtn.isDisplayed().catch(() => false)
+          return titleExists || tabBarExists
+        },
+        { timeout: 5000 },
+      )
       const scratchTabKey = await openNewRequestViaUI()
       await waitForRequestEditor()
       await logTestTime("Collection Flow - request editor ready")
