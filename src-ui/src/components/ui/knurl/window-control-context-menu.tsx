@@ -2,13 +2,15 @@ import { useEffect, useState } from "react"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 import { MaximizeIcon, MinusIcon, XIcon, SquareIcon } from "lucide-react"
 
-import {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
+import { DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 
-export function WindowControlDropdownMenuContent() {
+export function WindowControlDropdownMenuContent({
+  align,
+  alignOffset,
+}: {
+  align?: "start" | "center" | "end"
+  alignOffset?: number
+}) {
   const [isMaximized, setIsMaximized] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
 
@@ -50,7 +52,7 @@ export function WindowControlDropdownMenuContent() {
   const canRestore = isMaximized || isMinimized
 
   return (
-    <DropdownMenuContent className="w-40">
+    <DropdownMenuContent align={align} alignOffset={alignOffset} className="w-40">
       <DropdownMenuItem onClick={handleRestore} disabled={!canRestore} data-action-id="restore">
         <SquareIcon className="h-4 w-4" />
         Restore
