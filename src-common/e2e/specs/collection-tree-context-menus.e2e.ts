@@ -28,7 +28,7 @@ describe("Collection Tree Context Menus", () => {
   })
 
   describe("Collection Menu - Move Up/Down", () => {
-    it("[SUPPLEMENTAL] moves a collection up in the list", async () => {
+    it("moves a collection up in the list", async () => {
       const col1 = await createCollection(`Collection 1 ${Date.now()}`)
       const col2 = await createCollection(`Collection 2 ${Date.now()}`)
       const col3 = await createCollection(`Collection 3 ${Date.now()}`)
@@ -55,7 +55,7 @@ describe("Collection Tree Context Menus", () => {
       expect(col2Index).toBe(col3Index + 1)
     })
 
-    it("[SUPPLEMENTAL] moves a collection down in the list", async () => {
+    it("moves a collection down in the list", async () => {
       const col1 = await createCollection(`Collection A ${Date.now()}`)
       const col2 = await createCollection(`Collection B ${Date.now()}`)
       const col3 = await createCollection(`Collection C ${Date.now()}`)
