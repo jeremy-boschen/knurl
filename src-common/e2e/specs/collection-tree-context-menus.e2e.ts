@@ -1,6 +1,13 @@
 import { expect } from "@wdio/globals"
 
-import { clickByTestId, createCollection, ensureWorkspaceReady, openCollectionMenu, resetOverlays } from "../support/ui"
+import {
+  clickByTestId,
+  createCollection,
+  ensureWorkspaceReady,
+  openCollectionMenu,
+  resetOverlays,
+  setInputText,
+} from "../support/ui"
 
 describe("Collection Tree Context Menus", () => {
   const state = {
@@ -112,9 +119,8 @@ describe("Collection Tree Context Menus", () => {
       const renameDialog = await browser.$("[data-test-id='rename-dialog']")
       await renameDialog.waitForDisplayed()
 
-      const input = await browser.$("[data-test-id='rename-dialog:name-input']")
-      await input.clearValue()
-      await input.setValue("Renamed Collection")
+      // Use the helper function to properly set input text (handles React state)
+      await setInputText("rename-dialog:name-input", "Renamed Collection")
       await clickByTestId("rename-dialog:confirm-button")
 
       await browser.pause(300)

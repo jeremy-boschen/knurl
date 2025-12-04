@@ -8,7 +8,6 @@ import {
   openCollectionMenu,
   openNewRequestViaUI,
   setInputText,
-  waitForCollectionIdByName,
   waitForRequestEditor,
   waitForTestIdToDisappear,
 } from "../support/ui"
@@ -43,6 +42,13 @@ describe("Collection And Request Flow", () => {
   })
 
   it("creates a collection from the sidebar", async () => {
+    // Capture existing collection IDs before creation
+    const beforeIds = await browser.execute(() => {
+      return Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'))
+        .map((el) => el.getAttribute("data-test-id"))
+        .filter((id): id is string => Boolean(id))
+    })
+
     await clickVisibleNewCollectionButton()
 
     await getElementByTestId("new-collection-dialog")
@@ -50,7 +56,25 @@ describe("Collection And Request Flow", () => {
     await clickByTestId("new-collection-dialog:create-button")
     await waitForTestIdToDisappear("new-collection-dialog")
 
-    const collectionId = await waitForCollectionIdByName(state.collectionName)
+    // Wait for the new collection row to appear
+    const newTestId = await browser.waitUntil(
+      async () => {
+        const ids = await browser.execute(() => {
+          return Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'))
+            .map((el) => el.getAttribute("data-test-id"))
+            .filter((id): id is string => Boolean(id))
+        })
+        const diff = ids.filter((id) => !beforeIds.includes(id))
+        return diff[0] ?? null
+      },
+      {
+        timeout: 20000,
+        interval: 150,
+        timeoutMsg: "New collection row did not appear in sidebar",
+      },
+    )
+
+    const collectionId = newTestId.replace("collection-tree:collection-row:", "")
     state.collectionId = collectionId
 
     const collectionRow = await getElementByTestId(`collection-tree:collection-row:${collectionId}`)
@@ -68,7 +92,12 @@ describe("Collection And Request Flow", () => {
     await openCollectionMenu(state.collectionId)
     await browser.pause(200) // Let menu appear
     await clickByTestId(`collection-menu:item:request:new:${state.collectionId}`)
-    await browser.pause(300) // Let request be created
+
+    // Wait for create request dialog and fill it in
+    await getElementByTestId("create-request-dialog", 5000)
+    await setInputText("create-request-dialog:name-input", "New Request from Menu")
+    await clickByTestId("create-request-dialog:confirm-button")
+    await browser.pause(300) // Let request be created and tab open
 
     const { requestId, tabKey } = await waitForNewCollectionRequest(state.collectionId, existingIds)
     state.collectionRequestId = requestId
@@ -160,7 +189,7 @@ describe("Collection And Request Flow", () => {
 async function getOpenRequestIds(): Promise<Set<string>> {
   const ids = await browser.execute(() => {
     const tabs = Array.from(document.querySelectorAll('[data-test-id^="request-tab:"]'))
-    return tabs.map((tab) => tab.getAttribute("data-tab-id")).filter(Boolean) as string[]
+    return tabs.map((tab) => tab.getAttribute("data-request-id")).filter(Boolean) as string[]
   })
   return new Set(ids)
 }
@@ -177,18 +206,25 @@ async function waitForNewCollectionRequest(
   let result: { requestId: string; tabKey: string } | null = null
   await browser.waitUntil(
     async () => {
-      const candidate = await browser.execute((knownIds: string[]) => {
-        // Wait for any new request tab to appear
-        const tabs = Array.from(document.querySelectorAll('[data-test-id^="request-tab:"]'))
-        for (const tab of tabs) {
-          const tabId = tab.getAttribute("data-tab-key")
-          const reqId = tab.getAttribute("data-tab-id")
-          if (reqId && !knownIds.includes(reqId) && tabId) {
-            return { requestId: reqId, tabKey: tabId }
+      const candidate = await browser.execute(
+        (targetCollectionId: string, knownIds: string[]) => {
+          // Wait for any new request tab to appear
+          const tabs = Array.from(document.querySelectorAll('[data-test-id^="request-tab:"]'))
+          console.log(`[DEBUG] Found ${tabs.length} tabs, looking for collection ${targetCollectionId}`)
+          for (const tab of tabs) {
+            const collId = tab.getAttribute("data-collection-id")
+            const reqId = tab.getAttribute("data-request-id")
+            const tabKey = tab.getAttribute("data-tab-key")
+            console.log(`[DEBUG] Tab: collId=${collId}, reqId=${reqId}, tabKey=${tabKey}`)
+            if (collId === targetCollectionId && reqId && !knownIds.includes(reqId) && tabKey) {
+              return { requestId: reqId, tabKey }
+            }
           }
-        }
-        return null
-      }, Array.from(knownRequestIds))
+          return null
+        },
+        collectionId,
+        Array.from(knownRequestIds),
+      )
 
       if (candidate) {
         result = candidate
@@ -220,18 +256,23 @@ async function waitForNewScratchRequest(
   let result: { requestId: string; tabKey: string } | null = null
   await browser.waitUntil(
     async () => {
-      const candidate = await browser.execute((knownIds: string[]) => {
-        // Wait for any new request tab to appear
-        const tabs = Array.from(document.querySelectorAll('[data-test-id^="request-tab:"]'))
-        for (const tab of tabs) {
-          const tabId = tab.getAttribute("data-tab-key")
-          const reqId = tab.getAttribute("data-tab-id")
-          if (reqId && !knownIds.includes(reqId) && tabId) {
-            return { requestId: reqId, tabKey: tabId }
+      const candidate = await browser.execute(
+        (scratchId: string, knownIds: string[]) => {
+          // Wait for any new request tab to appear
+          const tabs = Array.from(document.querySelectorAll('[data-test-id^="request-tab:"]'))
+          for (const tab of tabs) {
+            const collId = tab.getAttribute("data-collection-id")
+            const reqId = tab.getAttribute("data-request-id")
+            const tabKey = tab.getAttribute("data-tab-key")
+            if (collId === scratchId && reqId && !knownIds.includes(reqId) && tabKey) {
+              return { requestId: reqId, tabKey }
+            }
           }
-        }
-        return null
-      }, Array.from(knownRequestIds))
+          return null
+        },
+        SCRATCH_COLLECTION_ID,
+        Array.from(knownRequestIds),
+      )
 
       if (candidate) {
         result = candidate
@@ -263,19 +304,11 @@ async function waitForTabSnapshot(tabKey: string, timeout = 10000): Promise<Open
       const tab = await $(`[data-test-id="request-tab:${tabKey}"]`)
       const exists = await tab.isDisplayed().catch(() => false)
       if (exists) {
-        const requestId = await tab.getAttribute("data-tab-id")
-        if (!requestId) {
+        const requestId = await tab.getAttribute("data-request-id")
+        const collectionId = await tab.getAttribute("data-collection-id")
+        if (!requestId || !collectionId) {
           return false
         }
-
-        // For collection ID, we need to look it up from the request tree
-        // If the request isn't in the tree yet, default to scratch
-        const collectionId = await browser.execute((reqId: string) => {
-          const selector = `[data-test-id="collection-tree:request-row:${reqId}"]`
-          const element = document.querySelector(selector)
-          // If not in tree yet, it's likely in the scratch collection
-          return element?.getAttribute("data-collection-id") || "scratch"
-        }, requestId)
 
         if (requestId && collectionId) {
           resolved = { tabKey, requestId, collectionId }
