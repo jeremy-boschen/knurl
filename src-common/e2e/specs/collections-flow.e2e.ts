@@ -60,9 +60,7 @@ describe("Collection And Request Flow", () => {
     const newTestId = await browser.waitUntil(
       async () => {
         const ids = await browser.execute(() => {
-          return Array.from(
-            document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'),
-          )
+          return Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'))
             .map((el) => el.getAttribute("data-test-id"))
             .filter((id): id is string => Boolean(id))
         })
@@ -253,19 +251,23 @@ async function waitForNewScratchRequest(
   let result: { requestId: string; tabKey: string } | null = null
   await browser.waitUntil(
     async () => {
-      const candidate = await browser.execute((scratchId: string, knownIds: string[]) => {
-        // Wait for any new request tab to appear
-        const tabs = Array.from(document.querySelectorAll('[data-test-id^="request-tab:"]'))
-        for (const tab of tabs) {
-          const collId = tab.getAttribute("data-collection-id")
-          const reqId = tab.getAttribute("data-request-id")
-          const tabKey = tab.getAttribute("data-tab-key")
-          if (collId === scratchId && reqId && !knownIds.includes(reqId) && tabKey) {
-            return { requestId: reqId, tabKey }
+      const candidate = await browser.execute(
+        (scratchId: string, knownIds: string[]) => {
+          // Wait for any new request tab to appear
+          const tabs = Array.from(document.querySelectorAll('[data-test-id^="request-tab:"]'))
+          for (const tab of tabs) {
+            const collId = tab.getAttribute("data-collection-id")
+            const reqId = tab.getAttribute("data-request-id")
+            const tabKey = tab.getAttribute("data-tab-key")
+            if (collId === scratchId && reqId && !knownIds.includes(reqId) && tabKey) {
+              return { requestId: reqId, tabKey }
+            }
           }
-        }
-        return null
-      }, SCRATCH_COLLECTION_ID, Array.from(knownRequestIds))
+          return null
+        },
+        SCRATCH_COLLECTION_ID,
+        Array.from(knownRequestIds),
+      )
 
       if (candidate) {
         result = candidate
