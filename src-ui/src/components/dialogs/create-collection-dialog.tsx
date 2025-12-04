@@ -60,7 +60,11 @@ export function CreateCollectionDialog({ open, onConfirm, onCancel }: CreateColl
           <Button variant="outline" onClick={onCancel} data-test-id="create-collection-dialog:cancel-button">
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!name.trim()} data-test-id="create-collection-dialog:confirm-button">
+          <Button
+            onClick={handleConfirm}
+            disabled={!name.trim()}
+            data-test-id="create-collection-dialog:confirm-button"
+          >
             Create
           </Button>
         </DialogFooter>
