@@ -5,21 +5,14 @@ export function RestoreIcon({ className }: { className?: string }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      strokeWidth="1.5"
       className={className}
     >
       <title>Restore</title>
-      <defs>
-        <clipPath id="bottomClip">
-          <rect x="6" y="9" width="10" height="10" />
-        </clipPath>
-      </defs>
-      {/* Top square - drawn first so bottom doesn't hide its lines */}
-      <rect x="8" y="6" width="10" height="10" rx="1" />
-      {/* Bottom square - clipped to not overlap top square's lines */}
-      <rect x="6" y="9" width="10" height="10" rx="1" clipPath="url(#bottomClip)" />
+      {/* Top-right rectangle (smaller) */}
+      <rect x="9" y="3" width="12" height="8" rx="0.5" />
+      {/* Bottom-left rectangle (larger) */}
+      <rect x="3" y="9" width="12" height="12" rx="0.5" />
     </svg>
   )
 }
