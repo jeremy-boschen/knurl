@@ -173,17 +173,11 @@ export function RequestMenu({ item }: RequestMenuProps) {
 
   return (
     <ContextMenuContent className="w-48">
-      <ContextMenuItem
-        onClick={handleRename}
-        data-test-id={`request-menu:item:rename:${item.requestId}`}
-      >
+      <ContextMenuItem onClick={handleRename} data-test-id={`request-menu:item:rename:${item.requestId}`}>
         <Edit2Icon className="h-4 w-4" />
         Rename
       </ContextMenuItem>
-      <ContextMenuItem
-        onClick={handleDuplicate}
-        data-test-id={`request-menu:item:duplicate:${item.requestId}`}
-      >
+      <ContextMenuItem onClick={handleDuplicate} data-test-id={`request-menu:item:duplicate:${item.requestId}`}>
         <CopyIcon className="h-4 w-4" />
         Duplicate
       </ContextMenuItem>
@@ -208,10 +202,7 @@ export function RequestMenu({ item }: RequestMenuProps) {
         </ContextMenuSubContent>
       </ContextMenuSub>
       <ContextMenuSeparator />
-      <ContextMenuItem
-        onClick={handleCopyAsJson}
-        data-test-id={`request-menu:item:copy-json:${item.requestId}`}
-      >
+      <ContextMenuItem onClick={handleCopyAsJson} data-test-id={`request-menu:item:copy-json:${item.requestId}`}>
         <CopyIcon className="h-4 w-4" />
         Copy as JSON
       </ContextMenuItem>

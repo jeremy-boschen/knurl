@@ -272,10 +272,7 @@ export function FolderMenu({ item }: FolderMenuProps) {
         </ContextMenuSubContent>
       </ContextMenuSub>
       <ContextMenuSeparator />
-      <ContextMenuItem
-        onClick={handleRename}
-        data-test-id={`folder-menu:item:rename:${item.folderId}`}
-      >
+      <ContextMenuItem onClick={handleRename} data-test-id={`folder-menu:item:rename:${item.folderId}`}>
         <Edit2Icon className="h-4 w-4" />
         Rename Folder
       </ContextMenuItem>
