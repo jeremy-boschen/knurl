@@ -15,6 +15,34 @@ vi.mock("@tauri-apps/plugin-opener", () => ({
   openPath: vi.fn(),
 }))
 
+vi.mock("@/components/ui/knurl/dialog", () => {
+  const React = require("react")
+  const Wrap = ({ children, ...rest }: any) => <div role="dialog" {...rest}>{children}</div>
+  return {
+    Dialog: ({ children }: any) => <div>{children}</div>,
+    DialogContent: Wrap,
+    DialogFooter: ({ children }: any) => <div>{children}</div>,
+    DialogHeader: ({ children }: any) => <div>{children}</div>,
+    DialogTitle: ({ children }: any) => <h2>{children}</h2>,
+  }
+})
+
+vi.mock("@/components/ui/alert-dialog", () => {
+  const React = require("react")
+  const Wrap = ({ children, ...rest }: any) => <div role="alertdialog" {...rest}>{children}</div>
+  const Btn = ({ children, onClick, ...rest }: any) => <button onClick={onClick} {...rest}>{children}</button>
+  return {
+    AlertDialog: ({ children }: any) => <div>{children}</div>,
+    AlertDialogContent: Wrap,
+    AlertDialogHeader: ({ children }: any) => <div>{children}</div>,
+    AlertDialogFooter: ({ children }: any) => <div>{children}</div>,
+    AlertDialogTitle: ({ children }: any) => <h3>{children}</h3>,
+    AlertDialogDescription: ({ children }: any) => <p>{children}</p>,
+    AlertDialogAction: Btn,
+    AlertDialogCancel: Btn,
+  }
+})
+
 describe("DataSection", () => {
   const setAutoSaveRequests = vi.fn()
 
@@ -46,10 +74,6 @@ describe("DataSection", () => {
 
     await user.click(screen.getByRole("button", { name: /Export Key/i }))
     expect(screen.getByText(/Export Encryption Key/i)).toBeInTheDocument()
-
-    // Close the export dialog before opening import
-    const closeBtn = screen.getByRole("button", { name: /close/i })
-    await user.click(closeBtn)
 
     await user.click(screen.getByRole("button", { name: /Import Key/i }))
     expect(screen.getByText(/Import Encryption Key/i)).toBeInTheDocument()
