@@ -1,40 +1,53 @@
+import { useEffect, useState } from "react"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 import { MaximizeIcon, MinusIcon, XIcon, SquareIcon } from "lucide-react"
 
-import {
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-} from "@/components/ui/context-menu"
+import { ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
 
 export function WindowControlContextMenuContent() {
+  const [isMaximized, setIsMaximized] = useState(false)
+  const [isMinimized, setIsMinimized] = useState(false)
+
+  useEffect(() => {
+    const updateWindowState = async () => {
+      const window = await getCurrentWindow()
+      setIsMaximized(await window.isMaximized())
+      setIsMinimized(await window.isMinimized())
+    }
+
+    updateWindowState()
+  }, [])
+
   const handleRestore = async () => {
     const window = await getCurrentWindow()
-    const isMaximized = await window.isMaximized()
-    const isMinimized = await window.isMinimized()
-
     if (isMaximized) {
       await window.unmaximize()
+      setIsMaximized(false)
     } else if (isMinimized) {
       await window.unminimize()
+      setIsMinimized(false)
     }
   }
 
   const handleMinimize = () => {
     getCurrentWindow().minimize()
+    setIsMinimized(true)
   }
 
   const handleMaximize = () => {
     getCurrentWindow().maximize()
+    setIsMaximized(true)
   }
 
   const handleClose = () => {
     getCurrentWindow().close()
   }
 
+  const canRestore = isMaximized || isMinimized
+
   return (
     <ContextMenuContent className="w-40">
-      <ContextMenuItem onClick={handleRestore} data-action-id="restore">
+      <ContextMenuItem onClick={handleRestore} disabled={!canRestore} data-action-id="restore">
         <SquareIcon className="h-4 w-4" />
         Restore
       </ContextMenuItem>
@@ -47,11 +60,7 @@ export function WindowControlContextMenuContent() {
         Maximize
       </ContextMenuItem>
       <ContextMenuSeparator />
-      <ContextMenuItem
-        variant="destructive"
-        onClick={handleClose}
-        data-action-id="close"
-      >
+      <ContextMenuItem variant="destructive" onClick={handleClose} data-action-id="close">
         <XIcon className="h-4 w-4" />
         Close
       </ContextMenuItem>
