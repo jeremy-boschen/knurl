@@ -41,7 +41,7 @@ export function RenameDialog({ open, title, description, name, onConfirm, onCanc
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent data-test-id="rename-dialog">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -57,13 +57,18 @@ export function RenameDialog({ open, title, description, name, onConfirm, onCanc
               }
             }}
             placeholder="Enter new name"
+            data-test-id="rename-dialog:name-input"
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>
+          <Button variant="outline" onClick={onCancel} data-test-id="rename-dialog:cancel-button">
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!newName.trim() || newName === name}>
+          <Button
+            onClick={handleConfirm}
+            disabled={!newName.trim() || newName === name}
+            data-test-id="rename-dialog:confirm-button"
+          >
             Rename
           </Button>
         </DialogFooter>

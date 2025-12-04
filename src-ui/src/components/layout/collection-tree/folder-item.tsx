@@ -36,6 +36,7 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
   return (
     <div>
       <div
+        data-test-id={`collection-tree:folder-row:${folderId}`}
         data-collection-id={collectionId}
         data-folder-id={folderId}
         data-kind="folder"

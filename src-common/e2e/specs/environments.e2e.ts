@@ -5,6 +5,7 @@ import {
   createCollection,
   ensureWorkspaceReady,
   getElementByTestId,
+  openCollectionMenu,
   resetOverlays,
   setInputText,
   waitForActiveRequestTab,
@@ -32,8 +33,7 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
     state.collectionId = await createCollection(`Environment Smoke ${Date.now()}`)
 
     // Create a request in the collection via menu
-    await clickByTestId(`collection-tree:collection-row:${state.collectionId}`)
-    await clickByTestId(`collection-tree:collection-row:menu-button:${state.collectionId}`)
+    await openCollectionMenu(state.collectionId)
     await clickByTestId(`collection-menu:item:request:new:${state.collectionId}`)
 
     // Wait for request editor to appear (this confirms request was created)
@@ -135,7 +135,7 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
   after(async () => {
     await clickByTestId("environment-selector:trigger-button").catch(() => {})
     await resetOverlays()
-    await clickByTestId("collection-tree:collection-row:menu-button:scratch").catch(() => {})
+    await openCollectionMenu("scratch").catch(() => {})
     await browser.refresh()
   })
 

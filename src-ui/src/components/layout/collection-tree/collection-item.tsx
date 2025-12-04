@@ -29,6 +29,7 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
 
   return (
     <div
+      data-test-id={`collection-tree:collection-row:${collectionId}`}
       data-collection-id={collectionId}
       data-kind="collection"
       data-name={collectionName}
@@ -39,6 +40,7 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
       <button
         type="button"
         onClick={handleToggle}
+        data-test-id={`collection-tree:expand-toggle:${collectionId}`}
         className="group flex w-full items-center justify-between rounded p-2 text-sm hover:bg-accent"
         aria-expanded={isOpen}
       >

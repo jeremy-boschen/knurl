@@ -417,7 +417,9 @@ export async function openCollectionMenu(collectionId: string): Promise<void> {
     await row.moveTo()
   } catch {}
   await browser.pause(50)
-  await clickByTestId(`collection-tree:collection-row:menu-button:${collectionId}`)
+  // Right-click to open context menu
+  await row.click({ button: 2 })
+  await browser.pause(200)
 }
 
 export async function selectCollectionRow(collectionId: string): Promise<void> {
