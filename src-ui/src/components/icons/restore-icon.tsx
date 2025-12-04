@@ -11,15 +11,17 @@ export function RestoreIcon({ className }: { className?: string }) {
       className={className}
     >
       <title>Restore</title>
-      <defs>
-        <clipPath id="bottomClip">
-          <rect x="6" y="9" width="10" height="10" />
-        </clipPath>
-      </defs>
-      {/* Top square - drawn first so bottom doesn't hide its lines */}
+      {/* Top square */}
       <rect x="8" y="6" width="10" height="10" rx="1" />
-      {/* Bottom square - clipped to not overlap top square's lines */}
-      <rect x="6" y="9" width="10" height="10" rx="1" clipPath="url(#bottomClip)" />
+      {/* Bottom square - only draw the visible parts */}
+      {/* Left side */}
+      <line x1="6" y1="9" x2="6" y2="19" />
+      {/* Bottom side */}
+      <line x1="6" y1="19" x2="16" y2="19" />
+      {/* Right side */}
+      <line x1="16" y1="19" x2="16" y2="9" />
+      {/* Top side - only the part not covered by top square */}
+      <line x1="16" y1="9" x2="6" y2="9" />
     </svg>
   )
 }
