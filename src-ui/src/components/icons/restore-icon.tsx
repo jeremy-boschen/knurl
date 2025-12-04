@@ -5,23 +5,14 @@ export function RestoreIcon({ className }: { className?: string }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      strokeWidth="1.5"
       className={className}
     >
       <title>Restore</title>
-      {/* Top square */}
-      <rect x="8" y="6" width="10" height="10" rx="1" />
-      {/* Bottom square - only draw the visible parts */}
-      {/* Left side */}
-      <line x1="6" y1="9" x2="6" y2="19" />
-      {/* Bottom side */}
-      <line x1="6" y1="19" x2="16" y2="19" />
-      {/* Right side */}
-      <line x1="16" y1="19" x2="16" y2="9" />
-      {/* Top side - only the part not covered by top square */}
-      <line x1="16" y1="9" x2="6" y2="9" />
+      {/* Top-right rectangle (smaller) */}
+      <rect x="9" y="3" width="12" height="8" rx="0.5" />
+      {/* Bottom-left rectangle (larger) */}
+      <rect x="3" y="9" width="12" height="12" rx="0.5" />
     </svg>
   )
 }
