@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import {useRef, useState} from "react"
 
 import {
   DatabaseIcon,
@@ -11,25 +11,25 @@ import {
   XIcon,
 } from "lucide-react"
 
-import { NewCollectionDialog } from "@/components/collection/new-collection-dialog"
-import { KnurlIcon } from "@/components/icons"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/knurl"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
-import { useSidebar, utilitySheetsApi, useCollectionTree } from "@/state"
-import { CollectionTree, CollectionTreeCollapsed } from "./collection-tree"
-import { ModeToggle } from "./mode-toggle"
+import {NewCollectionDialog} from "@/components/collection/new-collection-dialog"
+import {KnurlIcon} from "@/components/icons"
+import {Button} from "@/components/ui/button"
+import {Input} from "@/components/ui/knurl"
+import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/knurl/tooltip"
+import {useCollectionTree, useSidebar, utilitySheetsApi} from "@/state"
+import {CollectionTree, CollectionTreeCollapsed} from "./collection-tree"
+import {ModeToggle} from "./mode-toggle"
 
 type DialogProps = { action: "new" }
 
 export default function Sidebar() {
   const {
-    state: { isCollapsed },
-    actions: { collapseSidebar, expandSidebar },
+    state: {isCollapsed},
+    actions: {collapseSidebar, expandSidebar},
   } = useSidebar()
   const {
-    state: { searchTerm },
-    actions: { setSearchTerm, clearSearch },
+    state: {searchTerm},
+    actions: {setSearchTerm, clearSearch},
   } = useCollectionTree()
   const searchRef = useRef<HTMLInputElement | null>(null)
   const [dialogProps, setDialogProps] = useState<DialogProps | null>(null)
@@ -37,23 +37,23 @@ export default function Sidebar() {
   const sheetsApi = utilitySheetsApi()
 
   const openImportCollectionDialog = () => {
-    sheetsApi.openSheet({ type: "import" })
+    sheetsApi.openSheet({type: "import"})
   }
 
   const openSettingsDialog = () => {
-    sheetsApi.openSheet({ type: "settings" })
+    sheetsApi.openSheet({type: "settings"})
   }
 
   const openNewCollectionDialog = async () => {
     expandSidebar()
-    setDialogProps({ action: "new" })
+    setDialogProps({action: "new"})
   }
 
   return (
     <aside className="relative flex h-full w-full flex-col bg-background" data-test-id="sidebar">
       {/* Fixed KnurlIcon */}
       <div className="absolute top-2 left-2 flex h-6 w-6 items-center justify-center pointer-events-none z-10">
-        <KnurlIcon className="h-5 w-5" />
+        <KnurlIcon className="h-5 w-5"/>
       </div>
 
       {/* Header */}
@@ -61,10 +61,10 @@ export default function Sidebar() {
         <>
           <header className="flex h-10 flex-row items-center justify-between p-2">
             <div className="flex items-center gap-2">
-              <div className="h-6 w-6" />
+              <div className="h-6 w-6"/>
               <h1 className="text-lg font-semibold text-primary">KNURL</h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -74,7 +74,7 @@ export default function Sidebar() {
                     className="h-8 w-8 p-1 text-primary hover:text-primary"
                     data-test-id="sidebar:import-collection-button"
                   >
-                    <DownloadIcon className="h-8 w-8" />
+                    <DownloadIcon className="h-8 w-8"/>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Import Collection</TooltipContent>
@@ -85,11 +85,11 @@ export default function Sidebar() {
                     variant="ghost"
                     size="sm"
                     className="h-8 w-8 p-1 text-primary hover:text-primary"
-                    onClick={() => setDialogProps({ action: "new" })}
+                    onClick={() => setDialogProps({action: "new"})}
                     data-testid="sidebar-new-collection"
                     data-test-id="sidebar:new-collection-button"
                   >
-                    <PlusIcon className="h-8 w-8" />
+                    <PlusIcon className="h-8 w-8"/>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>New Collection</TooltipContent>
@@ -103,12 +103,12 @@ export default function Sidebar() {
                     onClick={openSettingsDialog}
                     data-test-id="sidebar:settings-button"
                   >
-                    <SettingsIcon className="h-8 w-8" />
+                    <SettingsIcon className="h-8 w-8"/>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Settings</TooltipContent>
               </Tooltip>
-              <ModeToggle />
+              <ModeToggle/>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -118,7 +118,7 @@ export default function Sidebar() {
                     onClick={collapseSidebar}
                     data-test-id="sidebar:collapse-button"
                   >
-                    <PanelLeftCloseIcon className="h-8 w-8" />
+                    <PanelLeftCloseIcon className="h-8 w-8"/>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Collapse Sidebar</TooltipContent>
@@ -126,11 +126,11 @@ export default function Sidebar() {
             </div>
           </header>
           <div className="flex flex-col p-2 bg-sidebar">
-            {dialogProps?.action === "new" && <NewCollectionDialog open={true} onClose={() => setDialogProps(null)} />}
+            {dialogProps?.action === "new" && <NewCollectionDialog open={true} onClose={() => setDialogProps(null)}/>}
             {/* Collections Title */}
             <div className="mb-2 flex items-center">
               <div className="flex h-7 w-7 items-center justify-center">
-                <DatabaseIcon className="h-4 w-4 text-primary" />
+                <DatabaseIcon className="h-4 w-4 text-primary"/>
               </div>
               <h2 className="text-sm font-semibold uppercase tracking-wide">Collections</h2>
             </div>
@@ -155,7 +155,7 @@ export default function Sidebar() {
                 }}
                 className="w-full pl-6 text-sm"
                 ref={searchRef}
-                startAddon={<SearchIcon className="ml-1 h-4 w-4" />}
+                startAddon={<SearchIcon className="ml-1 h-4 w-4"/>}
                 data-test-id="sidebar:search-input"
                 endAddon={
                   searchTerm ? (
@@ -173,7 +173,7 @@ export default function Sidebar() {
                       aria-label="Clear search"
                       data-test-id="sidebar:clear-search-button"
                     >
-                      <XIcon className="h-4 w-4" />
+                      <XIcon className="h-4 w-4"/>
                     </Button>
                   ) : undefined
                 }
@@ -183,7 +183,7 @@ export default function Sidebar() {
         </>
       ) : (
         <header className="flex flex-col items-center justify-center gap-3 p-2">
-          <div className="h-6 w-6" />
+          <div className="h-6 w-6"/>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -193,7 +193,7 @@ export default function Sidebar() {
                 onClick={expandSidebar}
                 data-test-id="sidebar:expand-button"
               >
-                <PanelLeftOpenIcon className="h-8 w-8" />
+                <PanelLeftOpenIcon className="h-8 w-8"/>
               </Button>
             </TooltipTrigger>
             <TooltipContent>Expand Sidebar</TooltipContent>
@@ -202,7 +202,7 @@ export default function Sidebar() {
       )}
 
       <div className="flex-1 overflow-y-auto bg-sidebar">
-        {isCollapsed ? <CollectionTreeCollapsed /> : <CollectionTree />}
+        {isCollapsed ? <CollectionTreeCollapsed/> : <CollectionTree/>}
       </div>
 
       {isCollapsed && (
@@ -217,7 +217,7 @@ export default function Sidebar() {
                 data-testid="sidebar-new-collection"
                 data-test-id="sidebar:new-collection-button-collapsed"
               >
-                <PlusIcon className="h-8 w-8" />
+                <PlusIcon className="h-8 w-8"/>
               </Button>
             </TooltipTrigger>
             <TooltipContent>New Collection</TooltipContent>
@@ -231,7 +231,7 @@ export default function Sidebar() {
                 className="h-8 w-8 p-1 text-primary hover:text-primary"
                 data-test-id="sidebar:import-collection-button-collapsed"
               >
-                <DownloadIcon className="h-8 w-8" />
+                <DownloadIcon className="h-8 w-8"/>
               </Button>
             </TooltipTrigger>
             <TooltipContent>Import Collection</TooltipContent>
@@ -245,12 +245,12 @@ export default function Sidebar() {
                 onClick={openSettingsDialog}
                 data-test-id="sidebar:settings-button-collapsed"
               >
-                <SettingsIcon className="h-8 w-8" />
+                <SettingsIcon className="h-8 w-8"/>
               </Button>
             </TooltipTrigger>
             <TooltipContent>Settings</TooltipContent>
           </Tooltip>
-          <ModeToggle />
+          <ModeToggle/>
         </footer>
       )}
     </aside>

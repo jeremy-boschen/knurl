@@ -1,53 +1,53 @@
-import { Fragment, useMemo, useState } from "react"
+import {Fragment, useMemo, useState} from "react"
 
 import DeleteDialog from "@/components/shared/delete-dialog"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { CollectionMenuContent } from "@/components/ui/knurl/collection-menu"
-import { FolderMenuContent, type FolderMenuPayload } from "@/components/ui/knurl/folder-menu"
+import {Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator} from "@/components/ui/breadcrumb"
+import {Button} from "@/components/ui/button"
+import {DropdownMenu, DropdownMenuTrigger} from "@/components/ui/dropdown-menu"
+import {CollectionMenuContent} from "@/components/ui/knurl/collection-menu"
+import {FolderMenuContent, type FolderMenuPayload} from "@/components/ui/knurl/folder-menu"
 import RenameDialog from "@/components/ui/knurl/rename-dialog"
-import { RequestMenuContent, type RequestMenuPayload } from "@/components/ui/knurl/request-menu"
-import { buildFolderOptions } from "@/lib/collections/folder-options"
-import { isScratchCollection, useCollection, useCollections, useRequestTab } from "@/state"
-import type { CollectionsApi, RequestTabsApi } from "@/types"
-import { RootCollectionFolderId } from "@/types"
+import {RequestMenuContent, type RequestMenuPayload} from "@/components/ui/knurl/request-menu"
+import {buildFolderOptions} from "@/lib/collections/folder-options"
+import {isScratchCollection, useCollection, useCollections, useRequestTab} from "@/state"
+import type {CollectionsApi, RequestTabsApi} from "@/types"
+import {RootCollectionFolderId} from "@/types"
 
 type RenameState =
   | {
-      type: "request"
-      collectionId: string
-      requestId: string
-      currentName: string
-    }
+  type: "request"
+  collectionId: string
+  requestId: string
+  currentName: string
+}
   | {
-      type: "folder"
-      mode: "rename"
-      collectionId: string
-      folderId: string
-      currentName: string
-    }
+  type: "folder"
+  mode: "rename"
+  collectionId: string
+  folderId: string
+  currentName: string
+}
   | {
-      type: "folder"
-      mode: "create"
-      collectionId: string
-      parentId: string | null
-      currentName: ""
-    }
+  type: "folder"
+  mode: "create"
+  collectionId: string
+  parentId: string | null
+  currentName: ""
+}
 
 type DeleteState =
   | {
-      type: "request"
-      collectionId: string
-      requestId: string
-      name: string
-    }
+  type: "request"
+  collectionId: string
+  requestId: string
+  name: string
+}
   | {
-      type: "folder"
-      collectionId: string
-      folderId: string
-      name: string
-    }
+  type: "folder"
+  collectionId: string
+  folderId: string
+  name: string
+}
 
 type LoadedRequestTab = NonNullable<ReturnType<typeof useRequestTab>>
 
@@ -57,10 +57,10 @@ type BreadcrumbsContentProps = {
   requestTabsApi: RequestTabsApi
 }
 
-function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: BreadcrumbsContentProps) {
+function BreadcrumbsContent({tabData, collectionsApi, requestTabsApi}: BreadcrumbsContentProps) {
   const activeTab = tabData.state.activeTab as NonNullable<typeof tabData.state.activeTab>
   const {
-    state: { collection },
+    state: {collection},
   } = useCollection(activeTab.collectionId)
 
   const request = tabData.state.request as NonNullable<typeof tabData.state.request>
@@ -86,7 +86,7 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
   const handleFolderAction = (payload: FolderMenuPayload) => {
     switch (payload.actionId) {
       case "request:new": {
-        requestTabsApi.createRequestTab(payload.collectionId, { folderId: payload.folderId })
+        requestTabsApi.createRequestTab(payload.collectionId, {folderId: payload.folderId})
         break
       }
       case "folder:new": {
@@ -172,7 +172,7 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
   const handleRenameSubmit = async (nextName: string, state: RenameState) => {
     try {
       if (state.type === "request") {
-        collectionsApi().updateRequest(state.collectionId, state.requestId, { name: nextName })
+        collectionsApi().updateRequest(state.collectionId, state.requestId, {name: nextName})
       } else if (state.mode === "rename") {
         collectionsApi().renameFolder(state.collectionId, state.folderId, nextName)
       } else {
@@ -230,7 +230,7 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
 
   return (
     <>
-      <Breadcrumb className="pl-2" data-test-id="breadcrumbs">
+      <Breadcrumb className="pl-[1px]" data-test-id="breadcrumbs">
         <BreadcrumbList>
           <BreadcrumbItem>
             <DropdownMenu>
@@ -243,12 +243,12 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
                   <span className="max-w-48 truncate">{collection.name}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <CollectionMenuContent collection={collection} exclude={["delete", "clear-scratch"]} />
+              <CollectionMenuContent collection={collection} exclude={["delete", "clear-scratch"]}/>
             </DropdownMenu>
           </BreadcrumbItem>
           {folderTrail.map((folder, index) => (
             <Fragment key={folder.id}>
-              <BreadcrumbSeparator />
+              <BreadcrumbSeparator/>
               <BreadcrumbItem>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -260,12 +260,12 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
                       <span className="max-w-48 truncate">{folder.name}</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <FolderMenuContent collectionId={collection.id} folder={folder} onAction={handleFolderAction} />
+                  <FolderMenuContent collectionId={collection.id} folder={folder} onAction={handleFolderAction}/>
                 </DropdownMenu>
               </BreadcrumbItem>
             </Fragment>
           ))}
-          <BreadcrumbSeparator />
+          <BreadcrumbSeparator/>
           <BreadcrumbItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -283,7 +283,7 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
                 requestId={request.id}
                 requestName={request.name}
                 isScratch={isScratch}
-                moveTargets={moveTargets.map((target) => ({ id: target.id, path: target.path }))}
+                moveTargets={moveTargets.map((target) => ({id: target.id, path: target.path}))}
                 onAction={handleRequestAction}
               />
             </DropdownMenu>
@@ -324,7 +324,8 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
           description={
             deleteState.type === "request" ? (
               <>
-                Are you sure you want to delete the <span className="text-lg text-primary">{deleteState.name}</span>{" "}
+                Are you sure you want to delete the <span
+                className="text-lg text-primary">{deleteState.name}</span>{" "}
                 request?
               </>
             ) : (
@@ -346,7 +347,7 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
 export function Breadcrumbs() {
   const tabData = useRequestTab()
   const {
-    actions: { collectionsApi },
+    actions: {collectionsApi},
   } = useCollections()
   const activeCollectionId = tabData?.state.activeTab?.collectionId
   const request = tabData?.state.request
@@ -354,10 +355,10 @@ export function Breadcrumbs() {
   const tabsApi = tabData?.actions.requestTabsApi
 
   if (!tabData || !activeCollectionId || !request || !original || !tabsApi) {
-    return <div className="h-6" />
+    return <div className="h-6"/>
   }
 
   return (
-    <BreadcrumbsContent tabData={tabData} collectionsApi={collectionsApi} requestTabsApi={tabsApi as RequestTabsApi} />
+    <BreadcrumbsContent tabData={tabData} collectionsApi={collectionsApi} requestTabsApi={tabsApi as RequestTabsApi}/>
   )
 }
