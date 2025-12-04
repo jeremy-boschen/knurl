@@ -37,7 +37,7 @@ export function CreateFolderDialog({ open, onConfirm, onCancel }: CreateFolderDi
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent data-test-id="create-folder-dialog">
         <DialogHeader>
           <DialogTitle>New Folder</DialogTitle>
           <DialogDescription>Enter the name for your new folder</DialogDescription>
@@ -53,13 +53,14 @@ export function CreateFolderDialog({ open, onConfirm, onCancel }: CreateFolderDi
               }
             }}
             placeholder="Folder name"
+            data-test-id="create-folder-dialog:name-input"
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>
+          <Button variant="outline" onClick={onCancel} data-test-id="create-folder-dialog:cancel-button">
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!name.trim()}>
+          <Button onClick={handleConfirm} disabled={!name.trim()} data-test-id="create-folder-dialog:confirm-button">
             Create
           </Button>
         </DialogFooter>

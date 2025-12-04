@@ -37,7 +37,7 @@ export function CreateRequestDialog({ open, onConfirm, onCancel }: CreateRequest
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent data-test-id="create-request-dialog">
         <DialogHeader>
           <DialogTitle>New Request</DialogTitle>
           <DialogDescription>Enter the name for your new request</DialogDescription>
@@ -53,13 +53,14 @@ export function CreateRequestDialog({ open, onConfirm, onCancel }: CreateRequest
               }
             }}
             placeholder="Request name"
+            data-test-id="create-request-dialog:name-input"
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>
+          <Button variant="outline" onClick={onCancel} data-test-id="create-request-dialog:cancel-button">
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!name.trim()}>
+          <Button onClick={handleConfirm} disabled={!name.trim()} data-test-id="create-request-dialog:confirm-button">
             Create
           </Button>
         </DialogFooter>

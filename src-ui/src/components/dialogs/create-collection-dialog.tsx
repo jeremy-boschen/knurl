@@ -37,7 +37,7 @@ export function CreateCollectionDialog({ open, onConfirm, onCancel }: CreateColl
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent data-test-id="create-collection-dialog">
         <DialogHeader>
           <DialogTitle>New Collection</DialogTitle>
           <DialogDescription>Enter the name for your new collection</DialogDescription>
@@ -53,13 +53,14 @@ export function CreateCollectionDialog({ open, onConfirm, onCancel }: CreateColl
               }
             }}
             placeholder="Collection name"
+            data-test-id="create-collection-dialog:name-input"
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>
+          <Button variant="outline" onClick={onCancel} data-test-id="create-collection-dialog:cancel-button">
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!name.trim()}>
+          <Button onClick={handleConfirm} disabled={!name.trim()} data-test-id="create-collection-dialog:confirm-button">
             Create
           </Button>
         </DialogFooter>

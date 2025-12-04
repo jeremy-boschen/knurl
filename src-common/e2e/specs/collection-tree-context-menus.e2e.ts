@@ -1,8 +1,14 @@
 import { expect } from "@wdio/globals"
 
-import { clickByTestId, createCollection, ensureWorkspaceReady, openCollectionMenu, resetOverlays } from "../support/ui"
+import {
+  clickByTestId,
+  createCollection,
+  ensureWorkspaceReady,
+  openCollectionMenu,
+  resetOverlays,
+} from "../support/ui"
 
-describe("[SUPPLEMENTAL] Collection Tree Context Menus", () => {
+describe("[CRITICAL] Collection Tree Context Menus", () => {
   const state = {
     collectionIds: [] as string[],
   }
