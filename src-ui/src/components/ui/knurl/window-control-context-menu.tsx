@@ -3,27 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window"
 import { MaximizeIcon, MinusIcon, XIcon } from "lucide-react"
 
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
-
-function RestoreIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <title>Restore</title>
-      {/* Bottom right square */}
-      <rect x="5" y="9" width="6" height="6" rx="1" />
-      {/* Top left square */}
-      <rect x="13" y="3" width="6" height="6" rx="1" />
-    </svg>
-  )
-}
+import { RestoreIcon } from "@/components/icons"
 
 export function WindowControlDropdownMenuContent({
   align,
