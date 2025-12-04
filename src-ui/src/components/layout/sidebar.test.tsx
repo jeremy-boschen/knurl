@@ -8,6 +8,15 @@ const hoisted = vi.hoisted(() => ({
   utilitySheetsApi: vi.fn(),
   useCollectionTree: vi.fn(),
   useCollections: vi.fn(),
+  windowApi: {
+    isMaximized: vi.fn().mockResolvedValue(false),
+    isMinimized: vi.fn().mockResolvedValue(false),
+    minimize: vi.fn(),
+    maximize: vi.fn(),
+    unmaximize: vi.fn(),
+    close: vi.fn(),
+  },
+  getCurrentWindow: vi.fn(),
 }))
 
 vi.mock("@/state", () => ({
@@ -16,6 +25,10 @@ vi.mock("@/state", () => ({
   utilitySheetsApi: hoisted.utilitySheetsApi,
   useCollectionTree: hoisted.useCollectionTree,
   useCollections: hoisted.useCollections,
+}))
+
+vi.mock("@tauri-apps/api/window", () => ({
+  getCurrentWindow: hoisted.getCurrentWindow,
 }))
 
 vi.mock("./collection-tree", () => ({
@@ -31,6 +44,7 @@ import Sidebar from "./sidebar"
 
 type SidebarConfig = {
   isCollapsed?: boolean
+  searchTerm?: string
 }
 
 const setupMocks = (config: SidebarConfig = {}) => {
@@ -47,7 +61,7 @@ const setupMocks = (config: SidebarConfig = {}) => {
   const openSheet = vi.fn()
   hoisted.utilitySheetsApi.mockReturnValue({ openSheet })
 
-  let searchTermState = ""
+  let searchTermState = config.searchTerm ?? ""
   const setSearchTerm = vi.fn((term: string) => {
     searchTermState = term
   })
@@ -63,6 +77,8 @@ const setupMocks = (config: SidebarConfig = {}) => {
   hoisted.useCollections.mockReturnValue({
     state: { collectionsIndex: [] },
   })
+
+  hoisted.getCurrentWindow.mockResolvedValue(hoisted.windowApi)
 
   return { collapseSidebar, expandSidebar, setTheme, openSheet, setSearchTerm, clearSearch }
 }
@@ -124,7 +140,7 @@ describe("Sidebar", () => {
 
   it("clears the search input and hides the clear button", async () => {
     const user = userEvent.setup()
-    const { setSearchTerm, clearSearch } = setupMocks()
+    const { clearSearch } = setupMocks({ searchTerm: "foo" })
     render(
       <TooltipProvider>
         <Sidebar />
@@ -132,20 +148,15 @@ describe("Sidebar", () => {
     )
 
     const searchInput = findByTestId("sidebar:search-input") as HTMLInputElement
-    await user.type(searchInput, "foo")
+    expect(searchInput.value).toBe("foo")
 
-    // Mock will have been called with "foo", verify the action was called
-    expect(setSearchTerm).toHaveBeenCalledWith("foo")
-
-    // Manually set the value to verify clearing works (since we can't reliably
-    // test controlled component state with mocked Zustand in unit tests)
     await user.click(findByTestId("sidebar:clear-search-button"))
     expect(clearSearch).toHaveBeenCalled()
   })
 
   it("clears search when Escape is pressed", async () => {
     const user = userEvent.setup()
-    const { setSearchTerm, clearSearch } = setupMocks()
+    const { clearSearch } = setupMocks({ searchTerm: "query" })
     render(
       <TooltipProvider>
         <Sidebar />
@@ -153,9 +164,7 @@ describe("Sidebar", () => {
     )
 
     const searchInput = findByTestId("sidebar:search-input") as HTMLInputElement
-    await user.type(searchInput, "query")
-    expect(setSearchTerm).toHaveBeenCalledWith("query")
-
+    searchInput.focus()
     await user.keyboard("{Escape}")
     expect(clearSearch).toHaveBeenCalled()
   })

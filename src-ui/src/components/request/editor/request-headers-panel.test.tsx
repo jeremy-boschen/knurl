@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -18,6 +18,7 @@ describe("RequestHeadersPanel", () => {
     removeHeader: vi.fn(),
     addHeader: vi.fn(),
     addCookieHeader: vi.fn(),
+    reorderHeaders: vi.fn(),
   }
 
   beforeEach(() => {
@@ -36,16 +37,18 @@ describe("RequestHeadersPanel", () => {
     )
   }
 
-  it("renders headers section title without inline add button", () => {
+  const queryByDataTestId = (id: string) => document.querySelector(`[data-test-id="${id}"]`) as HTMLElement | null
+
+  it("renders headers section title and add button", () => {
     renderWith({}, {})
     expect(screen.getByText(/request headers/i)).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: /add header/i })).not.toBeInTheDocument()
+    expect(queryByDataTestId("request-headers-panel:add-header-button")).not.toBeNull()
   })
 
   it("updates header name/value and removes header", async () => {
     const user = userEvent.setup()
     const h = { id: "h1", name: "X-Test", value: "1", enabled: true, secure: false }
-    const { container } = renderWith({ [h.id]: h }, { [h.id]: h })
+    renderWith({ [h.id]: h }, { [h.id]: h })
 
     fireEvent.change(screen.getByPlaceholderText("Name"), { target: { value: "X-Updated" } })
     expect(actions.updateHeader).toHaveBeenCalledWith("h1", { name: "X-Updated" })
@@ -54,36 +57,33 @@ describe("RequestHeadersPanel", () => {
     expect(actions.updateHeader).toHaveBeenCalledWith("h1", { value: "2" })
 
     // Click the menu button to open the dropdown
-    const menuButton = container.querySelector('[data-test-id="request-headers-panel:menu-button:h1"]') as HTMLElement
+    const menuButton = queryByDataTestId("request-headers-panel:menu-button:h1") as HTMLElement
     await user.click(menuButton)
 
     // Click the delete item in the menu
-    const deleteItem = container.querySelector('[data-test-id="request-headers-panel:menu-delete:h1"]') as HTMLElement
-    fireEvent.click(deleteItem)
+    const deleteItem = await screen.findByText("Delete")
+    await user.click(deleteItem)
     expect(actions.removeHeader).toHaveBeenCalledWith("h1")
   })
 
   it("toggles enabled and secure state, marks unsaved when changed", async () => {
     const user = userEvent.setup()
     const h = { id: "h2", name: "Auth", value: "secret", enabled: false, secure: false }
-    // Original has enabled=false, secure=false so toggling should mark unsaved
-    const { container } = renderWith({ [h.id]: h }, { [h.id]: h })
+    renderWith({ [h.id]: h }, { [h.id]: h })
 
-    const enabled = container.querySelector(
-      '[data-test-id="request-headers-panel:enabled-checkbox:h2"]',
-    ) as HTMLElement
+    const enabled = queryByDataTestId("request-headers-panel:enabled-checkbox:h2") as HTMLElement
     await user.click(enabled)
     expect(actions.updateHeader).toHaveBeenCalledWith("h2", { enabled: true })
 
     // Click the menu button to open dropdown
-    const menuButton = container.querySelector('[data-test-id="request-headers-panel:menu-button:h2"]') as HTMLElement
+    const menuButton = queryByDataTestId("request-headers-panel:menu-button:h2") as HTMLElement
     await user.click(menuButton)
 
     // Click the Sensitive checkbox item
-    const sensitiveItem = container.querySelector(
-      '[data-test-id="request-headers-panel:menu-sensitive:h2"]',
-    ) as HTMLElement
-    fireEvent.click(sensitiveItem)
+    const sensitiveItem = (await waitFor(
+      () => queryByDataTestId("request-headers-panel:menu-sensitive:h2"),
+    )) as HTMLElement
+    await user.click(sensitiveItem)
     expect(actions.updateHeader).toHaveBeenCalledWith("h2", { secure: true })
   })
 
@@ -103,13 +103,16 @@ describe("RequestHeadersPanel", () => {
     expect(valueInput.className).toContain("unsaved-changes")
   })
 
-  it("shows unsaved marker on secure toggle when original differs", () => {
+  it("shows unsaved marker on secure toggle when original differs", async () => {
     const h = { id: "h4", name: "X", value: "v", enabled: true, secure: true }
-    const { container } = renderWith({ [h.id]: h }, { [h.id]: { ...h, secure: false } })
+    renderWith({ [h.id]: h }, { [h.id]: { ...h, secure: false } })
 
-    const sensitiveRadioItem = container.querySelector(
-      '[data-test-id="request-headers-panel:menu-sensitive:h4"]',
-    ) as HTMLElement
+    const menuButton = queryByDataTestId("request-headers-panel:menu-button:h4") as HTMLElement
+    await userEvent.click(menuButton)
+
+    const sensitiveRadioItem = (await waitFor(
+      () => queryByDataTestId("request-headers-panel:menu-sensitive:h4"),
+    )) as HTMLElement
     expect(sensitiveRadioItem.className).toContain("unsaved-changes")
   })
 })
