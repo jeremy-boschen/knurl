@@ -14,9 +14,9 @@ import {
 import { NewCollectionDialog } from "@/components/collection/new-collection-dialog"
 import { KnurlIcon } from "@/components/icons"
 import { Button } from "@/components/ui/button"
-import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu"
+import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/knurl"
-import { WindowControlContextMenuContent } from "@/components/ui/knurl/window-control-context-menu"
+import { WindowControlDropdownMenuContent } from "@/components/ui/knurl/window-control-context-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
 import { useCollectionTree, useSidebar, utilitySheetsApi } from "@/state"
 import { CollectionTree, CollectionTreeCollapsed } from "./collection-tree"
@@ -54,14 +54,14 @@ export default function Sidebar() {
   return (
     <aside className="relative flex h-full w-full flex-col bg-background" data-test-id="sidebar">
       {/* Fixed KnurlIcon */}
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
-          <div className="absolute top-2 left-2 flex h-6 w-6 items-center justify-center z-10">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <div className="absolute top-2 left-2 flex h-6 w-6 items-center justify-center z-10 cursor-pointer">
             <KnurlIcon className="h-5 w-5" />
           </div>
-        </ContextMenuTrigger>
-        <WindowControlContextMenuContent />
-      </ContextMenu>
+        </DropdownMenuTrigger>
+        <WindowControlDropdownMenuContent align="start" alignOffset={8} />
+      </DropdownMenu>
 
       {/* Header */}
       {!isCollapsed ? (

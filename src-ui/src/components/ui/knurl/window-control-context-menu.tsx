@@ -2,9 +2,15 @@ import { useEffect, useState } from "react"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 import { MaximizeIcon, MinusIcon, XIcon, SquareIcon } from "lucide-react"
 
-import { ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
+import { DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 
-export function WindowControlContextMenuContent() {
+export function WindowControlDropdownMenuContent({
+  align,
+  alignOffset,
+}: {
+  align?: "start" | "center" | "end"
+  alignOffset?: number
+}) {
   const [isMaximized, setIsMaximized] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
 
@@ -46,24 +52,24 @@ export function WindowControlContextMenuContent() {
   const canRestore = isMaximized || isMinimized
 
   return (
-    <ContextMenuContent className="w-40">
-      <ContextMenuItem onClick={handleRestore} disabled={!canRestore} data-action-id="restore">
+    <DropdownMenuContent align={align} alignOffset={alignOffset} className="w-40">
+      <DropdownMenuItem onClick={handleRestore} disabled={!canRestore} data-action-id="restore">
         <SquareIcon className="h-4 w-4" />
         Restore
-      </ContextMenuItem>
-      <ContextMenuItem onClick={handleMinimize} data-action-id="minimize">
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={handleMinimize} data-action-id="minimize">
         <MinusIcon className="h-4 w-4" />
         Minimize
-      </ContextMenuItem>
-      <ContextMenuItem onClick={handleMaximize} data-action-id="maximize">
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={handleMaximize} data-action-id="maximize">
         <MaximizeIcon className="h-4 w-4" />
         Maximize
-      </ContextMenuItem>
-      <ContextMenuSeparator />
-      <ContextMenuItem variant="destructive" onClick={handleClose} data-action-id="close">
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem variant="destructive" onClick={handleClose} data-action-id="close">
         <XIcon className="h-4 w-4" />
         Close
-      </ContextMenuItem>
-    </ContextMenuContent>
+      </DropdownMenuItem>
+    </DropdownMenuContent>
   )
 }
