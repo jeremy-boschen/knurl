@@ -11,10 +11,15 @@ export function RestoreIcon({ className }: { className?: string }) {
       className={className}
     >
       <title>Restore</title>
-      {/* Bottom square */}
-      <rect x="3" y="7" width="9" height="9" rx="1" />
-      {/* Top square */}
-      <rect x="12" y="3" width="9" height="9" rx="1" />
+      <defs>
+        <clipPath id="bottomClip">
+          <rect x="6" y="9" width="10" height="10" />
+        </clipPath>
+      </defs>
+      {/* Top square - drawn first so bottom doesn't hide its lines */}
+      <rect x="8" y="6" width="10" height="10" rx="1" />
+      {/* Bottom square - clipped to not overlap top square's lines */}
+      <rect x="6" y="9" width="10" height="10" rx="1" clipPath="url(#bottomClip)" />
     </svg>
   )
 }
