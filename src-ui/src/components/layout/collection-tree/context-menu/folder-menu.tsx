@@ -235,11 +235,19 @@ export function FolderMenu({ item }: FolderMenuProps) {
         New Folder
       </ContextMenuItem>
       <ContextMenuSeparator />
-      <ContextMenuItem onClick={handleMoveUp} disabled={!canMoveUp}>
+      <ContextMenuItem
+        onClick={handleMoveUp}
+        disabled={!canMoveUp}
+        data-test-id={`folder-menu:item:move-up:${item.folderId}`}
+      >
         <ChevronUpIcon className="h-4 w-4" />
         Move Up
       </ContextMenuItem>
-      <ContextMenuItem onClick={handleMoveDown} disabled={!canMoveDown}>
+      <ContextMenuItem
+        onClick={handleMoveDown}
+        disabled={!canMoveDown}
+        data-test-id={`folder-menu:item:move-down:${item.folderId}`}
+      >
         <ChevronDownIcon className="h-4 w-4" />
         Move Down
       </ContextMenuItem>
@@ -264,12 +272,19 @@ export function FolderMenu({ item }: FolderMenuProps) {
         </ContextMenuSubContent>
       </ContextMenuSub>
       <ContextMenuSeparator />
-      <ContextMenuItem onClick={handleRename}>
+      <ContextMenuItem
+        onClick={handleRename}
+        data-test-id={`folder-menu:item:rename:${item.folderId}`}
+      >
         <Edit2Icon className="h-4 w-4" />
         Rename Folder
       </ContextMenuItem>
       <ContextMenuSeparator />
-      <ContextMenuItem onClick={handleDelete} variant="destructive">
+      <ContextMenuItem
+        onClick={handleDelete}
+        variant="destructive"
+        data-test-id={`folder-menu:item:delete:${item.folderId}`}
+      >
         <Trash2Icon className="h-4 w-4" />
         Delete Folder
       </ContextMenuItem>

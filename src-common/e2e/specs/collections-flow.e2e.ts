@@ -5,6 +5,7 @@ import {
   clickVisibleNewCollectionButton,
   ensureWorkspaceReady,
   getElementByTestId,
+  openCollectionMenu,
   openNewRequestViaUI,
   setInputText,
   waitForCollectionIdByName,
@@ -63,9 +64,8 @@ describe("Collection And Request Flow", () => {
 
     const existingIds = await getOpenRequestIds()
 
-    await clickByTestId(`collection-tree:collection-row:${state.collectionId}`)
-    await browser.pause(200) // Let UI render
-    await clickByTestId(`collection-tree:collection-row:menu-button:${state.collectionId}`)
+    // Right-click on collection row to open context menu
+    await openCollectionMenu(state.collectionId)
     await browser.pause(200) // Let menu appear
     await clickByTestId(`collection-menu:item:request:new:${state.collectionId}`)
     await browser.pause(300) // Let request be created

@@ -171,42 +171,72 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
 
   return (
     <ContextMenuContent className="w-56">
-      <ContextMenuItem onClick={handleCreateRequest}>
+      <ContextMenuItem
+        onClick={handleCreateRequest}
+        data-test-id={`collection-menu:item:request:new:${item.collectionId}`}
+      >
         <PlusIcon className="h-4 w-4" />
         New Request
       </ContextMenuItem>
-      <ContextMenuItem onClick={handleCreateFolder}>
+      <ContextMenuItem
+        onClick={handleCreateFolder}
+        data-test-id={`collection-menu:item:folder:new:${item.collectionId}`}
+      >
         <FolderPlusIcon className="h-4 w-4" />
         New Folder
       </ContextMenuItem>
       <ContextMenuSeparator />
-      <ContextMenuItem onClick={handleMoveUp} disabled={!canMoveUp}>
+      <ContextMenuItem
+        onClick={handleMoveUp}
+        disabled={!canMoveUp}
+        data-test-id={`collection-menu:item:move-up:${item.collectionId}`}
+      >
         <ChevronUpIcon className="h-4 w-4" />
         Move Up
       </ContextMenuItem>
-      <ContextMenuItem onClick={handleMoveDown} disabled={!canMoveDown}>
+      <ContextMenuItem
+        onClick={handleMoveDown}
+        disabled={!canMoveDown}
+        data-test-id={`collection-menu:item:move-down:${item.collectionId}`}
+      >
         <ChevronDownIcon className="h-4 w-4" />
         Move Down
       </ContextMenuItem>
       <ContextMenuSeparator />
-      <ContextMenuItem onClick={handleRename}>
+      <ContextMenuItem
+        onClick={handleRename}
+        data-test-id={`collection-menu:item:rename:${item.collectionId}`}
+      >
         <Edit2Icon className="h-4 w-4" />
         Rename Collection
       </ContextMenuItem>
-      <ContextMenuItem onClick={handleOpenSettings}>
+      <ContextMenuItem
+        onClick={handleOpenSettings}
+        data-test-id={`collection-menu:item:manage-settings:${item.collectionId}`}
+      >
         <GlobeIcon className="h-4 w-4" />
         Manage Settings
       </ContextMenuItem>
-      <ContextMenuItem onClick={handleOpenExport}>
+      <ContextMenuItem
+        onClick={handleOpenExport}
+        data-test-id={`collection-menu:item:export:${item.collectionId}`}
+      >
         <UploadIcon className="h-4 w-4" />
         Export Collection
       </ContextMenuItem>
-      <ContextMenuItem onClick={handleCopyAsJson}>
+      <ContextMenuItem
+        onClick={handleCopyAsJson}
+        data-test-id={`collection-menu:item:copy-json:${item.collectionId}`}
+      >
         <CopyIcon className="h-4 w-4" />
         Copy as JSON
       </ContextMenuItem>
       <ContextMenuSeparator />
-      <ContextMenuItem onClick={handleDelete} variant="destructive">
+      <ContextMenuItem
+        onClick={handleDelete}
+        variant="destructive"
+        data-test-id={`collection-menu:item:delete:${item.collectionId}`}
+      >
         <Trash2Icon className="h-4 w-4" />
         Delete Collection
       </ContextMenuItem>

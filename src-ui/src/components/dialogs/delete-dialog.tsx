@@ -27,14 +27,14 @@ export function DeleteDialog({ open, title, description, onConfirm, onCancel, co
 
   return (
     <AlertDialog open={open} onOpenChange={(nextOpen) => !nextOpen && onCancel()}>
-      <AlertDialogContent>
+      <AlertDialogContent data-test-id="delete-dialog">
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirm} variant="destructive">
+          <AlertDialogAction onClick={handleConfirm} variant="destructive" data-test-id="delete-dialog:confirm-button">
             Delete
           </AlertDialogAction>
         </AlertDialogFooter>
