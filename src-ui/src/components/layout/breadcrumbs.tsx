@@ -230,7 +230,7 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
 
   return (
     <>
-      <Breadcrumb className="pl-2" data-test-id="breadcrumbs">
+      <Breadcrumb className="pl-[1px]" data-test-id="breadcrumbs">
         <BreadcrumbList>
           <BreadcrumbItem>
             <DropdownMenu>

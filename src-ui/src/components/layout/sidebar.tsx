@@ -18,7 +18,7 @@ import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu
 import { Input } from "@/components/ui/knurl"
 import { WindowControlDropdownMenuContent } from "@/components/ui/knurl/window-control-context-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
-import { useSidebar, utilitySheetsApi, useCollectionTree } from "@/state"
+import { useCollectionTree, useSidebar, utilitySheetsApi } from "@/state"
 import { CollectionTree, CollectionTreeCollapsed } from "./collection-tree"
 import { ModeToggle } from "./mode-toggle"
 
@@ -71,7 +71,7 @@ export default function Sidebar() {
               <div className="h-6 w-6" />
               <h1 className="text-lg font-semibold text-primary">KNURL</h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
