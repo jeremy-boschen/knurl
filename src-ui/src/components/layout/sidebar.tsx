@@ -60,7 +60,7 @@ export default function Sidebar() {
             <KnurlIcon className="h-5 w-5" />
           </div>
         </DropdownMenuTrigger>
-        <WindowControlDropdownMenuContent align="start" alignOffset={16} />
+        <WindowControlDropdownMenuContent align="start" alignOffset={8} />
       </DropdownMenu>
 
       {/* Header */}
