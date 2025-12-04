@@ -81,7 +81,7 @@ describe("Collection And Request Flow", () => {
     await collectionRow.waitForDisplayed({ timeout: 10000 })
   })
 
-  it.skip("creates a request through the collection menu and opens a tab", async () => {
+  it("creates a request through the collection menu and opens a tab", async () => {
     if (!state.collectionId) {
       throw new Error("Collection must exist before creating requests")
     }
@@ -92,7 +92,12 @@ describe("Collection And Request Flow", () => {
     await openCollectionMenu(state.collectionId)
     await browser.pause(200) // Let menu appear
     await clickByTestId(`collection-menu:item:request:new:${state.collectionId}`)
-    await browser.pause(300) // Let request be created
+
+    // Wait for create request dialog and fill it in
+    await getElementByTestId("create-request-dialog", 5000)
+    await setInputText("create-request-dialog:name-input", "New Request from Menu")
+    await clickByTestId("create-request-dialog:confirm-button")
+    await browser.pause(300) // Let request be created and tab open
 
     const { requestId, tabKey } = await waitForNewCollectionRequest(state.collectionId, existingIds)
     state.collectionRequestId = requestId
@@ -106,7 +111,7 @@ describe("Collection And Request Flow", () => {
     await requestRow.waitForDisplayed({ timeout: 10000 })
   })
 
-  it.skip("closes the active request tab and confirms no tabs remain", async () => {
+  it("closes the active request tab and confirms no tabs remain", async () => {
     if (!state.collectionTabKey) {
       throw new Error("Collection tab key not resolved")
     }

@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 
 import { ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
-import { collectionsApi, dialogsApi, utilitySheetsApi, useCollections } from "@/state"
+import { collectionsApi, dialogsApi, getRequestTabsApi, utilitySheetsApi, useCollections } from "@/state"
 import { RootCollectionFolderId } from "@/types"
 import type { ActiveMenuItem } from "./types"
 
@@ -62,10 +62,13 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
         try {
           await collectionsApi().loadCollection(item.collectionId)
 
-          collectionsApi().createRequest(item.collectionId, {
+          const newRequest = collectionsApi().createRequest(item.collectionId, {
             name: context.name,
             folderId: RootCollectionFolderId,
           })
+
+          // Open the request in a tab
+          getRequestTabsApi().openRequestTab(item.collectionId, newRequest.id)
         } catch (error) {
           console.error("Failed to create request", error)
         }

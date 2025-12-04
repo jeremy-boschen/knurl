@@ -34,17 +34,32 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
 
     // Create a request in the collection via menu
     await openCollectionMenu(state.collectionId)
+    await browser.pause(300) // Wait for menu to be interactive
     await clickByTestId(`collection-menu:item:request:new:${state.collectionId}`)
 
+    // Wait for the create request dialog to appear
+    await getElementByTestId("create-request-dialog", 10000)
+
+    // Enter request name
+    await setInputText("create-request-dialog:name-input", "Test Request")
+
+    // Click create button
+    await clickByTestId("create-request-dialog:confirm-button")
+    await browser.pause(500) // Wait for dialog to close and request to be created
+
     // Wait for request editor to appear (this confirms request was created)
-    await waitForRequestEditor()
+    await waitForRequestEditor(10000)
 
     // Get request info from active tab
     state.tabKey = await waitForActiveRequestTab()
   })
 
   it("creates environment and secure variable via manager", async () => {
+    // Wait for environment selector to be visible in title bar
+    await getElementByTestId("environment-selector:trigger-button", 5000)
     await clickByTestId("environment-selector:trigger-button")
+    await browser.pause(500) // Wait for dropdown menu to open
+    await getElementByTestId("environment-selector:manage-environments-item", 10000)
     await clickByTestId("environment-selector:manage-environments-item")
 
     // Wait for settings sheet to appear
