@@ -94,11 +94,7 @@ export function TitleBar() {
         data-test-id="title-bar:maximize-button"
         data-tauri-drag-region="false"
       >
-        {isMaximized ? (
-          <RestoreIcon className="h-4 w-4" />
-        ) : (
-          <MaximizeIcon className="h-4 w-4" />
-        )}
+        {isMaximized ? <RestoreIcon className="h-4 w-4" /> : <MaximizeIcon className="h-4 w-4" />}
       </Button>
       <Button
         variant="ghost"
