@@ -50,15 +50,18 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="flex h-full w-full flex-col bg-background" data-test-id="sidebar">
+    <aside className="relative flex h-full w-full flex-col bg-background" data-test-id="sidebar">
+      {/* Fixed KnurlIcon */}
+      <div className="absolute top-2 left-2 flex h-6 w-6 items-center justify-center pointer-events-none z-10">
+        <KnurlIcon className="h-5 w-5" />
+      </div>
+
       {/* Header */}
       {!isCollapsed ? (
         <>
           <header className="flex h-10 flex-row items-center justify-between p-2">
             <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center">
-                <KnurlIcon className="h-5 w-5" />
-              </div>
+              <div className="h-6 w-6" />
               <h1 className="text-lg font-semibold text-primary">KNURL</h1>
             </div>
             <div className="flex items-center gap-2">
@@ -180,9 +183,7 @@ export default function Sidebar() {
         </>
       ) : (
         <header className="flex flex-col items-center justify-center gap-3 p-2">
-          <div className="flex h-6 w-6 items-center justify-center">
-            <KnurlIcon className="h-5 w-5" />
-          </div>
+          <div className="h-6 w-6" />
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
