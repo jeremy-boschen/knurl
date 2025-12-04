@@ -182,7 +182,7 @@ describe("collections patch and merge logic", () => {
     const {collectionsApi} = useApplication.getState()
     const col = collectionsApi.addCollection("H")
     const req = collectionsApi.createRequest(col.id, {name: "R"})
-    collectionsApi.updateRequestPatchHeader(col.id, req.id, "h1", {name: "A", value: "1", enabled: true})
+    collectionsApi.updateRequestPatchHeader(col.id, req.id, "h1", {name: "A", value: "1", enabled: true, secure: false})
     let r = collectionsApi.getRequest(col.id, req.id)
     expect(r.patch?.headers?.h1?.value).toBe("1")
     // Update value; remains in patch
@@ -335,6 +335,7 @@ describe("collections patch and merge logic", () => {
       name: "A",
       value: "1",
       enabled: true,
+      secure: false,
     })
     collectionsApi.commitRequestPatch(col.id, req.id)
     // No-op equal update should clear patch
@@ -342,6 +343,7 @@ describe("collections patch and merge logic", () => {
       name: "A",
       value: "1",
       enabled: true,
+      secure: false,
     })
     let r = collectionsApi.getRequest(col.id, req.id)
     expect(r.patch).toEqual({})
@@ -353,6 +355,7 @@ describe("collections patch and merge logic", () => {
       name: "A",
       value: "1",
       enabled: true,
+      secure: false,
     })
     r = collectionsApi.getRequest(col.id, req.id)
     expect(r.patch).toEqual({})
@@ -366,12 +369,14 @@ describe("collections patch and merge logic", () => {
       name: "a",
       value: "1",
       enabled: true,
+      secure: false,
     })
     collectionsApi.commitRequestPatch(col.id, req.id)
     collectionsApi.updateRequestPatchQueryParam(col.id, req.id, "q1", {
       name: "a",
       value: "1",
       enabled: true,
+      secure: false,
     })
     let r = collectionsApi.getRequest(col.id, req.id)
     expect(r.patch).toEqual({})

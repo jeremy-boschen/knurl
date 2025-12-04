@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -20,9 +20,15 @@ describe("RequestParametersPanel", () => {
     removeQueryParam: vi.fn(),
     updateCookieParam: vi.fn(),
     removeCookieParam: vi.fn(),
+    reorderPathParams: vi.fn(),
+    reorderQueryParams: vi.fn(),
+    reorderCookieParams: vi.fn(),
+    addCookieParam: vi.fn(),
   }
 
   beforeEach(() => vi.clearAllMocks())
+
+  const queryByDataTestId = (id: string) => document.querySelector(`[data-test-id="${id}"]`) as HTMLElement | null
 
   const renderWith = (pathParams: any, queryParams: any, original: any, cookieParams?: any) => {
     vi.mocked(useRequestParameters).mockReturnValue({
@@ -36,18 +42,18 @@ describe("RequestParametersPanel", () => {
     )
   }
 
-  it("renders parameter sections without inline add buttons", () => {
+  it("renders parameter sections with add buttons", () => {
     renderWith({}, {}, {})
     expect(screen.getByRole("heading", { name: /path parameters/i })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: /query parameters/i })).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: /add path parameter/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: /add query parameter/i })).not.toBeInTheDocument()
+    expect(queryByDataTestId("request-parameters-panel:add-path-param-button")).not.toBeNull()
+    expect(queryByDataTestId("request-parameters-panel:add-query-param-button")).not.toBeNull()
   })
 
   it("edits and removes a query param row", async () => {
     const user = userEvent.setup()
     const qp = { id: "q1", name: "a", value: "1", enabled: true, secure: false }
-    const { container } = renderWith({}, { [qp.id]: qp }, { queryParams: { [qp.id]: qp } })
+    renderWith({}, { [qp.id]: qp }, { queryParams: { [qp.id]: qp } })
 
     fireEvent.change(screen.getByPlaceholderText("Name"), { target: { value: "b" } })
     expect(actions.updateQueryParam).toHaveBeenCalledWith("q1", { name: "b" })
@@ -56,12 +62,12 @@ describe("RequestParametersPanel", () => {
     expect(actions.updateQueryParam).toHaveBeenCalledWith("q1", { value: "2" })
 
     // Click the menu button to open dropdown
-    const menuButton = container.querySelector('[data-test-id="field-row:menu-button"]') as HTMLElement
+    const menuButton = queryByDataTestId("field-row:menu-button") as HTMLElement
     await user.click(menuButton)
 
     // Click the delete item in the menu
-    const deleteItem = container.querySelector('[data-test-id="field-row:menu-delete"]') as HTMLElement
-    fireEvent.click(deleteItem)
+    const deleteItem = (await waitFor(() => queryByDataTestId("field-row:menu-delete"))) as HTMLElement
+    await user.click(deleteItem)
     expect(actions.removeQueryParam).toHaveBeenCalledWith("q1")
   })
 
@@ -80,7 +86,7 @@ describe("RequestParametersPanel", () => {
   it("marks unsaved fields and toggles secure for query params", async () => {
     const user = userEvent.setup()
     const qp = { id: "q1", name: "secret", value: "a", enabled: true, secure: false }
-    const { container } = renderWith({}, { [qp.id]: qp }, { queryParams: { [qp.id]: { ...qp, value: "b" } } })
+    renderWith({}, { [qp.id]: qp }, { queryParams: { [qp.id]: { ...qp, value: "b" } } })
 
     const valueInput = document.querySelector(
       '[data-test-id="request-parameters-panel:query-param-value-input:q1"]',
@@ -88,11 +94,10 @@ describe("RequestParametersPanel", () => {
     expect(valueInput).not.toBeNull()
     expect(valueInput!.className).toContain("unsaved-changes")
 
-    const row = valueInput!.closest('[data-test-id="field-row"]') as HTMLElement
-    const menuButton = row.querySelector('[data-test-id="field-row:menu-button"]') as HTMLElement
+    const menuButton = queryByDataTestId("field-row:menu-button") as HTMLElement
     await user.click(menuButton)
 
-    const sensitiveItem = container.querySelector('[data-test-id="field-row:menu-sensitive"]') as HTMLElement
+    const sensitiveItem = (await waitFor(() => queryByDataTestId("field-row:menu-sensitive"))) as HTMLElement
     await user.click(sensitiveItem)
     expect(actions.updateQueryParam).toHaveBeenCalledWith("q1", { secure: true })
   })
@@ -111,14 +116,11 @@ describe("RequestParametersPanel", () => {
     expect(nameInput).not.toBeNull()
     expect(nameInput!.className).toContain("unsaved-changes")
 
-    const row = nameInput!.closest('[data-test-id="field-row"]') as HTMLElement
-    const menuButton = row.querySelector('[data-test-id="field-row:menu-button"]') as HTMLElement
-    expect(menuButton).not.toBeNull()
-    fireEvent.click(menuButton)
+    const menuButton = queryByDataTestId("field-row:menu-button") as HTMLElement
+    await user.click(menuButton)
 
-    const sensitiveItem = document.querySelector('[data-test-id="field-row:menu-sensitive"]') as HTMLElement
-    expect(sensitiveItem).not.toBeNull()
-    fireEvent.click(sensitiveItem)
+    const sensitiveItem = (await waitFor(() => queryByDataTestId("field-row:menu-sensitive"))) as HTMLElement
+    await user.click(sensitiveItem)
     expect(actions.updateCookieParam).toHaveBeenCalledWith("c1", { secure: true })
   })
 
@@ -126,7 +128,7 @@ describe("RequestParametersPanel", () => {
     const user = userEvent.setup()
     const pathParam = { id: "p1", name: "id", value: "123", enabled: true, secure: false }
     const cookieParam = { id: "c1", name: "session", value: "abc", enabled: true, secure: false }
-    const { container } = renderWith(
+    renderWith(
       { [pathParam.id]: pathParam },
       {},
       { pathParams: { [pathParam.id]: pathParam }, cookieParams: { [cookieParam.id]: cookieParam } },
@@ -142,14 +144,9 @@ describe("RequestParametersPanel", () => {
     const menuButton = pathRow.querySelector('[data-test-id="field-row:menu-button"]') as HTMLElement
     await user.click(menuButton)
 
-    // Wait for the menu to open
-    await new Promise(resolve => setTimeout(resolve, 50))
-
-    const sensitiveItem = document.querySelector('[data-test-id="field-row:menu-sensitive"]') as HTMLElement | null
-    if (sensitiveItem) {
-      await user.click(sensitiveItem)
-      expect(actions.updatePathParam).toHaveBeenCalledWith("p1", { secure: true })
-    }
+    const sensitiveItem = (await waitFor(() => queryByDataTestId("field-row:menu-sensitive"))) as HTMLElement
+    await user.click(sensitiveItem)
+    expect(actions.updatePathParam).toHaveBeenCalledWith("p1", { secure: true })
 
     const pathValueInput = document.querySelector(
       '[data-test-id="request-parameters-panel:path-param-value-input:p1"]',
@@ -164,7 +161,9 @@ describe("RequestParametersPanel", () => {
     expect(actions.updateCookieParam).toHaveBeenCalledWith("c1", { value: "token" })
 
     const cookieRow = rows[1]
-    const deleteButton = cookieRow.querySelector('[data-test-id="field-row:delete-button"]') as HTMLElement
+    const cookieMenuButton = cookieRow.querySelector('[data-test-id="field-row:menu-button"]') as HTMLElement
+    await user.click(cookieMenuButton)
+    const deleteButton = (await waitFor(() => queryByDataTestId("field-row:menu-delete"))) as HTMLElement
     await user.click(deleteButton)
     expect(actions.removeCookieParam).toHaveBeenCalledWith("c1")
   })

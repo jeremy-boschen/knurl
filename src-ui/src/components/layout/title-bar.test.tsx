@@ -1,10 +1,17 @@
-import {fireEvent, render, screen, waitFor} from "@testing-library/react"
+import {act, fireEvent, render, screen, waitFor} from "@testing-library/react"
 import {beforeAll, beforeEach, describe, expect, it, vi} from "vitest"
 
 import * as State from "@/state"
 import type {CollectionsApi, RequestTabsApi} from "@/types"
 
-const getCurrentWindow = vi.fn()
+const windowApi = {
+  isMaximized: vi.fn().mockResolvedValue(false),
+  minimize: vi.fn(),
+  maximize: vi.fn(),
+  unmaximize: vi.fn(),
+  close: vi.fn(),
+}
+const getCurrentWindow = vi.fn().mockReturnValue(windowApi)
 
 vi.mock("@tauri-apps/api/window", () => ({
   getCurrentWindow,
@@ -33,6 +40,12 @@ describe("TitleBar", () => {
     openTabsSpy.mockReset()
     collectionsApiSpy.mockReset()
     getCurrentWindow.mockReset()
+    getCurrentWindow.mockReturnValue(windowApi)
+    Object.values(windowApi).forEach((fn) => {
+      if (typeof fn === "function" && "mockReset" in fn) {
+        ;(fn as any).mockReset()
+      }
+    })
   })
 
   const setupState = (options: { hasActiveTab: boolean }) => {
@@ -48,19 +61,14 @@ describe("TitleBar", () => {
 
     requestTabSpy.mockReturnValue(options.hasActiveTab ? ({} as any) : null)
 
-    const windowApi = {
-      minimize: vi.fn(),
-      toggleMaximize: vi.fn(),
-      close: vi.fn(),
-    }
-    getCurrentWindow.mockReturnValue(windowApi)
-
     return {requestTabsApi, loadCollection, windowApi}
   }
 
-  it("renders breadcrumbs + environment selector when a tab is active", () => {
+  it("renders breadcrumbs + environment selector when a tab is active", async () => {
     setupState({hasActiveTab: true})
-    render(<TitleBar/>)
+    await act(async () => {
+      render(<TitleBar/>)
+    })
 
     expect(screen.getByTestId("breadcrumbs")).toBeInTheDocument()
     expect(screen.getByTestId("environment-selector")).toBeInTheDocument()
@@ -69,7 +77,9 @@ describe("TitleBar", () => {
 
   it("loads the scratch collection and opens a new tab when no request is active", async () => {
     const {loadCollection, requestTabsApi} = setupState({hasActiveTab: false})
-    render(<TitleBar/>)
+    await act(async () => {
+      render(<TitleBar/>)
+    })
 
     const newRequestButton = document.querySelector('[data-test-id="titlebar:new-request-button"]') as HTMLButtonElement
     expect(newRequestButton).toBeTruthy()
@@ -81,9 +91,11 @@ describe("TitleBar", () => {
     })
   })
 
-  it("delegates window controls to the Tauri window handle", () => {
+  it("delegates window controls to the Tauri window handle", async () => {
     const {windowApi} = setupState({hasActiveTab: true})
-    render(<TitleBar/>)
+    await act(async () => {
+      render(<TitleBar/>)
+    })
 
     const minimizeButton = document.querySelector('[data-test-id="title-bar:minimize-button"]') as HTMLButtonElement
     const maximizeButton = document.querySelector('[data-test-id="title-bar:maximize-button"]') as HTMLButtonElement
@@ -93,9 +105,11 @@ describe("TitleBar", () => {
     fireEvent.click(maximizeButton)
     fireEvent.click(closeButton)
 
-    expect(windowApi.minimize).toHaveBeenCalledTimes(1)
-    expect(windowApi.toggleMaximize).toHaveBeenCalledTimes(1)
-    expect(windowApi.close).toHaveBeenCalledTimes(1)
-    expect(getCurrentWindow).toHaveBeenCalledTimes(3)
+    await waitFor(() => {
+      expect(windowApi.minimize).toHaveBeenCalledTimes(1)
+      expect(windowApi.maximize).toHaveBeenCalledTimes(1)
+      expect(windowApi.close).toHaveBeenCalledTimes(1)
+      expect(getCurrentWindow).toHaveBeenCalledTimes(4)
+    })
   })
 })
