@@ -203,10 +203,7 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
         Move Down
       </ContextMenuItem>
       <ContextMenuSeparator />
-      <ContextMenuItem
-        onClick={handleRename}
-        data-test-id={`collection-menu:item:rename:${item.collectionId}`}
-      >
+      <ContextMenuItem onClick={handleRename} data-test-id={`collection-menu:item:rename:${item.collectionId}`}>
         <Edit2Icon className="h-4 w-4" />
         Rename Collection
       </ContextMenuItem>
@@ -217,17 +214,11 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
         <GlobeIcon className="h-4 w-4" />
         Manage Settings
       </ContextMenuItem>
-      <ContextMenuItem
-        onClick={handleOpenExport}
-        data-test-id={`collection-menu:item:export:${item.collectionId}`}
-      >
+      <ContextMenuItem onClick={handleOpenExport} data-test-id={`collection-menu:item:export:${item.collectionId}`}>
         <UploadIcon className="h-4 w-4" />
         Export Collection
       </ContextMenuItem>
-      <ContextMenuItem
-        onClick={handleCopyAsJson}
-        data-test-id={`collection-menu:item:copy-json:${item.collectionId}`}
-      >
+      <ContextMenuItem onClick={handleCopyAsJson} data-test-id={`collection-menu:item:copy-json:${item.collectionId}`}>
         <CopyIcon className="h-4 w-4" />
         Copy as JSON
       </ContextMenuItem>
