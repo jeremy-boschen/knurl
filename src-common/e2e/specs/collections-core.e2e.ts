@@ -142,7 +142,9 @@ describe("[CRITICAL] Collections Management & Storage", () => {
       const newTestId = await browser.waitUntil(
         async () => {
           const ids = await browser.execute(() => {
-            return Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'))
+            return Array.from(
+              document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'),
+            )
               .map((el) => el.getAttribute("data-test-id"))
               .filter((id): id is string => Boolean(id))
           })
