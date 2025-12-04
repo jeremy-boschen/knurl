@@ -2,7 +2,7 @@ import { expect } from "@wdio/globals"
 
 import { clickByTestId, createCollection, ensureWorkspaceReady, openCollectionMenu, resetOverlays } from "../support/ui"
 
-describe("[CRITICAL] Collection Tree Context Menus", () => {
+describe("Collection Tree Context Menus", () => {
   const state = {
     collectionIds: [] as string[],
   }
@@ -28,7 +28,7 @@ describe("[CRITICAL] Collection Tree Context Menus", () => {
   })
 
   describe("Collection Menu - Move Up/Down", () => {
-    it("moves a collection up in the list", async () => {
+    it("[SUPPLEMENTAL] moves a collection up in the list", async () => {
       const col1 = await createCollection(`Collection 1 ${Date.now()}`)
       const col2 = await createCollection(`Collection 2 ${Date.now()}`)
       const col3 = await createCollection(`Collection 3 ${Date.now()}`)
@@ -55,7 +55,7 @@ describe("[CRITICAL] Collection Tree Context Menus", () => {
       expect(col2Index).toBe(col3Index + 1)
     })
 
-    it("moves a collection down in the list", async () => {
+    it("[SUPPLEMENTAL] moves a collection down in the list", async () => {
       const col1 = await createCollection(`Collection A ${Date.now()}`)
       const col2 = await createCollection(`Collection B ${Date.now()}`)
       const col3 = await createCollection(`Collection C ${Date.now()}`)
@@ -77,6 +77,50 @@ describe("[CRITICAL] Collection Tree Context Menus", () => {
       const col2Index = afterMoveOrder.indexOf(col2)
       // col1 should now be after col2
       expect(col2Index).toBe(col1Index - 1)
+    })
+  })
+
+  describe("Collection Menu - Critical Operations", () => {
+    it("[CRITICAL] deletes a collection", async () => {
+      const collectionId = await createCollection(`Delete Test ${Date.now()}`)
+      state.collectionIds.push(collectionId)
+
+      const beforeDelete = await getCollectionOrder()
+      expect(beforeDelete).toContain(collectionId)
+
+      await openCollectionMenu(collectionId)
+      await browser.pause(200)
+      await clickByTestId(`collection-menu:item:delete:${collectionId}`)
+
+      const deleteDialog = await browser.$("[data-test-id='delete-dialog']")
+      await deleteDialog.waitForDisplayed()
+      await clickByTestId("delete-dialog:confirm-button")
+
+      await browser.pause(300)
+      const afterDelete = await getCollectionOrder()
+      expect(afterDelete).not.toContain(collectionId)
+    })
+
+    it("[CRITICAL] renames a collection", async () => {
+      const collectionId = await createCollection(`Rename Test ${Date.now()}`)
+      state.collectionIds.push(collectionId)
+
+      await openCollectionMenu(collectionId)
+      await browser.pause(200)
+      await clickByTestId(`collection-menu:item:rename:${collectionId}`)
+
+      const renameDialog = await browser.$("[data-test-id='rename-dialog']")
+      await renameDialog.waitForDisplayed()
+
+      const input = await browser.$("[data-test-id='rename-dialog:name-input']")
+      await input.clearValue()
+      await input.setValue("Renamed Collection")
+      await clickByTestId("rename-dialog:confirm-button")
+
+      await browser.pause(300)
+      // Verify collection still exists after rename
+      const order = await getCollectionOrder()
+      expect(order).toContain(collectionId)
     })
   })
 })
