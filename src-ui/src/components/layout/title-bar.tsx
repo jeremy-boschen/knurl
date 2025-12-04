@@ -1,12 +1,27 @@
+import { useLayoutEffect, useRef, useState } from "react"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 import { MaximizeIcon, MinusIcon, PlusIcon, XIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { RestoreIcon } from "@/components/icons"
 import { ScratchCollectionId, useCollectionsApi, useOpenTabs, useRequestTab } from "@/state"
 import { Breadcrumbs } from "./breadcrumbs"
 import { EnvironmentSelector } from "./environment-selector"
 
 export function TitleBar() {
+  const [isMaximized, setIsMaximized] = useState(false)
+  const isLoadedRef = useRef(false)
+
+  useLayoutEffect(() => {
+    const updateWindowState = async () => {
+      const window = await getCurrentWindow()
+      setIsMaximized(await window.isMaximized())
+      isLoadedRef.current = true
+    }
+
+    updateWindowState()
+  }, [])
+
   const activeTabData = useRequestTab()
   const {
     actions: { requestTabsApi },
@@ -18,6 +33,17 @@ export function TitleBar() {
     await collectionsApi().loadCollection(ScratchCollectionId)
 
     requestTabsApi.createRequestTab()
+  }
+
+  const handleMaximizeRestore = async () => {
+    const window = await getCurrentWindow()
+    if (isMaximized) {
+      await window.unmaximize()
+      setIsMaximized(false)
+    } else {
+      await window.maximize()
+      setIsMaximized(true)
+    }
   }
 
   return (
@@ -64,11 +90,15 @@ export function TitleBar() {
         variant="ghost"
         size="icon"
         className="h-8 w-8"
-        onClick={() => getCurrentWindow().toggleMaximize()}
+        onClick={handleMaximizeRestore}
         data-test-id="title-bar:maximize-button"
         data-tauri-drag-region="false"
       >
-        <MaximizeIcon className="h-4 w-4" />
+        {isMaximized ? (
+          <RestoreIcon className="h-4 w-4" />
+        ) : (
+          <MaximizeIcon className="h-4 w-4" />
+        )}
       </Button>
       <Button
         variant="ghost"
