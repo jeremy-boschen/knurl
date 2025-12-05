@@ -3,7 +3,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src-ui/src/*"],
-      "@test/*": ["src-ui/test/*"]
+      "@test/*": ["src-ui/test/*"],
+      "@e2e/*": ["src-common/e2e/*"]
     }
   },
   "files": [],
