@@ -45,16 +45,19 @@ if (fs.existsSync(testResultsDir)) {
     files.forEach((file) => {
       try {
         const results = JSON.parse(fs.readFileSync(path.join(testResultsDir, file), 'utf-8'))
-        if (results.specs) {
-          results.specs.forEach((spec) => {
-            if (!spec.pass) {
-              const failedTests = spec.tests ? spec.tests.filter((t) => !t.pass) : []
-              failedTests.forEach((test) => {
-                failures.e2e.push({
-                  file: spec.file || 'unknown',
-                  test: test.title || spec.uid,
-                  error: test.error?.message || 'Test failed',
-                })
+        const specFile = results.specs?.[0] || 'unknown'
+
+        if (results.suites && Array.isArray(results.suites)) {
+          results.suites.forEach((suite) => {
+            if (suite.tests && Array.isArray(suite.tests)) {
+              suite.tests.forEach((test) => {
+                if (test.state === 'failed') {
+                  failures.e2e.push({
+                    file: specFile,
+                    test: `${suite.name} > ${test.name}`,
+                    error: test.error?.message || 'Test failed',
+                  })
+                }
               })
             }
           })
