@@ -159,7 +159,36 @@ export async function resetOverlays(attempts = 2): Promise<void> {
   for (let i = 0; i < attempts; i += 1) {
     try {
       await browser.keys([ESCAPE_KEY])
-      await browser.pause(50)
+      // Wait for any overlay/modal to actually close
+      // Check if there are any visible modal or dialog overlays
+      await browser.waitUntil(
+        async () => {
+          // Look for visible overlay elements that might indicate open dialogs/modals
+          const overlays = await browser.execute(() => {
+            // Check for common overlay indicators
+            const backdrop = document.querySelector('[data-radix-dialog-overlay], [role="dialog"], .modal-backdrop')
+            if (!backdrop) {
+              return 0
+            }
+            // Return number of visible overlays
+            return Array.from(document.querySelectorAll('[data-radix-dialog-overlay], [role="dialog"], .modal-backdrop')).filter(
+              (el) => {
+                const style = window.getComputedStyle(el as HTMLElement)
+                return style.display !== 'none' && style.visibility !== 'hidden'
+              },
+            ).length
+          })
+          // Continue if there are still overlays visible
+          return overlays === 0
+        },
+        {
+          timeout: 2000,
+          interval: 50,
+          timeoutMsg: "Overlay did not close after pressing Escape",
+        },
+      ).catch(() => {
+        // It's OK if this times out - overlays might not exist
+      })
     } catch {
       break
     }
@@ -235,8 +264,18 @@ export async function setInputText(testId: string, value: string): Promise<void>
   await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
   await element.click()
   await element.setValue(value)
-  // Small pause to allow React state updates to propagate
-  await browser.pause(50)
+  // Wait for the value to be set on the element (for controlled inputs)
+  await browser.waitUntil(
+    async () => {
+      const val = await element.getValue()
+      return val === value
+    },
+    {
+      timeout: DEFAULT_TIMEOUT,
+      interval: 50,
+      timeoutMsg: `Input did not update to "${value}"`,
+    },
+  )
 }
 
 export async function getInputText(testId: string): Promise<string> {
@@ -298,23 +337,46 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
   await trigger.scrollIntoView({ block: "center", inline: "center" })
   await withFallbackClick(trigger)
 
-  // Wait for option to appear in DOM after menu opens
+  // Wait for the option to appear in DOM and become displayed
+  // Radix UI portals can take time to render, so we poll with retries
   await browser.waitUntil(
     async () => {
       try {
-        const option = await $(` [data-test-id="${optionTestId}"]`)
+        const option = await $(`[data-test-id="${optionTestId}"]`)
         return await option.isDisplayed()
       } catch {
         return false
       }
     },
-    { timeout: DEFAULT_TIMEOUT, interval: 100 },
+    {
+      timeout: DEFAULT_TIMEOUT,
+      interval: 100,
+      timeoutMsg: `Option ${optionTestId} did not appear after opening menu`,
+    },
   )
 
   const option = await getElementByTestId(optionTestId)
   await option.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
   await option.scrollIntoView({ block: "center", inline: "center" })
   await withFallbackClick(option)
+
+  // Wait for menu to close after selection (option should disappear)
+  await browser.waitUntil(
+    async () => {
+      try {
+        const opt = await $(`[data-test-id="${optionTestId}"]`)
+        return !(await opt.isDisplayed())
+      } catch {
+        // Element doesn't exist anymore (menu closed)
+        return true
+      }
+    },
+    {
+      timeout: 5000,
+      interval: 100,
+      timeoutMsg: `Menu did not close after selecting ${optionTestId}`,
+    },
+  )
 }
 
 export async function setSwitchState(testId: string, desired: boolean): Promise<void> {
@@ -429,10 +491,26 @@ export async function openCollectionMenu(collectionId: string): Promise<void> {
   try {
     await row.moveTo()
   } catch {}
-  await browser.pause(50)
   // Right-click to open context menu
   await row.click({ button: 2 })
-  await browser.pause(200)
+  // Wait for context menu to appear (look for any visible menu item)
+  await browser.waitUntil(
+    async () => {
+      // Wait for at least one context menu item to be visible
+      const contextMenuItems = await $$('[role="menuitem"]')
+      for (const item of contextMenuItems) {
+        if (await item.isDisplayed()) {
+          return true
+        }
+      }
+      return false
+    },
+    {
+      timeout: 5000,
+      interval: 100,
+      timeoutMsg: "Context menu did not appear after right-click",
+    },
+  )
 }
 
 export async function selectCollectionRow(collectionId: string): Promise<void> {
@@ -450,15 +528,47 @@ export async function expectAttributeValue(testId: string, attribute: string, ex
 export async function selectMenuActionById(actionId: string, options: { triggerTestId: string }): Promise<void> {
   // Click the menu trigger to open it
   await clickByTestId(options.triggerTestId)
-  await browser.pause(300)
 
-  // Click the menu action by its ID - use extended timeout for menu items
-  // especially on second+ invocations where menu may have animation delays
+  // Wait for the menu to open by checking if the action item becomes displayed
+  await browser.waitUntil(
+    async () => {
+      try {
+        const actionElement = await $(`[data-test-id="${actionId}"]`)
+        return await actionElement.isDisplayed()
+      } catch {
+        return false
+      }
+    },
+    {
+      timeout: 20000,
+      interval: 100,
+      timeoutMsg: `Menu action ${actionId} did not appear after opening menu`,
+    },
+  )
+
+  // Click the menu action
   const actionElement = await $(`[data-test-id="${actionId}"]`)
   await actionElement.waitForDisplayed({ timeout: 20000 })
-  await browser.pause(150) // Extra wait to ensure menu item is ready
+  await actionElement.scrollIntoView({ block: "center", inline: "center" })
   await withFallbackClick(actionElement)
-  await browser.pause(200) // Wait for menu to close after selection
+
+  // Wait for menu to close after selection (action item should disappear)
+  await browser.waitUntil(
+    async () => {
+      try {
+        const elem = await $(`[data-test-id="${actionId}"]`)
+        return !(await elem.isDisplayed())
+      } catch {
+        // Element doesn't exist anymore (menu closed)
+        return true
+      }
+    },
+    {
+      timeout: 5000,
+      interval: 100,
+      timeoutMsg: `Menu did not close after selecting ${actionId}`,
+    },
+  )
 }
 
 /**
@@ -631,13 +741,17 @@ export async function waitForCollectionIdByName(name: string, timeout = 25000): 
   }
 
   let foundId: string | null = null
-  while (Date.now() - start < timeout) {
-    foundId = await scrollAndFind()
-    if (foundId) {
-      break
-    }
-    await browser.pause(150)
-  }
+  await browser.waitUntil(
+    async () => {
+      foundId = await scrollAndFind()
+      return Boolean(foundId)
+    },
+    {
+      timeout,
+      interval: 150,
+      timeoutMsg: `Collection "${name}" not found in sidebar tree after scrolling`,
+    },
+  )
 
   if (!foundId) {
     throw new Error(`Collection "${name}" not found in sidebar tree`)

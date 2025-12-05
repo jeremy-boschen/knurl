@@ -836,6 +836,12 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     await resetOverlays()
   })
 
+  afterEach(async () => {
+    // Close any open sheets/dialogs from the previous test
+    await resetOverlays(3)
+    await browser.pause(200)
+  })
+
   it("request inherits Basic auth from collection", async () => {
     // Create a collection
     const collectionName = `BasicAuthCollection-${Date.now()}`
@@ -849,7 +855,8 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     await getElementByTestId("collection-settings:sheet", 5000)
     await clickByTestId("collection-settings:auth-tab-button")
 
-    // Set auth type to Basic
+    // Set auth type to Basic - use small pause before dropdown to ensure ready
+    await browser.pause(200)
     await selectOptionByTestId("collection-auth:type-trigger", "collection-auth:type-basic")
 
     // Configure basic auth credentials at collection level
@@ -865,11 +872,16 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     await openCollectionMenu(collectionId)
     await clickByTestId(`collection-menu:item:request:new:${collectionId}`)
 
+    // Wait for create-request dialog and fill in name
+    await getElementByTestId("create-request-dialog", 5000)
+    await setInputText("create-request-dialog:name-input", `Request-${Date.now()}`)
+    await clickByTestId("create-request-dialog:confirm-button")
+
     // Wait for request editor to be ready
     await waitForRequestEditor()
 
     // Extra pause to ensure the input is fully ready
-    await browser.pause(1000)
+    await browser.pause(500)
 
     // Set request URL using the same method as existing tests
     const mockUrl = `http://127.0.0.1:3000/mock/get`
@@ -969,11 +981,16 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     await openCollectionMenu(collectionId)
     await clickByTestId(`collection-menu:item:request:new:${collectionId}`)
 
+    // Wait for create-request dialog and fill in name
+    await getElementByTestId("create-request-dialog", 5000)
+    await setInputText("create-request-dialog:name-input", `Request-${Date.now()}`)
+    await clickByTestId("create-request-dialog:confirm-button")
+
     // Wait for request editor to be ready
     await waitForRequestEditor()
 
     // Extra pause to ensure the input is fully ready
-    await browser.pause(1000)
+    await browser.pause(500)
 
     // Set request URL using the same method as existing tests
     const mockUrl = `http://127.0.0.1:3000/mock/get`
@@ -1072,11 +1089,16 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     await openCollectionMenu(collectionId)
     await clickByTestId(`collection-menu:item:request:new:${collectionId}`)
 
+    // Wait for create-request dialog and fill in name
+    await getElementByTestId("create-request-dialog", 5000)
+    await setInputText("create-request-dialog:name-input", `Request-${Date.now()}`)
+    await clickByTestId("create-request-dialog:confirm-button")
+
     // Wait for request editor to be ready
     await waitForRequestEditor()
 
     // Extra pause to ensure the input is fully ready
-    await browser.pause(1000)
+    await browser.pause(500)
 
     // Set request URL using the same method as existing tests
     const mockUrl = `http://127.0.0.1:3000/mock/get`
@@ -1160,11 +1182,16 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     await openCollectionMenu(collectionId)
     await clickByTestId(`collection-menu:item:request:new:${collectionId}`)
 
+    // Wait for create-request dialog and fill in name
+    await getElementByTestId("create-request-dialog", 5000)
+    await setInputText("create-request-dialog:name-input", `Request-${Date.now()}`)
+    await clickByTestId("create-request-dialog:confirm-button")
+
     // Wait for request editor to be ready
     await waitForRequestEditor()
 
     // Extra pause to ensure the input is fully ready
-    await browser.pause(1000)
+    await browser.pause(500)
 
     // Set request URL
     const mockUrl = `http://127.0.0.1:3000/mock/get`
