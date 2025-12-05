@@ -58,7 +58,7 @@ import {
   setInputText,
   waitForCollectionIdByName,
   resetOverlays,
-} from "../support/ui"
+} from "@e2e/support"
 
 describe("Feature Name", () => {
   before(async () => {
@@ -131,11 +131,13 @@ it("renames collection via menu", async () => {
 
 ## Helper Functions (Use These)
 
-All helpers are in `test/support/ui.ts`. **Never use raw WebDriver commands** (e.g., `await $()`, `await element.click()`). Helpers have retry logic and proper polling.
+All helpers are in `test/support/ui.ts`. **Never use raw WebDriver commands** (e.g., `await $()`,
+`await element.click()`). Helpers have retry logic and proper polling.
 
 ### Core Setup
 
 **ensureWorkspaceReady()** — Wait for app hydration
+
 ```typescript
 before(async () => {
   await ensureWorkspaceReady()
@@ -143,6 +145,7 @@ before(async () => {
 ```
 
 **ensureSidebarExpanded()** — Expand sidebar before collection tree
+
 ```typescript
 await ensureSidebarExpanded()
 await createCollection("My Collection")
@@ -151,6 +154,7 @@ await createCollection("My Collection")
 ### Element Interaction (Retry-Safe)
 
 **getElementByTestId(testId, timeout?, options?)** — Find element with retries
+
 ```typescript
 // Has built-in retry + 50ms polling
 const button = await getElementByTestId("submit-button")
@@ -160,18 +164,21 @@ const button = await $('[data-test-id="submit-button"]')
 ```
 
 **clickByTestId(testId)** — Click with proper timing
+
 ```typescript
 await clickByTestId("save-button")  // ✅ Correct
 await element.click()                // ❌ Wrong
 ```
 
 **setInputText(testId, value)** — Clear + set with focus
+
 ```typescript
 await setInputText("name-input", "New Name")  // ✅ Handles clear
 await input.setValue("New Name")               // ❌ May not clear
 ```
 
 **clearInputText(testId)** — Clear field completely
+
 ```typescript
 await clearInputText("search-input")
 ```
@@ -179,21 +186,25 @@ await clearInputText("search-input")
 ### Collections
 
 **createCollection(name)** — Create via UI, return ID
+
 ```typescript
 const id = await createCollection("My Collection")
 ```
 
 **waitForCollectionIdByName(name)** — Find collection, throw if not found
+
 ```typescript
 const id = await waitForCollectionIdByName("My Collection")
 ```
 
 **openCollectionMenu(collectionId)** — Open context menu
+
 ```typescript
 await openCollectionMenu(collectionId)
 ```
 
 **selectMenuActionById(actionId, options?)** — Click menu item
+
 ```typescript
 await selectMenuActionById("collection-menu:item:delete:123", {
   triggerTestId: "collection-menu:trigger"
@@ -203,12 +214,14 @@ await selectMenuActionById("collection-menu:item:delete:123", {
 ### Requests
 
 **waitForRequestEditor()** — Wait for URL input to appear
+
 ```typescript
 await openNewRequestViaUI()
 await waitForRequestEditor()
 ```
 
 **waitForActiveRequestTab()** — Get currently active request tab key
+
 ```typescript
 const tabKey = await waitForActiveRequestTab()
 expect(tabKey).toBeTruthy()
@@ -217,11 +230,13 @@ expect(tabKey).toBeTruthy()
 ### State Verification
 
 **expectAttributeValue(testId, attr, expected)** — Assert attribute
+
 ```typescript
 await expectAttributeValue("collection-row:123", "data-selected", "true")
 ```
 
 **expectTextContent(testId, expected)** — Assert text content
+
 ```typescript
 await expectTextContent("collection-name:123", "My Collection")
 ```
@@ -229,6 +244,7 @@ await expectTextContent("collection-name:123", "My Collection")
 ### Cleanup
 
 **resetOverlays()** — Close modals, sheets, dropdowns
+
 ```typescript
 after(async () => {
   await resetOverlays()
@@ -242,6 +258,7 @@ after(async () => {
 **Problem:** `getElementByTestId()` waits full 15s when element appears in 100ms
 
 **Solution:** Element has wrong test-id or different DOM structure
+
 - Check browser console for actual test-id values
 - Verify element is actually visible (not hidden)
 - Use `getElementByTestId(..., 5000)` for shorter timeout
@@ -251,6 +268,7 @@ after(async () => {
 **Problem:** State pollution from previous test suites
 
 **Solution:** Already isolated via temp config dirs. If still failing:
+
 1. Verify `test/fixtures/settings.json` has `autoSave: 0`
 2. Add explicit `beforeEach` cleanup
 3. Use `browser.refresh()` between feature areas
@@ -260,6 +278,7 @@ after(async () => {
 **Problem:** Using `browser.execute(() => window.location.reload())`
 
 **Solution:** Always use `browser.refresh()`:
+
 ```typescript
 // ❌ WRONG - breaks WebDriver
 await browser.execute(() => window.location.reload())
@@ -274,6 +293,7 @@ await ensureWorkspaceReady()
 **Problem:** WebDriver focus on element, not window
 
 **Solution:**
+
 ```typescript
 await browser.execute(() => window.focus())
 await browser.keys(['Control', 'r'])
@@ -282,6 +302,7 @@ await browser.keys(['Control', 'r'])
 ### Test Is Flaky (Intermittent Failures)
 
 **Causes & Fixes:**
+
 1. Missing `ensureWorkspaceReady()` — Add to `before()`
 2. Using raw `$()` instead of helpers — Replace with `getElementByTestId()`
 3. Sidebar collapsed — Call `ensureSidebarExpanded()` before tree interaction
@@ -304,17 +325,18 @@ await $('[data-test-id="button"]').waitForDisplayed({ timeout: 15000 })
 
 ### Timing Guidelines
 
-| Operation | Expected Time | Notes |
-|---|---|---|
-| App startup | 5.5s | Cold Tauri + React init |
-| Page reload | 5.5s | Full re-init |
-| Element detection | 50-150ms | 50ms polling vs 500-1000ms default |
-| Dialog open/close | 1-2s | Includes animations |
-| Import parse | 0.1-0.5s | Very fast, UI renders ~60ms |
+| Operation         | Expected Time | Notes                              |
+|-------------------|---------------|------------------------------------|
+| App startup       | 5.5s          | Cold Tauri + React init            |
+| Page reload       | 5.5s          | Full re-init                       |
+| Element detection | 50-150ms      | 50ms polling vs 500-1000ms default |
+| Dialog open/close | 1-2s          | Includes animations                |
+| Import parse      | 0.1-0.5s      | Very fast, UI renders ~60ms        |
 
 ### Test Settings Fixture
 
 Auto-save disabled in tests:
+
 ```json
 {
   "requests": {
@@ -409,6 +431,7 @@ await btn.click()
 ```
 
 → Use helpers:
+
 ```typescript
 await setInputText("name", "Name")
 await clickByTestId("save")
@@ -433,6 +456,7 @@ await clickByTestId("dropdown-item")
 ```
 
 → Open container first:
+
 ```typescript
 await clickByTestId("dropdown-trigger")
 await clickByTestId("dropdown-item")  // Now visible

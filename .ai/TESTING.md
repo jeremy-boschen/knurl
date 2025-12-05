@@ -7,14 +7,17 @@ When to use unit, E2E, or integration tests. Decision tree for test-driven devel
 ### Start Here: What Are You Testing?
 
 **Q1: Testing a React component in isolation?**
+
 - YES → **Unit Test** (Vitest + React Testing Library)
 - NO → Continue to Q2
 
 **Q2: Testing user-visible behavior via UI interactions?**
+
 - YES → **E2E Test** (WebDriver.io)
 - NO → Continue to Q3
 
 **Q3: Testing backend behavior (file I/O, encryption, Tauri)?**
+
 - YES → **Integration Test** (requires approval)
 - NO → **Unit Test** (mock dependencies)
 
@@ -73,21 +76,21 @@ describe('MyComponent', () => {
 ### Rules
 
 1. **Mock ALL external dependencies:**
-   - Tauri IPC (use `mockIPC` from `src/test/setup.ts`)
-   - Filesystem access
-   - Network calls
-   - Zustand stores (when testing outside context)
+    - Tauri IPC (use `mockIPC` from `src/test/setup.ts`)
+    - Filesystem access
+    - Network calls
+    - Zustand stores (when testing outside context)
 
 2. **Focus on:**
-   - Component rendering
-   - User interactions
-   - State changes
-   - Error states
+    - Component rendering
+    - User interactions
+    - State changes
+    - Error states
 
 3. **Don't:**
-   - Render full app (use `<AppProvider>` for integration)
-   - Test routing (unit test is wrong place)
-   - Make real HTTP calls
+    - Render full app (use `<AppProvider>` for integration)
+    - Test routing (unit test is wrong place)
+    - Make real HTTP calls
 
 ### Run Tests
 
@@ -131,7 +134,7 @@ import {
   createCollection,
   clickByTestId,
   waitForCollectionIdByName,
-} from "../support/ui"
+} from "@e2e/support"
 
 describe("Collections Management", () => {
   before(async () => {
@@ -155,10 +158,10 @@ describe("Collections Management", () => {
 2. **Create state via UI only** (clicks, typing)
 3. **Verify via DOM queries only** (what the UI displays)
 4. **Never:**
-   - Access internal state (`__vite_ssr_modules__`)
-   - Call Tauri commands directly
-   - Access filesystem
-   - Use `browser.execute()` to inspect state
+    - Access internal state (`__vite_ssr_modules__`)
+    - Call Tauri commands directly
+    - Access filesystem
+    - Use `browser.execute()` to inspect state
 
 ### Run Targeted
 
@@ -176,23 +179,24 @@ yarn test:e2e --spec="test/specs/requests.e2e.ts" --test="creates request"
 **ALL THREE must be true:**
 
 1. **Backend verification is essential**
-   - Behavior depends on file I/O, encryption, Tauri commands
-   - Implementation details NOT exposed in UI
-   - Cannot verify via DOM inspection
+    - Behavior depends on file I/O, encryption, Tauri commands
+    - Implementation details NOT exposed in UI
+    - Cannot verify via DOM inspection
 
 2. **Cannot test via E2E alone**
-   - State cannot be created via UI interactions
-   - Outcome cannot be verified by inspecting DOM
-   - Need bridge method access for verification
+    - State cannot be created via UI interactions
+    - Outcome cannot be verified by inspecting DOM
+    - Need bridge method access for verification
 
 3. **Cannot test via unit test**
-   - Requires real app state (not mocked)
-   - Requires actual file system access
-   - Requires Tauri backend integration
+    - Requires real app state (not mocked)
+    - Requires actual file system access
+    - Requires Tauri backend integration
 
 ### Examples
 
 **✅ Justified:**
+
 ```typescript
 // Persists collections to disk and restores on reload
 // Cannot verify file persistence through UI alone
@@ -200,6 +204,7 @@ yarn test:e2e --spec="test/specs/requests.e2e.ts" --test="creates request"
 ```
 
 **❌ Not justified:**
+
 ```typescript
 // Tests that UI correctly displays collection name
 // Can test via E2E - create via UI, inspect DOM for name
@@ -272,6 +277,7 @@ mod tests {
 **Location:** Inline in `src/` files
 
 **Rules:**
+
 - No real network calls
 - No real file I/O (mock filesystem)
 - Test error cases
@@ -292,6 +298,7 @@ fn encrypts_and_decrypts() {
 **Location:** `src-tauri/tests/`
 
 **Rules:**
+
 - Can use real crypto (encryption test)
 - No network calls
 - No real user authentication
@@ -384,18 +391,18 @@ it('saves collection', async () => {
 
 ## Quick Reference
 
-| Scenario | Test Type | Why |
-|---|---|---|
-| Component renders correctly | Unit | Fast, isolated |
-| User can create collection | E2E | Tests real workflow |
-| Collection persists to disk | Integration | Needs file verification |
-| Hook returns correct value | Unit | No external deps |
-| Button click triggers action | E2E | User-visible behavior |
-| Request parsed correctly | Unit | Logic test |
-| Auth token encrypted properly | Integration | Crypto verification |
-| User can rename request | E2E | Complete UX test |
-| Sorting algorithm works | Unit | No UI involved |
-| Collections survive app reload | Integration | File + UI verification |
+| Scenario                       | Test Type   | Why                     |
+|--------------------------------|-------------|-------------------------|
+| Component renders correctly    | Unit        | Fast, isolated          |
+| User can create collection     | E2E         | Tests real workflow     |
+| Collection persists to disk    | Integration | Needs file verification |
+| Hook returns correct value     | Unit        | No external deps        |
+| Button click triggers action   | E2E         | User-visible behavior   |
+| Request parsed correctly       | Unit        | Logic test              |
+| Auth token encrypted properly  | Integration | Crypto verification     |
+| User can rename request        | E2E         | Complete UX test        |
+| Sorting algorithm works        | Unit        | No UI involved          |
+| Collections survive app reload | Integration | File + UI verification  |
 
 ---
 
