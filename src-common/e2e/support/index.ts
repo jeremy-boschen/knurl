@@ -1,3 +1,3 @@
 // Re-export UI and event helpers
-export * from "./ui.ts"
-export * from "./events.ts"
+export * from "./ui"
+export * from "./events"
