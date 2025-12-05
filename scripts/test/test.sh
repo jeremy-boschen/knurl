@@ -152,16 +152,16 @@ if [ "$RUN_E2E" = true ]; then
   echo ""
   echo "3️⃣  Running E2E tests..."
   
-  # Construct command
-  CMD="yarn wdio run ./wdio.conf.ts"
-  
+  # Construct command with proper quoting
+  CMD=("yarn" "wdio" "run" "./wdio.conf.ts")
+
   # Add captured args
   for arg in "${WDIO_ARGS[@]}"; do
-    CMD="$CMD $arg"
+    CMD+=("$arg")
   done
-  
-  echo "   > $CMD"
-  eval "$CMD"
+
+  echo "   > ${CMD[@]}"
+  "${CMD[@]}"
 
   echo "Aggregating E2E coverage..."
   node scripts/test/aggregate-e2e-coverage.mjs
