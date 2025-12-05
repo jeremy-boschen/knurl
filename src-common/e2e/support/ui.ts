@@ -161,34 +161,36 @@ export async function resetOverlays(attempts = 2): Promise<void> {
       await browser.keys([ESCAPE_KEY])
       // Wait for any overlay/modal to actually close
       // Check if there are any visible modal or dialog overlays
-      await browser.waitUntil(
-        async () => {
-          // Look for visible overlay elements that might indicate open dialogs/modals
-          const overlays = await browser.execute(() => {
-            // Check for common overlay indicators
-            const backdrop = document.querySelector('[data-radix-dialog-overlay], [role="dialog"], .modal-backdrop')
-            if (!backdrop) {
-              return 0
-            }
-            // Return number of visible overlays
-            return Array.from(document.querySelectorAll('[data-radix-dialog-overlay], [role="dialog"], .modal-backdrop')).filter(
-              (el) => {
+      await browser
+        .waitUntil(
+          async () => {
+            // Look for visible overlay elements that might indicate open dialogs/modals
+            const overlays = await browser.execute(() => {
+              // Check for common overlay indicators
+              const backdrop = document.querySelector('[data-radix-dialog-overlay], [role="dialog"], .modal-backdrop')
+              if (!backdrop) {
+                return 0
+              }
+              // Return number of visible overlays
+              return Array.from(
+                document.querySelectorAll('[data-radix-dialog-overlay], [role="dialog"], .modal-backdrop'),
+              ).filter((el) => {
                 const style = window.getComputedStyle(el as HTMLElement)
-                return style.display !== 'none' && style.visibility !== 'hidden'
-              },
-            ).length
-          })
-          // Continue if there are still overlays visible
-          return overlays === 0
-        },
-        {
-          timeout: 2000,
-          interval: 50,
-          timeoutMsg: "Overlay did not close after pressing Escape",
-        },
-      ).catch(() => {
-        // It's OK if this times out - overlays might not exist
-      })
+                return style.display !== "none" && style.visibility !== "hidden"
+              }).length
+            })
+            // Continue if there are still overlays visible
+            return overlays === 0
+          },
+          {
+            timeout: 2000,
+            interval: 50,
+            timeoutMsg: "Overlay did not close after pressing Escape",
+          },
+        )
+        .catch(() => {
+          // It's OK if this times out - overlays might not exist
+        })
     } catch {
       break
     }
