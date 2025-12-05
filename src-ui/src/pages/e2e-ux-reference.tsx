@@ -5,13 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -22,16 +16,29 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu"
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 type SelectOption = {
   value: string
@@ -73,7 +80,8 @@ export default function E2EUxReferencePage() {
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold">E2E UI Interaction Reference</h1>
         <p className="text-muted-foreground">
-          This page provides canonical component surfaces for end-to-end tests. Use the helpers in `src-common/e2e/support/ui.ts` to interact with these elements.
+          This page provides canonical component surfaces for end-to-end tests. Use the helpers in
+          `src-common/e2e/support/ui.ts` to interact with these elements.
         </p>
       </header>
 
@@ -188,9 +196,7 @@ export default function E2EUxReferencePage() {
         <p className="text-sm text-muted-foreground" data-test-id="ux-reference:dropdown-value">
           Last action: <span className="font-mono text-foreground">{menuValue || "<none>"}</span>
         </p>
-        <p className="text-xs text-muted-foreground">
-          Helper: selectOptionByTestId (works with DropdownMenuItems)
-        </p>
+        <p className="text-xs text-muted-foreground">Helper: selectOptionByTestId (works with DropdownMenuItems)</p>
       </section>
 
       {/* DROPDOWN MENU WITH RADIO GROUP */}
@@ -208,11 +214,7 @@ export default function E2EUxReferencePage() {
             <DropdownMenuContent data-test-id="ux-reference:dropdown-radio-content">
               <DropdownMenuRadioGroup value={radioValue} onValueChange={setRadioValue}>
                 {radioOptions.map((option) => (
-                  <DropdownMenuRadioItem
-                    key={option.value}
-                    value={option.value}
-                    data-test-id={option.testId}
-                  >
+                  <DropdownMenuRadioItem key={option.value} value={option.value} data-test-id={option.testId}>
                     {option.label}
                   </DropdownMenuRadioItem>
                 ))}
@@ -233,7 +235,10 @@ export default function E2EUxReferencePage() {
         <div className="space-y-2">
           <Label>Right-click on the box below</Label>
           <ContextMenu open={contextMenuOpen} onOpenChange={setContextMenuOpen}>
-            <ContextMenuTrigger className="flex h-32 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/50 bg-muted/50" data-test-id="ux-reference:context-target">
+            <ContextMenuTrigger
+              className="flex h-32 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/50 bg-muted/50"
+              data-test-id="ux-reference:context-target"
+            >
               <span className="text-sm text-muted-foreground">Right-click here</span>
             </ContextMenuTrigger>
             <ContextMenuContent data-test-id="ux-reference:context-menu-content">
@@ -299,9 +304,7 @@ export default function E2EUxReferencePage() {
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-1">
               <Label htmlFor="ux-reference-checkbox">Checkbox</Label>
-              <p className="text-xs text-muted-foreground">
-                Check/uncheck (use setCheckboxState)
-              </p>
+              <p className="text-xs text-muted-foreground">Check/uncheck (use setCheckboxState)</p>
             </div>
             <Checkbox
               id="ux-reference-checkbox"
@@ -323,10 +326,7 @@ export default function E2EUxReferencePage() {
         <h2 className="text-xl font-semibold">Buttons</h2>
 
         <div className="flex gap-3">
-          <Button
-            data-test-id="ux-reference:button-primary"
-            onClick={() => setButtonClicks((count) => count + 1)}
-          >
+          <Button data-test-id="ux-reference:button-primary" onClick={() => setButtonClicks((count) => count + 1)}>
             Primary
           </Button>
           <Button
@@ -355,9 +355,7 @@ export default function E2EUxReferencePage() {
         <p className="text-sm text-muted-foreground" data-test-id="ux-reference:button-count">
           Total clicks: <span className="font-mono text-foreground">{buttonClicks}</span>
         </p>
-        <p className="text-xs text-muted-foreground">
-          Helper: clickByTestId
-        </p>
+        <p className="text-xs text-muted-foreground">Helper: clickByTestId</p>
       </section>
 
       {/* DIALOG SECTION */}
@@ -403,9 +401,7 @@ export default function E2EUxReferencePage() {
         <p className="text-sm text-muted-foreground" data-test-id="ux-reference:dialog-input-value">
           Dialog input: <span className="font-mono text-foreground">{dialogInput || "<empty>"}</span>
         </p>
-        <p className="text-xs text-muted-foreground">
-          Note: Dialog blocks interaction with page elements
-        </p>
+        <p className="text-xs text-muted-foreground">Note: Dialog blocks interaction with page elements</p>
       </section>
 
       {/* ALERT DIALOG SECTION */}
@@ -467,9 +463,7 @@ export default function E2EUxReferencePage() {
         <p className="text-sm text-muted-foreground" data-test-id="ux-reference:tabs-active">
           Active tab: <span className="font-mono text-foreground">{activeTab}</span>
         </p>
-        <p className="text-xs text-muted-foreground">
-          Helper: clickByTestId to switch tabs
-        </p>
+        <p className="text-xs text-muted-foreground">Helper: clickByTestId to switch tabs</p>
       </section>
 
       {/* ALERTS SECTION */}
