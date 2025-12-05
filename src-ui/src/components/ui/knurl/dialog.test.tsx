@@ -1,6 +1,6 @@
 import React, { type ReactNode } from "react"
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
 const dialogContentHandlers = vi.hoisted(() => ({
   onPointerDownOutside: null as ((event: { preventDefault: () => void }) => void) | null,
@@ -24,7 +24,7 @@ vi.mock("@radix-ui/react-dialog", async () => {
   }
 })
 
-import { Dialog, DialogContent, DialogOverlay, DialogPortal, DialogTitle } from "./dialog"
+import { Dialog, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogTitle } from "./dialog"
 
 const renderDialog = (content: ReactNode, props: Record<string, any> = {}) =>
   render(
@@ -32,9 +32,7 @@ const renderDialog = (content: ReactNode, props: Record<string, any> = {}) =>
       <DialogPortal>
         <DialogOverlay />
         <DialogContent aria-describedby="dialog-description">
-          <p id="dialog-description" className="sr-only">
-            Dialog body
-          </p>
+          <DialogDescription id="dialog-description">Dialog body</DialogDescription>
           {content}
         </DialogContent>
       </DialogPortal>
@@ -42,6 +40,30 @@ const renderDialog = (content: ReactNode, props: Record<string, any> = {}) =>
   )
 
 describe("Knurl Dialog", () => {
+  const consoleError = console.error
+  const consoleWarn = console.warn
+
+  beforeAll(() => {
+    vi.spyOn(console, "error").mockImplementation((...args: any[]) => {
+      if (typeof args[0] === "string" && args[0].includes("Missing `Description`")) {
+        // Radix dev warning is noisy in tests; description is provided in fixtures.
+        return
+      }
+      consoleError(...args)
+    })
+    vi.spyOn(console, "warn").mockImplementation((...args: any[]) => {
+      if (typeof args[0] === "string" && args[0].includes("Missing `Description`")) {
+        return
+      }
+      consoleWarn(...args)
+    })
+  })
+
+  afterAll(() => {
+    ;(console.error as any).mockRestore?.()
+    ;(console.warn as any).mockRestore?.()
+  })
+
   it("renders close button by default when open", () => {
     renderDialog(<DialogTitle>Sample</DialogTitle>)
     expect(screen.getByRole("button", { name: /close/i })).toBeInTheDocument()
@@ -61,9 +83,7 @@ describe("Knurl Dialog", () => {
         <DialogPortal>
           <DialogOverlay />
           <DialogContent aria-describedby="dialog-description">
-            <p id="dialog-description" className="sr-only">
-              Dialog content
-            </p>
+            <DialogDescription id="dialog-description">Dialog content</DialogDescription>
             <DialogTitle>Static</DialogTitle>
           </DialogContent>
         </DialogPortal>
@@ -79,9 +99,7 @@ describe("Knurl Dialog", () => {
         <DialogPortal>
           <DialogOverlay />
           <DialogContent aria-describedby="dialog-description">
-            <p id="dialog-description" className="sr-only">
-              Dialog content
-            </p>
+            <DialogDescription id="dialog-description">Dialog content</DialogDescription>
             <DialogTitle>Resizable</DialogTitle>
           </DialogContent>
         </DialogPortal>
@@ -103,9 +121,7 @@ describe("Knurl Dialog", () => {
         <DialogPortal>
           <DialogOverlay />
           <DialogContent aria-describedby="dialog-description">
-            <p id="dialog-description" className="sr-only">
-              Dialog content
-            </p>
+            <DialogDescription id="dialog-description">Dialog content</DialogDescription>
             <DialogTitle>Resize</DialogTitle>
           </DialogContent>
         </DialogPortal>
@@ -149,9 +165,7 @@ describe("Knurl Dialog", () => {
         <DialogPortal>
           <DialogOverlay />
           <DialogContent aria-describedby="dialog-description">
-            <p id="dialog-description" className="sr-only">
-              Dialog content
-            </p>
+            <DialogDescription id="dialog-description">Dialog content</DialogDescription>
             <DialogTitle>Guard</DialogTitle>
           </DialogContent>
         </DialogPortal>

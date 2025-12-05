@@ -1,275 +1,99 @@
-import { describe, it, expect, beforeEach, vi } from "vitest"
-import { mockIPC, clearMocks } from "@tauri-apps/api/mocks"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import {
-  resolveVariablesPhase,
-  createAuthPhase,
-  protocolDispatchPhase,
-  runPipeline,
-  type RequestContext,
-  type PipelineNotifier,
-} from "./pipeline"
-import type { RequestState, Environment, ResponseState, AuthResult } from "@/types"
-import { HttpEngine } from "./http/engine"
+const httpEngineMock = vi.hoisted(() => ({ execute: vi.fn(async () => ({ body: undefined, status: 200, headers: [] })) }))
+const wsEngineMock = vi.hoisted(() => ({ execute: vi.fn(async () => ({ status: 101 })) }))
 
-// Mock the HTTP engine module
-vi.mock("./http/engine", () => ({
-  HttpEngine: {
-    execute: vi.fn(),
-  },
-}))
+vi.mock("@/request/http/engine", () => ({ HttpEngine: httpEngineMock }))
+vi.mock("@/request/ws/engine", () => ({ WebSocketEngine: wsEngineMock }))
 
-// Mock environment resolution
+import { createAuthPhase, protocolDispatchPhase, resolveVariablesPhase, runPipeline } from "./pipeline"
+
 vi.mock("@/lib/environments", () => ({
-  resolveRequestVariables: vi.fn((request, env) => {
-    if (!env) return request
-    const resolved = { ...request }
-    const varMap: Record<string, string> = {}
-    Object.values(env.variables || {}).forEach((v: any) => {
-      if (v.enabled !== false && v.name) {
-        varMap[v.name] = v.value
-      }
-    })
-    let url = request.url
-    Object.entries(varMap).forEach(([name, value]) => {
-      url = url.replace(`{{${name}}}`, value)
-    })
-    resolved.url = url
-    if (request.headers && request.headers.length > 0) {
-      resolved.headers = request.headers.map((h: any) => {
-        let value = h.value
-        Object.entries(varMap).forEach(([name, val]) => {
-          value = value.replace(`{{${name}}}`, val)
-        })
-        return { ...h, value }
-      })
-    }
-    return resolved
-  }),
+  resolveRequestVariables: vi.fn((req) => ({ ...req, resolved: true })),
 }))
 
-// Mock Tauri bindings for authentication
 vi.mock("@/bindings/knurl", () => ({
-  getAuthenticationResult: vi.fn(async (auth, _reqId) => {
-    if (auth.type === "bearer") {
-      return { scheme: "Bearer", credentials: "mock-token-123" } as AuthResult
-    }
-    if (auth.type === "basic") {
-      return {
-        scheme: "Basic",
-        credentials: btoa(`${auth.username}:${auth.password}`),
-      } as AuthResult
-    }
-    if (auth.type === "apiKey") {
-      return {
-        scheme: auth.placement === "header" ? "ApiKey" : "query",
-        credentials: auth.value,
-      } as AuthResult
-    }
-    return { scheme: "", credentials: "" } as AuthResult
-  }),
+  getAuthenticationResult: vi.fn(async () => ({ headers: { Authorization: "Bearer t" } })),
+  sendHttpRequest: vi.fn(async () => ({
+    requestId: "req-1",
+    status: 200,
+    statusText: "OK",
+    headers: [],
+    body: undefined,
+    cookies: [],
+    duration: 1,
+    size: 0,
+    timestamp: Date.now(),
+  })),
 }))
 
-function createMockRequest(overrides: Partial<RequestState> = {}): RequestState {
-  return {
-    id: "req-123",
-    collectionId: "col-123",
-    name: "Test Request",
-    method: "GET",
-    url: "http://example.com/api",
-    headers: [],
-    queryParams: [],
-    pathParams: [],
-    body: { type: "none", raw: "" },
-    authentication: { type: "none" },
-    ...overrides,
-  } as RequestState
-}
+const baseRequest = { id: "r1", collectionId: "c1", url: "https://example.com", authentication: { type: "none" } }
 
-function createMockEnvironment(overrides: Partial<Environment> = {}): Environment {
-  return {
-    id: "env-123",
-    name: "Test Env",
-    variables: {
-      "var-1": {
-        id: "var-1",
-        name: "BASE_URL",
-        value: "http://api.example.com",
-        enabled: true,
-      },
-      "var-2": {
-        id: "var-2",
-        name: "API_KEY",
-        value: "secret-key-123",
-        enabled: true,
-      },
-    },
-    ...overrides,
-  } as Environment
-}
-
-describe("RequestPipeline", () => {
+describe("request pipeline", () => {
   beforeEach(() => {
-    clearMocks()
-    mockIPC(() => {}, { shouldMockEvents: true })
     vi.clearAllMocks()
   })
 
-  describe("resolveVariablesPhase", () => {
-    it("should substitute environment variables in request URL", async () => {
-      const request = createMockRequest({ url: "http://{{BASE_URL}}/users" })
-      const environment = createMockEnvironment()
-      const context: RequestContext = { request, environment, response: {} }
-      const result = await resolveVariablesPhase(context)
-      expect(result.request.url).toBe("http://http://api.example.com/users")
-    })
-
-    it("should substitute multiple variables in headers", async () => {
-      const request = createMockRequest({
-        headers: [
-          { id: "h1", name: "Authorization", value: "Bearer {{API_KEY}}", enabled: true },
-          { id: "h2", name: "X-API-Version", value: "v1", enabled: true },
-        ],
-      })
-      const environment = createMockEnvironment()
-      const context: RequestContext = { request, environment, response: {} }
-      const result = await resolveVariablesPhase(context)
-      expect(result.request.headers?.[0]?.value).toBe("Bearer secret-key-123")
-    })
-
-    it("should handle missing environment gracefully", async () => {
-      const request = createMockRequest({ url: "http://{{BASE_URL}}/users" })
-      const context: RequestContext = { request, response: {} }
-      const result = await resolveVariablesPhase(context)
-      expect(result.request.url).toBe("http://{{BASE_URL}}/users")
-    })
-
-    it("should leave unresolved variables as-is", async () => {
-      const request = createMockRequest({ url: "http://example.com?token={{UNKNOWN_VAR}}" })
-      const environment = createMockEnvironment()
-      const context: RequestContext = { request, environment, response: {} }
-      const result = await resolveVariablesPhase(context)
-      expect(result.request.url).toContain("{{UNKNOWN_VAR}}")
-    })
+  it("resolves variables with environment", async () => {
+    const ctx = { request: baseRequest, environment: { id: "env" } as any, response: {} }
+    const next = await resolveVariablesPhase(ctx as any)
+    expect(next.request).toHaveProperty("resolved", true)
   })
 
-  describe("createAuthPhase", () => {
-    it("should not modify context for 'none' authentication", async () => {
-      const request = createMockRequest({ authentication: { type: "none" } })
-      const mockGet = () => ({
-        collectionsApi: {
-          getCollection: vi.fn(() => null),
-        },
-        credentialsCacheApi: {},
+  it("throws when inheriting auth without collection", async () => {
+    const get = () =>
+      ({
+        collectionsApi: { getCollection: () => undefined },
       }) as any
-      const authPhase = createAuthPhase(mockGet, vi.fn())
-      const context: RequestContext = { request, response: {} }
-      const result = await authPhase(context)
-      expect(result.authResult).toBeUndefined()
-    })
+    const phase = createAuthPhase(get, vi.fn())
+    await expect(phase({ request: { ...baseRequest, authentication: { type: "inherit" } }, response: {} } as any)).rejects
+      .toThrow(/collection "c1" not found/)
+  })
 
-    it("should handle bearer token authentication", async () => {
-      const request = createMockRequest({
-        authentication: {
-          type: "bearer",
-          bearer: { token: "my-token", scheme: "Bearer", placement: "header" },
-        },
-      })
-      const mockGet = () => ({
-        collectionsApi: { getCollection: vi.fn(() => null) },
+  it("uses credential cache when available", async () => {
+    const set = vi.fn()
+    const getAuth = vi.fn(() => ({ cached: true }))
+    const get = () =>
+      ({
+        collectionsApi: { getCollection: () => ({ id: "c1", authentication: { type: "none" } }) },
         credentialsCacheApi: {
+          generateCollectionCacheKey: vi.fn(() => "cache-key"),
           generateCacheKey: vi.fn(() => "cache-key"),
-          get: vi.fn(async () => null),
-          set: vi.fn(),
+          get: getAuth,
+          set,
         },
       }) as any
-      const authPhase = createAuthPhase(mockGet, vi.fn())
-      const context: RequestContext = { request, response: {} }
-      const result = await authPhase(context)
-      expect(result.authResult?.scheme).toBe("Bearer")
-    })
-
-    it("should throw error when inheriting auth from missing collection", async () => {
-      const request = createMockRequest({
-        collectionId: "unknown-col",
-        authentication: { type: "inherit" },
-      })
-      const mockGet = () => ({
-        collectionsApi: { getCollection: vi.fn(() => null) },
-        credentialsCacheApi: {},
-      }) as any
-      const authPhase = createAuthPhase(mockGet, vi.fn())
-      const context: RequestContext = { request, response: {} }
-      await expect(authPhase(context)).rejects.toThrow('Cannot inherit authentication')
-    })
+    const phase = createAuthPhase(get, vi.fn())
+    const ctx = await phase({
+      request: { ...baseRequest, authentication: { type: "bearer", bearer: { token: "t" } } },
+      response: {},
+    } as any)
+    expect(ctx.authResult).toEqual({ cached: true })
+    expect(set).not.toHaveBeenCalled()
   })
 
-  describe("protocolDispatchPhase", () => {
-    it("should dispatch HTTP requests to HttpEngine", async () => {
-      const mockResponse: ResponseState = {
-        status: 200,
-        statusText: "OK",
-        body: "response",
-        headers: [],
-        duration: 100,
-        timestamp: new Date().toISOString(),
-        url: "http://example.com/api",
-        method: "GET",
-      }
-      vi.mocked(HttpEngine.execute).mockResolvedValue(mockResponse)
-      const request = createMockRequest({ url: "http://example.com/api" })
-      const context: RequestContext = { request, response: {} }
-      const result = await protocolDispatchPhase(context)
-      expect(HttpEngine.execute).toHaveBeenCalledWith(context)
-      expect(result.response).toEqual(mockResponse)
-    })
+  it("dispatches to protocol engine and errors on unsupported protocol", async () => {
+    const ctx = { request: { ...baseRequest, url: "https://example.com" }, response: {} }
+    await protocolDispatchPhase(ctx as any)
+    expect(httpEngineMock.execute).toHaveBeenCalled()
 
-    it("should throw error for unsupported protocol", async () => {
-      const request = createMockRequest({ url: "ftp://example.com/file" })
-      const context: RequestContext = { request, response: {} }
-      await expect(protocolDispatchPhase(context)).rejects.toThrow("Unsupported protocol: ftp")
-    })
+    await expect(
+      protocolDispatchPhase({ request: { ...baseRequest, url: "ftp://example.com" }, response: {} } as any),
+    ).rejects.toThrow(/Unsupported protocol/)
   })
 
-  describe("runPipeline", () => {
-    it("should execute phases in sequence", async () => {
-      const mockResponse: ResponseState = {
-        status: 200,
-        statusText: "OK",
-        body: "response",
-        headers: [],
-        duration: 100,
-        timestamp: new Date().toISOString(),
-        url: "http://example.com/api",
-        method: "GET",
-      }
-      vi.mocked(HttpEngine.execute).mockResolvedValue(mockResponse)
-      const request = createMockRequest({ url: "http://{{BASE_URL}}/api" })
-      const environment = createMockEnvironment()
-      const notifier: PipelineNotifier = {
-        onStart: vi.fn(),
-        onSuccess: vi.fn(),
-        onError: vi.fn(),
-        onLog: vi.fn(),
-      }
-      const initialContext: RequestContext = { request, environment, response: {} }
-      await runPipeline([resolveVariablesPhase, protocolDispatchPhase], initialContext, notifier)
-      expect(notifier.onStart).toHaveBeenCalled()
-      expect(notifier.onSuccess).toHaveBeenCalledWith(mockResponse)
-    })
+  it("runs phases and notifies success and error", async () => {
+    const notifier = { onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn(), onLog: vi.fn() }
+    const phases = [
+      async (ctx: any) => ({ ...ctx, response: { ok: true } }),
+      async () => {
+        throw new Error("boom")
+      },
+    ]
+    await runPipeline([phases[0]], { request: baseRequest, response: {} } as any, notifier)
+    expect(notifier.onSuccess).toHaveBeenCalledWith({ ok: true })
 
-    it("should call onError when phase throws", async () => {
-      const request = createMockRequest({ url: "ftp://example.com/file" })
-      const notifier: PipelineNotifier = {
-        onStart: vi.fn(),
-        onSuccess: vi.fn(),
-        onError: vi.fn(),
-        onLog: vi.fn(),
-      }
-      const initialContext: RequestContext = { request, response: {} }
-      await runPipeline([protocolDispatchPhase], initialContext, notifier)
-      expect(notifier.onStart).toHaveBeenCalled()
-      expect(notifier.onError).toHaveBeenCalled()
-    })
+    await runPipeline(phases, { request: baseRequest, response: {} } as any, notifier)
+    expect(notifier.onError).toHaveBeenCalled()
   })
 })

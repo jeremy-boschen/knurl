@@ -37,7 +37,7 @@ describe("ThemeSelector", () => {
   it("fetches registry and allows selecting a theme", async () => {
     const user = userEvent.setup()
 
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ items: [
         { type: "registry:style", name: "solarized", title: "Solarized", cssVars: { theme: {}, light: {}, dark: {} } },
@@ -70,7 +70,7 @@ describe("ThemeSelector", () => {
   it("is inert when disabled", async () => {
     const user = userEvent.setup()
 
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items: [] }) })
     const onThemeSelect = vi.fn()
     render(<ThemeSelector onThemeSelect={onThemeSelect} disabled={true} />)
 
