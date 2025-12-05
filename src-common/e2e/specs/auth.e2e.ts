@@ -854,8 +854,51 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     await getElementByTestId("collection-settings:sheet", 5000)
     await clickByTestId("collection-settings:auth-tab-button")
 
-    // Set auth type to Basic
-    await selectOptionByTestId("collection-auth:type-trigger", "collection-auth:type-basic")
+    // Wait for auth panel to be fully rendered and interactive
+    await browser.waitUntil(
+      async () => {
+        try {
+          const trigger = await getElementByTestId("collection-auth:type-trigger", 1000)
+          const isDisplayed = await trigger.isDisplayed()
+          const isEnabled = await trigger.isEnabled().catch(() => true)
+          return isDisplayed && isEnabled
+        } catch {
+          return false
+        }
+      },
+      {
+        timeout: 10000,
+        interval: 200,
+        timeoutMsg: "Collection auth type trigger did not become ready",
+      },
+    )
+
+    // Click the auth type dropdown trigger
+    const trigger = await getElementByTestId("collection-auth:type-trigger")
+    await trigger.scrollIntoView({ block: "center", inline: "center" })
+    await trigger.click()
+
+    // Wait for the dropdown option to appear
+    await browser.waitUntil(
+      async () => {
+        try {
+          const option = await $(`[data-test-id="collection-auth:type-basic"]`)
+          return await option.isDisplayed()
+        } catch {
+          return false
+        }
+      },
+      {
+        timeout: 10000,
+        interval: 200,
+        timeoutMsg: "Collection auth basic option did not appear",
+      },
+    )
+
+    // Click the Basic auth option
+    const basicOption = await getElementByTestId("collection-auth:type-basic")
+    await basicOption.scrollIntoView({ block: "center", inline: "center" })
+    await basicOption.click()
 
     // Configure basic auth credentials at collection level
     const collectionUsername = "collection-user"
