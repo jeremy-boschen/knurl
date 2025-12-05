@@ -838,8 +838,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
 
   afterEach(async () => {
     // Close any open sheets/dialogs from the previous test
-    await resetOverlays(3)
-    await browser.pause(200)
+    await resetOverlays(5)
   })
 
   it("request inherits Basic auth from collection", async () => {
@@ -855,8 +854,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     await getElementByTestId("collection-settings:sheet", 5000)
     await clickByTestId("collection-settings:auth-tab-button")
 
-    // Set auth type to Basic - use small pause before dropdown to ensure ready
-    await browser.pause(200)
+    // Set auth type to Basic
     await selectOptionByTestId("collection-auth:type-trigger", "collection-auth:type-basic")
 
     // Configure basic auth credentials at collection level

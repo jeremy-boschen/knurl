@@ -461,8 +461,25 @@ export async function waitForTestIdToDisappear(testId: string, timeout = DEFAULT
  * await selectOptionByTestId("method-dropdown", "method:post")
  */
 export async function selectOptionByTestId(selectTriggerTestId: string, optionTestId: string): Promise<void> {
-  const trigger = await getElementByTestId(selectTriggerTestId)
-  await trigger.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
+  // Wait for trigger to be in the DOM and visible - give extra time for lazy-loaded content
+  let trigger = await getElementByTestId(selectTriggerTestId, DEFAULT_TIMEOUT, { initialDelay: 100 })
+  await browser.waitUntil(
+    async () => {
+      try {
+        trigger = await getElementByTestId(selectTriggerTestId, 1000)
+        const displayed = await trigger.isDisplayed()
+        return displayed
+      } catch {
+        return false
+      }
+    },
+    {
+      timeout: 10000,
+      interval: 150,
+      timeoutMsg: `Select trigger ${selectTriggerTestId} did not become visible`,
+    },
+  )
+
   await trigger.scrollIntoView({ block: "center", inline: "center" })
   await withFallbackClick(trigger)
 

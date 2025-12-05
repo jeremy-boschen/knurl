@@ -63,7 +63,7 @@ export function CollectionContextMenu({ children }: CollectionContextMenuProps) 
 
   return (
     <ContextMenu onOpenChange={handleContextMenuClose}>
-      <ContextMenuTrigger asChild onContextMenu={handleContextMenuOpen}>
+      <ContextMenuTrigger onContextMenu={handleContextMenuOpen}>
         {children}
       </ContextMenuTrigger>
       {activeMenuItem &&
