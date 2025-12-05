@@ -79,6 +79,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src-ui/src"),
       "@test": path.resolve(__dirname, "./src-ui/test"),
       "@e2e": path.resolve(__dirname, "./src-common/e2e"),
+      "@e2e/support": path.resolve(__dirname, "./src-common/e2e/support"),
       // Use React profiling build for accurate performance metrics
       'react-dom/client': 'react-dom/profiling',
       // This is needed for recent codemirror styling. No idea why

@@ -13,7 +13,8 @@
     "paths": {
       "@/*": ["src-ui/src/*"],
       "@test/*": ["src-ui/test/*"],
-      "@e2e/*": ["src-common/e2e/*"]
+      "@e2e/*": ["src-common/e2e/*"],
+      "@e2e/support": ["src-common/e2e/support"]
     },
     "strict": true,
     "noImplicitOverride": true,
