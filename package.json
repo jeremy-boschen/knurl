@@ -123,7 +123,6 @@
     "eslint-plugin-react-compiler": "^19.1.0-rc.2",
     "execa": "^9.6.0",
     "expect-webdriverio": "^5.5.0",
-    "istanbul-api": "^3.0.0",
     "istanbul-lib-coverage": "^3.2.2",
     "jsdom": "^27.2.0",
     "knip": "^5.70.2",
