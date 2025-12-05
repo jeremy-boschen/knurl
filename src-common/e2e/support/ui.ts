@@ -298,18 +298,33 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
   await trigger.scrollIntoView({ block: "center", inline: "center" })
   await withFallbackClick(trigger)
 
+  // Brief pause to allow menu animation to start
+  await browser.pause(150)
+
   // Wait for option to appear in DOM after menu opens
-  await browser.waitUntil(
-    async () => {
-      try {
-        const option = await $(` [data-test-id="${optionTestId}"]`)
-        return await option.isDisplayed()
-      } catch {
-        return false
+  // Try multiple times as Radix UI portals can take time to render
+  let optionFound = false
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const option = await $(` [data-test-id="${optionTestId}"]`)
+      if (await option.isDisplayed()) {
+        optionFound = true
+        break
       }
-    },
-    { timeout: DEFAULT_TIMEOUT, interval: 100 },
-  )
+    } catch {
+      // Continue to next attempt
+    }
+    await browser.pause(200)
+  }
+
+  if (!optionFound) {
+    // Log available options for debugging
+    const availableOptions = await browser.execute((testIdPrefix) => {
+      const options = Array.from(document.querySelectorAll('[data-test-id*="type-"]'))
+      return options.map((el) => el.getAttribute("data-test-id")).filter((id) => id?.includes(testIdPrefix))
+    }, optionTestId.split(":")[0])
+    console.log(`Options found for ${optionTestId}:`, availableOptions)
+  }
 
   const option = await getElementByTestId(optionTestId)
   await option.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
