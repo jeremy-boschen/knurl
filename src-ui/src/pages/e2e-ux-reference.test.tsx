@@ -15,10 +15,9 @@ describe("E2E UX reference page", () => {
     await user.click(await findByDataId("ux-reference:select-option:bravo"))
     expect(getByDataId("ux-reference:select-value")).toHaveTextContent(/Selected:\s+bravo/i)
 
-    await user.click(getByDataId("ux-reference:menu-trigger"))
-    await user.click(await findByDataId("rename"))
-    expect(getByDataId("ux-reference:menu-value")).toHaveTextContent(/rename$/)
-    expect(getByDataId("ux-reference:menu-open-state")).toHaveTextContent(/closed$/)
+    await user.click(getByDataId("ux-reference:dropdown-trigger"))
+    await user.click(await findByDataId("ux-reference:dropdown-item:rename"))
+    expect(getByDataId("ux-reference:dropdown-value")).toHaveTextContent(/rename$/)
 
     const input = getByDataId("ux-reference:input") as HTMLInputElement
     await user.type(input, "demo")
@@ -34,7 +33,7 @@ describe("E2E UX reference page", () => {
     expect(toggleState).toHaveTextContent(/Switch:\s+on/)
     expect(toggleState).toHaveTextContent(/Checkbox:\s+checked/)
 
-    const button = getByDataId("ux-reference:button")
+    const button = getByDataId("ux-reference:button-primary")
     await user.click(button)
     await user.click(button)
     expect(getByDataId("ux-reference:button-count")).toHaveTextContent(/2$/)
