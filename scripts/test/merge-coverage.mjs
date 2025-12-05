@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import coverageLib from 'istanbul-lib-coverage'
-import istanbulApi from 'istanbul-api'
+import report from 'istanbul-lib-report'
+import reports from 'istanbul-reports'
 import { execSync, spawnSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
@@ -9,7 +10,7 @@ import { fileURLToPath } from 'url'
 import { spawn } from 'child_process'
 
 const { createCoverageMap } = coverageLib
-const { createReporter } = istanbulApi
+const { createContext } = report
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const projectRoot = path.resolve(__dirname, '../..')
@@ -105,11 +106,12 @@ try {
     ? process.env.COVERAGE_REPORTERS.split(',').map(r => r.trim())
     : ['json', 'json-summary', 'lcov', 'text', 'text-summary', 'html']
 
-  const reporter = createReporter()
-  reporter.addAll(requestedReporters)
-
   const coverageDir = path.join(projectRoot, 'coverage')
-  reporter.write(normalizedMap, coverageDir)
+  const context = createContext({ coverageMap: normalizedMap, dir: coverageDir })
+
+  requestedReporters.forEach(reportType => {
+    reports.create(reportType, {}).execute(context)
+  })
 
   console.log(`\n✓ Generated merged coverage report`)
   console.log(`  Reports: ${requestedReporters.join(', ')}`)
