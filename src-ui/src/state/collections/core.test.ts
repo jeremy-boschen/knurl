@@ -23,15 +23,20 @@ const {
   touch,
   setupCollectionStorage,
 } = CoreModule
+import { loadAppData, saveAppData } from "@/bindings/knurl"
 import { RootCollectionFolderId } from "@/types/collections/collection"
 import type { Application, Collection, CollectionCache } from "@/types"
 import { sanitizeCollection } from "@/state/collections-lib"
 const sanitizeCollectionMock = sanitizeCollection as unknown as vi.Mock
 
-vi.mock("@/bindings/knurl", () => ({
-  isAppError: (error: { code?: string } | undefined, codes: string[]) =>
-    !!error && typeof error.code === "string" && codes.includes(error.code),
-}))
+vi.mock("@/bindings/knurl", () => {
+  const loadAppData = vi.fn()
+  const saveAppData = vi.fn()
+  const deleteAppData = vi.fn()
+  const isAppError = (error: { code?: string } | undefined, codes: string[]) =>
+    !!error && typeof error.code === "string" && codes.includes(error.code)
+  return { isAppError, loadAppData, saveAppData, deleteAppData }
+})
 
 const createAppState = (): Application => ({
   collectionsState: {
@@ -46,6 +51,8 @@ describe("collections/core", () => {
 
   beforeEach(() => {
     clearLoadedCollectionsForTesting()
+    vi.mocked(loadAppData).mockReset()
+    vi.mocked(saveAppData).mockReset()
   })
 
   afterEach(() => {
@@ -211,5 +218,73 @@ describe("collections/core", () => {
     await provider.save?.(true)
     expect(saveCollection).toHaveBeenCalledTimes(2)
     expect(sanitizeCollectionMock).toHaveBeenCalledTimes(2)
+  })
+
+  it("migrates index ordering for legacy versions", async () => {
+    const entries = [
+      { id: "c2", name: "Two" },
+      { id: ScratchCollectionId, name: "Scratch" },
+      { id: "c1", name: "One" },
+    ] as any
+    vi.mocked(loadAppData).mockResolvedValueOnce({
+      header: { version: 1, updated: new Date().toISOString() },
+      content: entries,
+    })
+    const migrated = await CollectionIndexStorage.load("index.json")
+    expect(migrated[0].id).toBe(ScratchCollectionId)
+    expect(migrated.find((e) => e.id === "c1")?.order).toBe(2)
+    expect(migrated.find((e) => e.id === "c2")?.order).toBe(1)
+    expect(saveAppData).toHaveBeenCalled()
+  })
+
+  it("migrates request order for legacy collections", async () => {
+    const baseRequest = {
+      collectionId: "legacy",
+      folderId: RootCollectionFolderId,
+      order: 0,
+      pathParams: {},
+      queryParams: {},
+      headers: {},
+      cookieParams: {},
+      body: { type: "none" },
+      authentication: { type: "none" },
+      method: "GET",
+      url: "https://example.com",
+    }
+    const collection = {
+      id: "legacy",
+      name: "Legacy",
+      description: "",
+      updated: "2020-01-01T00:00:00.000Z",
+      encryption: { algorithm: "aes-gcm" },
+      authentication: { type: "none" },
+      environments: {},
+      folders: {
+        [RootCollectionFolderId]: {
+          id: RootCollectionFolderId,
+          name: "Root",
+          parentId: null,
+          order: 0,
+          childFolderIds: [],
+          requestIds: ["b", "a"],
+        },
+      },
+      requests: {
+        a: { ...baseRequest, id: "a", name: "Alpha", order: 0 },
+        b: { ...baseRequest, id: "b", name: "beta", order: 0 },
+      },
+      requestIndex: {},
+    } as any
+
+    vi.mocked(loadAppData).mockResolvedValueOnce({
+      header: { version: 1, updated: new Date().toISOString() },
+      content: collection,
+    })
+    const migrated = await CollectionStorage.load("collection.json")
+    const root = migrated.folders[RootCollectionFolderId]
+    expect(root.requestIds).toEqual(["a", "b"])
+    expect(migrated.requests.a.order).toBe(1)
+    expect(migrated.requests.b.order).toBe(2)
+    expect(saveAppData).toHaveBeenCalled()
   })
 })

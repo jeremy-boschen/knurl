@@ -29,7 +29,8 @@
     "update": "yarn up \\* && cd src-tauri && cargo update",
     "docs:dev": "rm -rf documentation/.astro documentation/dist && node scripts/build/generate-docs-sidebar.mjs && cd documentation && astro dev",
     "docs:build": "rm -rf documentation/.astro documentation/dist && node scripts/build/generate-docs-sidebar.mjs && cd documentation && astro build",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "commitlint": "node ./node_modules/.bin/commitlint"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.37.0",

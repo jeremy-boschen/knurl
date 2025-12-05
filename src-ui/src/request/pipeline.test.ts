@@ -96,4 +96,37 @@ describe("request pipeline", () => {
     await runPipeline(phases, { request: baseRequest, response: {} } as any, notifier)
     expect(notifier.onError).toHaveBeenCalled()
   })
+
+  it("reports error when URL is invalid or protocol unsupported", async () => {
+    const notifier = { onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn(), onLog: vi.fn() }
+
+    await runPipeline([protocolDispatchPhase], { request: { ...baseRequest, url: "ftp://host" }, response: {} } as any, notifier)
+    expect(notifier.onError).toHaveBeenCalled()
+
+    await runPipeline([protocolDispatchPhase], { request: { ...baseRequest, url: "not-a-url" }, response: {} } as any, notifier)
+    expect(notifier.onError).toHaveBeenCalledTimes(2)
+  })
+
+  it("fetches fresh auth when caching is disabled", async () => {
+    const getAuthResult = (await import("@/bindings/knurl")).getAuthenticationResult as any
+    const credentialsSet = vi.fn()
+    const get = () =>
+      ({
+        collectionsApi: { getCollection: () => ({ id: "c1", authentication: { type: "none" } }) },
+        credentialsCacheApi: {
+          generateCollectionCacheKey: vi.fn(() => "cache-key"),
+          generateCacheKey: vi.fn(() => "cache-key"),
+          get: vi.fn(() => undefined),
+          set: credentialsSet,
+        },
+      }) as any
+    const phase = createAuthPhase(get, vi.fn())
+    await phase({
+      request: { ...baseRequest, authentication: { type: "oauth2", oauth2: { tokenCaching: "never" } } },
+      response: {},
+    } as any)
+
+    expect(getAuthResult).toHaveBeenCalled()
+    expect(credentialsSet).toHaveBeenCalled()
+  })
 })

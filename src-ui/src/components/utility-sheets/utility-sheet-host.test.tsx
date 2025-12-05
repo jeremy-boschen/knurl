@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { act, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -33,8 +33,8 @@ vi.mock("@/components/ui/sheet", () => {
 vi.mock("@/components/utility-sheets/settings", () => ({ default: () => <div>SettingsSheet</div> }))
 vi.mock("@/components/utility-sheets/import-collection", () => ({ default: () => <div>ImportSheet</div> }))
 vi.mock("@/components/utility-sheets/export-collection", () => ({ default: ({ collectionId }: any) => <div>Export {collectionId}</div> }))
-vi.mock("@/components/utility-sheets/collection-settings", () => ({ default: ({ tab }: any) => <div>CollectionSettings {tab}</div> }))
 vi.mock("@/components/utility-sheets/theme-editor", () => ({ default: () => <div>ThemeEditor</div> }))
+vi.mock("@/components/utility-sheets/collection-settings", () => ({ default: ({ tab, selectedEnvironmentId }: any) => <div>CollectionSettings {tab} {selectedEnvironmentId}</div> }))
 
 describe("UtilitySheetHost", () => {
   beforeEach(() => {
@@ -57,5 +57,36 @@ describe("UtilitySheetHost", () => {
     activeSheet = { id: "s2", type: "export", context: null }
     const { container } = render(<UtilitySheetHost />)
     expect(container.firstChild).toBeNull()
+  })
+
+  it("renders environment and collection-settings sheets", () => {
+    activeSheet = { id: "env1", type: "environment", context: { collectionId: "c1", selectedEnvironmentId: "envA" } }
+    const { rerender } = render(<UtilitySheetHost />)
+    expect(screen.getByText(/CollectionSettings environments envA/)).toBeInTheDocument()
+
+    activeSheet = { id: "cs1", type: "collection-settings", context: { collectionId: "c2", tab: "overview" } }
+    rerender(<UtilitySheetHost />)
+    expect(screen.getByText(/CollectionSettings overview/)).toBeInTheDocument()
+  })
+
+  it("unmounts content after close animation timeout", async () => {
+    vi.useFakeTimers()
+    activeSheet = { id: "s3", type: "settings" }
+    const { rerender, container } = render(<UtilitySheetHost />)
+    expect(screen.getByText("SettingsSheet")).toBeInTheDocument()
+
+    activeSheet = null
+    act(() => {
+      rerender(<UtilitySheetHost />)
+    })
+    // Still mounted until timer fires
+    expect(container.firstChild).not.toBeNull()
+
+    act(() => {
+      vi.advanceTimersByTime(400)
+      rerender(<UtilitySheetHost />)
+    })
+    expect(container.firstChild).toBeNull()
+    vi.useRealTimers()
   })
 })
