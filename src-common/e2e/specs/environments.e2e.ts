@@ -1,5 +1,3 @@
-import { expect } from "@wdio/globals"
-
 import {
   clickByTestId,
   createCollection,
@@ -12,6 +10,7 @@ import {
   waitForActiveRequestTab,
   waitForRequestEditor,
 } from "@e2e/support"
+import {expect} from "@wdio/globals"
 
 describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
   const state: {
@@ -119,7 +118,7 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
     if (secureToggleSelector) {
       await clickByTestId(secureToggleSelector)
       // Verify the value input changed to password type
-      const valueInput = await getElementByTestId(variableValueSelector, 5000)
+      const valueInput = await getElementByTestId(variableValueSelector!, 5000)
       const inputType = await valueInput.getAttribute("type")
       await expect(inputType).toBe("password")
     }
@@ -136,7 +135,7 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
 
     await resetOverlays()
     const selector = await getElementByTestId("environment-selector:trigger-button")
-    await expect(await selector.getText()).toContain("smoke env")
+    await expect(await selector.getText()).toContain("Smoke Env")
 
     await clickByTestId("environment-selector:trigger-button")
     await clickByTestId("environment-selector:no-environment-item")
@@ -147,10 +146,13 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
   })
 
   after(async () => {
-    await clickByTestId("environment-selector:trigger-button").catch(() => {})
+    await clickByTestId("environment-selector:trigger-button").catch(() => {
+    })
     await resetOverlays()
-    await openCollectionMenu("scratch").catch(() => {})
-    await browser.refresh().catch(() => {})
+    await openCollectionMenu("scratch").catch(() => {
+    })
+    await browser.refresh().catch(() => {
+    })
   })
 
   console.log("✅ Environment Manager Smoke tests completed")
