@@ -5,7 +5,7 @@
  * The bridge is registered on window.__KNURL_INTEGRATION_BRIDGE__ when VITE_INTEGRATION_ENABLED is set.
  */
 
-import type {RequestState, ResponseState} from "@/types"
+import type { RequestState, ResponseState } from "@/types"
 
 /**
  * Execute a request using the full RequestPipeline (same as the Send button)
