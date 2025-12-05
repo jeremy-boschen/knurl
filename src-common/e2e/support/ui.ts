@@ -298,6 +298,19 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
   await trigger.scrollIntoView({ block: "center", inline: "center" })
   await withFallbackClick(trigger)
 
+  // Wait for option to appear in DOM after menu opens
+  await browser.waitUntil(
+    async () => {
+      try {
+        const option = await $(` [data-test-id="${optionTestId}"]`)
+        return await option.isDisplayed()
+      } catch {
+        return false
+      }
+    },
+    { timeout: DEFAULT_TIMEOUT, interval: 100 },
+  )
+
   const option = await getElementByTestId(optionTestId)
   await option.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
   await option.scrollIntoView({ block: "center", inline: "center" })
