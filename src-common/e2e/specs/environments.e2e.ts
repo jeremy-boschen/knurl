@@ -10,7 +10,7 @@ import {
   waitForActiveRequestTab,
   waitForRequestEditor,
 } from "@e2e/support"
-import {expect} from "@wdio/globals"
+import { expect } from "@wdio/globals"
 
 describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
   const state: {
@@ -146,13 +146,10 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
   })
 
   after(async () => {
-    await clickByTestId("environment-selector:trigger-button").catch(() => {
-    })
+    await clickByTestId("environment-selector:trigger-button").catch(() => {})
     await resetOverlays()
-    await openCollectionMenu("scratch").catch(() => {
-    })
-    await browser.refresh().catch(() => {
-    })
+    await openCollectionMenu("scratch").catch(() => {})
+    await browser.refresh().catch(() => {})
   })
 
   console.log("✅ Environment Manager Smoke tests completed")
