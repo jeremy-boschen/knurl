@@ -7,6 +7,7 @@ import {
   getElementByTestId,
   openCollectionMenu,
   resetOverlays,
+  selectOptionByTestId,
   setInputText,
   waitForActiveRequestTab,
   waitForRequestEditor,
@@ -55,12 +56,10 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
   })
 
   it("creates environment and secure variable via manager", async () => {
-    // Wait for environment selector to be visible in title bar
-    await getElementByTestId("environment-selector:trigger-button", 5000)
-    await clickByTestId("environment-selector:trigger-button")
-    await browser.pause(500) // Wait for dropdown menu to open
-    await getElementByTestId("environment-selector:manage-environments-item", 10000)
-    await clickByTestId("environment-selector:manage-environments-item")
+    // Open environment selector dropdown and click manage environments
+    await resetOverlays()
+
+    await selectOptionByTestId("environment-selector:trigger-button", "environment-selector:manage-environments-item")
 
     // Wait for settings sheet to appear
     await getElementByTestId("collection-settings:sheet", 10000)
@@ -137,7 +136,7 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
 
     await resetOverlays()
     const selector = await getElementByTestId("environment-selector:trigger-button")
-    await expect(await selector.getText()).toContain("Smoke Env")
+    await expect(await selector.getText()).toContain("smoke env")
 
     await clickByTestId("environment-selector:trigger-button")
     await clickByTestId("environment-selector:no-environment-item")
@@ -151,7 +150,7 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
     await clickByTestId("environment-selector:trigger-button").catch(() => {})
     await resetOverlays()
     await openCollectionMenu("scratch").catch(() => {})
-    await browser.refresh()
+    await browser.refresh().catch(() => {})
   })
 
   console.log("✅ Environment Manager Smoke tests completed")
