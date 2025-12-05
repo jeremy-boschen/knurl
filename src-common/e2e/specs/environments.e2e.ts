@@ -11,7 +11,7 @@ import {
   setInputText,
   waitForActiveRequestTab,
   waitForRequestEditor,
-} from "../support/ui"
+} from "@e2e/support"
 
 describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
   const state: {
