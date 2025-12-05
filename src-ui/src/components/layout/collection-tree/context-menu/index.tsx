@@ -63,9 +63,7 @@ export function CollectionContextMenu({ children }: CollectionContextMenuProps) 
 
   return (
     <ContextMenu onOpenChange={handleContextMenuClose}>
-      <ContextMenuTrigger onContextMenu={handleContextMenuOpen}>
-        {children}
-      </ContextMenuTrigger>
+      <ContextMenuTrigger onContextMenu={handleContextMenuOpen}>{children}</ContextMenuTrigger>
       {activeMenuItem &&
         (() => {
           switch (activeMenuItem.kind) {
