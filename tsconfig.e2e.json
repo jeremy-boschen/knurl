@@ -1,21 +1,8 @@
 {
   "compilerOptions": {
-    "types": [
-      "node",
-      "@wdio/globals/types",
-      "expect-webdriverio",
-      "@types/mocha"
-    ],
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src-ui/src/*"],
-      "@test/*": ["src-ui/test/*"],
-      "@e2e/*": ["src-common/e2e/*"],
-      "@e2e/support": ["src-common/e2e/support"]
-    },
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "strict": true,
     "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true,
@@ -25,11 +12,21 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": [
+      "node",
+      "@wdio/globals/types",
+      "expect-webdriverio",
+      "@types/mocha"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src-ui/src/*"],
+      "@test/*": ["src-ui/test/*"],
+      "@e2e/*": ["src-common/e2e/*"]
+    }
   },
   "include": [
-    "src-common/e2e/**/*",
-    "test/**/*.ts"
+    "src-common/e2e/**/*"
   ]
 }
