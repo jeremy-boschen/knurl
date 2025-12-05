@@ -483,6 +483,24 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
   await trigger.scrollIntoView({ block: "center", inline: "center" })
   await withFallbackClick(trigger)
 
+  // Give the dropdown menu time to render after click
+  await browser.waitUntil(
+    async () => {
+      try {
+        // Check if ANY menu content has appeared by looking for common menu element selectors
+        const menuContent = await $('[role="menu"], [role="listbox"], [role="combobox"]')
+        return await menuContent.isDisplayed().catch(() => false)
+      } catch {
+        return false
+      }
+    },
+    {
+      timeout: 5000,
+      interval: 150,
+      timeoutMsg: `Menu did not open for trigger ${selectTriggerTestId}`,
+    },
+  )
+
   // Wait for the option to appear in DOM and become displayed
   // Radix UI portals can take time to render, so we poll with retries
   await browser.waitUntil(
@@ -816,10 +834,31 @@ export async function createCollection(name: string): Promise<string> {
   })
 
   await clickVisibleNewCollectionButton()
-  await getElementByTestId(NEW_COLLECTION_DIALOG_TEST_ID)
+  await getElementByTestId(NEW_COLLECTION_DIALOG_TEST_ID, 5000)
   await setInputText(`${NEW_COLLECTION_DIALOG_TEST_ID}:name-input`, name)
   await clickByTestId(`${NEW_COLLECTION_DIALOG_TEST_ID}:create-button`)
-  await waitForTestIdToDisappear(NEW_COLLECTION_DIALOG_TEST_ID)
+
+  // Wait for dialog to close - check both existence and visibility
+  await browser.waitUntil(
+    async () => {
+      try {
+        const element = await $(`[data-test-id="${NEW_COLLECTION_DIALOG_TEST_ID}"]`)
+        const exists = await element.isExisting()
+        if (!exists) {
+          return true
+        }
+        const displayed = await element.isDisplayed().catch(() => false)
+        return !displayed
+      } catch {
+        return true
+      }
+    },
+    {
+      timeout: 10000,
+      interval: 200,
+      timeoutMsg: `Dialog ${NEW_COLLECTION_DIALOG_TEST_ID} did not close`,
+    },
+  )
 
   const newTestId = await browser.waitUntil(
     async () => {

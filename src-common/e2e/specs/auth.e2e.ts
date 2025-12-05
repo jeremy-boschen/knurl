@@ -878,15 +878,9 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     // Wait for request editor to be ready
     await waitForRequestEditor()
 
-    // Extra pause to ensure the input is fully ready
-    await browser.pause(500)
-
     // Set request URL using the same method as existing tests
     const mockUrl = `http://127.0.0.1:3000/mock/get`
     await setInputText("request-workspace:url-input", mockUrl)
-
-    // Wait for URL to be properly synced to state
-    await browser.pause(500)
 
     // Click on auth tab and set to Inherit
     await clickByTestId("request-editor:auth-tab")
@@ -898,14 +892,8 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     const inheritText = await inheritMessage.getText()
     await expect(inheritText).toContain("inherits authentication from its parent")
 
-    // Wait a moment for auth to be set
-    await browser.pause(300)
-
     // Send request
     await clickByTestId("request-workspace:send-button")
-
-    // Wait a moment for request to be sent
-    await browser.pause(800)
 
     // Wait for response
     await browser.waitUntil(
@@ -987,29 +975,17 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     // Wait for request editor to be ready
     await waitForRequestEditor()
 
-    // Extra pause to ensure the input is fully ready
-    await browser.pause(500)
-
     // Set request URL using the same method as existing tests
     const mockUrl = `http://127.0.0.1:3000/mock/get`
     await setInputText("request-workspace:url-input", mockUrl)
-
-    // Wait for URL to be properly synced to state
-    await browser.pause(500)
 
     // Click on auth tab and set to Inherit
     await clickByTestId("request-editor:auth-tab")
     await clickByTestId("request-editor:auth-tab-dropdown-trigger")
     await clickByTestId("request-editor:auth-menu:type-inherit")
 
-    // Wait a moment for auth to be set
-    await browser.pause(300)
-
     // Send request
     await clickByTestId("request-workspace:send-button")
-
-    // Wait a moment for request to be sent
-    await browser.pause(800)
 
     // Wait for response
     await browser.waitUntil(
@@ -1095,29 +1071,17 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     // Wait for request editor to be ready
     await waitForRequestEditor()
 
-    // Extra pause to ensure the input is fully ready
-    await browser.pause(500)
-
     // Set request URL using the same method as existing tests
     const mockUrl = `http://127.0.0.1:3000/mock/get`
     await setInputText("request-workspace:url-input", mockUrl)
-
-    // Wait for URL to be properly synced to state
-    await browser.pause(500)
 
     // Click on auth tab and set to Inherit
     await clickByTestId("request-editor:auth-tab")
     await clickByTestId("request-editor:auth-tab-dropdown-trigger")
     await clickByTestId("request-editor:auth-menu:type-inherit")
 
-    // Wait a moment for auth to be set
-    await browser.pause(300)
-
     // Send request
     await clickByTestId("request-workspace:send-button")
-
-    // Wait a moment for request to be sent
-    await browser.pause(800)
 
     // Wait for response
     await browser.waitUntil(
@@ -1188,29 +1152,17 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     // Wait for request editor to be ready
     await waitForRequestEditor()
 
-    // Extra pause to ensure the input is fully ready
-    await browser.pause(500)
-
     // Set request URL
     const mockUrl = `http://127.0.0.1:3000/mock/get`
     await setInputText("request-workspace:url-input", mockUrl)
-
-    // Wait for URL to be properly synced to state
-    await browser.pause(500)
 
     // Click on auth tab and set to Inherit
     await clickByTestId("request-editor:auth-tab")
     await clickByTestId("request-editor:auth-tab-dropdown-trigger")
     await clickByTestId("request-editor:auth-menu:type-inherit")
 
-    // Wait a moment for auth to be set
-    await browser.pause(300)
-
     // Send request
     await clickByTestId("request-workspace:send-button")
-
-    // Wait a moment for request to be sent
-    await browser.pause(800)
 
     // Wait for response
     await browser.waitUntil(
