@@ -60,7 +60,10 @@ describe("Knurl Dialog", () => {
       <Dialog open modal={false} draggable={false} onOpenChange={() => {}}>
         <DialogPortal>
           <DialogOverlay />
-          <DialogContent>
+          <DialogContent aria-describedby="dialog-description">
+            <p id="dialog-description" className="sr-only">
+              Dialog content
+            </p>
             <DialogTitle>Static</DialogTitle>
           </DialogContent>
         </DialogPortal>
@@ -75,7 +78,10 @@ describe("Knurl Dialog", () => {
       <Dialog open modal={false} resizable size={{ min: { width: 200, height: 200 } }} onOpenChange={() => {}}>
         <DialogPortal>
           <DialogOverlay />
-          <DialogContent>
+          <DialogContent aria-describedby="dialog-description">
+            <p id="dialog-description" className="sr-only">
+              Dialog content
+            </p>
             <DialogTitle>Resizable</DialogTitle>
           </DialogContent>
         </DialogPortal>
@@ -96,7 +102,10 @@ describe("Knurl Dialog", () => {
       >
         <DialogPortal>
           <DialogOverlay />
-          <DialogContent>
+          <DialogContent aria-describedby="dialog-description">
+            <p id="dialog-description" className="sr-only">
+              Dialog content
+            </p>
             <DialogTitle>Resize</DialogTitle>
           </DialogContent>
         </DialogPortal>
