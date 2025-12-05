@@ -156,7 +156,7 @@ describe("[SUPPLEMENTAL] E2E UX Reference Page - Helper Library Tests", () => {
     it("clickByTestId triggers button clicks", async () => {
       // Reset by clicking Outline button to verify counter works
       const initialCount = await getElementByTestId("ux-reference:button-count", 5000)
-      const initialText = await initialCount.getText()
+      const _initialText = await initialCount.getText()
 
       // Click primary button multiple times
       await clickByTestId("ux-reference:button-primary")
@@ -175,7 +175,7 @@ describe("[SUPPLEMENTAL] E2E UX Reference Page - Helper Library Tests", () => {
       // Verify count increased
       const countElement = await getElementByTestId("ux-reference:button-count")
       const text = await countElement.getText()
-      const count = parseInt(text.match(/\d+/)?.[0] || "0")
+      const count = parseInt(text.match(/\d+/)?.[0] ?? "0", 10)
       await expect(count).toBeGreaterThanOrEqual(3)
     })
   })

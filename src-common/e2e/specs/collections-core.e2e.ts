@@ -13,7 +13,6 @@ import {
   resetOverlays,
   setInputText,
   simulateAppReload,
-  waitForCollectionIdByName,
   waitForRequestEditor,
   waitForTestIdToDisappear,
 } from "../support/ui"

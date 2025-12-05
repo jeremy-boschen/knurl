@@ -422,18 +422,19 @@ describe("React Profiler Metrics", () => {
   })
 
   it("collects CollectionTree render metrics when sidebar loads", async () => {
-    await clearProfilerMetrics()
+    // Don't clear metrics - we want to collect the mount metrics from app startup
+    // The Profiler will have recorded metrics during the initial render
 
     // Ensure collection tree is visible
     const sidebar = await getElementByTestId("collection-tree", 10000).catch(() => null)
     expect(sidebar).not.toBeNull()
     expect(await sidebar!.isDisplayed()).toBe(true)
 
-    // Collect initial metrics
+    // Collect initial metrics from startup (should include mount phase)
     const metrics = await getProfilerMetrics("CollectionTree")
     expect(metrics.length).toBeGreaterThan(0)
 
-    // Should have at least one mount phase
+    // Should have at least one mount phase from startup
     const mounts = metrics.filter((m) => m.phase === "mount")
     expect(mounts.length).toBeGreaterThan(0)
 

@@ -846,7 +846,6 @@ export async function waitForCollectionIdByName(name: string, timeout = 25000): 
     }
   })
 
-  const start = Date.now()
   const scrollAndFind = async (): Promise<string | null> => {
     const result = await browser.execute((searchName: string) => {
       const container = document.querySelector<HTMLElement>('[data-test-id="collection-tree"]')
