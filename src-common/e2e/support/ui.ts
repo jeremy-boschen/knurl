@@ -1,3 +1,29 @@
+/**
+ * E2E test helper functions for interacting with the UI.
+ *
+ * All helpers use semantic waits instead of arbitrary pauses, waiting for actual UI state changes.
+ *
+ * COMMON PATTERNS:
+ * - getElementByTestId(testId) - Foundation for all interactions, waits for element to exist
+ * - clickByTestId(testId) - Click a button or interactive element
+ * - setInputText(testId, value) - Set input value and wait for it to update
+ * - selectOptionByTestId(trigger, option) - Select from dropdown/menu and wait for close
+ * - setSwitchState(testId, true/false) - Toggle switch on/off
+ * - expectTextContent(testId, pattern) - Assert element contains text (regex or string)
+ * - waitForTestIdToDisappear(testId) - Wait for dialog/modal to close
+ *
+ * SETUP HELPERS:
+ * - ensureAppReady() - Wait for app to load before running tests
+ * - ensureWorkspaceReady() - Wait for full app hydration and state loading
+ * - navigateTo(path) - Navigate to a route
+ * - resetOverlays() - Close any open dialogs/modals
+ *
+ * COLLECTION/REQUEST HELPERS:
+ * - createCollection(name) - Create new collection via UI
+ * - openNewRequestViaUI() - Create new request and return tab key
+ * - selectMenuActionById(actionId, {triggerTestId}) - Select from context menu
+ */
+
 import { expect } from "@wdio/globals"
 
 const DEFAULT_TIMEOUT = 15000
@@ -62,6 +88,20 @@ async function withFallbackClick(element: WebdriverIO.Element): Promise<void> {
   }, element)
 }
 
+/**
+ * Find an element by its data-test-id attribute and wait for it to exist.
+ * Use this as the foundation for all element interactions.
+ *
+ * @param testId - The data-test-id value to search for
+ * @param timeout - How long to wait for element to appear (default 15s)
+ * @param options - Optional timing configuration
+ * @returns The WebdriverIO Element object once found
+ * @throws If element doesn't appear within timeout
+ *
+ * @example
+ * const button = await getElementByTestId("my-button")
+ * const input = await getElementByTestId("my-input", 5000) // custom timeout
+ */
 export async function getElementByTestId(
   testId: string,
   timeout = DEFAULT_TIMEOUT,
@@ -99,6 +139,19 @@ async function getActiveRequestTabKey(): Promise<string | null> {
   })
 }
 
+/**
+ * Wait for the active request tab to change from a previous value.
+ * Useful after operations that should open a new tab.
+ *
+ * @param previous - The previous active tab key (from getActiveRequestTabKey or null)
+ * @param timeout - How long to wait for change (default 15s)
+ * @returns The new active tab key
+ *
+ * @example
+ * const previousTab = await getActiveRequestTabKey()
+ * await clickByTestId("new-request-button")
+ * const newTab = await waitForActiveRequestTabChange(previousTab)
+ */
 export async function waitForActiveRequestTabChange(
   previous: string | null,
   timeout = DEFAULT_TIMEOUT,
@@ -261,6 +314,18 @@ export async function resetAppState(): Promise<void> {
   console.log(`[TEST] ${new Date().toISOString()} App state reset complete`)
 }
 
+/**
+ * Set an input field's value and wait for React to update it.
+ * Works with text inputs, textareas, and controlled components.
+ *
+ * @param testId - The data-test-id of the input element
+ * @param value - The text value to set
+ * @throws If input doesn't update to the expected value within timeout
+ *
+ * @example
+ * await setInputText("search-input", "hello world")
+ * await setInputText("name-field", "John Doe")
+ */
 export async function setInputText(testId: string, value: string): Promise<void> {
   const element = await getElementByTestId(testId)
   await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
@@ -280,12 +345,32 @@ export async function setInputText(testId: string, value: string): Promise<void>
   )
 }
 
+/**
+ * Get the current value of an input field.
+ *
+ * @param testId - The data-test-id of the input element
+ * @returns The current input value
+ *
+ * @example
+ * const value = await getInputText("email-input")
+ * expect(value).toBe("user@example.com")
+ */
 export async function getInputText(testId: string): Promise<string> {
   const element = await getElementByTestId(testId)
   await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
   return element.getValue()
 }
 
+/**
+ * Append text to an input field's existing value.
+ * Triggers onChange events like a real user would.
+ *
+ * @param testId - The data-test-id of the input element
+ * @param value - The text to append
+ *
+ * @example
+ * await appendInputText("url-input", "?param=value")
+ */
 export async function appendInputText(testId: string, value: string): Promise<void> {
   const element = await getElementByTestId(testId)
   await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
@@ -293,6 +378,14 @@ export async function appendInputText(testId: string, value: string): Promise<vo
   await element.addValue(value)
 }
 
+/**
+ * Clear an input field's value.
+ *
+ * @param testId - The data-test-id of the input element
+ *
+ * @example
+ * await clearInputText("search-input")
+ */
 export async function clearInputText(testId: string): Promise<void> {
   const element = await getElementByTestId(testId)
   await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
@@ -317,6 +410,16 @@ export async function waitForSendButtonReady(timeout = DEFAULT_TIMEOUT): Promise
   )
 }
 
+/**
+ * Click a button or clickable element by its data-test-id.
+ * Scrolls element into view and uses fallback click if standard click fails.
+ *
+ * @param testId - The data-test-id of the element to click
+ *
+ * @example
+ * await clickByTestId("submit-button")
+ * await clickByTestId("dialog:confirm-button")
+ */
 export async function clickByTestId(testId: string): Promise<void> {
   const element = await getElementByTestId(testId)
   await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
@@ -324,6 +427,18 @@ export async function clickByTestId(testId: string): Promise<void> {
   await withFallbackClick(element)
 }
 
+/**
+ * Wait for an element to disappear from the DOM.
+ * Useful for verifying dialogs, overlays, or notifications close properly.
+ *
+ * @param testId - The data-test-id of the element to wait for disappearance
+ * @param timeout - How long to wait (default 15s)
+ * @throws If element doesn't disappear within timeout
+ *
+ * @example
+ * await waitForTestIdToDisappear("loading-spinner")
+ * await waitForTestIdToDisappear("error-message", 5000)
+ */
 export async function waitForTestIdToDisappear(testId: string, timeout = DEFAULT_TIMEOUT): Promise<void> {
   const locator = `[data-test-id="${testId}"]`
   await browser.waitUntil(async () => !(await $(locator).isExisting()), {
@@ -333,6 +448,18 @@ export async function waitForTestIdToDisappear(testId: string, timeout = DEFAULT
   })
 }
 
+/**
+ * Select an option from a dropdown (Radix Select or similar).
+ * Opens the dropdown, waits for the option to appear, clicks it, and waits for menu to close.
+ *
+ * @param selectTriggerTestId - The data-test-id of the button/trigger that opens the dropdown
+ * @param optionTestId - The data-test-id of the option to select
+ * @throws If option doesn't appear or menu doesn't close within timeout
+ *
+ * @example
+ * await selectOptionByTestId("auth-type-select", "auth-type:basic")
+ * await selectOptionByTestId("method-dropdown", "method:post")
+ */
 export async function selectOptionByTestId(selectTriggerTestId: string, optionTestId: string): Promise<void> {
   const trigger = await getElementByTestId(selectTriggerTestId)
   await trigger.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
@@ -381,6 +508,17 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
   )
 }
 
+/**
+ * Set a toggle switch to on or off.
+ * Only clicks if current state differs from desired state.
+ *
+ * @param testId - The data-test-id of the switch element
+ * @param desired - True for on, false for off
+ *
+ * @example
+ * await setSwitchState("dark-mode-toggle", true)
+ * await setSwitchState("notifications-switch", false)
+ */
 export async function setSwitchState(testId: string, desired: boolean): Promise<void> {
   const element = await getElementByTestId(testId)
   await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
@@ -446,6 +584,17 @@ export async function closeApplicationWindow(timeout = DEFAULT_TIMEOUT): Promise
   )
 }
 
+/**
+ * Set a checkbox to checked or unchecked.
+ * Only clicks if current state differs from desired state.
+ *
+ * @param testId - The data-test-id of the checkbox element
+ * @param desired - True for checked, false for unchecked
+ *
+ * @example
+ * await setCheckboxState("agree-terms-checkbox", true)
+ * await setCheckboxState("email-notification-checkbox", false)
+ */
 export async function setCheckboxState(testId: string, desired: boolean): Promise<void> {
   const element = await getElementByTestId(testId)
   await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
@@ -457,6 +606,18 @@ export async function setCheckboxState(testId: string, desired: boolean): Promis
   await withFallbackClick(element)
 }
 
+/**
+ * Assert an element's text content matches a pattern.
+ *
+ * @param testId - The data-test-id of the element
+ * @param expected - A string or RegExp pattern to match against
+ * @throws If text doesn't match pattern
+ *
+ * @example
+ * await expectTextContent("error-message", "Email is required")
+ * await expectTextContent("welcome-text", /Welcome, \w+/)
+ * await expectTextContent("price", /\$\d+\.\d{2}/)
+ */
 export async function expectTextContent(testId: string, expected: string | RegExp): Promise<void> {
   const element = await getElementByTestId(testId)
   await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
