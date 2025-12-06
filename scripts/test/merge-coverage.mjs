@@ -76,7 +76,7 @@ const mergeCoverageData = (baseMap, newCoverage) => {
 }
 
 // Load unit test coverage if it exists
-const unitCoveragePath = path.join(projectRoot, 'coverage', 'coverage-final.json')
+const unitCoveragePath = path.join(projectRoot, 'coverage', 'unit-coverage.json')
 if (fs.existsSync(unitCoveragePath)) {
   try {
     const unitCoverage = JSON.parse(fs.readFileSync(unitCoveragePath, 'utf-8'))
@@ -104,14 +104,28 @@ if (fs.existsSync(e2eCoveragePath)) {
 // Note: Rust coverage from cargo-llvm-cov is kept in rust-lcov.info file separately
 // Both frontend (lcov.info) and backend (rust-lcov.info) LCOV files are available in coverage/
 const rustCoveragePath = path.join(projectRoot, 'coverage', 'rust-coverage.json')
+const rustE2eCoveragePath = path.join(projectRoot, 'coverage', 'rust-e2e-coverage.json')
+
 if (fs.existsSync(rustCoveragePath)) {
   try {
     const rustCoverage = JSON.parse(fs.readFileSync(rustCoveragePath, 'utf-8'))
     map.merge(rustCoverage)
     mergedCount++
-    console.log(`✓ Loaded Rust coverage from ${path.relative(projectRoot, rustCoveragePath)}`)
+    console.log(`✓ Loaded Rust unit test coverage from ${path.relative(projectRoot, rustCoveragePath)}`)
   } catch (error) {
-    console.warn(`✗ Failed to load Rust coverage: ${error.message}`)
+    console.warn(`✗ Failed to load Rust unit test coverage: ${error.message}`)
+  }
+}
+
+// Merge E2E Rust coverage if it exists
+if (fs.existsSync(rustE2eCoveragePath)) {
+  try {
+    const rustE2eCoverage = JSON.parse(fs.readFileSync(rustE2eCoveragePath, 'utf-8'))
+    mergeCoverageData(map, rustE2eCoverage)
+    mergedCount++
+    console.log(`✓ Merged Rust E2E coverage from ${path.relative(projectRoot, rustE2eCoveragePath)}`)
+  } catch (error) {
+    console.warn(`✗ Failed to load Rust E2E coverage: ${error.message}`)
   }
 } else {
   const rustLcovPath = path.join(projectRoot, 'coverage', 'rust-lcov.info')
@@ -123,9 +137,9 @@ if (fs.existsSync(rustCoveragePath)) {
 if (mergedCount === 0) {
   console.warn('⚠ No coverage files found to merge')
   console.warn(`  Expected paths:`)
-  console.warn(`  - ${path.relative(projectRoot, unitCoveragePath)}`)
-  console.warn(`  - ${path.relative(projectRoot, e2eCoveragePath)}`)
-  console.warn(`  - ${path.relative(projectRoot, rustCoveragePath)}`)
+  console.warn(`  - coverage/unit-coverage.json`)
+  console.warn(`  - coverage/e2e-coverage.json`)
+  console.warn(`  - coverage/rust-coverage.json`)
   process.exit(0)
 }
 
