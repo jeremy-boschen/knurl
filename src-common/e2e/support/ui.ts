@@ -486,12 +486,8 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
   console.log(`\n[1] BEFORE clicking trigger:`)
   await dumpElementHTML(selectTriggerTestId, "Trigger (before click)")
 
-  await browser.execute((testId: string) => {
-    const trigger = document.querySelector(`[data-test-id="${testId}"]`) as HTMLElement
-    if (trigger) {
-      trigger.click()
-    }
-  }, selectTriggerTestId)
+  const trigger = await getElementByTestId(selectTriggerTestId)
+  await trigger.click()
 
   console.log(`[selectOptionByTestId] Clicked trigger, pausing 300ms...`)
   await browser.pause(300)
