@@ -147,7 +147,7 @@ export default defineConfig({
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
   build: {
     target: 'es2022',
-    minify: false,
+    minify: false,  // Never minify - preserves React internals needed by resq for react$()
     sourcemap: true,
     rollupOptions: {
       plugins: [],
