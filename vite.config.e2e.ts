@@ -48,33 +48,6 @@ export default defineConfig({
         }
       },
     },
-    {
-      name: 'react-devtools-inject-build',
-      apply: 'build',
-      transformIndexHtml(html) {
-        // For e2e tests: inject the DevTools hook directly so browser.react$() can find React
-        const devToolsScript = `
-      <script>
-        window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
-          isDisabled: false,
-          supportsFiber: true,
-          supportsProfiling: true,
-          supportsPriorityLabels: true,
-          checkDCE: () => {},
-          onCommitFiberRoot: () => {},
-          onCommitFiberUnmount: () => {},
-          onPostCommitFiberRoot: () => {},
-          onPreCommitFiberRoot: () => {},
-          getCommitTime: () => 0,
-          getVersion: () => 0,
-          registerInternalModuleStart: () => {},
-          registerInternalModuleStop: () => {},
-          getInternalModuleRanges: () => new Map(),
-        };
-      </script>`
-        return html.replace('<head>', `<head>${devToolsScript}`)
-      },
-    },
     // Extract CSS custom properties into JSON:
     // index.css => default bucket, App.css => custom bucket
     cssVarsExportPlugin({

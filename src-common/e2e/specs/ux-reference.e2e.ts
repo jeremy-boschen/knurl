@@ -1,16 +1,16 @@
-import { expect } from "@wdio/globals"
+import {expect} from "@wdio/globals"
 
 import {
   appendInputText,
-  clickByTestId,
   clearInputText,
+  clickByTestId,
   ensureAppReady,
   expectTextContent,
   getElementByTestId,
   getInputText,
   navigateTo,
-  selectOptionByTestId,
   selectDropdownMenuItemByTestId,
+  selectOptionByTestId,
   setCheckboxState,
   setInputText,
   setSwitchState,
