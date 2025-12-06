@@ -474,7 +474,6 @@ async function _dumpElementHTML(testId: string, label: string): Promise<void> {
   }
 }
 
-
 export async function selectOptionByTestId(selectTriggerTestId: string, optionTestId: string): Promise<void> {
   // Click trigger to open Select menu
   const trigger = await getElementByTestId(selectTriggerTestId)
@@ -1203,8 +1202,8 @@ export async function selectDropdownMenuItemByTestId(triggerTestId: string, item
   // Inspect BEFORE pointerdown
   console.log(`[BEFORE pointerdown] DropdownMenuTrigger React component state:`)
   try {
-    const triggerComponent = await browser.react$('DropdownMenuTrigger')
-    console.log(`Component found: ${triggerComponent ? 'yes' : 'no'}`)
+    const triggerComponent = await browser.react$("DropdownMenuTrigger")
+    console.log(`Component found: ${triggerComponent ? "yes" : "no"}`)
     if (triggerComponent) {
       const element = await triggerComponent.getElement()
       console.log(`Element tag: ${element.tagName}`)
@@ -1222,15 +1221,15 @@ export async function selectDropdownMenuItemByTestId(triggerTestId: string, item
   // Inspect AFTER pointerdown
   console.log(`[AFTER pointerdown] DropdownMenuTrigger React component state:`)
   try {
-    const triggerComponent = await browser.react$('DropdownMenuTrigger')
-    console.log(`Component found: ${triggerComponent ? 'yes' : 'no'}`)
+    const triggerComponent = await browser.react$("DropdownMenuTrigger")
+    console.log(`Component found: ${triggerComponent ? "yes" : "no"}`)
     if (triggerComponent) {
       const element = await triggerComponent.getElement()
       console.log(`Element tag: ${element.tagName}`)
       const innerHTML = await triggerComponent.getHTML()
       console.log(`HTML: ${innerHTML.substring(0, 200)}...`)
-      const ariaExpanded = await triggerComponent.getAttribute('aria-expanded')
-      const dataState = await triggerComponent.getAttribute('data-state')
+      const ariaExpanded = await triggerComponent.getAttribute("aria-expanded")
+      const dataState = await triggerComponent.getAttribute("data-state")
       console.log(`aria-expanded: ${ariaExpanded}, data-state: ${dataState}`)
     }
   } catch (error) {
