@@ -1,4 +1,4 @@
-import { expect } from "@wdio/globals"
+import {expect} from "@wdio/globals"
 
 import {
   clickByTestId,
@@ -47,7 +47,7 @@ async function setBearerAuth(token: string, scheme?: string, placement?: "header
 
 async function setApiKeyAuth(key: string, value: string, placement: "header" | "query" | "cookie"): Promise<void> {
   await selectAuthType("apiKey")
-  await getElementByTestId("request-auth-panel:api-key-auth-form", 5000, { initialDelay: 200 })
+  await getElementByTestId("request-auth-panel:api-key-auth-form", 5000, {initialDelay: 200})
   await setInputText("request-auth-panel:api-key-auth-key-input", key)
   await setInputText("request-auth-panel:api-key-auth-value-input", value)
   await browser.pause(300)
@@ -226,7 +226,7 @@ describe("[CRITICAL] Authentication Strategies", () => {
           const responseBody = await getResponseBodyText()
           return responseBody.length > 0
         },
-        { timeout: 10000 },
+        {timeout: 10000},
       )
 
       const responseText = await getResponseBodyText()
@@ -301,7 +301,7 @@ describe("[CRITICAL] Authentication Strategies", () => {
           const text = await getResponseBodyText()
           return text.length > 0 ? text : null
         },
-        { timeout: 5000 },
+        {timeout: 5000},
       )
 
       // Verify the response exists (switching to No Auth worked)
@@ -442,7 +442,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
-    await sendBtn.waitForClickable({ timeout: 5000 })
+    await sendBtn.waitForClickable({timeout: 5000})
 
     // Click Send button
     await clickByTestId("request-workspace:send-button")
@@ -523,7 +523,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
-    await sendBtn.waitForClickable({ timeout: 5000 })
+    await sendBtn.waitForClickable({timeout: 5000})
 
     // Click Send button
     await clickByTestId("request-workspace:send-button")
@@ -577,7 +577,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
 
     // Verify and set Token URL field (required for all grant types)
     const tokenUrlField = await getElementByTestId("oauth2-editor:token-url-input", 5000)
-    await tokenUrlField.waitForDisplayed({ timeout: 5000 })
+    await tokenUrlField.waitForDisplayed({timeout: 5000})
     await setInputText("oauth2-editor:token-url-input", baseAuthConfig.tokenUrl)
 
     // Set Client ID (use public client for device code flow)
@@ -594,7 +594,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
-    await sendBtn.waitForClickable({ timeout: 5000 })
+    await sendBtn.waitForClickable({timeout: 5000})
 
     // Click Send button
     await clickByTestId("request-workspace:send-button")
@@ -857,14 +857,19 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     await clickByTestId("collection-settings:auth-tab-button")
     await browser.pause(3000)
 
-    // Try various forms of clicking the dropdown trigger until menu appears
-    const trigger = await getElementByTestId("collection-auth:type-trigger")
-    await trigger.scrollIntoView({ block: "center", inline: "center" })
+    const trigger = await $('[data-test-id="collection-auth:type-trigger"]')
+
+    //
+    //
+    // // Try various forms of clicking the dropdown trigger until menu appears
+    // const trigger = await getElementByTestId("collection-auth:type-trigger")
+    // await trigger.scrollIntoView({block: "center", inline: "center"})
 
     let menuVisible = false
 
     // Try 1: element.click()
     try {
+      console.log("click 1")
       await trigger.click()
       await browser.pause(1000)
       const option = await $(`[data-test-id="collection-auth:type-basic"]`)
@@ -878,6 +883,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     // Try 2: doubleClick
     if (!menuVisible) {
       try {
+        console.log("click 2")
         await trigger.doubleClick()
         await browser.pause(1000)
         const option = await $(`[data-test-id="collection-auth:type-basic"]`)
@@ -892,6 +898,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     // Try 3: browser.execute click
     if (!menuVisible) {
       try {
+        console.log("click 3")
         await browser.execute(() => {
           const el = document.querySelector('[data-test-id="collection-auth:type-trigger"]') as HTMLElement
           el?.click()
@@ -909,6 +916,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     // Try 4: moveTo and click
     if (!menuVisible) {
       try {
+        console.log("click 4")
         await trigger.moveTo()
         await browser.pause(500)
         await trigger.click()
@@ -925,7 +933,8 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     // Try 5: leftClick action
     if (!menuVisible) {
       try {
-        await browser.action("pointer").move({ x: 0, y: 0 }).perform()
+        console.log("click 5")
+        await browser.action("pointer").move({x: 0, y: 0}).perform()
         await trigger.click()
         await browser.pause(1000)
         const option = await $(`[data-test-id="collection-auth:type-basic"]`)
@@ -940,6 +949,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     // Try 6: keyboard space/enter
     if (!menuVisible) {
       try {
+        console.log("click 6")
         await trigger.click()
         await browser.keys("Space")
         await browser.pause(1000)
@@ -955,6 +965,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     // Try 7: Check if already open (shouldn't be, but just in case)
     if (!menuVisible) {
       try {
+        console.log("click 7")
         const option = await $(`[data-test-id="collection-auth:type-basic"]`)
         if (await option.isDisplayed()) {
           menuVisible = true
@@ -969,7 +980,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     }
 
     const basicOption = await getElementByTestId("collection-auth:type-basic")
-    await basicOption.scrollIntoView({ block: "center", inline: "center" })
+    await basicOption.scrollIntoView({block: "center", inline: "center"})
     await basicOption.click()
     await browser.pause(3000)
 
@@ -996,7 +1007,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
           return false
         }
       },
-      { timeout: 10000, interval: 200, timeoutMsg: "Create request dialog did not appear" },
+      {timeout: 10000, interval: 200, timeoutMsg: "Create request dialog did not appear"},
     )
 
     // Add pause to ensure dialog is fully rendered
@@ -1021,12 +1032,12 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
             const fiberProps = (input as any)[keys[0]]
             if (fiberProps?.onChange) {
               // Call the onChange handler with synthetic event
-              const event = { target: { value: value } }
+              const event = {target: {value: value}}
               fiberProps.onChange(event)
             }
           } else {
             // Fallback: dispatch events
-            const events = [new Event("input", { bubbles: true }), new Event("change", { bubbles: true })]
+            const events = [new Event("input", {bubbles: true}), new Event("change", {bubbles: true})]
             events.forEach((event) => {
               input.dispatchEvent(event)
             })
@@ -1055,7 +1066,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
 
     // Click the confirm button
     const confirmButton = await getElementByTestId("create-request-dialog:confirm-button")
-    await confirmButton.waitForEnabled({ timeout: 5000 })
+    await confirmButton.waitForEnabled({timeout: 5000})
     await browser.pause(500)
     await confirmButton.click()
 
@@ -1078,11 +1089,11 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
           if (keys.length > 0) {
             const fiberProps = (input as any)[keys[0]]
             if (fiberProps?.onChange) {
-              fiberProps.onChange({ target: { value: value } })
+              fiberProps.onChange({target: {value: value}})
             }
           } else {
             // Fallback: dispatch events
-            const events = [new Event("input", { bubbles: true }), new Event("change", { bubbles: true })]
+            const events = [new Event("input", {bubbles: true}), new Event("change", {bubbles: true})]
             events.forEach((event) => {
               input.dispatchEvent(event)
             })
@@ -1136,7 +1147,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
         })
         return responseText && responseText.length > 0
       },
-      { timeout: 15000 },
+      {timeout: 15000},
     )
 
     // Verify the inherited auth was applied
@@ -1228,7 +1239,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
         })
         return responseText && responseText.length > 0
       },
-      { timeout: 15000 },
+      {timeout: 15000},
     )
 
     // Verify response was received (request was sent successfully with inherited auth)
@@ -1316,7 +1327,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
         })
         return responseBody
       },
-      { timeout: 15000 },
+      {timeout: 15000},
     )
 
     // Verify response exists (request with inherited auth was sent successfully)
@@ -1405,7 +1416,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
         })
         return responseText && responseText.length > 0
       },
-      { timeout: 15000 },
+      {timeout: 15000},
     )
 
     // Verify response was received (request was sent successfully with inherited OAuth2 auth)
