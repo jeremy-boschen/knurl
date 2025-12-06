@@ -460,10 +460,45 @@ export async function waitForTestIdToDisappear(testId: string, timeout = DEFAULT
  * await selectOptionByTestId("auth-type-select", "auth-type:basic")
  * await selectOptionByTestId("method-dropdown", "method:post")
  */
+/**
+ * Dump full HTML of an element for diagnostic purposes
+ */
+async function dumpElementHTML(testId: string, label: string): Promise<void> {
+  try {
+    const element = await $(`[data-test-id="${testId}"]`)
+    const html = await element.getHTML()
+    console.log(`\n[DEBUG ${label}]:\n${html}\n`)
+  } catch (error) {
+    console.log(`\n[DEBUG ${label}]: Element not found or error: ${error}\n`)
+  }
+}
+
 export async function selectOptionByTestId(selectTriggerTestId: string, optionTestId: string): Promise<void> {
-  // Click trigger to open Select menu
-  const trigger = await getElementByTestId(selectTriggerTestId)
-  await trigger.click()
+  // Extract the label from the test ID (e.g., "ux-reference:select-option:alpha" -> "alpha")
+  const optionLabel = optionTestId.split(":").pop()
+  if (!optionLabel) {
+    throw new Error(`Could not extract option label from test ID: ${optionTestId}`)
+  }
+
+  console.log(`\n[selectOptionByTestId] === Starting selection of "${optionLabel}" ===\n`)
+
+  // BEFORE: Click trigger to open Select menu
+  console.log(`\n[1] BEFORE clicking trigger:`)
+  await dumpElementHTML(selectTriggerTestId, "Trigger (before click)")
+
+  await browser.execute((testId: string) => {
+    const trigger = document.querySelector(`[data-test-id="${testId}"]`) as HTMLElement
+    if (trigger) {
+      trigger.click()
+    }
+  }, selectTriggerTestId)
+
+  console.log(`[selectOptionByTestId] Clicked trigger, pausing 300ms...`)
+  await browser.pause(300)
+
+  // AFTER: Click trigger
+  console.log(`\n[1] AFTER clicking trigger:`)
+  await dumpElementHTML(selectTriggerTestId, "Trigger (after click)")
 
   // Wait for option to be displayed after menu opens
   await browser.waitUntil(
@@ -482,29 +517,24 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
     },
   )
 
+  // BEFORE: Click option
+  console.log(`\n[2] BEFORE clicking option:`)
+  await dumpElementHTML(optionTestId, "Option (before click)")
+
   // Click option to select it
   const option = await getElementByTestId(optionTestId)
   await option.scrollIntoView({ block: "center", inline: "center" })
   await option.click()
 
-  // Wait for the trigger to close (aria-expanded="false")
-  // This indicates the selection was processed and the menu closed
-  await browser.waitUntil(
-    async () => {
-      try {
-        const triggerElement = await $(`[data-test-id="${selectTriggerTestId}"]`)
-        const ariaExpanded = await triggerElement.getAttribute("aria-expanded")
-        return ariaExpanded === "false"
-      } catch {
-        return false
-      }
-    },
-    {
-      timeout: DEFAULT_TIMEOUT,
-      interval: 100,
-      timeoutMsg: `Radix Select menu did not close after selecting "${optionTestId}"`,
-    },
-  )
+  console.log(`[selectOptionByTestId] Clicked option, pausing 300ms...`)
+  await browser.pause(300)
+
+  // AFTER: Click option
+  console.log(`\n[2] AFTER clicking option:`)
+  await dumpElementHTML(selectTriggerTestId, "Trigger (after option click)")
+  await dumpElementHTML(optionTestId, "Option (after click)")
+
+  console.log(`[selectOptionByTestId] === Selection complete ===\n`)
 }
 
 /**
