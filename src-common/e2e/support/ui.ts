@@ -490,6 +490,23 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
   const option = await getElementByTestId(optionTestId)
   await option.scrollIntoView({ block: "center", inline: "center" })
   await option.click()
+
+  // Wait for menu to close and option to no longer be displayed
+  await browser.waitUntil(
+    async () => {
+      try {
+        const element = await $(`[data-test-id="${optionTestId}"]`)
+        return !(await element.isDisplayed())
+      } catch {
+        return true
+      }
+    },
+    {
+      timeout: DEFAULT_TIMEOUT,
+      interval: 100,
+      timeoutMsg: `Radix Select menu did not close after selecting "${optionTestId}"`,
+    },
+  )
 }
 
 /**
