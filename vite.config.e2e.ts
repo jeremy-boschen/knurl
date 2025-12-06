@@ -18,6 +18,8 @@ const reactDevToolsPlugin = {
       return html
     }
 
+    console.log('[react-devtools-inject] Injecting React DevTools hook for browser.react$() support')
+
     // Inject a script that enables resq to find React Fiber internals
     // resq uses window.__REACT_DEVTOOLS_GLOBAL_HOOK__ to discover React and traverse the Fiber tree
     const devToolsScript = `

@@ -428,6 +428,7 @@ async function handleOnPrepare() {
   // Pass DEBUG through to vite build (enables DevTools hook for browser.react$())
   if (process.env.DEBUG) {
     viteEnv.DEBUG = process.env.DEBUG
+    console.log(`  DEBUG mode enabled - will inject React DevTools hook`)
   }
 
   const iconGeneration = spawnSync("node", ["scripts/build/generate-icons.mjs"], {
