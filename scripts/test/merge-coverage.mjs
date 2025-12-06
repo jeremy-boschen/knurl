@@ -18,6 +18,63 @@ const projectRoot = path.resolve(__dirname, '../..')
 const map = createCoverageMap({})
 let mergedCount = 0
 
+// Helper function to merge coverage data intelligently
+// Combines execution counts for overlapping files rather than overwriting
+const mergeCoverageData = (baseMap, newCoverage) => {
+  Object.entries(newCoverage).forEach(([filePath, newFileData]) => {
+    const existingFile = baseMap.fileCoverageFor(filePath)
+
+    if (existingFile && existingFile.data) {
+      // File already exists in map - merge execution counts
+      const existing = existingFile.data
+
+      // Merge statement counts (s): take max count per statement
+      if (newFileData.s && existing.s) {
+        Object.keys(newFileData.s).forEach(stmtId => {
+          const newCount = newFileData.s[stmtId]
+          const existingCount = existing.s[stmtId]
+          // Use max count to represent "was this statement executed across all tests"
+          if (newCount > 0 || existingCount > 0) {
+            existing.s[stmtId] = Math.max(newCount || 0, existingCount || 0)
+          }
+        })
+      }
+
+      // Merge function counts (f): take max count per function
+      if (newFileData.f && existing.f) {
+        Object.keys(newFileData.f).forEach(fnId => {
+          const newCount = newFileData.f[fnId]
+          const existingCount = existing.f[fnId]
+          if (newCount > 0 || existingCount > 0) {
+            existing.f[fnId] = Math.max(newCount || 0, existingCount || 0)
+          }
+        })
+      }
+
+      // Merge branch counts (b): take max count per branch location
+      if (newFileData.b && existing.b) {
+        Object.keys(newFileData.b).forEach(branchId => {
+          if (!existing.b[branchId]) {
+            existing.b[branchId] = newFileData.b[branchId]
+          } else {
+            // Each branch location has an array of coverage counts for each branch path
+            const newBranch = newFileData.b[branchId]
+            const existingBranch = existing.b[branchId]
+            if (Array.isArray(newBranch) && Array.isArray(existingBranch)) {
+              existingBranch.forEach((count, idx) => {
+                newBranch[idx] = Math.max(count || 0, newBranch[idx] || 0)
+              })
+            }
+          }
+        })
+      }
+    } else {
+      // File doesn't exist - add it
+      map.addFileCoverage(newFileData)
+    }
+  })
+}
+
 // Load unit test coverage if it exists
 const unitCoveragePath = path.join(projectRoot, 'coverage', 'coverage-final.json')
 if (fs.existsSync(unitCoveragePath)) {
@@ -36,9 +93,9 @@ const e2eCoveragePath = path.join(projectRoot, 'coverage', 'e2e-coverage.json')
 if (fs.existsSync(e2eCoveragePath)) {
   try {
     const e2eCoverage = JSON.parse(fs.readFileSync(e2eCoveragePath, 'utf-8'))
-    map.merge(e2eCoverage)
+    mergeCoverageData(map, e2eCoverage)
     mergedCount++
-    console.log(`✓ Loaded E2E coverage from ${path.relative(projectRoot, e2eCoveragePath)}`)
+    console.log(`✓ Merged E2E coverage from ${path.relative(projectRoot, e2eCoveragePath)}`)
   } catch (error) {
     console.warn(`✗ Failed to load E2E coverage: ${error.message}`)
   }
