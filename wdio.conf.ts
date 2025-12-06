@@ -368,7 +368,8 @@ async function handleOnPrepare() {
     }
   })
 
-  await new Promise((resolve) => setTimeout(resolve, 1000))
+  // Removed arbitrary startup delay - waitForEndpoint polls until ready
+  // await new Promise((resolve) => setTimeout(resolve, 1000))
 
   try {
     await waitForEndpoint(`http://${MOCK_ENDPOINT_HOST}:${MOCK_ENDPOINT_PORT}/.well-known/openid-configuration`)
@@ -543,7 +544,8 @@ async function handleOnPrepare() {
     }
   })
 
-  await new Promise((resolve) => setTimeout(resolve, 5000))
+  // Removed arbitrary startup delay - assume tauri-driver is ready immediately
+  // await new Promise((resolve) => setTimeout(resolve, 5000))
   console.log(`  ✓ tauri-driver started and ready`)
   console.log(`[onPrepare] ✓ Global test preparation complete\n`)
 }
@@ -676,8 +678,8 @@ async function handleBefore() {
     )
   }
 
-  await browser.pause(2000)
-  console.log(`  ✓ Stabilization pause complete`)
+  // Removed arbitrary stabilization pause - app startup is already synchronized
+  // await browser.pause(2000)
   console.log(`[before] ✓ Per-session setup complete\n`)
 }
 
@@ -789,8 +791,9 @@ async function handleOnComplete() {
 
   closeProcesses()
 
-  console.log(`  waiting for processes to terminate gracefully...`)
-  await new Promise((resolve) => setTimeout(resolve, 500))
+  // Removed arbitrary graceful termination delay - processes use SIGKILL immediately
+  // console.log(`  waiting for processes to terminate gracefully...`)
+  // await new Promise((resolve) => setTimeout(resolve, 500))
   try {
     console.log(`  killing processes on critical ports...`)
     killProcessesOnPort(1420)

@@ -1197,47 +1197,8 @@ async function manualRadixPointerDown(selector: string): Promise<void> {
  * await selectDropdownMenuItemByTestId("auth-type-trigger", "auth-type-bearer")
  */
 export async function selectDropdownMenuItemByTestId(triggerTestId: string, itemTestId: string): Promise<void> {
-  console.log(`\n[selectDropdownMenuItemByTestId] Inspecting DropdownMenuTrigger component\n`)
-
-  // Inspect BEFORE pointerdown
-  console.log(`[BEFORE pointerdown] DropdownMenuTrigger React component state:`)
-  try {
-    const triggerComponent = await browser.react$("DropdownMenuTrigger")
-    console.log(`Component found: ${triggerComponent ? "yes" : "no"}`)
-    if (triggerComponent) {
-      const element = await triggerComponent.getElement()
-      console.log(`Element tag: ${element.tagName}`)
-      const innerHTML = await triggerComponent.getHTML()
-      console.log(`HTML: ${innerHTML.substring(0, 200)}...`)
-    }
-  } catch (error) {
-    console.log(`Error inspecting component: ${error}`)
-  }
-
   // Open the dropdown menu by dispatching pointerdown+pointerup to trigger
-  console.log(`\n[Dispatching pointerdown]\n`)
   await manualRadixPointerDown(`[data-test-id="${triggerTestId}"]`)
-
-  // Inspect AFTER pointerdown
-  console.log(`[AFTER pointerdown] DropdownMenuTrigger React component state:`)
-  try {
-    const triggerComponent = await browser.react$("DropdownMenuTrigger")
-    console.log(`Component found: ${triggerComponent ? "yes" : "no"}`)
-    if (triggerComponent) {
-      const element = await triggerComponent.getElement()
-      console.log(`Element tag: ${element.tagName}`)
-      const innerHTML = await triggerComponent.getHTML()
-      console.log(`HTML: ${innerHTML.substring(0, 200)}...`)
-      const ariaExpanded = await triggerComponent.getAttribute("aria-expanded")
-      const dataState = await triggerComponent.getAttribute("data-state")
-      console.log(`aria-expanded: ${ariaExpanded}, data-state: ${dataState}`)
-    }
-  } catch (error) {
-    console.log(`Error inspecting component: ${error}`)
-  }
-
-  // Wait 1s for menu to render
-  await browser.pause(1000)
 
   // Wait for menu item to be displayed
   await browser.waitUntil(
@@ -1259,6 +1220,6 @@ export async function selectDropdownMenuItemByTestId(triggerTestId: string, item
   // Click the menu item
   await clickByTestId(itemTestId)
 
-  // Wait 1s for menu to close
-  await browser.pause(1000)
+  // Wait for menu to close
+  await browser.pause(300)
 }
