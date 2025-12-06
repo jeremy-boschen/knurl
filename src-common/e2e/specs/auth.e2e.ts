@@ -25,7 +25,7 @@ async function debugClick(selector: string) {
 
   console.log("exists:", await el.isExisting())
   console.log("displayed:", await el.isDisplayed())
-  console.log("in viewport:", await el.isDisplayedInViewport())
+  //console.log("in viewport:", await el.isDisplayedInViewport())
   console.log("clickable:", await el.isClickable())
   console.log("location:", await el.getLocation())
   console.log("size:", await el.getSize())
@@ -48,6 +48,24 @@ async function debugClick(selector: string) {
   }, el)
 
   console.log("dom-info:", info)
+
+  // check for overlapping elements
+  const overlap = await browser.execute((elem: HTMLElement) => {
+    const rect = elem.getBoundingClientRect()
+    const x = rect.x + rect.width / 2
+    const y = rect.y + rect.height / 2
+    const top = document.elementFromPoint(x, y)
+
+    return {
+      clickedTag: elem.tagName,
+      clickedClasses: elem.className,
+      topTag: top?.tagName,
+      topClasses: top?.className,
+      sameElement: top === elem,
+    }
+  }, el)
+
+  console.log("overlap:", overlap)
 
   await el.click()
 }
