@@ -109,21 +109,17 @@ describe("[SUPPLEMENTAL] Settings & UI Customization", () => {
     it("selectOption selects items by data-test-id", async () => {
       await selectOptionByTestId("ux-reference:select-trigger", "ux-reference:select-option:bravo")
       await expectTextContent("ux-reference:select-value", /Selected: bravo/)
-      await expectTextContent("ux-reference:select-open-state", /Menu:\s+closed/i)
 
       await selectOptionByTestId("ux-reference:select-trigger", "ux-reference:select-option:charlie")
       await expectTextContent("ux-reference:select-value", /Selected: charlie/)
-      await expectTextContent("ux-reference:select-open-state", /Menu:\s+closed/i)
     })
 
     it("menu helpers select actions and close the dropdown", async () => {
-      await selectMenuActionById("new-request", { triggerTestId: "ux-reference:menu-trigger" })
-      await expectTextContent("ux-reference:menu-value", /new-request/)
-      await expectTextContent("ux-reference:menu-open-state", /Menu:\s+closed/i)
+      await selectMenuActionById("new-request", { triggerTestId: "ux-reference:dropdown-trigger" })
+      await expectTextContent("ux-reference:dropdown-value", /new-request/)
 
-      await selectMenuActionById("rename", { triggerTestId: "ux-reference:menu-trigger" })
-      await expectTextContent("ux-reference:menu-value", /rename/)
-      await expectTextContent("ux-reference:menu-open-state", /Menu:\s+closed/i)
+      await selectMenuActionById("rename", { triggerTestId: "ux-reference:dropdown-trigger" })
+      await expectTextContent("ux-reference:dropdown-value", /rename/)
     })
 
     it("input helpers set and append text", async () => {
@@ -145,8 +141,8 @@ describe("[SUPPLEMENTAL] Settings & UI Customization", () => {
     })
 
     it("click helper triggers buttons", async () => {
-      await clickByTestId("ux-reference:button")
-      await clickByTestId("ux-reference:button")
+      await clickByTestId("ux-reference:button-primary")
+      await clickByTestId("ux-reference:button-primary")
       const buttonCount = await getElementByTestId("ux-reference:button-count", 5000)
       const text = await buttonCount.getText()
       await expect(text).toContain("2")

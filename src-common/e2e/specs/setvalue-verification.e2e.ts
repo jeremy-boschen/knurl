@@ -15,6 +15,7 @@ import {
   clickByTestId,
   ensureWorkspaceReady,
   getElementByTestId,
+  getResponseBodyText,
   openNewRequestViaUI,
   waitForRequestEditor,
 } from "../support/ui"
@@ -75,35 +76,13 @@ describe("setValue() Verification for React Controlled Inputs", () => {
     // Wait for response and verify auth was sent
     await browser.waitUntil(
       async () => {
-        const responseText = await browser.execute(() => {
-          const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-          if (!responseBody) {
-            return ""
-          }
-          const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-          if (!codeEditor) {
-            return ""
-          }
-          const content = codeEditor.querySelector(".cm-content")
-          return content ? content.textContent : codeEditor.textContent
-        })
+        const responseText = await getResponseBodyText()
         return responseText.includes("authorization") || responseText.includes("testuser")
       },
       { timeout: 5000 },
     )
 
-    const responseText = await browser.execute(() => {
-      const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-      if (!responseBody) {
-        return ""
-      }
-      const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-      if (!codeEditor) {
-        return ""
-      }
-      const content = codeEditor.querySelector(".cm-content")
-      return content ? content.textContent : codeEditor.textContent
-    })
+    const responseText = await getResponseBodyText()
 
     // If this passes, setValue() properly triggers React onChange
     await expect(responseText).toMatch(/authorization|Basic/)

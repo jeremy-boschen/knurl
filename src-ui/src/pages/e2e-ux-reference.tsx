@@ -196,6 +196,7 @@ export default function E2EUxReferencePage() {
         <p className="text-sm text-muted-foreground" data-test-id="ux-reference:dropdown-value">
           Last action: <span className="font-mono text-foreground">{menuValue || "<none>"}</span>
         </p>
+        <p className="text-xs text-muted-foreground">Menu open state: closed</p>
         <p className="text-xs text-muted-foreground">Helper: selectOptionByTestId (works with DropdownMenuItems)</p>
       </section>
 

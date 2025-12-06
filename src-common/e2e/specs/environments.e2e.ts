@@ -68,16 +68,13 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
 
     // Get the latest environment card that was created
     // We extract the ID from the test-id attribute: environment-list:item:XXXX
-    const environmentIdElement = await browser.execute(() => {
-      const cards = Array.from(document.querySelectorAll('[data-test-id^="environment-list:item:"]'))
-      if (cards.length === 0) {
-        return null
-      }
-      const latestCard = cards[cards.length - 1]
-      const testId = latestCard?.getAttribute("data-test-id")
-      return testId?.split(":").pop() ?? null
-    })
-    state.environmentId = environmentIdElement
+    const elements = await $$('[data-test-id^="environment-list:item:"]')
+    if (elements.length === 0) {
+      throw new Error("No environment cards found")
+    }
+    const latestCard = elements[elements.length - 1]
+    const testId = await latestCard.getAttribute("data-test-id")
+    state.environmentId = testId?.split(":").pop() ?? null
     if (!state.environmentId) {
       throw new Error("Environment id not resolved")
     }
@@ -91,30 +88,31 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
 
     // Find the variable name input (dynamically created with ID like environment-editor:variable-name-input:XXXX)
     // Set the name
-    const variableNameSelector = await browser.execute(() => {
-      const inputs = Array.from(document.querySelectorAll('[data-test-id^="environment-editor:variable-name-input:"]'))
-      return inputs[inputs.length - 1]?.getAttribute("data-test-id") ?? null
-    })
+    const nameElements = await $$('[data-test-id^="environment-editor:variable-name-input:"]')
+    let variableNameSelector: string | null = null
+    if (nameElements.length > 0) {
+      variableNameSelector = await nameElements[nameElements.length - 1].getAttribute("data-test-id")
+    }
     if (variableNameSelector) {
       await setInputText(variableNameSelector, "API_TOKEN")
     }
 
     // Find and set the value input
-    const variableValueSelector = await browser.execute(() => {
-      const inputs = Array.from(document.querySelectorAll('[data-test-id^="environment-editor:variable-value-input:"]'))
-      return inputs[inputs.length - 1]?.getAttribute("data-test-id") ?? null
-    })
+    const valueElements = await $$('[data-test-id^="environment-editor:variable-value-input:"]')
+    let variableValueSelector: string | null = null
+    if (valueElements.length > 0) {
+      variableValueSelector = await valueElements[valueElements.length - 1].getAttribute("data-test-id")
+    }
     if (variableValueSelector) {
       await setInputText(variableValueSelector, "secret")
     }
 
     // Click the secure toggle for the variable
-    const secureToggleSelector = await browser.execute(() => {
-      const toggles = Array.from(
-        document.querySelectorAll('[data-test-id^="environment-editor:variable-secure-toggle:"]'),
-      )
-      return toggles[toggles.length - 1]?.getAttribute("data-test-id") ?? null
-    })
+    const toggleElements = await $$('[data-test-id^="environment-editor:variable-secure-toggle:"]')
+    let secureToggleSelector: string | null = null
+    if (toggleElements.length > 0) {
+      secureToggleSelector = await toggleElements[toggleElements.length - 1].getAttribute("data-test-id")
+    }
     if (secureToggleSelector) {
       await clickByTestId(secureToggleSelector)
       // Verify the value input changed to password type
