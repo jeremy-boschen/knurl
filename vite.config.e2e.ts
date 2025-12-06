@@ -8,11 +8,12 @@ import {consoleForwardPlugin} from './scripts/build/vite-console-forward-plugin'
 import {cssVarsExportPlugin} from './scripts/build/vite-css-vars-export-plugin'
 
 const host = process.env.TAURI_DEV_HOST
+const isDebugBuild = process.env.NODE_ENV === 'development' || process.env.DEBUG
 
 export default defineConfig({
-  mode: 'e2e',
+  mode: isDebugBuild ? 'development' : 'e2e',
   define: {
-    'import.meta.env.MODE': JSON.stringify('e2e'),
+    'import.meta.env.MODE': JSON.stringify(isDebugBuild ? 'development' : 'e2e'),
   },
   worker: {
     format: 'es',
