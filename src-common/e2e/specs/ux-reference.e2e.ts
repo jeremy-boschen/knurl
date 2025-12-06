@@ -57,6 +57,27 @@ describe("[SUPPLEMENTAL] E2E UX Reference Page - Helper Library Tests", () => {
       await setInputText("ux-reference:textarea", "abc")
       await expectTextContent("ux-reference:textarea-value", /3 characters/)
     })
+
+    it("preserves mixed case in input values", async () => {
+      await clearInputText("ux-reference:input")
+      await setInputText("ux-reference:input", "MixedCase")
+      const value = await getInputText("ux-reference:input")
+      await expect(value).toBe("MixedCase")
+    })
+
+    it("preserves case with numbers and special chars", async () => {
+      await clearInputText("ux-reference:input")
+      await setInputText("ux-reference:input", "Request-1765034359270")
+      const value = await getInputText("ux-reference:input")
+      await expect(value).toBe("Request-1765034359270")
+    })
+
+    it("preserves case in complex names", async () => {
+      await clearInputText("ux-reference:input")
+      await setInputText("ux-reference:input", "MyCollection-2025-01-10")
+      const value = await getInputText("ux-reference:input")
+      await expect(value).toBe("MyCollection-2025-01-10")
+    })
   })
 
   describe("Radix Select (Dropdown) Helper", () => {
