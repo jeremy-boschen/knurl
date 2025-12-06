@@ -474,6 +474,7 @@ async function _dumpElementHTML(testId: string, label: string): Promise<void> {
   }
 }
 
+
 export async function selectOptionByTestId(selectTriggerTestId: string, optionTestId: string): Promise<void> {
   // Click trigger to open Select menu
   const trigger = await getElementByTestId(selectTriggerTestId)
@@ -1139,7 +1140,9 @@ async function manualRadixPointerDown(selector: string): Promise<void> {
     }
 
     const rect = el.getBoundingClientRect()
-    const event = new PointerEvent("pointerdown", {
+
+    // Dispatch pointerdown
+    const pointerDownEvent = new PointerEvent("pointerdown", {
       bubbles: true,
       cancelable: true,
       view: window,
@@ -1157,8 +1160,28 @@ async function manualRadixPointerDown(selector: string): Promise<void> {
       altKey: false,
       metaKey: false,
     })
+    el.dispatchEvent(pointerDownEvent)
 
-    el.dispatchEvent(event)
+    // Dispatch pointerup to complete the interaction
+    const pointerUpEvent = new PointerEvent("pointerup", {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      pointerId: 1,
+      pointerType: "mouse",
+      isPrimary: true,
+      button: 0,
+      buttons: 0,
+      clientX: rect.x + rect.width / 2,
+      clientY: rect.y + rect.height / 2,
+      screenX: rect.x + rect.width / 2,
+      screenY: rect.y + rect.height / 2,
+      ctrlKey: false,
+      shiftKey: false,
+      altKey: false,
+      metaKey: false,
+    })
+    el.dispatchEvent(pointerUpEvent)
   }, selector)
 }
 
@@ -1175,8 +1198,47 @@ async function manualRadixPointerDown(selector: string): Promise<void> {
  * await selectDropdownMenuItemByTestId("auth-type-trigger", "auth-type-bearer")
  */
 export async function selectDropdownMenuItemByTestId(triggerTestId: string, itemTestId: string): Promise<void> {
-  // Open the dropdown menu by dispatching pointerdown to trigger
+  console.log(`\n[selectDropdownMenuItemByTestId] Inspecting DropdownMenuTrigger component\n`)
+
+  // Inspect BEFORE pointerdown
+  console.log(`[BEFORE pointerdown] DropdownMenuTrigger React component state:`)
+  try {
+    const triggerComponent = await browser.react$('DropdownMenuTrigger')
+    console.log(`Component found: ${triggerComponent ? 'yes' : 'no'}`)
+    if (triggerComponent) {
+      const element = await triggerComponent.getElement()
+      console.log(`Element tag: ${element.tagName}`)
+      const innerHTML = await triggerComponent.getHTML()
+      console.log(`HTML: ${innerHTML.substring(0, 200)}...`)
+    }
+  } catch (error) {
+    console.log(`Error inspecting component: ${error}`)
+  }
+
+  // Open the dropdown menu by dispatching pointerdown+pointerup to trigger
+  console.log(`\n[Dispatching pointerdown]\n`)
   await manualRadixPointerDown(`[data-test-id="${triggerTestId}"]`)
+
+  // Inspect AFTER pointerdown
+  console.log(`[AFTER pointerdown] DropdownMenuTrigger React component state:`)
+  try {
+    const triggerComponent = await browser.react$('DropdownMenuTrigger')
+    console.log(`Component found: ${triggerComponent ? 'yes' : 'no'}`)
+    if (triggerComponent) {
+      const element = await triggerComponent.getElement()
+      console.log(`Element tag: ${element.tagName}`)
+      const innerHTML = await triggerComponent.getHTML()
+      console.log(`HTML: ${innerHTML.substring(0, 200)}...`)
+      const ariaExpanded = await triggerComponent.getAttribute('aria-expanded')
+      const dataState = await triggerComponent.getAttribute('data-state')
+      console.log(`aria-expanded: ${ariaExpanded}, data-state: ${dataState}`)
+    }
+  } catch (error) {
+    console.log(`Error inspecting component: ${error}`)
+  }
+
+  // Wait 1s for menu to render
+  await browser.pause(1000)
 
   // Wait for menu item to be displayed
   await browser.waitUntil(
@@ -1197,4 +1259,7 @@ export async function selectDropdownMenuItemByTestId(triggerTestId: string, item
 
   // Click the menu item
   await clickByTestId(itemTestId)
+
+  // Wait 1s for menu to close
+  await browser.pause(1000)
 }
