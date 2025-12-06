@@ -859,13 +859,34 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
 
     const trigger = await $('[data-test-id="collection-auth:type-trigger"]')
 
-    //
-    //
-    // // Try various forms of clicking the dropdown trigger until menu appears
-    // const trigger = await getElementByTestId("collection-auth:type-trigger")
-    // await trigger.scrollIntoView({block: "center", inline: "center"})
-
     let menuVisible = false
+
+    // Try 0: PointerDown event (Radix listens to onPointerDown, not just click)
+    try {
+      console.log("click 0: PointerDown event")
+      await browser.execute(() => {
+        // Use window.document to access elements including portals
+        const el = window.document.querySelector('[data-test-id="collection-auth:type-trigger"]') as HTMLElement
+        if (el) {
+          const event = new PointerEvent("pointerdown", {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+            pointerId: 1,
+            pointerType: "mouse",
+            isPrimary: true,
+          })
+          el.dispatchEvent(event)
+        }
+      })
+      await browser.pause(1000)
+      const option = await $(`[data-test-id="collection-auth:type-basic"]`)
+      if (await option.isDisplayed()) {
+        menuVisible = true
+      }
+    } catch {
+      // Menu not visible, try next method
+    }
 
     // Try 1: element.click()
     try {
