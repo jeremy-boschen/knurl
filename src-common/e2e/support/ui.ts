@@ -462,8 +462,9 @@ export async function waitForTestIdToDisappear(testId: string, timeout = DEFAULT
  */
 /**
  * Dump full HTML of an element for diagnostic purposes
+ * Used for debugging and analyzing element state transitions
  */
-async function dumpElementHTML(testId: string, label: string): Promise<void> {
+async function _dumpElementHTML(testId: string, label: string): Promise<void> {
   try {
     const element = await $(`[data-test-id="${testId}"]`)
     const html = await element.getHTML()
