@@ -2,8 +2,14 @@ import { describe, expect, it, vi, beforeEach } from "vitest"
 
 import {
   cancelHttpRequest,
+  deleteAppData,
   deleteFile,
   getAppDataDir,
+  getDataEncryptionKey,
+  isAppError,
+  isCommandError,
+  saveAppData,
+  saveFile,
   sendHttpRequest,
   setDataEncryptionKey,
   discoverOidc,
@@ -149,5 +155,34 @@ describe("bindings/knurl", () => {
       config,
       parent_request_id: "parent-1",
     })
+  })
+
+  it("detects command and app errors via helpers", () => {
+    const appError = {
+      kind: "BadRequest" as const,
+      message: "bad",
+      timestamp: "2025-01-01T00:00:00.000Z",
+    }
+    const cmdErr = Object.assign(new Error("cmd"), { appError })
+
+    expect(isCommandError(cmdErr)).toBe(true)
+    expect(isCommandError(cmdErr, "BadRequest")).toBe(true)
+    expect(isCommandError(cmdErr, ["Timeout", "BadRequest"])).toBe(true)
+    expect(isCommandError(cmdErr, "Timeout")).toBe(false)
+    expect(isCommandError(new Error("plain"))).toBe(false)
+
+    expect(isAppError(cmdErr)).toBe(true)
+    expect(isAppError(cmdErr, "BadRequest")).toBe(true)
+    expect(isAppError(cmdErr, "Timeout")).toBe(false)
+    expect(isAppError({})).toBe(false)
+  })
+
+  it("normalizes non-AppError failures", async () => {
+    invokeMock.mockRejectedValueOnce("boom")
+    await expect(sendHttpRequest({ requestId: "1", url: "u", method: "GET", disableSsl: undefined, caPath: undefined, hostOverride: undefined, ipOverride: undefined, timeoutSecs: undefined, userAgent: undefined })).rejects.toThrow("boom")
+
+    const err = new Error("oops")
+    invokeMock.mockRejectedValueOnce(err)
+    await expect(getAppDataDir()).rejects.toThrow("oops")
   })
 })
