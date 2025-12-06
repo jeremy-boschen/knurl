@@ -10,6 +10,7 @@ import {
   openNewRequestViaUI,
   resetOverlays,
   selectAuthType,
+  selectDropdownMenuItemByTestId,
   selectOptionByTestId,
   setInputText,
   waitForRequestEditor,
@@ -19,147 +20,6 @@ import {
 /**
  * Module-level auth helpers specific to this test suite.
  */
-
-async function radixPointerDown(selector: string) {
-  const el = await $(selector)
-  const location = await el.getLocation()
-  const size = await el.getSize()
-
-  const x = Math.round(location.x + size.width / 2)
-  const y = Math.round(location.y + size.height / 2)
-
-  console.log("DEBUG: Radix pointerDown at x:", x, "y:", y)
-
-  // Radix only listens for pointerdown, not the full click sequence
-  await browser
-    .action("pointer", { parameters: { pointerType: "mouse" } })
-    .move({ x, y })
-    .down({ button: 0 })
-    .perform()
-}
-
-async function manualRadixPointerDown(selector: string) {
-  console.log("DEBUG: Manual PointerDown dispatch for Radix")
-
-  await browser.execute((sel: string) => {
-    const el = document.querySelector(sel) as HTMLElement
-    if (!el) {
-      console.log("ERROR: Element not found:", sel)
-      return
-    }
-
-    const rect = el.getBoundingClientRect()
-    const event = new PointerEvent("pointerdown", {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      pointerId: 1,
-      pointerType: "mouse",
-      isPrimary: true,
-      button: 0,
-      buttons: 1,
-      clientX: rect.x + rect.width / 2,
-      clientY: rect.y + rect.height / 2,
-      screenX: rect.x + rect.width / 2,
-      screenY: rect.y + rect.height / 2,
-      ctrlKey: false,
-      shiftKey: false,
-      altKey: false,
-      metaKey: false,
-    })
-
-    console.log("Dispatching PointerDown event")
-    el.dispatchEvent(event)
-  }, selector)
-}
-
-async function selectDropdownMenuItemByTestId(triggerTestId: string, itemTestId: string): Promise<void> {
-  // Open the dropdown menu by clicking the trigger
-  await debugClick(`[data-test-id="${triggerTestId}"]`)
-  await browser.pause(500)
-
-  // Click the menu item
-  await clickByTestId(itemTestId)
-  await browser.pause(300)
-}
-
-async function debugClick(selector: string) {
-  const el = await $(selector)
-
-  console.log("exists:", await el.isExisting())
-  console.log("displayed:", await el.isDisplayed())
-  //console.log("in viewport:", await el.isDisplayedInViewport())
-  console.log("clickable:", await el.isClickable())
-  console.log("location:", await el.getLocation())
-  console.log("size:", await el.getSize())
-
-  // dump some DOM info
-  const info = await browser.execute((elem: HTMLElement) => {
-    const rect = elem.getBoundingClientRect()
-    return {
-      tag: elem.tagName,
-      classes: elem.className,
-      disabled: (elem as any).disabled,
-      pointerEvents: getComputedStyle(elem).pointerEvents,
-      rect: {
-        x: rect.x,
-        y: rect.y,
-        width: rect.width,
-        height: rect.height,
-      },
-    }
-  }, el)
-
-  console.log("dom-info:", info)
-
-  // check for overlapping elements
-  const overlap = await browser.execute((elem: HTMLElement) => {
-    const rect = elem.getBoundingClientRect()
-    const x = rect.x + rect.width / 2
-    const y = rect.y + rect.height / 2
-    const top = document.elementFromPoint(x, y)
-
-    return {
-      clickedTag: elem.tagName,
-      clickedClasses: elem.className,
-      topTag: top?.tagName,
-      topClasses: top?.className,
-      sameElement: top === elem,
-    }
-  }, el)
-
-  console.log("overlap:", overlap)
-
-  // Manual PointerDown dispatch works on both Linux and Windows
-  // Using as primary method
-  console.log("DEBUG: Attempting manual PointerDown dispatch")
-  await manualRadixPointerDown(selector)
-  await browser.pause(500)
-
-  let menuOpened = await checkMenuOpened()
-  console.log("DEBUG: Menu opened after manual dispatch:", menuOpened)
-
-  // Fallback to W3C pointerdown actions if manual failed
-  if (!menuOpened) {
-    console.log("DEBUG: Manual failed, trying W3C pointerdown action")
-    await radixPointerDown(selector)
-    await browser.pause(500)
-    menuOpened = await checkMenuOpened()
-    console.log("DEBUG: Menu opened after W3C action:", menuOpened)
-    if (!menuOpened) {
-      throw new Error("DEBUG: Menu failed to open with either method")
-    }
-  }
-}
-
-async function checkMenuOpened(): Promise<boolean> {
-  try {
-    const basicOption = await $('[data-test-id="collection-auth:type-basic"]')
-    return await basicOption.isDisplayed()
-  } catch {
-    return false
-  }
-}
 
 async function setBasicAuth(username: string, password: string): Promise<void> {
   await selectAuthType("basic")
@@ -1084,12 +944,8 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     await getElementByTestId("collection-settings:sheet", 5000)
     await clickByTestId("collection-settings:auth-tab-button")
 
-    // Set auth type to Bearer using debugClick
-    console.log("DEBUG: Opening collection auth dropdown for Bearer")
-    await debugClick('[data-test-id="collection-auth:type-trigger"]')
-    await browser.pause(500)
-    await clickByTestId("collection-auth:type-bearer")
-    await browser.pause(300)
+    // Set auth type to Bearer
+    await selectDropdownMenuItemByTestId("collection-auth:type-trigger", "collection-auth:type-bearer")
 
     // Configure bearer auth at collection level
     const collectionToken = "inherited-bearer-token-12345"

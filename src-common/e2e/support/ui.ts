@@ -1063,3 +1063,64 @@ export async function selectCollectionAuthType(type: "basic" | "bearer" | "apiKe
   }
   await selectOptionByTestId("collection-auth:type-trigger", typeTestIds[type])
 }
+
+/**
+ * Radix DropdownMenu trigger click handler only listens for pointerdown events.
+ * This helper dispatches a synthetic PointerDown event to the trigger, which works
+ * on both Linux and Windows (unlike WebDriver's native pointer simulation).
+ *
+ * Used as the low-level method for opening Radix DropdownMenu components.
+ */
+async function manualRadixPointerDown(selector: string): Promise<void> {
+  await browser.execute((sel: string) => {
+    const el = document.querySelector(sel) as HTMLElement
+    if (!el) {
+      console.log("ERROR: Element not found:", sel)
+      return
+    }
+
+    const rect = el.getBoundingClientRect()
+    const event = new PointerEvent("pointerdown", {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      pointerId: 1,
+      pointerType: "mouse",
+      isPrimary: true,
+      button: 0,
+      buttons: 1,
+      clientX: rect.x + rect.width / 2,
+      clientY: rect.y + rect.height / 2,
+      screenX: rect.x + rect.width / 2,
+      screenY: rect.y + rect.height / 2,
+      ctrlKey: false,
+      shiftKey: false,
+      altKey: false,
+      metaKey: false,
+    })
+
+    el.dispatchEvent(event)
+  }, selector)
+}
+
+/**
+ * Opens a Radix DropdownMenu by clicking the trigger and then clicks a menu item.
+ *
+ * This is the preferred way to interact with Radix DropdownMenu components in tests.
+ * It handles the pointerdown event dispatching that Radix uses to open menus.
+ *
+ * @param triggerTestId - Test ID of the dropdown trigger button
+ * @param itemTestId - Test ID of the menu item to select
+ *
+ * @example
+ * await selectDropdownMenuItemByTestId("auth-type-trigger", "auth-type-bearer")
+ */
+export async function selectDropdownMenuItemByTestId(triggerTestId: string, itemTestId: string): Promise<void> {
+  // Open the dropdown menu by dispatching pointerdown to trigger
+  await manualRadixPointerDown(`[data-test-id="${triggerTestId}"]`)
+  await browser.pause(500)
+
+  // Click the menu item
+  await clickByTestId(itemTestId)
+  await browser.pause(300)
+}
