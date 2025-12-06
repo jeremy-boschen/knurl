@@ -1118,9 +1118,8 @@ async function manualRadixPointerDown(selector: string): Promise<void> {
 export async function selectDropdownMenuItemByTestId(triggerTestId: string, itemTestId: string): Promise<void> {
   // Open the dropdown menu by dispatching pointerdown to trigger
   await manualRadixPointerDown(`[data-test-id="${triggerTestId}"]`)
-  await browser.pause(500)
 
-  // Click the menu item
+  // Wait for menu item to be displayed, then click it
+  await getElementByTestId(itemTestId, DEFAULT_TIMEOUT)
   await clickByTestId(itemTestId)
-  await browser.pause(300)
 }
