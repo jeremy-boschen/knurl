@@ -2745,4 +2745,105 @@ mod tests {
         assert!(result.is_err());
         assert!(result.unwrap_err().message.contains("Unsupported"));
     }
+
+    // ========== Additional coverage for helpers ==========
+
+    #[test]
+    fn log_token_request_preview_records_details() {
+        let emitter = CollectEmitter {
+            events: Arc::new(Mutex::new(Vec::new())),
+        };
+        let mut headers = HashMap::new();
+        headers.insert(
+            "Content-Type".to_string(),
+            "application/x-www-form-urlencoded".to_string(),
+        );
+        let body = vec![("grant_type".to_string(), "client_credentials".to_string())];
+
+        log_token_request_preview(
+            &emitter,
+            "req-preview",
+            "POST",
+            "https://idp/token",
+            &headers,
+            &body,
+        );
+
+        let events = emitter.events.lock().unwrap();
+        assert_eq!(events.len(), 1);
+        let details = events[0].details.as_ref().unwrap();
+        assert_eq!(details["method"], "POST");
+        assert_eq!(details["url"], "https://idp/token");
+        assert_eq!(details["headers"][0]["name"], "Content-Type");
+        assert_eq!(details["body"][0]["name"], "grant_type");
+    }
+
+    #[test]
+    fn log_token_response_metadata_captures_status_and_headers() {
+        let emitter = CollectEmitter {
+            events: Arc::new(Mutex::new(Vec::new())),
+        };
+        let headers = vec![("content-type".to_string(), "application/json".to_string())];
+        let response = ResponseData {
+            request_id: "req-meta".into(),
+            status: 200,
+            status_text: "OK".into(),
+            headers,
+            cookies: Vec::new(),
+            body: b"{\"access_token\":\"ok\"}".to_vec(),
+            file_path: None,
+            size: 0,
+            duration: 10,
+            timestamp: "now".into(),
+        };
+
+        log_token_response_metadata(&emitter, "req-meta", &response);
+
+        let events = emitter.events.lock().unwrap();
+        assert_eq!(events.len(), 1);
+        let details = events[0].details.as_ref().unwrap();
+        assert_eq!(details["status"], 200);
+        assert_eq!(details["contentType"], "application/json");
+        assert_eq!(details["size"], 21);
+    }
+
+    #[test]
+    fn headless_and_device_flags_read_env() {
+        unsafe {
+            std::env::set_var("KNURL_OAUTH_HEADLESS", "1");
+            std::env::set_var("KNURL_OAUTH_AUTO_DEVICE", "1");
+        }
+        assert!(is_headless_mode());
+        assert!(auto_complete_device_enabled());
+        unsafe {
+            std::env::remove_var("KNURL_OAUTH_HEADLESS");
+            std::env::remove_var("KNURL_OAUTH_AUTO_DEVICE");
+        }
+    }
+
+    #[test]
+    fn compute_pkce_challenge_supports_s256_and_plain() {
+        // Example from RFC 7636
+        let verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
+        let expected = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
+        let computed = compute_pkce_challenge(verifier, "S256").unwrap();
+        assert_eq!(computed, expected);
+
+        let plain = compute_pkce_challenge("abc", "plain").unwrap();
+        assert_eq!(plain, "abc");
+    }
+
+    #[test]
+    fn compute_pkce_challenge_rejects_unknown_method() {
+        let err = compute_pkce_challenge("verifier", "MD5").unwrap_err();
+        assert_eq!(err.kind, ErrorKind::BadRequest);
+    }
+
+    #[test]
+    fn generated_state_and_verifier_have_expected_lengths() {
+        let state = generate_state();
+        let verifier = generate_pkce_verifier();
+        assert_eq!(state.len(), 32);
+        assert_eq!(verifier.len(), 64);
+    }
 }

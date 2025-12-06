@@ -1,0 +1,4 @@
+- Raise test coverage to at least 70% by adding unit tests (UI and Rust backend allowed); do not change application source.
+- Treat test warnings as errors; fix dialog warnings if encountered.
+- Run `yarn test:unit` to verify; avoid OOM if possible.
+- Commit all work when tests pass.
