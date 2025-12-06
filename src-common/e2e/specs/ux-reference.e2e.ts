@@ -10,6 +10,7 @@ import {
   getInputText,
   navigateTo,
   selectOptionByTestId,
+  selectDropdownMenuItemByTestId,
   setCheckboxState,
   setInputText,
   setSwitchState,
@@ -109,33 +110,31 @@ describe("[SUPPLEMENTAL] E2E UX Reference Page - Helper Library Tests", () => {
   })
 
   describe("Dropdown Menu Helper", () => {
-    it("selectOptionByTestId works with DropdownMenuItems", async () => {
-      await selectOptionByTestId("ux-reference:dropdown-trigger", "ux-reference:dropdown-item:new-request")
+    it("selectDropdownMenuItemByTestId works with DropdownMenuItems", async () => {
+      await selectDropdownMenuItemByTestId("ux-reference:dropdown-trigger", "ux-reference:dropdown-item:new-request")
       await expectTextContent("ux-reference:dropdown-value", /new-request/)
     })
 
     it("can select different menu items sequentially", async () => {
-      await selectOptionByTestId("ux-reference:dropdown-trigger", "ux-reference:dropdown-item:rename")
+      await selectDropdownMenuItemByTestId("ux-reference:dropdown-trigger", "ux-reference:dropdown-item:rename")
       await expectTextContent("ux-reference:dropdown-value", /rename/)
-      await browser.pause(200)
 
-      await selectOptionByTestId("ux-reference:dropdown-trigger", "ux-reference:dropdown-item:delete")
+      await selectDropdownMenuItemByTestId("ux-reference:dropdown-trigger", "ux-reference:dropdown-item:delete")
       await expectTextContent("ux-reference:dropdown-value", /delete/)
     })
   })
 
   describe("Dropdown Menu with Radio Group Helper", () => {
-    it("selectOptionByTestId works with DropdownMenuRadioItems", async () => {
-      await selectOptionByTestId("ux-reference:dropdown-radio-trigger", "ux-reference:radio-option:b")
+    it("selectDropdownMenuItemByTestId works with DropdownMenuRadioItems", async () => {
+      await selectDropdownMenuItemByTestId("ux-reference:dropdown-radio-trigger", "ux-reference:radio-option:b")
       await expectTextContent("ux-reference:dropdown-radio-value", /option-b/)
     })
 
     it("radio group maintains mutual exclusivity", async () => {
-      await selectOptionByTestId("ux-reference:dropdown-radio-trigger", "ux-reference:radio-option:a")
+      await selectDropdownMenuItemByTestId("ux-reference:dropdown-radio-trigger", "ux-reference:radio-option:a")
       await expectTextContent("ux-reference:dropdown-radio-value", /option-a/)
-      await browser.pause(200)
 
-      await selectOptionByTestId("ux-reference:dropdown-radio-trigger", "ux-reference:radio-option:b")
+      await selectDropdownMenuItemByTestId("ux-reference:dropdown-radio-trigger", "ux-reference:radio-option:b")
       await expectTextContent("ux-reference:dropdown-radio-value", /option-b/)
 
       // Verify we're on the new option now
