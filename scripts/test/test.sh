@@ -143,6 +143,12 @@ if [ "$RUN_UNIT" = true ]; then
     echo "Converting Rust LCOV to Istanbul format..."
     node scripts/test/lcov-to-istanbul.mjs coverage/rust-lcov.info coverage/rust-coverage.json
   fi
+
+  # Rename unit coverage file for clarity
+  if [ -f coverage/coverage-final.json ]; then
+    echo "Renaming unit coverage to unit-coverage.json..."
+    mv coverage/coverage-final.json coverage/unit-coverage.json
+  fi
 fi
 
 # -----------------------------------------------------------------------------
@@ -150,8 +156,20 @@ fi
 # -----------------------------------------------------------------------------
 if [ "$RUN_E2E" = true ]; then
   echo ""
-  echo "3️⃣  Running E2E tests..."
-  
+  echo "3️⃣  Building Rust with coverage instrumentation..."
+  cd src-tauri
+  if cargo llvm-cov --version &> /dev/null 2>&1; then
+    # Build with coverage instrumentation (but don't run tests yet)
+    LLVM_PROFILE_FILE="coverage/e2e-%p.profraw" cargo llvm-cov build --no-report 2>&1 | grep -v "warning:"
+  else
+    echo "  (cargo-llvm-cov not installed, E2E Rust coverage skipped)"
+    cargo build
+  fi
+  cd - > /dev/null
+
+  echo ""
+  echo "4️⃣  Running E2E tests..."
+
   # Construct command with proper quoting
   CMD=("yarn" "wdio" "run" "./wdio.conf.ts")
 
@@ -165,9 +183,24 @@ if [ "$RUN_E2E" = true ]; then
 
   echo "Aggregating E2E coverage..."
   node scripts/test/aggregate-e2e-coverage.mjs
-  
+
   echo "Converting E2E to Cobertura..."
   node scripts/test/convert-e2e-to-cobertura.mjs
+
+  # Generate E2E Rust coverage
+  echo "Generating E2E Rust coverage..."
+  cd src-tauri
+  if cargo llvm-cov --version &> /dev/null 2>&1; then
+    cargo llvm-cov report --lcov --output-path ../coverage/rust-lcov-e2e.info 2>&1 | grep -v "warning:"
+    cargo llvm-cov report --cobertura --output-path ../coverage/cobertura-rust-e2e.xml 2>&1 | grep -v "warning:"
+  fi
+  cd - > /dev/null
+
+  # Convert E2E Rust LCOV
+  if [ -f coverage/rust-lcov-e2e.info ]; then
+    echo "Converting E2E Rust LCOV to Istanbul format..."
+    node scripts/test/lcov-to-istanbul.mjs coverage/rust-lcov-e2e.info coverage/rust-e2e-coverage.json
+  fi
 fi
 
 # -----------------------------------------------------------------------------
