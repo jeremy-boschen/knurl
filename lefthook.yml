@@ -12,8 +12,7 @@ pre-push:
     test-unit:
       run: yarn test:unit
 
-# commit-msg:
-#   commands:
-#     commitlint:
-#       run: yarn commitlint --edit {1}
-# TODO: Re-enable commitlint hook once Windows shebang parsing is fixed
+commit-msg:
+  commands:
+    commitlint:
+      run: node node_modules/@commitlint/cli/cli.js --edit {1}
