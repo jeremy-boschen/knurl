@@ -491,13 +491,14 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
   await option.scrollIntoView({ block: "center", inline: "center" })
   await option.click()
 
-  // Wait for trigger's "aria-expanded" to become false (menu closes)
+  // Wait for selected option to have data-state="checked"
+  // This indicates handleSelect() has been called and the value has been updated
   await browser.waitUntil(
     async () => {
       try {
-        const trigger = await $(`[data-test-id="${selectTriggerTestId}"]`)
-        const ariaExpanded = await trigger.getAttribute("aria-expanded")
-        return ariaExpanded === "false"
+        const element = await $(`[data-test-id="${optionTestId}"]`)
+        const dataState = await element.getAttribute("data-state")
+        return dataState === "checked"
       } catch {
         return false
       }
@@ -505,7 +506,7 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
     {
       timeout: DEFAULT_TIMEOUT,
       interval: 100,
-      timeoutMsg: `Radix Select menu did not close after selecting "${optionTestId}"`,
+      timeoutMsg: `Radix Select option "${optionTestId}" did not show as selected within ${DEFAULT_TIMEOUT}ms`,
     },
   )
 }
