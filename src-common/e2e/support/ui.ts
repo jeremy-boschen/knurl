@@ -461,36 +461,14 @@ export async function waitForTestIdToDisappear(testId: string, timeout = DEFAULT
  * await selectOptionByTestId("method-dropdown", "method:post")
  */
 export async function selectOptionByTestId(selectTriggerTestId: string, optionTestId: string): Promise<void> {
-  // Radix Select requires a pointerdown event on the trigger with specific properties:
-  // button === 0 (left click), ctrlKey === false, pointerType === "mouse"
+  // Click trigger to open Select menu
   await browser.execute((testId: string) => {
     const trigger = document.querySelector(`[data-test-id="${testId}"]`) as HTMLElement
     if (!trigger) {
       console.log("ERROR: Select trigger not found:", testId)
       return
     }
-
-    const rect = trigger.getBoundingClientRect()
-    const event = new PointerEvent("pointerdown", {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      pointerId: 1,
-      pointerType: "mouse",
-      isPrimary: true,
-      button: 0,
-      buttons: 1,
-      clientX: rect.x + rect.width / 2,
-      clientY: rect.y + rect.height / 2,
-      screenX: rect.x + rect.width / 2,
-      screenY: rect.y + rect.height / 2,
-      ctrlKey: false,
-      shiftKey: false,
-      altKey: false,
-      metaKey: false,
-    })
-
-    trigger.dispatchEvent(event)
+    trigger.click()
   }, selectTriggerTestId)
 
   // Wait for option to be displayed after menu opens
@@ -510,10 +488,32 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
     },
   )
 
-  // Click the option
-  const option = await getElementByTestId(optionTestId)
-  await option.scrollIntoView({ block: "center", inline: "center" })
-  await withFallbackClick(option)
+  // Dispatch pointerup event on option to trigger handleSelect()
+  // Radix Select items use onPointerUp (not onClick) for mouse interactions
+  await browser.execute((testId: string) => {
+    const option = document.querySelector(`[data-test-id="${testId}"]`) as HTMLElement
+    if (!option) {
+      console.log("ERROR: Select option not found:", testId)
+      return
+    }
+
+    const rect = option.getBoundingClientRect()
+    const event = new PointerEvent("pointerup", {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      pointerId: 1,
+      pointerType: "mouse",
+      isPrimary: true,
+      button: 0,
+      clientX: rect.x + rect.width / 2,
+      clientY: rect.y + rect.height / 2,
+      screenX: rect.x + rect.width / 2,
+      screenY: rect.y + rect.height / 2,
+    })
+
+    option.dispatchEvent(event)
+  }, optionTestId)
 }
 
 /**
