@@ -425,7 +425,7 @@ async function handleOnPrepare() {
     VITE_E2E_STUB_OAUTH: "0",
   }
 
-  // Pass DEBUG through to vite build if set (enables react$ selector in WebdriverIO)
+  // Pass DEBUG through to vite build (enables DevTools hook for browser.react$())
   if (process.env.DEBUG) {
     viteEnv.DEBUG = process.env.DEBUG
   }
@@ -440,9 +440,8 @@ async function handleOnPrepare() {
     throw new Error("Failed to generate knurl icon")
   }
 
-  // Build bundle (development mode if DEBUG, production otherwise)
-  const buildMode = process.env.DEBUG ? "development" : "e2e"
-  const viteBuildResult = spawnSync("vite", ["build", "--config", "vite.config.e2e.ts", "--mode", buildMode], {
+  // Build production bundle
+  const viteBuildResult = spawnSync("vite", ["build", "--config", "vite.config.e2e.ts", "--mode", "e2e"], {
     cwd: process.cwd(),
     shell: true,
     env: viteEnv,

@@ -8,18 +8,45 @@ import {consoleForwardPlugin} from './scripts/build/vite-console-forward-plugin'
 import {cssVarsExportPlugin} from './scripts/build/vite-css-vars-export-plugin'
 
 const host = process.env.TAURI_DEV_HOST
-const isDebugBuild = process.env.NODE_ENV === 'development' || process.env.DEBUG
+
+// Plugin to inject React DevTools hook for browser.react$() support
+const reactDevToolsPlugin = {
+  name: 'inject-react-devtools',
+  apply: 'build',
+  transformIndexHtml(html: string) {
+    if (!process.env.DEBUG) {
+      return html
+    }
+
+    // Inject a script that creates the DevTools hook before React loads
+    const devToolsScript = `
+      <script>
+        window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
+          isDisabled: false,
+          supportsFiber: true,
+          checkDCE: () => {},
+          onCommitFiberRoot() {},
+          onCommitFiberUnmount() {},
+          onPostCommitFiberRoot() {},
+          onPreCommitFiberRoot() {},
+        };
+      </script>
+    `
+    return html.replace('<head>', `<head>${devToolsScript}`)
+  }
+}
 
 export default defineConfig({
-  mode: isDebugBuild ? 'development' : 'e2e',
+  mode: 'e2e',
   define: {
-    'import.meta.env.MODE': JSON.stringify(isDebugBuild ? 'development' : 'e2e'),
+    'import.meta.env.MODE': JSON.stringify('e2e'),
   },
   worker: {
     format: 'es',
     rollupOptions: {}
   },
   plugins: [
+    reactDevToolsPlugin,
     consoleForwardPlugin({
       // Enable console forwarding (default: true in dev mode)
       enabled: false,
@@ -81,8 +108,6 @@ export default defineConfig({
       "@test": path.resolve(__dirname, "./src-ui/test"),
       "@e2e": path.resolve(__dirname, "./src-common/e2e"),
       "@e2e/support": path.resolve(__dirname, "./src-common/e2e/support"),
-      // Use client build (has DevTools) when DEBUG is set, profiling build otherwise
-      'react-dom/client': process.env.DEBUG ? 'react-dom/client' : 'react-dom/profiling',
       // This is needed for recent codemirror styling. No idea why
       '@codemirror/state': path.resolve(__dirname, './node_modules/@codemirror/state/dist/index.cjs'),
       '@codemirror/view': path.resolve(__dirname, './node_modules/@codemirror/view/dist/index.cjs'),
