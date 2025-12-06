@@ -857,28 +857,116 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     await clickByTestId("collection-settings:auth-tab-button")
     await browser.pause(3000)
 
-    // Click the auth type dropdown trigger
+    // Try various forms of clicking the dropdown trigger until menu appears
     const trigger = await getElementByTestId("collection-auth:type-trigger")
     await trigger.scrollIntoView({ block: "center", inline: "center" })
-    await trigger.click()
-    await browser.pause(3000)
 
-    // Wait for the dropdown option to appear and click it
-    await browser.waitUntil(
-      async () => {
-        try {
-          const option = await $(`[data-test-id="collection-auth:type-basic"]`)
-          return await option.isDisplayed()
-        } catch {
-          return false
+    let menuVisible = false
+
+    // Try 1: element.click()
+    try {
+      await trigger.click()
+      await browser.pause(1000)
+      const option = await $(`[data-test-id="collection-auth:type-basic"]`)
+      if (await option.isDisplayed()) {
+        menuVisible = true
+      }
+    } catch {
+      // Menu not visible, try next method
+    }
+
+    // Try 2: doubleClick
+    if (!menuVisible) {
+      try {
+        await trigger.doubleClick()
+        await browser.pause(1000)
+        const option = await $(`[data-test-id="collection-auth:type-basic"]`)
+        if (await option.isDisplayed()) {
+          menuVisible = true
         }
-      },
-      {
-        timeout: 10000,
-        interval: 200,
-        timeoutMsg: "Collection auth basic option did not appear",
-      },
-    )
+      } catch {
+        // Menu not visible, try next method
+      }
+    }
+
+    // Try 3: browser.execute click
+    if (!menuVisible) {
+      try {
+        await browser.execute(() => {
+          const el = document.querySelector('[data-test-id="collection-auth:type-trigger"]') as HTMLElement
+          el?.click()
+        })
+        await browser.pause(1000)
+        const option = await $(`[data-test-id="collection-auth:type-basic"]`)
+        if (await option.isDisplayed()) {
+          menuVisible = true
+        }
+      } catch {
+        // Menu not visible, try next method
+      }
+    }
+
+    // Try 4: moveTo and click
+    if (!menuVisible) {
+      try {
+        await trigger.moveTo()
+        await browser.pause(500)
+        await trigger.click()
+        await browser.pause(1000)
+        const option = await $(`[data-test-id="collection-auth:type-basic"]`)
+        if (await option.isDisplayed()) {
+          menuVisible = true
+        }
+      } catch {
+        // Menu not visible, try next method
+      }
+    }
+
+    // Try 5: leftClick action
+    if (!menuVisible) {
+      try {
+        await browser.action("pointer").move({ x: 0, y: 0 }).perform()
+        await trigger.click()
+        await browser.pause(1000)
+        const option = await $(`[data-test-id="collection-auth:type-basic"]`)
+        if (await option.isDisplayed()) {
+          menuVisible = true
+        }
+      } catch {
+        // Menu not visible, try next method
+      }
+    }
+
+    // Try 6: keyboard space/enter
+    if (!menuVisible) {
+      try {
+        await trigger.click()
+        await browser.keys("Space")
+        await browser.pause(1000)
+        const option = await $(`[data-test-id="collection-auth:type-basic"]`)
+        if (await option.isDisplayed()) {
+          menuVisible = true
+        }
+      } catch {
+        // Menu not visible, try next method
+      }
+    }
+
+    // Try 7: Check if already open (shouldn't be, but just in case)
+    if (!menuVisible) {
+      try {
+        const option = await $(`[data-test-id="collection-auth:type-basic"]`)
+        if (await option.isDisplayed()) {
+          menuVisible = true
+        }
+      } catch {
+        // Menu not visible
+      }
+    }
+
+    if (!menuVisible) {
+      throw new Error("Collection auth dropdown menu did not open with any click method")
+    }
 
     const basicOption = await getElementByTestId("collection-auth:type-basic")
     await basicOption.scrollIntoView({ block: "center", inline: "center" })
@@ -898,17 +986,125 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     await openCollectionMenu(collectionId)
     await clickByTestId(`collection-menu:item:request:new:${collectionId}`)
 
-    // Wait for create-request dialog and fill in name
-    await getElementByTestId("create-request-dialog", 5000)
-    await setInputText("create-request-dialog:name-input", `Request-${Date.now()}`)
-    await clickByTestId("create-request-dialog:confirm-button")
+    // Wait for create-request dialog to appear
+    await browser.waitUntil(
+      async () => {
+        try {
+          const dialog = await $('[data-test-id="create-request-dialog"]')
+          return await dialog.isDisplayed()
+        } catch {
+          return false
+        }
+      },
+      { timeout: 10000, interval: 200, timeoutMsg: "Create request dialog did not appear" },
+    )
+
+    // Add pause to ensure dialog is fully rendered
+    await browser.pause(1000)
+
+    // Get the input and try to set it
+    const nameInput = await getElementByTestId("create-request-dialog:name-input")
+    const requestName = `Request-${Date.now()}`
+
+    // Set the value using a combination of DOM + React state update
+    await browser.execute(
+      (testId, value) => {
+        const input = document.querySelector(`[data-test-id="${testId}"]`) as HTMLInputElement
+        if (input) {
+          // Set the value
+          input.value = value
+
+          // Find the React key on the input element (for React 18+)
+          // Look for __reactProps$ key which contains the fiber node
+          const keys = Object.keys(input).filter((k) => k.startsWith("__reactProps"))
+          if (keys.length > 0) {
+            const fiberProps = (input as any)[keys[0]]
+            if (fiberProps?.onChange) {
+              // Call the onChange handler with synthetic event
+              const event = { target: { value: value } }
+              fiberProps.onChange(event)
+            }
+          } else {
+            // Fallback: dispatch events
+            const events = [new Event("input", { bubbles: true }), new Event("change", { bubbles: true })]
+            events.forEach((event) => {
+              input.dispatchEvent(event)
+            })
+          }
+        }
+      },
+      "create-request-dialog:name-input",
+      requestName,
+    )
+
+    // Add pause for React to update
+    await browser.pause(500)
+
+    // Wait for input to have the value
+    await browser.waitUntil(
+      async () => {
+        const val = await nameInput.getValue()
+        return val === requestName
+      },
+      {
+        timeout: 10000,
+        interval: 100,
+        timeoutMsg: `Failed to set request name to "${requestName}"`,
+      },
+    )
+
+    // Click the confirm button
+    const confirmButton = await getElementByTestId("create-request-dialog:confirm-button")
+    await confirmButton.waitForEnabled({ timeout: 5000 })
+    await browser.pause(500)
+    await confirmButton.click()
 
     // Wait for request editor to be ready
     await waitForRequestEditor()
 
-    // Set request URL using the same method as existing tests
+    // Set request URL - using JavaScript for controlled React input
     const mockUrl = `http://127.0.0.1:3000/mock/get`
-    await setInputText("request-workspace:url-input", mockUrl)
+    const urlInput = await getElementByTestId("request-workspace:url-input")
+
+    // Use JavaScript to set the value and trigger React events
+    await browser.execute(
+      (testId, value) => {
+        const input = document.querySelector(`[data-test-id="${testId}"]`) as HTMLInputElement
+        if (input) {
+          input.value = value
+
+          // Find React props key and call onChange handler
+          const keys = Object.keys(input).filter((k) => k.startsWith("__reactProps"))
+          if (keys.length > 0) {
+            const fiberProps = (input as any)[keys[0]]
+            if (fiberProps?.onChange) {
+              fiberProps.onChange({ target: { value: value } })
+            }
+          } else {
+            // Fallback: dispatch events
+            const events = [new Event("input", { bubbles: true }), new Event("change", { bubbles: true })]
+            events.forEach((event) => {
+              input.dispatchEvent(event)
+            })
+          }
+        }
+      },
+      "request-workspace:url-input",
+      mockUrl,
+    )
+
+    // Wait for input to have the value
+    await browser.waitUntil(
+      async () => {
+        const val = await urlInput.getValue()
+        return val === mockUrl
+      },
+      {
+        timeout: 5000,
+        interval: 100,
+        timeoutMsg: `Failed to set URL to "${mockUrl}"`,
+      },
+    )
 
     // Click on auth tab and set to Inherit
     await clickByTestId("request-editor:auth-tab")
