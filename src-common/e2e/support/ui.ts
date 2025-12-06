@@ -461,6 +461,12 @@ export async function waitForTestIdToDisappear(testId: string, timeout = DEFAULT
  * await selectOptionByTestId("method-dropdown", "method:post")
  */
 export async function selectOptionByTestId(selectTriggerTestId: string, optionTestId: string): Promise<void> {
+  // Extract the option value from the test ID (e.g., "ux-reference:select-option:alpha" -> "alpha")
+  const optionValue = optionTestId.split(":").pop()
+  if (!optionValue) {
+    throw new Error(`Could not extract option value from test ID: ${optionTestId}`)
+  }
+
   // Click trigger to open Select menu
   await browser.execute((testId: string) => {
     const trigger = document.querySelector(`[data-test-id="${testId}"]`) as HTMLElement
@@ -491,14 +497,16 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
   await option.scrollIntoView({ block: "center", inline: "center" })
   await option.click()
 
-  // Wait for the trigger to close (aria-expanded="false")
-  // This indicates the selection was processed and menu is closing
+  // Wait for the Select component's value to update to the selected option
+  // Use React inspector to check the Select component's controlled state
   await browser.waitUntil(
     async () => {
       try {
-        const trigger = await $(`[data-test-id="${selectTriggerTestId}"]`)
-        const ariaExpanded = await trigger.getAttribute("aria-expanded")
-        return ariaExpanded === "false"
+        // Query the Select trigger element via React to access its props/state
+        const selectTrigger = await browser.$react(`Select`, {
+          props: { value: optionValue },
+        })
+        return selectTrigger.length > 0
       } catch {
         return false
       }
@@ -506,7 +514,7 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
     {
       timeout: DEFAULT_TIMEOUT,
       interval: 100,
-      timeoutMsg: `Radix Select menu did not close after selecting "${optionTestId}"`,
+      timeoutMsg: `Radix Select did not update to value "${optionValue}" within ${DEFAULT_TIMEOUT}ms`,
     },
   )
 }
