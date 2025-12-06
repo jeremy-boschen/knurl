@@ -31,7 +31,8 @@ async function radixPointerDown(selector: string) {
   console.log("DEBUG: Radix pointerDown at x:", x, "y:", y)
 
   // Radix only listens for pointerdown, not the full click sequence
-  await browser.action("pointer", { parameters: { pointerType: "mouse" } })
+  await browser
+    .action("pointer", { parameters: { pointerType: "mouse" } })
     .move({ x, y })
     .down({ button: 0 })
     .perform()
@@ -124,9 +125,30 @@ async function debugClick(selector: string) {
   await manualRadixPointerDown(selector)
   await browser.pause(500)
 
+  let menuOpened = await checkMenuOpened()
+  console.log("DEBUG: Menu opened after manual dispatch:", menuOpened)
+
   // If that didn't work, try W3C pointerdown actions (works on Windows)
-  console.log("DEBUG: Attempting W3C pointerdown action")
-  await radixPointerDown(selector)
+  if (!menuOpened) {
+    console.log("DEBUG: Attempting W3C pointerdown action")
+    await radixPointerDown(selector)
+    await browser.pause(500)
+    menuOpened = await checkMenuOpened()
+    console.log("DEBUG: Menu opened after W3C action:", menuOpened)
+  }
+
+  if (!menuOpened) {
+    throw new Error("DEBUG: Menu failed to open with either method")
+  }
+}
+
+async function checkMenuOpened(): Promise<boolean> {
+  try {
+    const basicOption = await $('[data-test-id="collection-auth:type-basic"]')
+    return await basicOption.isDisplayed()
+  } catch {
+    return false
+  }
 }
 
 async function setBasicAuth(username: string, password: string): Promise<void> {
