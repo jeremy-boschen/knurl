@@ -122,6 +122,10 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
       const inputType = await valueInput.getAttribute("type")
       await expect(inputType).toBe("password")
     }
+
+    // Close the settings sheet to save the environment
+    await browser.keys(["Escape"])
+    await browser.pause(300)
   })
 
   it("assigns environment to request and clears it", async () => {

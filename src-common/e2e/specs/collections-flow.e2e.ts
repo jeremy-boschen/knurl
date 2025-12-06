@@ -114,6 +114,10 @@ describe("Collection And Request Flow", () => {
     await tabElement.waitForDisplayed({ timeout: 10000 })
     await expect(tabElement).toHaveAttribute("data-state", "active")
 
+    // Click on collection to expand it so request row is visible
+    await clickByTestId(`collection-tree:collection-row:${state.collectionId}`)
+    await browser.pause(200)
+
     const requestRow = await getElementByTestId(`collection-tree:request-row:${requestId}`)
     await requestRow.waitForDisplayed({ timeout: 10000 })
   })
