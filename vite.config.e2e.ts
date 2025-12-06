@@ -9,7 +9,7 @@ import {cssVarsExportPlugin} from './scripts/build/vite-css-vars-export-plugin'
 
 const host = process.env.TAURI_DEV_HOST
 
-// Plugin to inject React DevTools hook for browser.react$() support
+// Plugin to inject React DevTools hook and resq support for browser.react$()
 const reactDevToolsPlugin = {
   name: 'inject-react-devtools',
   apply: 'build',
@@ -18,17 +18,25 @@ const reactDevToolsPlugin = {
       return html
     }
 
-    // Inject a script that creates the DevTools hook before React loads
+    // Inject a script that enables resq to find React Fiber internals
+    // resq uses window.__REACT_DEVTOOLS_GLOBAL_HOOK__ to discover React and traverse the Fiber tree
     const devToolsScript = `
       <script>
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
           isDisabled: false,
           supportsFiber: true,
+          supportsProfiling: true,
+          supportsPriorityLabels: true,
           checkDCE: () => {},
-          onCommitFiberRoot() {},
-          onCommitFiberUnmount() {},
-          onPostCommitFiberRoot() {},
-          onPreCommitFiberRoot() {},
+          onCommitFiberRoot: () => {},
+          onCommitFiberUnmount: () => {},
+          onPostCommitFiberRoot: () => {},
+          onPreCommitFiberRoot: () => {},
+          getCommitTime: () => 0,
+          getVersion: () => 0,
+          registerInternalModuleStart: () => {},
+          registerInternalModuleStop: () => {},
+          getInternalModuleRanges: () => new Map(),
         };
       </script>
     `
