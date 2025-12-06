@@ -9,43 +9,6 @@ import {cssVarsExportPlugin} from './scripts/build/vite-css-vars-export-plugin'
 
 const host = process.env.TAURI_DEV_HOST
 
-// Plugin to inject React DevTools hook and resq support for browser.react$()
-const reactDevToolsPlugin = {
-  name: 'inject-react-devtools',
-  apply: 'build',
-  transformIndexHtml(html: string) {
-    if (!process.env.DEBUG) {
-      return html
-    }
-
-    console.log('[react-devtools-inject] Injecting React DevTools hook for browser.react$() support')
-
-    // Inject a script that enables resq to find React Fiber internals
-    // resq uses window.__REACT_DEVTOOLS_GLOBAL_HOOK__ to discover React and traverse the Fiber tree
-    const devToolsScript = `
-      <script>
-        window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
-          isDisabled: false,
-          supportsFiber: true,
-          supportsProfiling: true,
-          supportsPriorityLabels: true,
-          checkDCE: () => {},
-          onCommitFiberRoot: () => {},
-          onCommitFiberUnmount: () => {},
-          onPostCommitFiberRoot: () => {},
-          onPreCommitFiberRoot: () => {},
-          getCommitTime: () => 0,
-          getVersion: () => 0,
-          registerInternalModuleStart: () => {},
-          registerInternalModuleStop: () => {},
-          getInternalModuleRanges: () => new Map(),
-        };
-      </script>
-    `
-    return html.replace('<head>', `<head>${devToolsScript}`)
-  }
-}
-
 export default defineConfig({
   mode: 'e2e',
   define: {
@@ -56,7 +19,6 @@ export default defineConfig({
     rollupOptions: {}
   },
   plugins: [
-    reactDevToolsPlugin,
     consoleForwardPlugin({
       // Enable console forwarding (default: true in dev mode)
       enabled: false,
@@ -84,6 +46,33 @@ export default defineConfig({
             },
           ],
         }
+      },
+    },
+    {
+      name: 'react-devtools-inject-build',
+      apply: 'build',
+      transformIndexHtml(html) {
+        // For e2e tests: inject the DevTools hook directly so browser.react$() can find React
+        const devToolsScript = `
+      <script>
+        window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
+          isDisabled: false,
+          supportsFiber: true,
+          supportsProfiling: true,
+          supportsPriorityLabels: true,
+          checkDCE: () => {},
+          onCommitFiberRoot: () => {},
+          onCommitFiberUnmount: () => {},
+          onPostCommitFiberRoot: () => {},
+          onPreCommitFiberRoot: () => {},
+          getCommitTime: () => 0,
+          getVersion: () => 0,
+          registerInternalModuleStart: () => {},
+          registerInternalModuleStop: () => {},
+          getInternalModuleRanges: () => new Map(),
+        };
+      </script>`
+        return html.replace('<head>', `<head>${devToolsScript}`)
       },
     },
     // Extract CSS custom properties into JSON:
