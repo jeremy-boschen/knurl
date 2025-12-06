@@ -440,8 +440,9 @@ async function handleOnPrepare() {
     throw new Error("Failed to generate knurl icon")
   }
 
-  // Build production bundle
-  const viteBuildResult = spawnSync("vite", ["build", "--config", "vite.config.e2e.ts", "--mode", "e2e"], {
+  // Build bundle (development mode if DEBUG, production otherwise)
+  const buildMode = process.env.DEBUG ? "development" : "e2e"
+  const viteBuildResult = spawnSync("vite", ["build", "--config", "vite.config.e2e.ts", "--mode", buildMode], {
     cwd: process.cwd(),
     shell: true,
     env: viteEnv,
