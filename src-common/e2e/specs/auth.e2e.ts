@@ -67,14 +67,21 @@ async function debugClick(selector: string) {
 
   console.log("overlap:", overlap)
 
-  // Try native WebDriver click
-  console.log("DEBUG: Attempting native WebDriver click")
-  await el.click()
-  await browser.pause(500)
+  // Try pointer events
+  console.log("DEBUG: Attempting pointer events")
+  const trigger = await $(selector)
+  await trigger.waitForDisplayed({ timeout: 5000 })
 
-  // Try JavaScript click
-  console.log("DEBUG: Attempting JavaScript click")
-  await browser.execute((elem: HTMLElement) => elem.click(), el)
+  const { x, y } = await trigger.getLocation()
+  const { width, height } = await trigger.getSize()
+
+  await browser
+    .action("pointer", { parameters: { pointerType: "mouse" } })
+    .move({ x: Math.round(x + width / 2), y: Math.round(y + height / 2) })
+    .down({ button: 0 })
+    .pause(50)
+    .up({ button: 0 })
+    .perform()
 }
 
 async function setBasicAuth(username: string, password: string): Promise<void> {
@@ -935,9 +942,7 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     console.log("DEBUG: Menu opened:", clickWorked)
 
     // Abort here - we've tested both methods
-    throw new Error(
-      `DEBUG: Testing complete. Menu opened: ${clickWorked}. Check logs for native vs JS click behavior`,
-    )
+    throw new Error(`DEBUG: Testing complete. Menu opened: ${clickWorked}. Check logs for native vs JS click behavior`)
   })
 
   it("request inherits Bearer auth from collection", async () => {
