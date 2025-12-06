@@ -461,20 +461,57 @@ export async function waitForTestIdToDisappear(testId: string, timeout = DEFAULT
  * await selectOptionByTestId("method-dropdown", "method:post")
  */
 export async function selectOptionByTestId(selectTriggerTestId: string, optionTestId: string): Promise<void> {
-  // Use document.querySelector to click trigger - this properly fires all event listeners
+  // Radix Select requires a pointerdown event on the trigger with specific properties:
+  // button === 0 (left click), ctrlKey === false, pointerType === "mouse"
   await browser.execute((testId: string) => {
     const trigger = document.querySelector(`[data-test-id="${testId}"]`) as HTMLElement
-    if (trigger) {
-      trigger.click()
+    if (!trigger) {
+      console.log("ERROR: Select trigger not found:", testId)
+      return
     }
+
+    const rect = trigger.getBoundingClientRect()
+    const event = new PointerEvent("pointerdown", {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      pointerId: 1,
+      pointerType: "mouse",
+      isPrimary: true,
+      button: 0,
+      buttons: 1,
+      clientX: rect.x + rect.width / 2,
+      clientY: rect.y + rect.height / 2,
+      screenX: rect.x + rect.width / 2,
+      screenY: rect.y + rect.height / 2,
+      ctrlKey: false,
+      shiftKey: false,
+      altKey: false,
+      metaKey: false,
+    })
+
+    trigger.dispatchEvent(event)
   }, selectTriggerTestId)
 
-  // Wait for menu to open and render - Radix animations take time
-  await browser.pause(500)
+  // Wait for option to be displayed after menu opens
+  await browser.waitUntil(
+    async () => {
+      try {
+        const element = await $(`[data-test-id="${optionTestId}"]`)
+        return await element.isDisplayed()
+      } catch {
+        return false
+      }
+    },
+    {
+      timeout: DEFAULT_TIMEOUT,
+      interval: 100,
+      timeoutMsg: `Radix Select option "${optionTestId}" did not appear within ${DEFAULT_TIMEOUT}ms after opening trigger "${selectTriggerTestId}"`,
+    },
+  )
 
-  // Wait for option to appear in DOM after menu opens
-  const option = await getElementByTestId(optionTestId, DEFAULT_TIMEOUT)
-  await option.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
+  // Click the option
+  const option = await getElementByTestId(optionTestId)
   await option.scrollIntoView({ block: "center", inline: "center" })
   await withFallbackClick(option)
 }
