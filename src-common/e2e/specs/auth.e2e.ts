@@ -920,24 +920,23 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     await browser.pause(1000)
     const basicOption = await $('[data-test-id="collection-auth:type-basic"]')
 
-    let nativeClickWorked = false
-    let jsClickWorked = false
+    let clickWorked = false
 
     try {
       const isDisplayed = await basicOption.isDisplayed()
       console.log("DEBUG: Basic option displayed:", isDisplayed)
       if (isDisplayed) {
-        jsClickWorked = true
+        clickWorked = true
       }
     } catch {
       console.log("DEBUG: Basic option not found/displayed")
     }
 
-    console.log("DEBUG: Click methods - Native:", nativeClickWorked, "JS:", jsClickWorked)
+    console.log("DEBUG: Menu opened:", clickWorked)
 
     // Abort here - we've tested both methods
     throw new Error(
-      `DEBUG: Testing complete. Native click worked: ${nativeClickWorked}, JS click worked: ${jsClickWorked}`,
+      `DEBUG: Testing complete. Menu opened: ${clickWorked}. Check logs for native vs JS click behavior`,
     )
   })
 
