@@ -986,30 +986,85 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
 
     await clickByTestId("collection-settings:auth-tab-button")
 
-    // DEBUG: Dump trigger element info and attempt both click methods
+    // Open collection auth dropdown
     console.log("DEBUG: About to click collection-auth:type-trigger")
     await debugClick('[data-test-id="collection-auth:type-trigger"]')
+    await browser.pause(500)
 
-    // Check which click method worked
-    await browser.pause(1000)
-    const basicOption = await $('[data-test-id="collection-auth:type-basic"]')
+    // Menu should be open, click the Basic auth option
+    await clickByTestId("collection-auth:type-basic")
+    await browser.pause(300)
 
-    let clickWorked = false
+    // Configure basic auth credentials at collection level
+    const collectionUsername = "collection-user"
+    const collectionPassword = "collection-pass"
+    await setInputText("collection-auth:basic-auth-username-input", collectionUsername)
+    await setInputText("collection-auth:basic-auth-password-input", collectionPassword)
 
-    try {
-      const isDisplayed = await basicOption.isDisplayed()
-      console.log("DEBUG: Basic option displayed:", isDisplayed)
-      if (isDisplayed) {
-        clickWorked = true
+    // Close settings sheet
+    await browser.keys(["Escape"])
+
+    // Create a request in this collection
+    await openCollectionMenu(collectionId)
+    await clickByTestId(`collection-menu:item:request:new:${collectionId}`)
+
+    // Wait for create-request dialog and fill in name
+    await getElementByTestId("create-request-dialog", 5000)
+    await setInputText("create-request-dialog:name-input", `Request-${Date.now()}`)
+    await clickByTestId("create-request-dialog:confirm-button")
+
+    // Wait for request editor to be ready
+    await waitForRequestEditor()
+
+    // Set request URL
+    const mockUrl = `http://127.0.0.1:3000/mock/get`
+    await setInputText("request-workspace:url-input", mockUrl)
+
+    // Click on auth tab and set to Inherit
+    await clickByTestId("request-editor:auth-tab")
+    await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+    await clickByTestId("request-editor:auth-menu:type-inherit")
+
+    // Send request
+    await clickByTestId("request-workspace:send-button")
+
+    // Wait for response
+    await browser.waitUntil(
+      async () => {
+        const responseText = await browser.execute(() => {
+          const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+          if (!responseBody) {
+            return ""
+          }
+          const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+          if (!codeEditor) {
+            return ""
+          }
+          const content = codeEditor.querySelector(".cm-content")
+          return content ? content.textContent || codeEditor.textContent : codeEditor.textContent
+        })
+        return responseText && responseText.length > 0
+      },
+      { timeout: 15000 },
+    )
+
+    // Verify the inherited auth was applied
+    const responseText = await browser.execute(() => {
+      const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+      if (!responseBody) {
+        return ""
       }
-    } catch {
-      console.log("DEBUG: Basic option not found/displayed")
-    }
+      const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+      if (!codeEditor) {
+        return ""
+      }
+      const content = codeEditor.querySelector(".cm-content")
+      return content ? content.textContent || codeEditor.textContent : codeEditor.textContent
+    })
 
-    console.log("DEBUG: Menu opened:", clickWorked)
-
-    // Abort here - we've tested both methods
-    throw new Error(`DEBUG: Testing complete. Menu opened: ${clickWorked}. Check logs for native vs JS click behavior`)
+    // Check that a response was received (request was sent successfully with inherited auth)
+    await expect(responseText).toBeTruthy()
+    await expect(responseText.length).toBeGreaterThan(0)
   })
 
   it("request inherits Bearer auth from collection", async () => {
@@ -1025,8 +1080,12 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     await getElementByTestId("collection-settings:sheet", 5000)
     await clickByTestId("collection-settings:auth-tab-button")
 
-    // Set auth type to Bearer
-    await selectOptionByTestId("collection-auth:type-trigger", "collection-auth:type-bearer")
+    // Set auth type to Bearer using debugClick
+    console.log("DEBUG: Opening collection auth dropdown for Bearer")
+    await debugClick('[data-test-id="collection-auth:type-trigger"]')
+    await browser.pause(500)
+    await clickByTestId("collection-auth:type-bearer")
+    await browser.pause(300)
 
     // Configure bearer auth at collection level
     const collectionToken = "inherited-bearer-token-12345"
