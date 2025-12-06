@@ -1,13 +1,7 @@
-import { ChevronDownIcon, ClipboardPasteIcon, UploadIcon } from "lucide-react"
+import { ClipboardPasteIcon, UploadIcon } from "lucide-react"
 import type { ImportFormat } from "../types"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LabeledField } from "@/components/ui/knurl"
 import { Switch } from "@/components/ui/switch"
 
@@ -52,26 +46,19 @@ export function ImportSourceStep({
             Paste from Clipboard
           </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="default" variant="outline" data-test-id="import-source:format-trigger">
-                <span className="sr-only">Choose import format</span>
-                <ChevronDownIcon className="h-4 w-4" /> Import Type
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" sideOffset={4} className="min-w-[200px]">
-              <DropdownMenuRadioGroup
-                value={importFormat}
-                onValueChange={(value) => onFormatChange(value as ImportFormat)}
-              >
-                {Object.entries(ImportFormatName).map(([format, name]) => (
-                  <DropdownMenuRadioItem key={format} value={format}>
-                    {name}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Select value={importFormat} onValueChange={(value) => onFormatChange(value as ImportFormat)}>
+            <SelectTrigger className="w-[200px]" data-test-id="import-source:format-trigger">
+              <span className="sr-only">Choose import format</span>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="start">
+              {Object.entries(ImportFormatName).map(([format, name]) => (
+                <SelectItem key={format} value={format}>
+                  {name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </LabeledField>
       {showOpenApiOptions ? (

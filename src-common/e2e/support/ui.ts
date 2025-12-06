@@ -684,8 +684,23 @@ export async function openCollectionMenu(collectionId: string): Promise<void> {
   try {
     await row.moveTo()
   } catch {}
-  // Right-click to open context menu
-  await row.click({ button: 2 })
+
+  // Dispatch a contextmenu event with preventDefault to suppress browser's native context menu
+  // This ensures React's onContextMenu handler fires without interference
+  await browser.execute((el: HTMLElement) => {
+    const event = new MouseEvent("contextmenu", {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      button: 2,
+    })
+    const prevented = !el.dispatchEvent(event)
+    // Prevent default if the event wasn't already prevented by the React handler
+    if (!prevented) {
+      event.preventDefault?.()
+    }
+  }, row)
+
   // Wait for context menu to appear (look for any visible menu item)
   await browser.waitUntil(
     async () => {
@@ -1222,4 +1237,151 @@ export async function selectDropdownMenuItemByTestId(triggerTestId: string, item
 
   // Wait for menu to close
   await browser.pause(300)
+}
+
+/**
+ * Count elements matching a test ID prefix (e.g., count all tabs, headers, etc.)
+ * Uses WDIO's native selector engine, NOT document.querySelector
+ * @param testIdPrefix - Prefix to match (e.g., "request-tab:")
+ * @returns Number of elements with matching test IDs
+ */
+export async function countElementsByTestIdPrefix(testIdPrefix: string): Promise<number> {
+  const selector = `[data-test-id^="${testIdPrefix}"]`
+  const elements = await $$(selector)
+  return elements.length
+}
+
+/**
+ * Count elements matching a CSS selector
+ * Uses WDIO's native selector engine, NOT document.querySelector
+ * @param selector - CSS selector pattern
+ * @returns Number of matching elements
+ */
+export async function countElements(selector: string): Promise<number> {
+  const elements = await $$(selector)
+  return elements.length
+}
+
+/**
+ * Check if an element with a specific test ID exists
+ * Uses WDIO's native selector engine, NOT document.querySelector
+ * @param testId - The data-test-id to search for
+ * @returns True if element exists, false otherwise
+ */
+export async function elementExists(testId: string): Promise<boolean> {
+  const locator = `[data-test-id="${testId}"]`
+  const element = await $(locator)
+  return await element.isExisting()
+}
+
+/**
+ * Check if an element matching a selector exists
+ * Uses WDIO's native selector engine, NOT document.querySelector
+ * @param selector - CSS selector pattern
+ * @returns True if element exists, false otherwise
+ */
+export async function selectorExists(selector: string): Promise<boolean> {
+  const element = await $(selector)
+  return await element.isExisting()
+}
+
+/**
+ * Get text content of an element by selector
+ * Uses WDIO's native selector engine, NOT document.querySelector
+ * @param selector - CSS selector pattern
+ * @returns Text content or empty string if not found
+ */
+export async function getTextBySelector(selector: string): Promise<string> {
+  try {
+    const element = await $(selector)
+    if (!(await element.isExisting())) {
+      return ""
+    }
+    const text = await element.getText()
+    return text.trim()
+  } catch {
+    return ""
+  }
+}
+
+/**
+ * Find a row element by collection ID and text content
+ * Uses WDIO's native selector engine, NOT document.querySelector
+ * @param collectionId - The collection ID
+ * @param textContent - Text to search for in the row
+ * @returns The data-test-id of the matching row, or null
+ */
+export async function findRowByCollectionIdAndText(collectionId: string, textContent: string): Promise<string | null> {
+  const selector = `[data-test-id^="collection-tree:request-row:"][data-collection-id="${collectionId}"]`
+  const elements = await $$(selector)
+
+  for (const element of elements) {
+    const text = await element.getText()
+    if (text.includes(textContent)) {
+      const testId = await element.getAttribute("data-test-id")
+      return testId
+    }
+  }
+
+  return null
+}
+
+/**
+ * Get the value attribute of an input element by selector
+ * Uses WDIO's native selector engine, NOT document.querySelector
+ * @param selector - CSS selector pattern
+ * @returns The input value or empty string if not found
+ */
+export async function getInputValueBySelector(selector: string): Promise<string> {
+  try {
+    const element = await $(selector)
+    if (!(await element.isExisting())) {
+      return ""
+    }
+    const value = await element.getValue()
+    return value || ""
+  } catch {
+    return ""
+  }
+}
+
+/**
+ * Check if an element is visible (has non-zero dimensions)
+ * Uses WDIO's native selector engine, NOT document.querySelector
+ * @param selector - CSS selector pattern
+ * @returns True if element is visible, false otherwise
+ */
+export async function isElementVisible(selector: string): Promise<boolean> {
+  try {
+    const element = await $(selector)
+    return await element.isDisplayed()
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Get the active tab key from data attributes
+ * Uses WDIO's native selector engine, NOT document.querySelector
+ * @returns The data-tab-key attribute value of active tab, or null
+ */
+export async function getActiveTabKey(): Promise<string | null> {
+  const selector = '[data-state="active"][data-tab-key]'
+  const element = await $(selector)
+  if (!(await element.isExisting())) {
+    return null
+  }
+  return await element.getAttribute("data-tab-key")
+}
+
+/**
+ * Wait for an element matching a selector to exist and be visible
+ * Uses WDIO's native selector engine, NOT document.querySelector
+ * @param selector - CSS selector pattern
+ * @param timeout - How long to wait
+ */
+export async function waitForSelectorToBeVisible(selector: string, timeout = DEFAULT_TIMEOUT): Promise<void> {
+  const element = await $(selector)
+  await element.waitForExist({ timeout })
+  await element.waitForDisplayed({ timeout })
 }
