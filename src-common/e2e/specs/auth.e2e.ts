@@ -120,27 +120,23 @@ async function debugClick(selector: string) {
 
   console.log("overlap:", overlap)
 
-  // Manual PointerDown dispatch works on both Linux and Windows - VERIFIED
-  // Keeping as fallback, but trying W3C performActions first
-  // console.log("DEBUG: Attempting manual PointerDown dispatch")
-  // await manualRadixPointerDown(selector)
-  // await browser.pause(500)
-
-  // Try W3C pointerdown actions
-  console.log("DEBUG: Attempting W3C pointerdown action")
-  await radixPointerDown(selector)
+  // Manual PointerDown dispatch works on both Linux and Windows
+  // Using as primary method
+  console.log("DEBUG: Attempting manual PointerDown dispatch")
+  await manualRadixPointerDown(selector)
   await browser.pause(500)
 
-  const menuOpened = await checkMenuOpened()
-  console.log("DEBUG: Menu opened after W3C action:", menuOpened)
+  let menuOpened = await checkMenuOpened()
+  console.log("DEBUG: Menu opened after manual dispatch:", menuOpened)
 
+  // Fallback to W3C pointerdown actions if manual failed
   if (!menuOpened) {
-    console.log("DEBUG: W3C failed, trying manual PointerDown dispatch")
-    await manualRadixPointerDown(selector)
+    console.log("DEBUG: Manual failed, trying W3C pointerdown action")
+    await radixPointerDown(selector)
     await browser.pause(500)
-    const menuOpenedAfterManual = await checkMenuOpened()
-    console.log("DEBUG: Menu opened after manual dispatch:", menuOpenedAfterManual)
-    if (!menuOpenedAfterManual) {
+    menuOpened = await checkMenuOpened()
+    console.log("DEBUG: Menu opened after W3C action:", menuOpened)
+    if (!menuOpened) {
       throw new Error("DEBUG: Menu failed to open with either method")
     }
   }
