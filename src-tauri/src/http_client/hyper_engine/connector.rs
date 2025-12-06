@@ -1382,7 +1382,7 @@ mod tests {
 
     #[test]
     fn compute_host_header_falls_back_to_uri_host_when_override_empty() {
-        let host = compute_host_header(Some("   " ), Some("base.io"));
+        let host = compute_host_header(Some("   "), Some("base.io"));
         assert_eq!(host.as_deref(), Some("base.io"));
     }
 
@@ -1412,7 +1412,11 @@ mod tests {
             fn emit(&self, _entry: LogEntry) {}
         }
 
-        let logger = RequestLogger::new(Arc::new(NullEmitter), "req-missing-host".into(), Instant::now());
+        let logger = RequestLogger::new(
+            Arc::new(NullEmitter),
+            "req-missing-host".into(),
+            Instant::now(),
+        );
         let request = Request::default();
         let uri: Uri = "/relative/path".parse().unwrap();
 
