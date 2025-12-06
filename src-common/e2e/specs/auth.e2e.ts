@@ -129,14 +129,14 @@ async function debugClick(selector: string) {
 
   console.log("overlap:", overlap)
 
-  // Try W3C performActions pointer events first
-  console.log("DEBUG: Attempting W3C performActions pointer events")
-  await pointerClick(selector)
-  await browser.pause(500)
-
-  // Try manual PointerDown dispatch if W3C didn't work
+  // Try manual PointerDown dispatch first (works on Linux)
   console.log("DEBUG: Attempting manual PointerDown dispatch")
   await manualPointerDown(selector)
+  await browser.pause(500)
+
+  // If that didn't work, try W3C performActions (works on Windows)
+  console.log("DEBUG: Attempting W3C performActions pointer events")
+  await pointerClick(selector)
 }
 
 async function setBasicAuth(username: string, password: string): Promise<void> {
