@@ -1119,7 +1119,23 @@ export async function selectDropdownMenuItemByTestId(triggerTestId: string, item
   // Open the dropdown menu by dispatching pointerdown to trigger
   await manualRadixPointerDown(`[data-test-id="${triggerTestId}"]`)
 
-  // Wait for menu item to be displayed, then click it
-  await getElementByTestId(itemTestId, DEFAULT_TIMEOUT)
+  // Wait for menu item to be displayed
+  await browser.waitUntil(
+    async () => {
+      try {
+        const element = await $(`[data-test-id="${itemTestId}"]`)
+        return await element.isDisplayed()
+      } catch {
+        return false
+      }
+    },
+    {
+      timeout: DEFAULT_TIMEOUT,
+      interval: 100,
+      timeoutMsg: `Radix dropdown menu item "${itemTestId}" did not appear within ${DEFAULT_TIMEOUT}ms after opening trigger "${triggerTestId}"`,
+    },
+  )
+
+  // Click the menu item
   await clickByTestId(itemTestId)
 }
