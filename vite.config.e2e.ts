@@ -34,14 +34,26 @@ export default defineConfig({
     }),
     {
       name: 'react-devtools-inject',
+      apply: 'serve',
       transformIndexHtml(html) {
-        // In serve mode, load from localhost:8097
-        // In build mode with DEBUG, inject the hook directly for resq to find React
-        if (html.includes('<head>')) {
-          if (process.env.DEBUG) {
-            console.log('[react-devtools-inject] Injecting React DevTools hook for browser.react$() support')
-          }
-          const devToolsScript = process.env.DEBUG ? `
+        return {
+          html,
+          tags: [
+            {
+              tag: 'script',
+              attrs: {src: 'http://localhost:8097'},
+              injectTo: 'head',
+            },
+          ],
+        }
+      },
+    },
+    {
+      name: 'react-devtools-inject-build',
+      apply: 'build',
+      transformIndexHtml(html) {
+        // For e2e tests: inject the DevTools hook directly so browser.react$() can find React
+        const devToolsScript = `
       <script>
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
           isDisabled: false,
@@ -59,12 +71,8 @@ export default defineConfig({
           registerInternalModuleStop: () => {},
           getInternalModuleRanges: () => new Map(),
         };
-      </script>` : `
-      <script src="http://localhost:8097"></script>`
-
-          return html.replace('<head>', `<head>${devToolsScript}`)
-        }
-        return html
+      </script>`
+        return html.replace('<head>', `<head>${devToolsScript}`)
       },
     },
     // Extract CSS custom properties into JSON:
