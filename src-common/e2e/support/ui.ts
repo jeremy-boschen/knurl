@@ -464,11 +464,9 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
   // Click trigger to open Select menu
   await browser.execute((testId: string) => {
     const trigger = document.querySelector(`[data-test-id="${testId}"]`) as HTMLElement
-    if (!trigger) {
-      console.log("ERROR: Select trigger not found:", testId)
-      return
+    if (trigger) {
+      trigger.click()
     }
-    trigger.click()
   }, selectTriggerTestId)
 
   // Wait for option to be displayed after menu opens
@@ -488,32 +486,10 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
     },
   )
 
-  // Dispatch pointerup event on option to trigger handleSelect()
-  // Radix Select items use onPointerUp (not onClick) for mouse interactions
-  await browser.execute((testId: string) => {
-    const option = document.querySelector(`[data-test-id="${testId}"]`) as HTMLElement
-    if (!option) {
-      console.log("ERROR: Select option not found:", testId)
-      return
-    }
-
-    const rect = option.getBoundingClientRect()
-    const event = new PointerEvent("pointerup", {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      pointerId: 1,
-      pointerType: "mouse",
-      isPrimary: true,
-      button: 0,
-      clientX: rect.x + rect.width / 2,
-      clientY: rect.y + rect.height / 2,
-      screenX: rect.x + rect.width / 2,
-      screenY: rect.y + rect.height / 2,
-    })
-
-    option.dispatchEvent(event)
-  }, optionTestId)
+  // Click option to select it
+  const option = await getElementByTestId(optionTestId)
+  await option.scrollIntoView({ block: "center", inline: "center" })
+  await option.click()
 }
 
 /**
