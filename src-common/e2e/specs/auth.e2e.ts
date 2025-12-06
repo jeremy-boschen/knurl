@@ -22,10 +22,11 @@ import {
 
 async function pointerClick(selector: string) {
   const el = await $(selector)
-  const rect = await el.getRect()
+  const location = await el.getLocation()
+  const size = await el.getSize()
 
-  const x = Math.round(rect.x + rect.width / 2)
-  const y = Math.round(rect.y + rect.height / 2)
+  const x = Math.round(location.x + size.width / 2)
+  const y = Math.round(location.y + size.height / 2)
 
   console.log("DEBUG: Pointer click at x:", x, "y:", y)
 
