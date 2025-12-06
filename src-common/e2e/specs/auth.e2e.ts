@@ -46,6 +46,41 @@ async function pointerClick(selector: string) {
   await browser.releaseActions()
 }
 
+async function manualPointerDown(selector: string) {
+  console.log("DEBUG: Attempting manual PointerDown event dispatch")
+
+  await browser.execute((sel: string) => {
+    const el = document.querySelector(sel) as HTMLElement
+    if (!el) {
+      console.log("ERROR: Element not found:", sel)
+      return
+    }
+
+    const rect = el.getBoundingClientRect()
+    const event = new PointerEvent("pointerdown", {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      pointerId: 1,
+      pointerType: "mouse",
+      isPrimary: true,
+      button: 0,
+      buttons: 1,
+      clientX: rect.x + rect.width / 2,
+      clientY: rect.y + rect.height / 2,
+      screenX: rect.x + rect.width / 2,
+      screenY: rect.y + rect.height / 2,
+      ctrlKey: false,
+      shiftKey: false,
+      altKey: false,
+      metaKey: false,
+    })
+
+    console.log("Dispatching PointerDown event")
+    el.dispatchEvent(event)
+  }, selector)
+}
+
 async function debugClick(selector: string) {
   const el = await $(selector)
 
@@ -93,9 +128,14 @@ async function debugClick(selector: string) {
 
   console.log("overlap:", overlap)
 
-  // Try W3C performActions pointer events
+  // Try W3C performActions pointer events first
   console.log("DEBUG: Attempting W3C performActions pointer events")
   await pointerClick(selector)
+  await browser.pause(500)
+
+  // Try manual PointerDown dispatch if W3C didn't work
+  console.log("DEBUG: Attempting manual PointerDown dispatch")
+  await manualPointerDown(selector)
 }
 
 async function setBasicAuth(username: string, password: string): Promise<void> {
