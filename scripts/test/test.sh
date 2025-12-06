@@ -143,12 +143,6 @@ if [ "$RUN_UNIT" = true ]; then
     echo "Converting Rust LCOV to Istanbul format..."
     node scripts/test/lcov-to-istanbul.mjs coverage/rust-lcov.info coverage/rust-coverage.json
   fi
-
-  # Rename unit coverage file for clarity
-  if [ -f coverage/coverage-final.json ]; then
-    echo "Renaming unit coverage to unit-coverage.json..."
-    mv coverage/coverage-final.json coverage/unit-coverage.json
-  fi
 fi
 
 # -----------------------------------------------------------------------------

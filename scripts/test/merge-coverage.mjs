@@ -75,16 +75,8 @@ const mergeCoverageData = (baseMap, newCoverage) => {
   })
 }
 
-// Load unit test coverage if it exists
-// Prefer coverage-final.json (latest from Vitest), fall back to unit-coverage.json if that's all we have
-let unitCoveragePath = path.join(projectRoot, 'coverage', 'coverage-final.json')
-let unitCoverageSource = 'coverage-final.json'
-
-if (!fs.existsSync(unitCoveragePath)) {
-  unitCoveragePath = path.join(projectRoot, 'coverage', 'unit-coverage.json')
-  unitCoverageSource = 'unit-coverage.json'
-}
-
+// Load unit test coverage from Vitest output
+const unitCoveragePath = path.join(projectRoot, 'coverage', 'coverage-final.json')
 if (fs.existsSync(unitCoveragePath)) {
   try {
     const unitCoverage = JSON.parse(fs.readFileSync(unitCoveragePath, 'utf-8'))
@@ -145,9 +137,10 @@ if (fs.existsSync(rustE2eCoveragePath)) {
 if (mergedCount === 0) {
   console.warn('⚠ No coverage files found to merge')
   console.warn(`  Expected paths:`)
-  console.warn(`  - coverage/unit-coverage.json`)
-  console.warn(`  - coverage/e2e-coverage.json`)
-  console.warn(`  - coverage/rust-coverage.json`)
+  console.warn(`  - coverage/coverage-final.json (frontend unit tests)`)
+  console.warn(`  - coverage/e2e-coverage.json (frontend E2E tests)`)
+  console.warn(`  - coverage/rust-coverage.json (Rust unit tests)`)
+  console.warn(`  - coverage/rust-e2e-coverage.json (Rust E2E tests)`)
   process.exit(0)
 }
 
