@@ -425,6 +425,11 @@ async function handleOnPrepare() {
     VITE_E2E_STUB_OAUTH: "0",
   }
 
+  // Pass DEBUG through to vite build if set (enables react$ selector in WebdriverIO)
+  if (process.env.DEBUG) {
+    viteEnv.DEBUG = process.env.DEBUG
+  }
+
   const iconGeneration = spawnSync("node", ["scripts/build/generate-icons.mjs"], {
     cwd: process.cwd(),
     shell: true,
