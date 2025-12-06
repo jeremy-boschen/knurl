@@ -80,7 +80,7 @@ const unitCoveragePath = path.join(projectRoot, 'coverage', 'coverage-final.json
 if (fs.existsSync(unitCoveragePath)) {
   try {
     const unitCoverage = JSON.parse(fs.readFileSync(unitCoveragePath, 'utf-8'))
-    map.merge(unitCoverage)
+    mergeCoverageData(map, unitCoverage)
     mergedCount++
     console.log(`✓ Loaded unit test coverage from ${path.relative(projectRoot, unitCoveragePath)}`)
   } catch (error) {
@@ -109,7 +109,7 @@ const rustE2eCoveragePath = path.join(projectRoot, 'coverage', 'rust-e2e-coverag
 if (fs.existsSync(rustCoveragePath)) {
   try {
     const rustCoverage = JSON.parse(fs.readFileSync(rustCoveragePath, 'utf-8'))
-    map.merge(rustCoverage)
+    mergeCoverageData(map, rustCoverage)
     mergedCount++
     console.log(`✓ Loaded Rust unit test coverage from ${path.relative(projectRoot, rustCoveragePath)}`)
   } catch (error) {
