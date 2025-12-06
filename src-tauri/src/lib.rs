@@ -703,8 +703,9 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use super::cancel_http_request_inner;
+    use super::{StartupProbe, cancel_http_request_inner};
     use crate::http_client::manager;
+    use std::fs;
 
     #[test]
     fn cancel_http_request_inner_returns_ok_when_id_exists() {
@@ -725,5 +726,31 @@ mod tests {
         let err = cancel_http_request_inner(id).expect_err("should return error");
         assert_eq!(err.kind, crate::errors::ErrorKind::BadRequest);
         assert!(err.message.contains(id));
+    }
+
+    #[test]
+    fn startup_probe_mark_is_noop_when_disabled() {
+        let probe = StartupProbe::new();
+        // env flag is off by default in tests, ensure call doesn't panic
+        probe.mark("disabled-stage");
+    }
+
+    #[test]
+    fn startup_probe_enables_and_logs_when_env_set() {
+        unsafe {
+            std::env::set_var("KNURL_START_PROBE", "1");
+        }
+        let probe = StartupProbe::new();
+        assert!(probe.is_enabled());
+        probe.mark("unit-test-stage");
+
+        let log_path = std::env::temp_dir()
+            .join("knurl-startup")
+            .join("startup.log");
+        let contents = fs::read_to_string(&log_path).expect("startup log exists");
+        assert!(contents.contains("unit-test-stage"));
+        unsafe {
+            std::env::remove_var("KNURL_START_PROBE");
+        }
     }
 }

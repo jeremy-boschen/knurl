@@ -1351,6 +1351,85 @@ mod tests {
         assert!(result.ends_with("-----END CERTIFICATE REQUEST-----"));
     }
 
+    // ========== host and port helpers ==========
+
+    #[test]
+    fn sanitize_host_token_accepts_ipv6_literal_with_port() {
+        let raw = "[::1]:443";
+        let sanitized = sanitize_host_token(raw).expect("should sanitize");
+        assert_eq!(sanitized, "[::1]");
+    }
+
+    #[test]
+    fn sanitize_host_token_strips_port_from_hostname() {
+        let raw = "example.com:8080";
+        let sanitized = sanitize_host_token(raw).expect("should sanitize");
+        assert_eq!(sanitized, "example.com");
+    }
+
+    #[test]
+    fn sanitize_host_token_trims_whitespace() {
+        let raw = "   api.knurl.dev   ";
+        let sanitized = sanitize_host_token(raw).expect("should sanitize");
+        assert_eq!(sanitized, "api.knurl.dev");
+    }
+
+    #[test]
+    fn compute_host_header_prefers_override_when_valid() {
+        let host = compute_host_header(Some("override.io"), Some("base.io"));
+        assert_eq!(host.as_deref(), Some("override.io"));
+    }
+
+    #[test]
+    fn compute_host_header_falls_back_to_uri_host_when_override_empty() {
+        let host = compute_host_header(Some("   "), Some("base.io"));
+        assert_eq!(host.as_deref(), Some("base.io"));
+    }
+
+    #[test]
+    fn compute_host_header_none_when_no_sources() {
+        let host = compute_host_header(None, None);
+        assert!(host.is_none());
+    }
+
+    #[test]
+    fn default_port_for_scheme_handles_http_and_https() {
+        assert_eq!(default_port_for_scheme(Some("https")), Some(443));
+        assert_eq!(default_port_for_scheme(Some("http")), Some(80));
+        assert_eq!(default_port_for_scheme(Some("ws")), None);
+        assert_eq!(default_port_for_scheme(None), None);
+    }
+
+    #[test]
+    fn build_connector_rejects_uri_without_host() {
+        use crate::http_client::engine::LogEmitter;
+        use crate::http_client::response::LogEntry;
+        use std::sync::Arc;
+        use std::time::Instant;
+
+        struct NullEmitter;
+        impl LogEmitter for NullEmitter {
+            fn emit(&self, _entry: LogEntry) {}
+        }
+
+        let logger = RequestLogger::new(
+            Arc::new(NullEmitter),
+            "req-missing-host".into(),
+            Instant::now(),
+        );
+        let request = Request::default();
+        let uri: Uri = "/relative/path".parse().unwrap();
+
+        let result = build_connector(&request, &uri, logger);
+        match result {
+            Ok(_) => panic!("expected error for missing host"),
+            Err(err) => {
+                assert_eq!(err.kind, ErrorKind::BadRequest);
+                assert!(err.message.contains("host"));
+            }
+        }
+    }
+
     // ========== build_tls_config tests ==========
     // Note: build_tls_config tests are skipped as they require CryptoProvider initialization
     // and are better tested via integration tests. The function behavior is verified through
