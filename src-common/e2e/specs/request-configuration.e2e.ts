@@ -24,24 +24,26 @@ async function getResponseBody(): Promise<unknown> {
   )
 
   // Try to get response from data attribute or by parsing the displayed content
-  const responseContent = await browser.execute(() => {
-    // Try to get response from hidden test data attribute if it exists
-    const hiddenData = document.querySelector('[data-test-id="e2e-response-data"]')
-    if (hiddenData) {
-      const data = hiddenData.getAttribute("data-response")
-      if (data) {
-        return data
-      }
-    }
+  let responseContent: string | null = null
 
-    // Fallback: extract from response body element by searching for JSON
-    const bodyElement = document.querySelector('[data-test-id="response-viewer:body"]')
-    if (!bodyElement) {
+  // Try to get response from hidden test data attribute if it exists
+  const hiddenDataElement = await $('[data-test-id="e2e-response-data"]')
+  if (await hiddenDataElement.isExisting()) {
+    const data = await hiddenDataElement.getAttribute("data-response")
+    if (data) {
+      responseContent = data
+    }
+  }
+
+  // Fallback: extract from response body element by searching for JSON
+  if (!responseContent) {
+    const bodyElement = await $('[data-test-id="response-viewer:body"]')
+    if (!(await bodyElement.isExisting())) {
       throw new Error("Response body element not found")
     }
 
     // Get all text content and find the JSON part
-    const allText = bodyElement.textContent || ""
+    const allText = await bodyElement.getText()
     const jsonStart = allText.indexOf("{")
     if (jsonStart === -1) {
       throw new Error("No JSON found in response")
@@ -54,8 +56,8 @@ async function getResponseBody(): Promise<unknown> {
       throw new Error("Incomplete JSON in response")
     }
 
-    return jsonPart.substring(0, lastBrace + 1)
-  })
+    responseContent = jsonPart.substring(0, lastBrace + 1)
+  }
 
   try {
     return JSON.parse(responseContent as string)

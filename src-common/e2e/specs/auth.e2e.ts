@@ -5,13 +5,16 @@ import {
   createCollection,
   ensureWorkspaceReady,
   getElementByTestId,
+  getInputValueBySelector,
   getResponseBodyText,
+  getTextBySelector,
   openCollectionMenu,
   openNewRequestViaUI,
   resetOverlays,
   selectAuthType,
   selectDropdownMenuItemByTestId,
   selectOptionByTestId,
+  selectorExists,
   setInputText,
   waitForRequestEditor,
   waitForResponseContaining,
@@ -333,12 +336,7 @@ describe("[CRITICAL] Authentication Strategies", () => {
       await waitForResponseContaining("authorization")
 
       // Verify auth configuration persists in the UI
-      const finalToken = await browser.execute(() => {
-        const input = document.querySelector(
-          '[data-test-id="request-auth-panel:bearer-auth-token-input"]',
-        ) as HTMLInputElement
-        return input ? input.value : ""
-      })
+      const finalToken = await getInputValueBySelector('[data-test-id="request-auth-panel:bearer-auth-token-input"]')
 
       await expect(finalToken).toEqual(token)
     })
@@ -451,10 +449,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
     // Wait for response to arrive
     const responseHeading = await browser.waitUntil(
       async () => {
-        const heading = await browser.execute(() => {
-          const element = document.querySelector('[data-test-id="response-viewer:heading"]')
-          return element ? element.textContent : ""
-        })
+        const heading = await getTextBySelector('[data-test-id="response-viewer:heading"]')
         return heading && heading.length > 0 ? heading : null
       },
       {
@@ -532,10 +527,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
     // Wait for response to arrive
     const responseHeading = await browser.waitUntil(
       async () => {
-        const heading = await browser.execute(() => {
-          const element = document.querySelector('[data-test-id="response-viewer:heading"]')
-          return element ? element.textContent : ""
-        })
+        const heading = await getTextBySelector('[data-test-id="response-viewer:heading"]')
         return heading && heading.length > 0 ? heading : null
       },
       {
@@ -604,10 +596,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
     // Device code flow requires polling, so this may take longer
     const responseHeading = await browser.waitUntil(
       async () => {
-        const heading = await browser.execute(() => {
-          const element = document.querySelector('[data-test-id="response-viewer:heading"]')
-          return element ? element.textContent : ""
-        })
+        const heading = await getTextBySelector('[data-test-id="response-viewer:heading"]')
         return heading && heading.length > 0 ? heading : null
       },
       {
@@ -669,22 +658,13 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
     )
 
     // Verify the configuration is set correctly by checking field values
-    const tokenUrlValue = await browser.execute(() => {
-      const input = document.querySelector('[data-test-id="oauth2-editor:token-url-input"]')
-      return input ? input.value : ""
-    })
+    const tokenUrlValue = await getInputValueBySelector('[data-test-id="oauth2-editor:token-url-input"]')
     await expect(tokenUrlValue).toContain("token")
 
-    const clientIdValue = await browser.execute(() => {
-      const input = document.querySelector('[data-test-id="oauth2-editor:client-id-input"]')
-      return input ? input.value : ""
-    })
+    const clientIdValue = await getInputValueBySelector('[data-test-id="oauth2-editor:client-id-input"]')
     await expect(clientIdValue).toEqual(clientId)
 
-    const refreshTokenValue = await browser.execute(() => {
-      const input = document.querySelector('[data-test-id="oauth2-editor:refresh-token-input"]')
-      return input ? input.value : ""
-    })
+    const refreshTokenValue = await getInputValueBySelector('[data-test-id="oauth2-editor:refresh-token-input"]')
     await expect(refreshTokenValue).toEqual(mockRefreshToken)
 
     console.log("✅ Refresh token grant flow configuration test passed")
@@ -727,10 +707,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
     // Verify that the auth URL was populated by discovery
     const authUrlField = await browser.waitUntil(
       async () => {
-        const value = await browser.execute(() => {
-          const input = document.querySelector('[data-test-id="oauth2-editor:auth-url-input"]')
-          return input ? input.value : ""
-        })
+        const value = await getInputValueBySelector('[data-test-id="oauth2-editor:auth-url-input"]')
         return value && value.length > 0 ? value : null
       },
       {
@@ -741,10 +718,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
     await expect(authUrlField).toContain("authorize")
 
     // Verify that the token URL was populated by discovery
-    const tokenUrlField = await browser.execute(() => {
-      const input = document.querySelector('[data-test-id="oauth2-editor:token-url-input"]')
-      return input ? input.value : ""
-    })
+    const tokenUrlField = await getInputValueBySelector('[data-test-id="oauth2-editor:token-url-input"]')
     await expect(tokenUrlField).toContain("token")
 
     // Device authorization URL field is only rendered for device_code grant type
@@ -782,10 +756,7 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
     await setInputText("oauth2-editor:auth-url-input", "http://example.com/authorize")
 
     // Store the initial auth URL
-    const initialAuthUrl = await browser.execute(() => {
-      const input = document.querySelector('[data-test-id="oauth2-editor:auth-url-input"]')
-      return input ? input.value : ""
-    })
+    const initialAuthUrl = await getInputValueBySelector('[data-test-id="oauth2-editor:auth-url-input"]')
 
     // Now set an invalid discovery URL - use a non-existent endpoint
     await getElementByTestId("oauth2-editor:discovery-url-input", 5000)
@@ -810,19 +781,13 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
     await expect(errorAlert).toBeDefined()
 
     // Verify that the auth URL was NOT changed
-    const authUrlAfterError = await browser.execute(() => {
-      const input = document.querySelector('[data-test-id="oauth2-editor:auth-url-input"]')
-      return input ? input.value : ""
-    })
+    const authUrlAfterError = await getInputValueBySelector('[data-test-id="oauth2-editor:auth-url-input"]')
 
     // Auth URL should remain unchanged since discovery failed
     await expect(authUrlAfterError).toEqual(initialAuthUrl)
 
     // Client ID should also remain unchanged
-    const clientIdAfterError = await browser.execute(() => {
-      const input = document.querySelector('[data-test-id="oauth2-editor:client-id-input"]')
-      return input ? input.value : ""
-    })
+    const clientIdAfterError = await getInputValueBySelector('[data-test-id="oauth2-editor:client-id-input"]')
     await expect(clientIdAfterError).toEqual("my-initial-client-id")
 
     console.log("✅ Auto-discovery error handling test completed successfully")
@@ -895,36 +860,14 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     // Wait for response
     await browser.waitUntil(
       async () => {
-        const responseText = await browser.execute(() => {
-          const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-          if (!responseBody) {
-            return ""
-          }
-          const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-          if (!codeEditor) {
-            return ""
-          }
-          const content = codeEditor.querySelector(".cm-content")
-          return content ? content.textContent || codeEditor.textContent : codeEditor.textContent
-        })
+        const responseText = await getResponseBodyText()
         return responseText && responseText.length > 0
       },
       { timeout: 15000 },
     )
 
     // Verify the inherited auth was applied
-    const responseText = await browser.execute(() => {
-      const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-      if (!responseBody) {
-        return ""
-      }
-      const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-      if (!codeEditor) {
-        return ""
-      }
-      const content = codeEditor.querySelector(".cm-content")
-      return content ? content.textContent || codeEditor.textContent : codeEditor.textContent
-    })
+    const responseText = await getResponseBodyText()
 
     // Check that a response was received (request was sent successfully with inherited auth)
     await expect(responseText).toBeTruthy()
@@ -987,36 +930,14 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     // Wait for response
     await browser.waitUntil(
       async () => {
-        const responseText = await browser.execute(() => {
-          const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-          if (!responseBody) {
-            return ""
-          }
-          const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-          if (!codeEditor) {
-            return ""
-          }
-          const content = codeEditor.querySelector(".cm-content")
-          return content ? content.textContent || codeEditor.textContent : codeEditor.textContent
-        })
+        const responseText = await getResponseBodyText()
         return responseText && responseText.length > 0
       },
       { timeout: 15000 },
     )
 
     // Verify response was received (request was sent successfully with inherited auth)
-    const responseText = await browser.execute(() => {
-      const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-      if (!responseBody) {
-        return ""
-      }
-      const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-      if (!codeEditor) {
-        return ""
-      }
-      const content = codeEditor.querySelector(".cm-content")
-      return content ? content.textContent || codeEditor.textContent : codeEditor.textContent
-    })
+    const responseText = await getResponseBodyText()
 
     await expect(responseText).toBeTruthy()
     await expect(responseText.length).toBeGreaterThan(0)
@@ -1083,20 +1004,14 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     // Wait for response
     await browser.waitUntil(
       async () => {
-        const responseBody = await browser.execute(() => {
-          const body = document.querySelector('[data-test-id="response-viewer:body"]')
-          return body ? "response_received" : ""
-        })
-        return responseBody
+        const exists = await selectorExists('[data-test-id="response-viewer:body"]')
+        return exists
       },
       { timeout: 15000 },
     )
 
     // Verify response exists (request with inherited auth was sent successfully)
-    const responseExists = await browser.execute(() => {
-      const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-      return !!responseBody
-    })
+    const responseExists = await selectorExists('[data-test-id="response-viewer:body"]')
 
     await expect(responseExists).toBe(true)
   })
@@ -1164,36 +1079,14 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
     // Wait for response
     await browser.waitUntil(
       async () => {
-        const responseText = await browser.execute(() => {
-          const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-          if (!responseBody) {
-            return ""
-          }
-          const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-          if (!codeEditor) {
-            return ""
-          }
-          const content = codeEditor.querySelector(".cm-content")
-          return content ? content.textContent || codeEditor.textContent : codeEditor.textContent
-        })
+        const responseText = await getResponseBodyText()
         return responseText && responseText.length > 0
       },
       { timeout: 15000 },
     )
 
     // Verify response was received (request was sent successfully with inherited OAuth2 auth)
-    const responseText = await browser.execute(() => {
-      const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-      if (!responseBody) {
-        return ""
-      }
-      const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-      if (!codeEditor) {
-        return ""
-      }
-      const content = codeEditor.querySelector(".cm-content")
-      return content ? content.textContent || codeEditor.textContent : codeEditor.textContent
-    })
+    const responseText = await getResponseBodyText()
 
     await expect(responseText).toBeTruthy()
     await expect(responseText.length).toBeGreaterThan(0)
