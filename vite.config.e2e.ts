@@ -80,9 +80,8 @@ export default defineConfig({
       "@test": path.resolve(__dirname, "./src-ui/test"),
       "@e2e": path.resolve(__dirname, "./src-common/e2e"),
       "@e2e/support": path.resolve(__dirname, "./src-common/e2e/support"),
-      // DEBUG: Temporarily use React development build to enable React DevTools for component inspection
-      // TODO: Revert to react-dom/profiling after debugging
-      'react-dom/client': 'react-dom',
+      // Use debug build when DEBUG env var is set, otherwise use profiling build
+      'react-dom/client': process.env.DEBUG ? 'react-dom' : 'react-dom/profiling',
       // This is needed for recent codemirror styling. No idea why
       '@codemirror/state': path.resolve(__dirname, './node_modules/@codemirror/state/dist/index.cjs'),
       '@codemirror/view': path.resolve(__dirname, './node_modules/@codemirror/view/dist/index.cjs'),
