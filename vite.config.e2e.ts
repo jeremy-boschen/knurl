@@ -9,20 +9,39 @@ import {cssVarsExportPlugin} from './scripts/build/vite-css-vars-export-plugin'
 
 const host = process.env.TAURI_DEV_HOST
 
-// Plugin to inject React DevTools hook and resq support for browser.react$()
-const reactDevToolsPlugin = {
-  name: 'inject-react-devtools',
-  apply: 'build',
-  transformIndexHtml(html: string) {
-    if (!process.env.DEBUG) {
-      return html
-    }
-
-    console.log('[react-devtools-inject] Injecting React DevTools hook for browser.react$() support')
-
-    // Inject a script that enables resq to find React Fiber internals
-    // resq uses window.__REACT_DEVTOOLS_GLOBAL_HOOK__ to discover React and traverse the Fiber tree
-    const devToolsScript = `
+export default defineConfig({
+  mode: 'e2e',
+  define: {
+    'import.meta.env.MODE': JSON.stringify('e2e'),
+  },
+  worker: {
+    format: 'es',
+    rollupOptions: {}
+  },
+  plugins: [
+    consoleForwardPlugin({
+      // Enable console forwarding (default: true in dev mode)
+      enabled: false,
+      endpoint: '/api/debug/client-logs',
+      levels: ['log', 'warn', 'error', 'info', 'debug'],
+    }),
+    react({
+      babel: {
+        plugins: [
+          ['babel-plugin-react-compiler', {}],
+        ],
+      },
+    }),
+    {
+      name: 'react-devtools-inject',
+      transformIndexHtml(html) {
+        // In serve mode, load from localhost:8097
+        // In build mode with DEBUG, inject the hook directly for resq to find React
+        if (html.includes('<head>')) {
+          if (process.env.DEBUG) {
+            console.log('[react-devtools-inject] Injecting React DevTools hook for browser.react$() support')
+          }
+          const devToolsScript = process.env.DEBUG ? `
       <script>
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
           isDisabled: false,
@@ -40,50 +59,12 @@ const reactDevToolsPlugin = {
           registerInternalModuleStop: () => {},
           getInternalModuleRanges: () => new Map(),
         };
-      </script>
-    `
-    return html.replace('<head>', `<head>${devToolsScript}`)
-  }
-}
+      </script>` : `
+      <script src="http://localhost:8097"></script>`
 
-export default defineConfig({
-  mode: 'e2e',
-  define: {
-    'import.meta.env.MODE': JSON.stringify('e2e'),
-  },
-  worker: {
-    format: 'es',
-    rollupOptions: {}
-  },
-  plugins: [
-    reactDevToolsPlugin,
-    consoleForwardPlugin({
-      // Enable console forwarding (default: true in dev mode)
-      enabled: false,
-      endpoint: '/api/debug/client-logs',
-      levels: ['log', 'warn', 'error', 'info', 'debug'],
-    }),
-    react({
-      babel: {
-        plugins: [
-          ['babel-plugin-react-compiler', {}],
-        ],
-      },
-    }),
-    {
-      name: 'react-devtools-inject',
-      apply: 'serve',
-      transformIndexHtml(html) {
-        return {
-          html,
-          tags: [
-            {
-              tag: 'script',
-              attrs: {src: 'http://localhost:8097'},
-              injectTo: 'head',
-            },
-          ],
+          return html.replace('<head>', `<head>${devToolsScript}`)
         }
+        return html
       },
     },
     // Extract CSS custom properties into JSON:
