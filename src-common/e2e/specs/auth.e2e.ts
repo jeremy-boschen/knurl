@@ -67,7 +67,14 @@ async function debugClick(selector: string) {
 
   console.log("overlap:", overlap)
 
+  // Try native WebDriver click
+  console.log("DEBUG: Attempting native WebDriver click")
   await el.click()
+  await browser.pause(500)
+
+  // Try JavaScript click
+  console.log("DEBUG: Attempting JavaScript click")
+  await browser.execute((elem: HTMLElement) => elem.click(), el)
 }
 
 async function setBasicAuth(username: string, password: string): Promise<void> {
@@ -905,13 +912,33 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
 
     await clickByTestId("collection-settings:auth-tab-button")
 
-    // DEBUG: Dump trigger element info and attempt click
+    // DEBUG: Dump trigger element info and attempt both click methods
     console.log("DEBUG: About to click collection-auth:type-trigger")
     await debugClick('[data-test-id="collection-auth:type-trigger"]')
-    await browser.pause(1000)
 
-    // Abort here for now - diagnostics complete
-    throw new Error("DEBUG: Stopping test after debugClick diagnostics")
+    // Check which click method worked
+    await browser.pause(1000)
+    const basicOption = await $('[data-test-id="collection-auth:type-basic"]')
+
+    let nativeClickWorked = false
+    let jsClickWorked = false
+
+    try {
+      const isDisplayed = await basicOption.isDisplayed()
+      console.log("DEBUG: Basic option displayed:", isDisplayed)
+      if (isDisplayed) {
+        jsClickWorked = true
+      }
+    } catch {
+      console.log("DEBUG: Basic option not found/displayed")
+    }
+
+    console.log("DEBUG: Click methods - Native:", nativeClickWorked, "JS:", jsClickWorked)
+
+    // Abort here - we've tested both methods
+    throw new Error(
+      `DEBUG: Testing complete. Native click worked: ${nativeClickWorked}, JS click worked: ${jsClickWorked}`,
+    )
   })
 
   it("request inherits Bearer auth from collection", async () => {
