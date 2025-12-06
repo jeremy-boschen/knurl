@@ -5,10 +5,8 @@ import {
   createCollection,
   ensureWorkspaceReady,
   getElementByTestId,
-  getTextBySelector,
   openCollectionMenu,
   resetOverlays,
-  selectorExists,
   waitForTestIdToDisappear,
 } from "../support/ui"
 
@@ -61,17 +59,14 @@ describe("[CRITICAL] Collections Management UX", () => {
  * Gets ordered collection IDs from DOM instead of internal state
  */
 async function resolveOrderedCollectionIds(): Promise<string[]> {
-  const elements = await $$('[data-test-id^="collection-tree:collection-row:"]')
-  const ids: string[] = []
-  for (const row of elements) {
-    const testId = await row.getAttribute("data-test-id")
-    const id = testId?.split(":").pop()
-    if (id && id !== SCRATCH_COLLECTION_ID) {
-      ids.push(id)
-    }
-  }
-  // Deduplicate in case of rendering artifacts
-  return Array.from(new Set(ids))
+  return await browser.execute((scratchId: string) => {
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'))
+    const ids = rows
+      .map((row) => row.getAttribute("data-test-id")?.split(":").pop())
+      .filter((id): id is string => !!id && id !== scratchId)
+    // Deduplicate in case of rendering artifacts
+    return Array.from(new Set(ids))
+  }, SCRATCH_COLLECTION_ID)
 }
 
 async function cleanupCollections(ids: string[]): Promise<void> {
@@ -100,14 +95,26 @@ async function cleanupCollections(ids: string[]): Promise<void> {
  * Checks DOM for collection name
  */
 async function _isCollectionNamedInTree(collectionId: string, expectedName: string): Promise<boolean> {
-  const text = await getTextBySelector(`[data-test-id="collection-tree:collection-row:${collectionId}"]`)
-  console.log(`DOM check for ${collectionId}: "${text}" contains "${expectedName}": ${text.includes(expectedName)}`)
-  return text.includes(expectedName)
+  return await browser.execute(
+    (id: string, name: string) => {
+      const row = document.querySelector<HTMLElement>(`[data-test-id="collection-tree:collection-row:${id}"]`)
+      if (!row) {
+        return false
+      }
+      const text = row.textContent?.trim() || ""
+      console.log(`DOM check for ${id}: "${text}" contains "${name}": ${text.includes(name)}`)
+      return text.includes(name)
+    },
+    collectionId,
+    expectedName,
+  )
 }
 
 async function _getCollectionNameFromTree(collectionId: string): Promise<string | null> {
-  const text = await getTextBySelector(`[data-test-id="collection-tree:collection-row:${collectionId}"]`)
-  return text.length > 0 ? text : null
+  return await browser.execute((id: string) => {
+    const row = document.querySelector<HTMLElement>(`[data-test-id="collection-tree:collection-row:${id}"]`)
+    return row?.textContent?.trim() ?? null
+  }, collectionId)
 }
 
 /**
@@ -115,5 +122,7 @@ async function _getCollectionNameFromTree(collectionId: string): Promise<string 
  * Checks DOM for collection presence
  */
 async function isCollectionPresent(collectionId: string): Promise<boolean> {
-  return await selectorExists(`[data-test-id="collection-tree:collection-row:${collectionId}"]`)
+  return await browser.execute((id: string) => {
+    return !!document.querySelector(`[data-test-id="collection-tree:collection-row:${id}"]`)
+  }, collectionId)
 }

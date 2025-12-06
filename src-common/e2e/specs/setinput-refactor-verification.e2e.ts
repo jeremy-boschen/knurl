@@ -12,7 +12,6 @@ import {
   clickByTestId,
   ensureWorkspaceReady,
   getElementByTestId,
-  getResponseBodyText,
   openNewRequestViaUI,
   setInputText,
   waitForRequestEditor,
@@ -78,13 +77,35 @@ describe("[SUPPLEMENTAL] Refactored Input Helpers", () => {
     // Wait for response with auth header
     await browser.waitUntil(
       async () => {
-        const responseText = await getResponseBodyText()
+        const responseText = await browser.execute(() => {
+          const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+          if (!responseBody) {
+            return ""
+          }
+          const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+          if (!codeEditor) {
+            return ""
+          }
+          const content = codeEditor.querySelector(".cm-content")
+          return content ? content.textContent : codeEditor.textContent
+        })
         return responseText.includes("authorization") || responseText.includes("testuser")
       },
       { timeout: 10000 },
     )
 
-    const responseText = await getResponseBodyText()
+    const responseText = await browser.execute(() => {
+      const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
+      if (!responseBody) {
+        return ""
+      }
+      const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
+      if (!codeEditor) {
+        return ""
+      }
+      const content = codeEditor.querySelector(".cm-content")
+      return content ? content.textContent : codeEditor.textContent
+    })
 
     // Verify Basic auth header is present
     await expect(responseText).toMatch(/authorization|Basic/)

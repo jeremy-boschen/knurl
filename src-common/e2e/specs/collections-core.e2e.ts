@@ -7,12 +7,10 @@ import {
   ensureSidebarExpanded,
   ensureWorkspaceReady,
   getElementByTestId,
-  getTextBySelector,
   logTestTime,
   openCollectionMenu,
   openNewRequestViaUI,
   resetOverlays,
-  selectorExists,
   setInputText,
   simulateAppReload,
   waitForRequestEditor,
@@ -126,14 +124,11 @@ describe("[CRITICAL] Collections Management & Storage", () => {
       await logTestTime("Collection Flow - start create collection")
 
       // Capture existing collection IDs before creation
-      const elements = await $$('[data-test-id^="collection-tree:collection-row:"]')
-      const beforeIds: string[] = []
-      for (const el of elements) {
-        const id = await el.getAttribute("data-test-id")
-        if (id) {
-          beforeIds.push(id)
-        }
-      }
+      const beforeIds = await browser.execute(() => {
+        return Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'))
+          .map((el) => el.getAttribute("data-test-id"))
+          .filter((id): id is string => Boolean(id))
+      })
 
       await clickVisibleNewCollectionButton()
       await getElementByTestId("new-collection-dialog")
@@ -145,14 +140,13 @@ describe("[CRITICAL] Collections Management & Storage", () => {
       // Wait for the new collection row to appear
       const newTestId = await browser.waitUntil(
         async () => {
-          const allElements = await $$('[data-test-id^="collection-tree:collection-row:"]')
-          const ids: string[] = []
-          for (const el of allElements) {
-            const id = await el.getAttribute("data-test-id")
-            if (id) {
-              ids.push(id)
-            }
-          }
+          const ids = await browser.execute(() => {
+            return Array.from(
+              document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'),
+            )
+              .map((el) => el.getAttribute("data-test-id"))
+              .filter((id): id is string => Boolean(id))
+          })
           const diff = ids.filter((id) => !beforeIds.includes(id))
           return diff[0] ?? null
         },
@@ -222,17 +216,14 @@ describe("[CRITICAL] Collections Management & Storage", () => {
  */
 
 async function resolveOrderedCollectionIds(): Promise<string[]> {
-  const elements = await $$('[data-test-id^="collection-tree:collection-row:"]')
-  const ids: string[] = []
-  for (const row of elements) {
-    const testId = await row.getAttribute("data-test-id")
-    const id = testId?.split(":").pop()
-    if (id && id !== SCRATCH_COLLECTION_ID) {
-      ids.push(id)
-    }
-  }
-  // Deduplicate in case of rendering artifacts
-  return Array.from(new Set(ids))
+  return await browser.execute((scratchId: string) => {
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'))
+    const ids = rows
+      .map((row) => row.getAttribute("data-test-id")?.split(":").pop())
+      .filter((id): id is string => !!id && id !== scratchId)
+    // Deduplicate in case of rendering artifacts
+    return Array.from(new Set(ids))
+  }, SCRATCH_COLLECTION_ID)
 }
 
 async function cleanupCollections(ids: string[]): Promise<void> {
@@ -257,28 +248,38 @@ async function cleanupCollections(ids: string[]): Promise<void> {
 }
 
 async function _isCollectionNamedInTree(collectionId: string, expectedName: string): Promise<boolean> {
-  const text = await getTextBySelector(`[data-test-id="collection-tree:collection-row:${collectionId}"]`)
-  return text.includes(expectedName)
+  return await browser.execute(
+    (id: string, name: string) => {
+      const row = document.querySelector<HTMLElement>(`[data-test-id="collection-tree:collection-row:${id}"]`)
+      if (!row) {
+        return false
+      }
+      const text = row.textContent?.trim() || ""
+      return text.includes(name)
+    },
+    collectionId,
+    expectedName,
+  )
 }
 
 async function _getCollectionNameFromTree(collectionId: string): Promise<string | null> {
-  const text = await getTextBySelector(`[data-test-id="collection-tree:collection-row:${collectionId}"]`)
-  return text.length > 0 ? text : null
+  return await browser.execute((id: string) => {
+    const row = document.querySelector<HTMLElement>(`[data-test-id="collection-tree:collection-row:${id}"]`)
+    return row?.textContent?.trim() ?? null
+  }, collectionId)
 }
 
 async function isCollectionPresent(collectionId: string): Promise<boolean> {
-  return await selectorExists(`[data-test-id="collection-tree:collection-row:${collectionId}"]`)
+  return await browser.execute((id: string) => {
+    return !!document.querySelector(`[data-test-id="collection-tree:collection-row:${id}"]`)
+  }, collectionId)
 }
 
 async function _getOpenRequestIds(): Promise<Set<string>> {
-  const elements = await $$('[data-test-id^="tab:"]')
-  const ids: string[] = []
-  for (const tab of elements) {
-    const id = await tab.getAttribute("data-request-id")
-    if (id) {
-      ids.push(id)
-    }
-  }
+  const ids = await browser.execute(() => {
+    const tabs = Array.from(document.querySelectorAll('[data-test-id^="tab:"]'))
+    return tabs.map((tab) => tab.getAttribute("data-request-id")).filter(Boolean) as string[]
+  })
   return new Set(ids)
 }
 
@@ -290,16 +291,26 @@ async function _waitForNewCollectionRequest(
   let result: { requestId: string; tabKey: string } | null = null
   await browser.waitUntil(
     async () => {
-      const elements = await $$('[data-test-id^="tab:"]')
-      for (const tab of elements) {
-        const collId = await tab.getAttribute("data-collection-id")
-        const reqId = await tab.getAttribute("data-request-id")
-        const testId = await tab.getAttribute("data-test-id")
-        const tabKey = testId?.split(":")[1]
-        if (collId === collectionId && reqId && !knownRequestIds.has(reqId) && tabKey) {
-          result = { requestId: reqId, tabKey }
-          return true
-        }
+      const candidate = await browser.execute(
+        (targetCollectionId: string, knownIds: string[]) => {
+          const tabs = Array.from(document.querySelectorAll('[data-test-id^="tab:"]'))
+          for (const tab of tabs) {
+            const collId = tab.getAttribute("data-collection-id")
+            const reqId = tab.getAttribute("data-request-id")
+            const tabKey = tab.getAttribute("data-test-id")?.split(":")[1]
+            if (collId === targetCollectionId && reqId && !knownIds.includes(reqId) && tabKey) {
+              return { requestId: reqId, tabKey }
+            }
+          }
+          return null
+        },
+        collectionId,
+        Array.from(knownRequestIds),
+      )
+
+      if (candidate) {
+        result = candidate
+        return true
       }
       return false
     },
@@ -323,18 +334,22 @@ async function _waitForNewScratchRequest(
   let result: { requestId: string; tabKey: string } | null = null
   await browser.waitUntil(
     async () => {
-      let candidate: { requestId: string; tabKey: string } | null = null
-      const elements = await $$('[data-test-id^="tab:"]')
-      for (const tab of elements) {
-        const collId = await tab.getAttribute("data-collection-id")
-        const reqId = await tab.getAttribute("data-request-id")
-        const testId = await tab.getAttribute("data-test-id")
-        const tabKey = testId?.split(":")[1]
-        if (collId === SCRATCH_COLLECTION_ID && reqId && !knownRequestIds.has(reqId) && tabKey) {
-          candidate = { requestId: reqId, tabKey }
-          break
-        }
-      }
+      const candidate = await browser.execute(
+        (scratchId: string, knownIds: string[]) => {
+          const tabs = Array.from(document.querySelectorAll('[data-test-id^="tab:"]'))
+          for (const tab of tabs) {
+            const collId = tab.getAttribute("data-collection-id")
+            const reqId = tab.getAttribute("data-request-id")
+            const tabKey = tab.getAttribute("data-test-id")?.split(":")[1]
+            if (collId === scratchId && reqId && !knownIds.includes(reqId) && tabKey) {
+              return { requestId: reqId, tabKey }
+            }
+          }
+          return null
+        },
+        SCRATCH_COLLECTION_ID,
+        Array.from(knownRequestIds),
+      )
 
       if (candidate) {
         result = candidate
@@ -385,15 +400,18 @@ async function _waitForTabSnapshot(tabKey: string, timeout = 10000): Promise<Ope
 
 async function _waitForRequestPlacement(collectionId: string, requestId: string, timeout = 10000): Promise<void> {
   await browser.waitUntil(
-    async () => {
-      const selector = `[data-test-id="collection-tree:request-row:${requestId}"]`
-      const element = await $(selector)
-      if (!(await element.isExisting())) {
-        return false
-      }
-      const collectionIdAttr = await element.getAttribute("data-collection-id")
-      return collectionIdAttr === collectionId
-    },
+    async () =>
+      await browser.execute(
+        ({ targetCollectionId, targetRequestId }) => {
+          const selector = `[data-test-id="collection-tree:request-row:${targetRequestId}"]`
+          const element = document.querySelector(selector) as HTMLElement | null
+          if (!element) {
+            return false
+          }
+          return element.getAttribute("data-collection-id") === targetCollectionId
+        },
+        { targetCollectionId: collectionId, targetRequestId: requestId },
+      ),
     {
       timeout,
       interval: 200,
@@ -404,10 +422,14 @@ async function _waitForRequestPlacement(collectionId: string, requestId: string,
 
 async function _ensureRequestRemovedFromScratch(requestId: string, timeout = 10000): Promise<void> {
   await browser.waitUntil(
-    async () => {
-      const selector = `[data-test-id="collection-tree:request-row:${requestId}"][data-collection-id="${SCRATCH_COLLECTION_ID}"]`
-      return !(await selectorExists(selector))
-    },
+    async () =>
+      await browser.execute(
+        ({ targetRequestId, scratchId }) => {
+          const selector = `[data-test-id="collection-tree:request-row:${targetRequestId}"][data-collection-id="${scratchId}"]`
+          return !document.querySelector(selector)
+        },
+        { targetRequestId: requestId, scratchId: SCRATCH_COLLECTION_ID },
+      ),
     {
       timeout,
       interval: 200,

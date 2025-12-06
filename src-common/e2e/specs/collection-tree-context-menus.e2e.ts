@@ -135,14 +135,10 @@ describe("Collection Tree Context Menus", () => {
  * Helper function: Get ordered collection IDs from DOM
  */
 async function getCollectionOrder(): Promise<string[]> {
-  const rows = await $$('[data-test-id^="collection-tree:collection-row:"]')
-  const ids: string[] = []
-  for (const row of rows) {
-    const testId = await row.getAttribute("data-test-id")
-    const id = testId?.split(":").pop()
-    if (id && id !== "scratch") {
-      ids.push(id)
-    }
-  }
-  return ids
+  return await browser.execute(() => {
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-test-id^="collection-tree:collection-row:"]'))
+    return rows
+      .map((row) => row.getAttribute("data-test-id")?.split(":").pop())
+      .filter((id): id is string => !!id && id !== "scratch")
+  })
 }

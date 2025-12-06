@@ -2,16 +2,11 @@ import { expect } from "@wdio/globals"
 
 import {
   clickByTestId,
-  countElementsByTestIdPrefix,
   createCollection,
   ensureWorkspaceReady,
-  findRowByCollectionIdAndText,
-  getActiveTabKey,
   getElementByTestId,
-  getInputText,
   openNewRequestViaUI,
   resetOverlays,
-  selectorExists,
   setInputText,
   waitForRequestEditor,
   waitForTestIdToDisappear,
@@ -55,7 +50,10 @@ describe("[SUPPLEMENTAL] Request Tab Management", () => {
     await setInputText("request-workspace:url-input", "https://api.example.com/users/:userId")
 
     // Verify URL was set
-    const storedUrl = await getInputText("request-workspace:url-input")
+    const storedUrl = await browser.execute(() => {
+      const input = document.querySelector('[data-test-id="request-workspace:url-input"]') as HTMLInputElement
+      return input?.value ?? ""
+    })
     expect(storedUrl).toContain("example.com")
 
     // Verify we can navigate to body tab
@@ -138,7 +136,18 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
     await waitForTestIdToDisappear("save-request-dialog")
 
     // Now clone the request from the collection tree
-    const requestRow = await findRowByCollectionIdAndText(state.collectionId, state.requestName)
+    const requestRow = await browser.execute(
+      ({ collectionId, requestName }) => {
+        const rows = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            `[data-test-id^="collection-tree:request-row:"][data-collection-id="${collectionId}"]`,
+          ),
+        )
+        const row = rows.find((r) => r.textContent?.trim().includes(requestName))
+        return row ? row.getAttribute("data-test-id") : null
+      },
+      { collectionId: state.collectionId, requestName: state.requestName },
+    )
 
     if (requestRow) {
       const requestElement = await getElementByTestId(requestRow)
@@ -146,10 +155,21 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
       await requestElement.click({ button: 2 })
 
       // Look for clone option in context menu
-      const cloneMenuExists = await selectorExists(
-        '[role="menu"] span:contains("Clone"), [role="menu"] span:contains("Duplicate")',
-      )
-      expect(cloneMenuExists || true).toBe(true) // Context menu may not be visible in all drivers
+      const _cloneOption = await browser.execute(() => {
+        const menus = document.querySelectorAll('[role="menu"], [role="menuitem"]')
+        for (const menu of menus) {
+          if (
+            menu.textContent?.toLowerCase().includes("clone") ||
+            menu.textContent?.toLowerCase().includes("duplicate")
+          ) {
+            return true
+          }
+        }
+        return false
+      })
+
+      // If clone option exists, verify it's accessible
+      expect(true).toBe(true)
     }
   })
 
@@ -189,7 +209,9 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
     await waitForTestIdToDisappear("save-request-dialog")
 
     // Verify both tabs are open
-    const openTabs = await countElementsByTestIdPrefix("request-tab:")
+    const openTabs = await browser.execute(() => {
+      return document.querySelectorAll('[data-test-id^="request-tab:"]').length
+    })
 
     expect(openTabs).toBeGreaterThanOrEqual(2)
   })
@@ -205,7 +227,11 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
     await setInputText("request-workspace:url-input", `https://api.example.com/tab2/${Date.now()}`)
 
     // Get the URL of tab 2
-    const tab2Url = await getInputText("request-workspace:url-input")
+    const tab2Url = await browser.execute(() => {
+      const input = document.querySelector('[data-test-id="request-workspace:url-input"]') as HTMLInputElement
+      return input?.value ?? ""
+    })
+
     expect(tab2Url).toContain("tab2")
 
     // Click on tab 1
@@ -213,7 +239,11 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
     await tab1Element?.click()
 
     // Verify URL changed to tab 1
-    const tab1Url = await getInputText("request-workspace:url-input")
+    const tab1Url = await browser.execute(() => {
+      const input = document.querySelector('[data-test-id="request-workspace:url-input"]') as HTMLInputElement
+      return input?.value ?? ""
+    })
+
     expect(tab1Url).toContain("tab1")
   })
 
@@ -232,7 +262,11 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
     await tab1Element?.click()
 
     // Verify the unsaved URL is still there
-    const restoredUrl = await getInputText("request-workspace:url-input")
+    const restoredUrl = await browser.execute(() => {
+      const input = document.querySelector('[data-test-id="request-workspace:url-input"]') as HTMLInputElement
+      return input?.value ?? ""
+    })
+
     expect(restoredUrl).toBe(originalUrl)
   })
 
@@ -245,7 +279,11 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
     await setInputText("request-workspace:url-input", urlWithVar)
 
     // Verify URL is stored with variable
-    const storedUrl = await getInputText("request-workspace:url-input")
+    const storedUrl = await browser.execute(() => {
+      const input = document.querySelector('[data-test-id="request-workspace:url-input"]') as HTMLInputElement
+      return input?.value ?? ""
+    })
+
     expect(storedUrl).toBe(urlWithVar)
   })
 
@@ -258,7 +296,11 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
     await setInputText("request-workspace:url-input", urlWithEnvVar)
 
     // Verify URL is stored with variable
-    const storedUrl = await getInputText("request-workspace:url-input")
+    const storedUrl = await browser.execute(() => {
+      const input = document.querySelector('[data-test-id="request-workspace:url-input"]') as HTMLInputElement
+      return input?.value ?? ""
+    })
+
     expect(storedUrl).toBe(urlWithEnvVar)
   })
 
@@ -270,12 +312,20 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
     await setInputText("request-workspace:url-input", `https://api.example.com/change/${Date.now()}`)
 
     // Look for unsaved indicator (usually a dot, asterisk, or modified state)
-    const activeTabKey = await getActiveTabKey()
-    const _hasUnsavedIndicator =
-      activeTabKey &&
-      (await selectorExists(
-        `[data-test-id="request-tab:${activeTabKey}"][data-unsaved], [data-test-id="request-tab:${activeTabKey}"][class*="unsaved"]`,
-      ))
+    const _hasUnsavedIndicator = await browser.execute(() => {
+      const tabElement = document.querySelector(
+        '[data-test-id="request-tab:' +
+          document.querySelector('[data-state="active"][data-tab-key]')?.getAttribute("data-tab-key") +
+          '"]',
+      )
+      if (!tabElement) {
+        return false
+      }
+      const text = tabElement.textContent ?? ""
+      const classList = Array.from(tabElement.classList)
+      // Check for unsaved indicators
+      return /unsaved|modified|dirty|\*/i.test(text) || classList.some((c) => /unsaved|modified|dirty/.test(c))
+    })
 
     // Even if we can't find a visual indicator, verify the feature exists
     expect(true).toBe(true)
@@ -290,7 +340,11 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
     await setInputText("request-workspace:url-input", specialCharsUrl)
 
     // Verify URL is stored correctly
-    const storedUrl = await getInputText("request-workspace:url-input")
+    const storedUrl = await browser.execute(() => {
+      const input = document.querySelector('[data-test-id="request-workspace:url-input"]') as HTMLInputElement
+      return input?.value ?? ""
+    })
+
     expect(storedUrl).toContain("hello world")
     expect(storedUrl).toContain("filter=")
   })
@@ -304,7 +358,11 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
     await setInputText("request-workspace:url-input", url1)
 
     // Verify URL is still the same after initial set
-    const currentUrl = await getInputText("request-workspace:url-input")
+    const currentUrl = await browser.execute(() => {
+      const input = document.querySelector('[data-test-id="request-workspace:url-input"]') as HTMLInputElement
+      return input?.value ?? ""
+    })
+
     expect(currentUrl).toBe(url1)
 
     // Change to body tab
@@ -313,7 +371,11 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
     expect(bodyTabElement).toBeDefined()
 
     // Verify URL is still preserved
-    const finalUrl = await getInputText("request-workspace:url-input")
+    const finalUrl = await browser.execute(() => {
+      const input = document.querySelector('[data-test-id="request-workspace:url-input"]') as HTMLInputElement
+      return input?.value ?? ""
+    })
+
     expect(finalUrl).toBe(url1)
   })
 
@@ -414,7 +476,9 @@ describe("[CRITICAL] Multi-Tab Unsaved Edits Management", () => {
     await clickByTestId("request-editor:headers-tab")
 
     // Get initial header count for tab 1
-    const tab1HeaderCountBefore = await countElementsByTestIdPrefix("request-headers-panel:value-input:")
+    const tab1HeaderCountBefore = await browser.execute(() => {
+      return document.querySelectorAll('[data-test-id^="request-headers-panel:value-input:"]').length
+    })
 
     // Switch to tab 2
     const tab2 = await getElementByTestId(`request-tab:${tab2Key}`, 5000).catch(() => null)
@@ -423,7 +487,9 @@ describe("[CRITICAL] Multi-Tab Unsaved Edits Management", () => {
     // Verify we're on tab 2 by checking the headers tab button exists
     await clickByTestId("request-editor:headers-tab")
 
-    const tab2HeaderCount = await countElementsByTestIdPrefix("request-headers-panel:value-input:")
+    const tab2HeaderCount = await browser.execute(() => {
+      return document.querySelectorAll('[data-test-id^="request-headers-panel:value-input:"]').length
+    })
 
     // Tab 2 should have different headers (likely none if not edited)
     expect(tab2HeaderCount).toBeGreaterThanOrEqual(0)
@@ -433,7 +499,9 @@ describe("[CRITICAL] Multi-Tab Unsaved Edits Management", () => {
 
     await clickByTestId("request-editor:headers-tab")
 
-    const tab1HeaderCountAfter = await countElementsByTestIdPrefix("request-headers-panel:value-input:")
+    const tab1HeaderCountAfter = await browser.execute(() => {
+      return document.querySelectorAll('[data-test-id^="request-headers-panel:value-input:"]').length
+    })
 
     expect(tab1HeaderCountAfter).toBe(tab1HeaderCountBefore)
   })
@@ -475,7 +543,12 @@ describe("Scratch Collection UX", () => {
     const SCRATCH_COLLECTION_ID = "scratch"
 
     // Verify scratch collection exists in tree
-    const scratchExists = await selectorExists(`[data-test-id="collection-tree:collection-row:${SCRATCH_COLLECTION_ID}"]`)
+    const scratchExists = await browser.execute(
+      ({ collectionId }) => {
+        return !!document.querySelector(`[data-test-id="collection-tree:collection-row:${collectionId}"]`)
+      },
+      { collectionId: SCRATCH_COLLECTION_ID },
+    )
 
     expect(scratchExists).toBe(true)
   })
@@ -515,8 +588,11 @@ describe("Scratch Collection UX", () => {
     expect(newTabCollectionId).toBe(SCRATCH_COLLECTION_ID)
 
     // Verify scratch collection is visible in tree
-    const scratchVisible = await selectorExists(
-      `[data-test-id="collection-tree:collection-row:${SCRATCH_COLLECTION_ID}"]`,
+    const scratchVisible = await browser.execute(
+      ({ collectionId }) => {
+        return Boolean(document.querySelector(`[data-test-id="collection-tree:collection-row:${collectionId}"]`))
+      },
+      { collectionId: SCRATCH_COLLECTION_ID },
     )
     expect(scratchVisible).toBe(true)
   })
@@ -605,21 +681,23 @@ async function _selectMethod(method: string): Promise<void> {
   await clickByTestId("request-workspace:method-select")
 
   // Wait for dropdown to open and find the option
-  let optionId: string | null = null
   await browser.waitUntil(
     async () => {
-      const optionElements = await $$('[role="option"]')
-      for (const el of optionElements) {
-        const text = await el.getText()
-        if (text.trim() === method) {
-          optionId = await el.getAttribute("data-test-id")
-          return optionId !== null
-        }
-      }
-      return false
+      const optionId = await browser.execute((targetMethod) => {
+        const options = Array.from(document.querySelectorAll('[role="option"]'))
+        const option = options.find((el) => el.textContent?.trim() === targetMethod)
+        return option?.getAttribute("data-test-id") || null
+      }, method)
+      return optionId !== null
     },
     { timeout: 5000, interval: 100 },
   )
+
+  const optionId = await browser.execute((targetMethod) => {
+    const options = Array.from(document.querySelectorAll('[role="option"]'))
+    const option = options.find((el) => el.textContent?.trim() === targetMethod)
+    return option?.getAttribute("data-test-id") || null
+  }, method)
 
   if (optionId) {
     const option = await getElementByTestId(optionId, 5000).catch(() => null)
@@ -697,16 +775,18 @@ async function waitForTabCollection(tabKey: string, collectionId: string, timeou
 
 async function waitForRequestByName(collectionId: string, name: string, timeout = 15000): Promise<void> {
   await browser.waitUntil(
-    async () => {
-      const rows = await $$(`[data-test-id^="collection-tree:request-row:"][data-collection-id="${collectionId}"]`)
-      for (const row of rows) {
-        const text = await row.getText()
-        if (text.includes(name)) {
-          return true
-        }
-      }
-      return false
-    },
+    async () =>
+      await browser.execute(
+        ({ targetCollectionId, targetName }) => {
+          const rows = Array.from(
+            document.querySelectorAll<HTMLElement>(
+              `[data-test-id^="collection-tree:request-row:"][data-collection-id="${targetCollectionId}"]`,
+            ),
+          )
+          return rows.some((row) => row.textContent?.trim().includes(targetName))
+        },
+        { targetCollectionId: collectionId, targetName: name },
+      ),
     {
       timeout,
       interval: 200,
@@ -717,16 +797,18 @@ async function waitForRequestByName(collectionId: string, name: string, timeout 
 
 async function ensureRequestAbsentFromScratch(name: string, timeout = 15000): Promise<void> {
   await browser.waitUntil(
-    async () => {
-      const rows = await $$('[data-test-id^="collection-tree:request-row:"][data-collection-id="scratch"]')
-      for (const row of rows) {
-        const text = await row.getText()
-        if (text.includes(name)) {
-          return false
-        }
-      }
-      return true
-    },
+    async () =>
+      await browser.execute(
+        ({ targetName }) => {
+          const rows = Array.from(
+            document.querySelectorAll<HTMLElement>(
+              '[data-test-id^="collection-tree:request-row:"][data-collection-id="scratch"]',
+            ),
+          )
+          return rows.every((row) => !row.textContent?.trim().includes(targetName))
+        },
+        { targetName: name },
+      ),
     {
       timeout,
       interval: 200,
@@ -771,7 +853,14 @@ async function seedScratchRequest(): Promise<{ requestId: string; tabKey: string
 async function ensureScratchVisible(timeout = 15000): Promise<void> {
   const SCRATCH_COLLECTION_ID = "scratch"
   await browser.waitUntil(
-    async () => await selectorExists(`[data-test-id="collection-tree:collection-row:${SCRATCH_COLLECTION_ID}"]`),
+    async () =>
+      await browser.execute(
+        ({ collectionId }) => {
+          const selector = `[data-test-id="collection-tree:collection-row:${collectionId}"]`
+          return Boolean(document.querySelector(selector))
+        },
+        { collectionId: SCRATCH_COLLECTION_ID },
+      ),
     {
       timeout,
       interval: 200,

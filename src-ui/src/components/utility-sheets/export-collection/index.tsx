@@ -2,13 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { writeText } from "@tauri-apps/plugin-clipboard-manager"
 import { revealItemInDir } from "@tauri-apps/plugin-opener"
-import { ClipboardCopyIcon, FolderOpenIcon, RotateCcwIcon, UploadIcon, XIcon } from "lucide-react"
+import { ChevronDownIcon, ClipboardCopyIcon, FolderOpenIcon, RotateCcwIcon, UploadIcon, XIcon } from "lucide-react"
 
 import { saveFile } from "@/bindings/knurl"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { LabeledField } from "@/components/ui/knurl"
 import { Input } from "@/components/ui/knurl/input"
 import { SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
@@ -318,17 +318,25 @@ export default function ExportCollectionSheet({ collectionId }: Props) {
           </div>
 
           <div className="row-start-3 flex items-center justify-between gap-3">
-            <Select value={format} onValueChange={(value) => setFormat(value as ExportFormat)}>
-              <SelectTrigger className="w-[200px]" data-test-id="export-collection:format-trigger">
-                <span className="sr-only">Choose export format</span>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="start">
-                <SelectItem value="native-json">Native JSON</SelectItem>
-                <SelectItem value="openapi-json">OpenAPI (JSON)</SelectItem>
-                <SelectItem value="openapi-yaml">OpenAPI (YAML)</SelectItem>
-              </SelectContent>
-            </Select>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="default" variant="ghost" data-test-id="export-collection:format-trigger">
+                  <span className="sr-only">Choose export format</span>
+                  <ChevronDownIcon className="h-4 w-4" /> Format
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" sideOffset={4} className="min-w-[200px]">
+                <DropdownMenuItem onClick={() => setFormat("native-json")} inset>
+                  {format === "native-json" ? "✓ " : ""}Native JSON
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFormat("openapi-json")} inset>
+                  {format === "openapi-json" ? "✓ " : ""}OpenAPI (JSON)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFormat("openapi-yaml")} inset>
+                  {format === "openapi-yaml" ? "✓ " : ""}OpenAPI (YAML)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <Button onClick={handleExport} disabled={!canExport} data-test-id="export-collection:export-button">
               <UploadIcon className="h-4 w-4" />

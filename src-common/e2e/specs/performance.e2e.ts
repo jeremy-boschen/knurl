@@ -159,14 +159,10 @@ describe("Large Collections Performance", () => {
     await createCollection(collectionName)
 
     // Find the expand toggle button for the newly created collection
-    const expandToggleElements = await $$('[data-test-id^="collection-tree:expand-toggle:"]')
-    const expandToggleIds: string[] = []
-    for (const el of expandToggleElements) {
-      const id = await el.getAttribute("data-test-id")
-      if (id) {
-        expandToggleIds.push(id)
-      }
-    }
+    const expandToggleIds = await browser.execute(() => {
+      const toggles = Array.from(document.querySelectorAll('[data-test-id^="collection-tree:expand-toggle:"]'))
+      return toggles.map((el) => el.getAttribute("data-test-id")).filter(Boolean)
+    })
 
     if (expandToggleIds.length > 0) {
       const startTime = Date.now()
@@ -245,14 +241,10 @@ describe("Large Collections Performance", () => {
       // Attempt to find and click a delete option (may be in context menu)
       try {
         await rowElement.rightClick()
-        const deleteElements = await $$('[data-test-id*="delete"]')
-        const deleteOptionId: string[] = []
-        for (const el of deleteElements) {
-          const id = await el.getAttribute("data-test-id")
-          if (id) {
-            deleteOptionId.push(id)
-          }
-        }
+        const deleteOptionId = await browser.execute(() => {
+          const opts = Array.from(document.querySelectorAll('[data-test-id*="delete"]'))
+          return opts.map((el) => el.getAttribute("data-test-id")).filter(Boolean)
+        })
         if (deleteOptionId.length > 0 && deleteOptionId[0]) {
           const deleteOption = await getElementByTestId(deleteOptionId[0], 5000).catch(() => null)
           if (deleteOption && (await deleteOption.isDisplayed())) {
@@ -330,19 +322,11 @@ describe("Large Payload Handling", () => {
     const responseHeading = await getElementByTestId("response-viewer:heading", 15000)
     expect(await responseHeading.isDisplayed()).toBe(true)
 
-    let sizeText: string | null = null
-    const elements = await $$("span")
-    for (const el of elements) {
-      const text = await el.getText()
-      if (text.trim() === "Size:") {
-        const parent = await el.parentElement()
-        const children = await parent.$$("*")
-        if (children.length > 0) {
-          sizeText = await children[0].getText()
-        }
-        break
-      }
-    }
+    const sizeText = await browser.execute(() => {
+      const label = Array.from(document.querySelectorAll("span")).find((el) => el.textContent?.trim() === "Size:")
+      const value = label?.nextElementSibling as HTMLElement | null
+      return value?.textContent ?? null
+    })
 
     expect(sizeText).not.toBeNull()
     expect(String(sizeText)).toMatch(/B/)

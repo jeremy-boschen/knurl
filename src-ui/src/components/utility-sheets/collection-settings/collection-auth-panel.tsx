@@ -6,7 +6,14 @@ import { OAuth2Editor } from "@/components/auth/oauth2-editor"
 import { ApiKeyAuthForm, BasicAuthForm, BearerAuthForm } from "@/components/auth/auth-forms"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InfoIcon } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { createDefaultAuthConfig } from "@/lib"
 import { credentialsCacheApi, useCollection, useCredentialsCacheEntry } from "@/state"
 import type { Collection } from "@/types"
@@ -257,18 +264,26 @@ export default function CollectionAuthPanel({ collectionId }: Props) {
       </div>
 
       <div className="flex items-center gap-3 pb-2">
-        <Select value={authType} onValueChange={(v) => handleAuthTypeChange(v as AuthType)}>
-          <SelectTrigger className="w-48" data-test-id="collection-auth:type-trigger">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent align="start">
-            {typeLabels.map(([type, name]) => (
-              <SelectItem key={type} value={type} data-test-id={`collection-auth:type-${type}`}>
-                {name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="secondary"
+              className="w-48 justify-start text-sm"
+              data-test-id="collection-auth:type-trigger"
+            >
+              {AuthTypes[authType]}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48">
+            <DropdownMenuRadioGroup value={authType} onValueChange={(v) => handleAuthTypeChange(v as AuthType)}>
+              {typeLabels.map(([type, name]) => (
+                <DropdownMenuRadioItem key={type} value={type} data-test-id={`collection-auth:type-${type}`}>
+                  {name}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="pt-2">{renderAuthForm()}</div>

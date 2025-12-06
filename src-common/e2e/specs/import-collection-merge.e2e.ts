@@ -99,17 +99,21 @@ describe("Collection Import from OpenAPI", () => {
     // Wait for the import to parse and preview to render
     await browser.waitUntil(
       async () => {
-        // Check if the preview step loaded (indicates successful parse)
-        const element = await $('[data-test-id="import-preview:requests-master-checkbox"]')
-        return await element.isExisting()
+        return await browser.execute(() => {
+          // Check if the preview step loaded (indicates successful parse)
+          const previewCheckbox = document.querySelector('[data-test-id="import-preview:requests-master-checkbox"]')
+          return !!previewCheckbox
+        })
       },
       { timeout: 10000, interval: 50 },
     )
     console.log(`[TEST] ${new Date().toISOString()} Import preview loaded`)
 
     // Verify the import preview is showing
-    const previewElement = await $('[data-test-id="import-preview:requests-master-checkbox"]')
-    const previewLoaded = await previewElement.isExisting()
+    const previewLoaded = await browser.execute(() => {
+      const previewCheckbox = document.querySelector('[data-test-id="import-preview:requests-master-checkbox"]')
+      return !!previewCheckbox
+    })
 
     console.log(`[TEST] ${new Date().toISOString()} Preview loaded: ${previewLoaded}`)
     await expect(previewLoaded).toBe(true)
