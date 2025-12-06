@@ -134,15 +134,17 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
     }
 
     await resetOverlays()
-    await clickByTestId("environment-selector:trigger-button")
-    await clickByTestId(`environment-selector:environment-item:${state.environmentId}`)
+    await selectMenuActionById(`environment-selector:environment-item:${state.environmentId}`, {
+      triggerTestId: "environment-selector:trigger-button",
+    })
 
     await resetOverlays()
     const selector = await getElementByTestId("environment-selector:trigger-button")
     await expect(await selector.getText()).toContain("Smoke Env")
 
-    await clickByTestId("environment-selector:trigger-button")
-    await clickByTestId("environment-selector:no-environment-item")
+    await selectMenuActionById("environment-selector:no-environment-item", {
+      triggerTestId: "environment-selector:trigger-button",
+    })
     await resetOverlays()
 
     const selectorAfterClear = await getElementByTestId("environment-selector:trigger-button")
