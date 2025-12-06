@@ -491,14 +491,15 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
   await option.scrollIntoView({ block: "center", inline: "center" })
   await option.click()
 
-  // Wait for menu to close and option to no longer be displayed
+  // Wait for trigger's "aria-expanded" to become false (menu closes)
   await browser.waitUntil(
     async () => {
       try {
-        const element = await $(`[data-test-id="${optionTestId}"]`)
-        return !(await element.isDisplayed())
+        const trigger = await $(`[data-test-id="${selectTriggerTestId}"]`)
+        const ariaExpanded = await trigger.getAttribute("aria-expanded")
+        return ariaExpanded === "false"
       } catch {
-        return true
+        return false
       }
     },
     {
