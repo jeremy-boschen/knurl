@@ -20,7 +20,7 @@ import {
  * Module-level auth helpers specific to this test suite.
  */
 
-async function pointerClick(selector: string) {
+async function radixPointerDown(selector: string) {
   const el = await $(selector)
   const location = await el.getLocation()
   const size = await el.getSize()
@@ -28,27 +28,17 @@ async function pointerClick(selector: string) {
   const x = Math.round(location.x + size.width / 2)
   const y = Math.round(location.y + size.height / 2)
 
-  console.log("DEBUG: Pointer click at x:", x, "y:", y)
+  console.log("DEBUG: Radix pointerDown at x:", x, "y:", y)
 
-  await browser.performActions([
-    {
-      type: "pointer",
-      id: "mouse",
-      parameters: { pointerType: "mouse" },
-      actions: [
-        { type: "pointerMove", duration: 0, origin: "viewport", x, y },
-        { type: "pointerDown", button: 0 },
-        { type: "pause", duration: 50 },
-        { type: "pointerUp", button: 0 },
-      ],
-    },
-  ])
-
-  await browser.releaseActions()
+  // Radix only listens for pointerdown, not the full click sequence
+  await browser.action("pointer", { parameters: { pointerType: "mouse" } })
+    .move({ x, y })
+    .down({ button: 0 })
+    .perform()
 }
 
-async function manualPointerDown(selector: string) {
-  console.log("DEBUG: Attempting manual PointerDown event dispatch")
+async function manualRadixPointerDown(selector: string) {
+  console.log("DEBUG: Manual PointerDown dispatch for Radix")
 
   await browser.execute((sel: string) => {
     const el = document.querySelector(sel) as HTMLElement
@@ -131,12 +121,12 @@ async function debugClick(selector: string) {
 
   // Try manual PointerDown dispatch first (works on Linux)
   console.log("DEBUG: Attempting manual PointerDown dispatch")
-  await manualPointerDown(selector)
+  await manualRadixPointerDown(selector)
   await browser.pause(500)
 
-  // If that didn't work, try W3C performActions (works on Windows)
-  console.log("DEBUG: Attempting W3C performActions pointer events")
-  await pointerClick(selector)
+  // If that didn't work, try W3C pointerdown actions (works on Windows)
+  console.log("DEBUG: Attempting W3C pointerdown action")
+  await radixPointerDown(selector)
 }
 
 async function setBasicAuth(username: string, password: string): Promise<void> {
