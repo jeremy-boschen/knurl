@@ -20,6 +20,38 @@ import {
  * Module-level auth helpers specific to this test suite.
  */
 
+async function debugClick(selector: string) {
+  const el = await $(selector)
+
+  console.log("exists:", await el.isExisting())
+  console.log("displayed:", await el.isDisplayed())
+  console.log("in viewport:", await el.isDisplayedInViewport())
+  console.log("clickable:", await el.isClickable())
+  console.log("location:", await el.getLocation())
+  console.log("size:", await el.getSize())
+
+  // dump some DOM info
+  const info = await browser.execute((elem: HTMLElement) => {
+    const rect = elem.getBoundingClientRect()
+    return {
+      tag: elem.tagName,
+      classes: elem.className,
+      disabled: (elem as any).disabled,
+      pointerEvents: getComputedStyle(elem).pointerEvents,
+      rect: {
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+      },
+    }
+  }, el)
+
+  console.log("dom-info:", info)
+
+  await el.click()
+}
+
 async function setBasicAuth(username: string, password: string): Promise<void> {
   await selectAuthType("basic")
   await setInputText("request-auth-panel:basic-auth-username-input", username)
@@ -852,218 +884,16 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
 
     // Wait for settings sheet and click auth tab
     await getElementByTestId("collection-settings:sheet", 5000)
-    await browser.pause(3000)
 
     await clickByTestId("collection-settings:auth-tab-button")
-    await browser.pause(3000)
 
-    // Open collection auth dropdown using PointerDown event
-    // (Radix UI listens to onPointerDown, not just click events)
-    await browser.execute(() => {
-      const el = window.document.querySelector('[data-test-id="collection-auth:type-trigger"]') as HTMLElement
-      if (el) {
-        const event = new PointerEvent("pointerdown", {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          pointerId: 1,
-          pointerType: "mouse",
-          isPrimary: true,
-        })
-        el.dispatchEvent(event)
-      }
-    })
+    // DEBUG: Dump trigger element info and attempt click
+    console.log("DEBUG: About to click collection-auth:type-trigger")
+    await debugClick('[data-test-id="collection-auth:type-trigger"]')
     await browser.pause(1000)
 
-    // Click the Basic auth option
-    const basicOption = await getElementByTestId("collection-auth:type-basic")
-    await basicOption.scrollIntoView({ block: "center", inline: "center" })
-    await basicOption.click()
-    await browser.pause(3000)
-
-    // Configure basic auth credentials at collection level
-    const collectionUsername = "collection-user"
-    const collectionPassword = "collection-pass"
-    await setInputText("collection-auth:basic-auth-username-input", collectionUsername)
-    await setInputText("collection-auth:basic-auth-password-input", collectionPassword)
-
-    // Close settings sheet
-    await browser.keys(["Escape"])
-
-    // Create a request in this collection
-    await openCollectionMenu(collectionId)
-    await clickByTestId(`collection-menu:item:request:new:${collectionId}`)
-
-    // Wait for create-request dialog to appear
-    await browser.waitUntil(
-      async () => {
-        try {
-          const dialog = await $('[data-test-id="create-request-dialog"]')
-          return await dialog.isDisplayed()
-        } catch {
-          return false
-        }
-      },
-      { timeout: 10000, interval: 200, timeoutMsg: "Create request dialog did not appear" },
-    )
-
-    // Add pause to ensure dialog is fully rendered
-    await browser.pause(1000)
-
-    // Get the input and try to set it
-    const nameInput = await getElementByTestId("create-request-dialog:name-input")
-    const requestName = `Request-${Date.now()}`
-
-    // Set the value using a combination of DOM + React state update
-    await browser.execute(
-      (testId, value) => {
-        const input = document.querySelector(`[data-test-id="${testId}"]`) as HTMLInputElement
-        if (input) {
-          // Set the value
-          input.value = value
-
-          // Find the React key on the input element (for React 18+)
-          // Look for __reactProps$ key which contains the fiber node
-          const keys = Object.keys(input).filter((k) => k.startsWith("__reactProps"))
-          if (keys.length > 0) {
-            const fiberProps = (input as any)[keys[0]]
-            if (fiberProps?.onChange) {
-              // Call the onChange handler with synthetic event
-              const event = { target: { value: value } }
-              fiberProps.onChange(event)
-            }
-          } else {
-            // Fallback: dispatch events
-            const events = [new Event("input", { bubbles: true }), new Event("change", { bubbles: true })]
-            events.forEach((event) => {
-              input.dispatchEvent(event)
-            })
-          }
-        }
-      },
-      "create-request-dialog:name-input",
-      requestName,
-    )
-
-    // Add pause for React to update
-    await browser.pause(500)
-
-    // Wait for input to have the value
-    await browser.waitUntil(
-      async () => {
-        const val = await nameInput.getValue()
-        return val === requestName
-      },
-      {
-        timeout: 10000,
-        interval: 100,
-        timeoutMsg: `Failed to set request name to "${requestName}"`,
-      },
-    )
-
-    // Click the confirm button
-    const confirmButton = await getElementByTestId("create-request-dialog:confirm-button")
-    await confirmButton.waitForEnabled({ timeout: 5000 })
-    await browser.pause(500)
-    await confirmButton.click()
-
-    // Wait for request editor to be ready
-    await waitForRequestEditor()
-
-    // Set request URL - using JavaScript for controlled React input
-    const mockUrl = `http://127.0.0.1:3000/mock/get`
-    const urlInput = await getElementByTestId("request-workspace:url-input")
-
-    // Use JavaScript to set the value and trigger React events
-    await browser.execute(
-      (testId, value) => {
-        const input = document.querySelector(`[data-test-id="${testId}"]`) as HTMLInputElement
-        if (input) {
-          input.value = value
-
-          // Find React props key and call onChange handler
-          const keys = Object.keys(input).filter((k) => k.startsWith("__reactProps"))
-          if (keys.length > 0) {
-            const fiberProps = (input as any)[keys[0]]
-            if (fiberProps?.onChange) {
-              fiberProps.onChange({ target: { value: value } })
-            }
-          } else {
-            // Fallback: dispatch events
-            const events = [new Event("input", { bubbles: true }), new Event("change", { bubbles: true })]
-            events.forEach((event) => {
-              input.dispatchEvent(event)
-            })
-          }
-        }
-      },
-      "request-workspace:url-input",
-      mockUrl,
-    )
-
-    // Wait for input to have the value
-    await browser.waitUntil(
-      async () => {
-        const val = await urlInput.getValue()
-        return val === mockUrl
-      },
-      {
-        timeout: 5000,
-        interval: 100,
-        timeoutMsg: `Failed to set URL to "${mockUrl}"`,
-      },
-    )
-
-    // Click on auth tab and set to Inherit
-    await clickByTestId("request-editor:auth-tab")
-    await clickByTestId("request-editor:auth-tab-dropdown-trigger")
-    await clickByTestId("request-editor:auth-menu:type-inherit")
-
-    // Verify that inherit message appears
-    const inheritMessage = await getElementByTestId("request-auth-panel:no-auth-message", 5000)
-    const inheritText = await inheritMessage.getText()
-    await expect(inheritText).toContain("inherits authentication from its parent")
-
-    // Send request
-    await clickByTestId("request-workspace:send-button")
-
-    // Wait for response
-    await browser.waitUntil(
-      async () => {
-        const responseText = await browser.execute(() => {
-          const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-          if (!responseBody) {
-            return ""
-          }
-          const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-          if (!codeEditor) {
-            return ""
-          }
-          const content = codeEditor.querySelector(".cm-content")
-          return content ? content.textContent || codeEditor.textContent : codeEditor.textContent
-        })
-        return responseText && responseText.length > 0
-      },
-      { timeout: 15000 },
-    )
-
-    // Verify the inherited auth was applied
-    const responseText = await browser.execute(() => {
-      const responseBody = document.querySelector('[data-test-id="response-viewer:body"]')
-      if (!responseBody) {
-        return ""
-      }
-      const codeEditor = responseBody.querySelector('[data-test-id="code-editor"]')
-      if (!codeEditor) {
-        return ""
-      }
-      const content = codeEditor.querySelector(".cm-content")
-      return content ? content.textContent || codeEditor.textContent : codeEditor.textContent
-    })
-
-    // Check that a response was received (request was sent successfully with inherited auth)
-    await expect(responseText).toBeTruthy()
-    await expect(responseText.length).toBeGreaterThan(0)
+    // Abort here for now - diagnostics complete
+    throw new Error("DEBUG: Stopping test after debugClick diagnostics")
   })
 
   it("request inherits Bearer auth from collection", async () => {
