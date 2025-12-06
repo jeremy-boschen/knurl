@@ -146,9 +146,15 @@ describe("[SUPPLEMENTAL] Request Authoring Advanced", () => {
       await requestElement.click({ button: 2 })
 
       // Look for clone option in context menu
-      const cloneMenuExists = await selectorExists(
-        '[role="menu"] span:contains("Clone"), [role="menu"] span:contains("Duplicate")',
-      )
+      const menuSpans = await $$('[role="menu"] span')
+      let cloneMenuExists = false
+      for (const span of menuSpans) {
+        const text = await span.getText()
+        if (text.includes("Clone") || text.includes("Duplicate")) {
+          cloneMenuExists = true
+          break
+        }
+      }
       expect(cloneMenuExists || true).toBe(true) // Context menu may not be visible in all drivers
     }
   })
@@ -475,7 +481,9 @@ describe("Scratch Collection UX", () => {
     const SCRATCH_COLLECTION_ID = "scratch"
 
     // Verify scratch collection exists in tree
-    const scratchExists = await selectorExists(`[data-test-id="collection-tree:collection-row:${SCRATCH_COLLECTION_ID}"]`)
+    const scratchExists = await selectorExists(
+      `[data-test-id="collection-tree:collection-row:${SCRATCH_COLLECTION_ID}"]`,
+    )
 
     expect(scratchExists).toBe(true)
   })
@@ -650,9 +658,13 @@ async function openDropdownForTab(tabTestId: string): Promise<void> {
 }
 
 async function getDropdownTrigger(tabTestId: string) {
-  const tab = await getElementByTestId(tabTestId)
-  const wrapper = await tab.$("..")
-  return await wrapper.$('[data-test-id="request-editor:tab-dropdown-trigger"]')
+  // Extract tab name from tabTestId like "request-editor:headers-tab" -> "headers"
+  const tabName = tabTestId.split(":")[1]?.replace("-tab", "")
+  if (!tabName) {
+    throw new Error(`Unable to extract tab name from ${tabTestId}`)
+  }
+  const dropdownTriggerId = `request-editor:${tabName}-tab-dropdown-trigger`
+  return await getElementByTestId(dropdownTriggerId)
 }
 
 async function selectCollection(collectionId: string): Promise<void> {

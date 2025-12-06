@@ -262,7 +262,7 @@ export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-muted-foreground">Size:</span>
-                      <span className="font-mono text-muted-foreground/75">
+                      <span className="font-mono text-muted-foreground/75" data-test-id="response-viewer:size">
                         {formatBytes(response.responseSize ?? 0)}
                       </span>
                     </div>
