@@ -115,10 +115,14 @@ describe("[SUPPLEMENTAL] Settings & UI Customization", () => {
     })
 
     it("menu helpers select actions and close the dropdown", async () => {
-      await selectMenuActionById("new-request", { triggerTestId: "ux-reference:dropdown-trigger" })
+      await selectMenuActionById("ux-reference:dropdown-item:new-request", {
+        triggerTestId: "ux-reference:dropdown-trigger",
+      })
       await expectTextContent("ux-reference:dropdown-value", /new-request/)
 
-      await selectMenuActionById("rename", { triggerTestId: "ux-reference:dropdown-trigger" })
+      await selectMenuActionById("ux-reference:dropdown-item:rename", {
+        triggerTestId: "ux-reference:dropdown-trigger",
+      })
       await expectTextContent("ux-reference:dropdown-value", /rename/)
     })
 

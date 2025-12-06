@@ -5,7 +5,7 @@ import {
   getElementByTestId,
   openCollectionMenu,
   resetOverlays,
-  selectOptionByTestId,
+  selectMenuActionById,
   setInputText,
   waitForActiveRequestTab,
   waitForRequestEditor,
@@ -58,7 +58,9 @@ describe("[SUPPLEMENTAL] Environment Manager Smoke", () => {
     // Open environment selector dropdown and click manage environments
     await resetOverlays()
 
-    await selectOptionByTestId("environment-selector:trigger-button", "environment-selector:manage-environments-item")
+    await selectMenuActionById("environment-selector:manage-environments-item", {
+      triggerTestId: "environment-selector:trigger-button",
+    })
 
     // Wait for settings sheet to appear
     await getElementByTestId("collection-settings:sheet", 10000)

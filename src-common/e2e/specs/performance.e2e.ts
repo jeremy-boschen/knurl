@@ -330,19 +330,8 @@ describe("Large Payload Handling", () => {
     const responseHeading = await getElementByTestId("response-viewer:heading", 15000)
     expect(await responseHeading.isDisplayed()).toBe(true)
 
-    let sizeText: string | null = null
-    const elements = await $$("span")
-    for (const el of elements) {
-      const text = await el.getText()
-      if (text.trim() === "Size:") {
-        const parent = await el.parentElement()
-        const children = await parent.$$("*")
-        if (children.length > 0) {
-          sizeText = await children[0].getText()
-        }
-        break
-      }
-    }
+    const sizeElement = await getElementByTestId("response-viewer:size", 5000)
+    const sizeText = await sizeElement.getText()
 
     expect(sizeText).not.toBeNull()
     expect(String(sizeText)).toMatch(/B/)
