@@ -863,7 +863,7 @@ export const config = {
   baseUrl: "http://localhost:1420",
   mochaOpts: {
     ui: "bdd",
-    timeout: 60000,
+    timeout: process.env.DEBUG ? 24 * 60 * 60 * 1000 : 60000,
     reporter: "spec",
     reporterOptions: {
       enableTimeouts: true,

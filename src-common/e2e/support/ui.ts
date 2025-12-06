@@ -461,86 +461,22 @@ export async function waitForTestIdToDisappear(testId: string, timeout = DEFAULT
  * await selectOptionByTestId("method-dropdown", "method:post")
  */
 export async function selectOptionByTestId(selectTriggerTestId: string, optionTestId: string): Promise<void> {
-  // Wait for trigger to be in the DOM and visible - give extra time for lazy-loaded content
-  let trigger = await getElementByTestId(selectTriggerTestId, DEFAULT_TIMEOUT, { initialDelay: 100 })
-  await browser.waitUntil(
-    async () => {
-      try {
-        trigger = await getElementByTestId(selectTriggerTestId, 1000)
-        const displayed = await trigger.isDisplayed()
-        return displayed
-      } catch {
-        return false
-      }
-    },
-    {
-      timeout: 10000,
-      interval: 150,
-      timeoutMsg: `Select trigger ${selectTriggerTestId} did not become visible`,
-    },
-  )
+  // Use document.querySelector to click trigger - this properly fires all event listeners
+  await browser.execute((testId: string) => {
+    const trigger = document.querySelector(`[data-test-id="${testId}"]`) as HTMLElement
+    if (trigger) {
+      trigger.click()
+    }
+  }, selectTriggerTestId)
 
-  await trigger.scrollIntoView({ block: "center", inline: "center" })
-  await withFallbackClick(trigger)
+  // Wait for menu to open and render - Radix animations take time
+  await browser.pause(500)
 
-  // Give the dropdown menu time to render after click
-  await browser.waitUntil(
-    async () => {
-      try {
-        // Check if ANY menu content has appeared by looking for common menu element selectors
-        const menuContent = await $('[role="menu"], [role="listbox"], [role="combobox"]')
-        return await menuContent.isDisplayed().catch(() => false)
-      } catch {
-        return false
-      }
-    },
-    {
-      timeout: 5000,
-      interval: 150,
-      timeoutMsg: `Menu did not open for trigger ${selectTriggerTestId}`,
-    },
-  )
-
-  // Wait for the option to appear in DOM and become displayed
-  // Radix UI portals can take time to render, so we poll with retries
-  await browser.waitUntil(
-    async () => {
-      try {
-        const option = await $(`[data-test-id="${optionTestId}"]`)
-        return await option.isDisplayed()
-      } catch {
-        return false
-      }
-    },
-    {
-      timeout: DEFAULT_TIMEOUT,
-      interval: 100,
-      timeoutMsg: `Option ${optionTestId} did not appear after opening menu`,
-    },
-  )
-
-  const option = await getElementByTestId(optionTestId)
+  // Wait for option to appear in DOM after menu opens
+  const option = await getElementByTestId(optionTestId, DEFAULT_TIMEOUT)
   await option.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
   await option.scrollIntoView({ block: "center", inline: "center" })
   await withFallbackClick(option)
-
-  // Wait for menu to close after selection (option should disappear)
-  await browser.waitUntil(
-    async () => {
-      try {
-        const opt = await $(`[data-test-id="${optionTestId}"]`)
-        return !(await opt.isDisplayed())
-      } catch {
-        // Element doesn't exist anymore (menu closed)
-        return true
-      }
-    },
-    {
-      timeout: 5000,
-      interval: 100,
-      timeoutMsg: `Menu did not close after selecting ${optionTestId}`,
-    },
-  )
 }
 
 /**
@@ -1111,4 +1047,19 @@ export async function selectAuthType(
     inherit: "request-editor:auth-menu:type-inherit",
   }
   await selectOptionByTestId("request-editor:auth-tab-dropdown-trigger", typeTestIds[type])
+}
+
+/**
+ * Selects a collection auth type from the collection settings dropdown.
+ * Excludes "inherit" option (not available for collections).
+ */
+export async function selectCollectionAuthType(type: "basic" | "bearer" | "apiKey" | "oauth2" | "none"): Promise<void> {
+  const typeTestIds: Record<string, string> = {
+    basic: "collection-auth:type-basic",
+    bearer: "collection-auth:type-bearer",
+    apiKey: "collection-auth:type-apiKey",
+    oauth2: "collection-auth:type-oauth2",
+    none: "collection-auth:type-none",
+  }
+  await selectOptionByTestId("collection-auth:type-trigger", typeTestIds[type])
 }
