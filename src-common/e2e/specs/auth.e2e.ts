@@ -20,6 +20,32 @@ import {
  * Module-level auth helpers specific to this test suite.
  */
 
+async function pointerClick(selector: string) {
+  const el = await $(selector)
+  const rect = await el.getRect()
+
+  const x = Math.round(rect.x + rect.width / 2)
+  const y = Math.round(rect.y + rect.height / 2)
+
+  console.log("DEBUG: Pointer click at x:", x, "y:", y)
+
+  await browser.performActions([
+    {
+      type: "pointer",
+      id: "mouse",
+      parameters: { pointerType: "mouse" },
+      actions: [
+        { type: "pointerMove", duration: 0, origin: "viewport", x, y },
+        { type: "pointerDown", button: 0 },
+        { type: "pause", duration: 50 },
+        { type: "pointerUp", button: 0 },
+      ],
+    },
+  ])
+
+  await browser.releaseActions()
+}
+
 async function debugClick(selector: string) {
   const el = await $(selector)
 
@@ -67,21 +93,9 @@ async function debugClick(selector: string) {
 
   console.log("overlap:", overlap)
 
-  // Try pointer events
-  console.log("DEBUG: Attempting pointer events")
-  const trigger = await $(selector)
-  await trigger.waitForDisplayed({ timeout: 5000 })
-
-  const { x, y } = await trigger.getLocation()
-  const { width, height } = await trigger.getSize()
-
-  await browser
-    .action("pointer", { parameters: { pointerType: "mouse" } })
-    .move({ x: Math.round(x + width / 2), y: Math.round(y + height / 2) })
-    .down({ button: 0 })
-    .pause(50)
-    .up({ button: 0 })
-    .perform()
+  // Try W3C performActions pointer events
+  console.log("DEBUG: Attempting W3C performActions pointer events")
+  await pointerClick(selector)
 }
 
 async function setBasicAuth(username: string, password: string): Promise<void> {
