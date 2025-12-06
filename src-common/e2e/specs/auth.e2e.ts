@@ -73,6 +73,16 @@ async function manualRadixPointerDown(selector: string) {
   }, selector)
 }
 
+async function selectDropdownMenuItemByTestId(triggerTestId: string, itemTestId: string): Promise<void> {
+  // Open the dropdown menu by clicking the trigger
+  await debugClick(`[data-test-id="${triggerTestId}"]`)
+  await browser.pause(500)
+
+  // Click the menu item
+  await clickByTestId(itemTestId)
+  await browser.pause(300)
+}
+
 async function debugClick(selector: string) {
   const el = await $(selector)
 
@@ -986,14 +996,8 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
 
     await clickByTestId("collection-settings:auth-tab-button")
 
-    // Open collection auth dropdown
-    console.log("DEBUG: About to click collection-auth:type-trigger")
-    await debugClick('[data-test-id="collection-auth:type-trigger"]')
-    await browser.pause(500)
-
-    // Menu should be open, click the Basic auth option
-    await clickByTestId("collection-auth:type-basic")
-    await browser.pause(300)
+    // Open collection auth dropdown and select Basic auth
+    await selectDropdownMenuItemByTestId("collection-auth:type-trigger", "collection-auth:type-basic")
 
     // Configure basic auth credentials at collection level
     const collectionUsername = "collection-user"
