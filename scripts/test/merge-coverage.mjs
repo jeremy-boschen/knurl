@@ -76,7 +76,15 @@ const mergeCoverageData = (baseMap, newCoverage) => {
 }
 
 // Load unit test coverage if it exists
-const unitCoveragePath = path.join(projectRoot, 'coverage', 'unit-coverage.json')
+// Try unit-coverage.json first (renamed from coverage-final.json), fall back to coverage-final.json
+let unitCoveragePath = path.join(projectRoot, 'coverage', 'unit-coverage.json')
+let unitCoverageSource = 'unit-coverage.json'
+
+if (!fs.existsSync(unitCoveragePath)) {
+  unitCoveragePath = path.join(projectRoot, 'coverage', 'coverage-final.json')
+  unitCoverageSource = 'coverage-final.json'
+}
+
 if (fs.existsSync(unitCoveragePath)) {
   try {
     const unitCoverage = JSON.parse(fs.readFileSync(unitCoveragePath, 'utf-8'))
