@@ -460,6 +460,19 @@ export async function waitForTestIdToDisappear(testId: string, timeout = DEFAULT
  * await selectOptionByTestId("auth-type-select", "auth-type:basic")
  * await selectOptionByTestId("method-dropdown", "method:post")
  */
+/**
+ * Dump full HTML of an element for diagnostic purposes
+ */
+async function dumpElementHTML(testId: string, label: string): Promise<void> {
+  try {
+    const element = await $(`[data-test-id="${testId}"]`)
+    const html = await element.getHTML()
+    console.log(`\n[DEBUG ${label}]:\n${html}\n`)
+  } catch (error) {
+    console.log(`\n[DEBUG ${label}]: Element not found or error: ${error}\n`)
+  }
+}
+
 export async function selectOptionByTestId(selectTriggerTestId: string, optionTestId: string): Promise<void> {
   // Extract the label from the test ID (e.g., "ux-reference:select-option:alpha" -> "alpha")
   const optionLabel = optionTestId.split(":").pop()
@@ -467,9 +480,12 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
     throw new Error(`Could not extract option label from test ID: ${optionTestId}`)
   }
 
-  console.log(`[selectOptionByTestId] Starting selection of "${optionLabel}"`)
+  console.log(`\n[selectOptionByTestId] === Starting selection of "${optionLabel}" ===\n`)
 
-  // Click trigger to open Select menu
+  // BEFORE: Click trigger to open Select menu
+  console.log(`\n[1] BEFORE clicking trigger:`)
+  await dumpElementHTML(selectTriggerTestId, "Trigger (before click)")
+
   await browser.execute((testId: string) => {
     const trigger = document.querySelector(`[data-test-id="${testId}"]`) as HTMLElement
     if (trigger) {
@@ -477,15 +493,12 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
     }
   }, selectTriggerTestId)
 
-  console.log(`[selectOptionByTestId] Clicked trigger, pausing to let menu open...`)
+  console.log(`[selectOptionByTestId] Clicked trigger, pausing 300ms...`)
   await browser.pause(300)
 
-  // Inspect DOM after opening
-  await browser.execute((testId: string) => {
-    const trigger = document.querySelector(`[data-test-id="${testId}"]`) as HTMLElement
-    console.log(`[selectOptionByTestId] Trigger aria-expanded: ${trigger?.getAttribute("aria-expanded")}`)
-    console.log(`[selectOptionByTestId] Trigger data-state: ${trigger?.getAttribute("data-state")}`)
-  }, selectTriggerTestId)
+  // AFTER: Click trigger
+  console.log(`\n[1] AFTER clicking trigger:`)
+  await dumpElementHTML(selectTriggerTestId, "Trigger (after click)")
 
   // Wait for option to be displayed after menu opens
   await browser.waitUntil(
@@ -504,29 +517,24 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
     },
   )
 
-  console.log(`[selectOptionByTestId] Option displayed, inspecting DOM...`)
-  await browser.execute((testId: string) => {
-    const option = document.querySelector(`[data-test-id="${testId}"]`) as HTMLElement
-    console.log(`[selectOptionByTestId] Option data-state: ${option?.getAttribute("data-state")}`)
-    console.log(`[selectOptionByTestId] Option aria-selected: ${option?.getAttribute("aria-selected")}`)
-  }, optionTestId)
+  // BEFORE: Click option
+  console.log(`\n[2] BEFORE clicking option:`)
+  await dumpElementHTML(optionTestId, "Option (before click)")
 
   // Click option to select it
   const option = await getElementByTestId(optionTestId)
   await option.scrollIntoView({ block: "center", inline: "center" })
   await option.click()
 
-  console.log(`[selectOptionByTestId] Clicked option, pausing to let selection process...`)
+  console.log(`[selectOptionByTestId] Clicked option, pausing 300ms...`)
   await browser.pause(300)
 
-  // Inspect DOM after clicking option
-  await browser.execute((testId: string, optionTestId: string) => {
-    const trigger = document.querySelector(`[data-test-id="${testId}"]`) as HTMLElement
-    const option = document.querySelector(`[data-test-id="${optionTestId}"]`) as HTMLElement
-    console.log(`[selectOptionByTestId] After click - Trigger aria-expanded: ${trigger?.getAttribute("aria-expanded")}`)
-    console.log(`[selectOptionByTestId] After click - Option data-state: ${option?.getAttribute("data-state")}`)
-    console.log(`[selectOptionByTestId] After click - Option is displayed: ${window.getComputedStyle(option).display}`)
-  }, selectTriggerTestId, optionTestId)
+  // AFTER: Click option
+  console.log(`\n[2] AFTER clicking option:`)
+  await dumpElementHTML(selectTriggerTestId, "Trigger (after option click)")
+  await dumpElementHTML(optionTestId, "Option (after click)")
+
+  console.log(`[selectOptionByTestId] === Selection complete ===\n`)
 }
 
 /**
