@@ -1,17 +1,17 @@
 # Test Coverage Guide
 
-This document explains how to run tests with coverage reports and consolidate coverage from unit and E2E tests.
+Comprehensive guide for running tests with coverage across four test suites.
 
 ## Overview
 
-The project now includes a comprehensive test coverage script that:
-1. Runs frontend unit tests with coverage (Vitest)
-2. Runs backend unit tests (Cargo)
-3. Merges frontend and backend coverage reports
-4. Runs E2E tests with coverage (WebDriver.io)
-5. Aggregates E2E coverage
-6. Consolidates all coverage with nyc
-7. Generates HTML, LCOV, JSON, and text reports
+Knurl generates coverage from four distinct test layers:
+
+1. **Frontend Unit Tests** (Vitest) → `coverage-final.json`
+2. **Frontend E2E Tests** (WebDriver.io) → `e2e-coverage.json`
+3. **Rust Unit Tests** (cargo llvm-cov) → `rust-coverage.json`
+4. **Rust E2E Tests** (instrumented binary) → `rust-e2e-coverage.json`
+
+All sources are intelligently merged using `Math.max()` per execution count, producing a unified coverage report.
 
 ## Quick Start
 
@@ -27,34 +27,71 @@ This produces:
 - **JSON report**: `coverage/coverage-final.json` (for programmatic access)
 - **Console output**: Text-based summary with line/branch/function coverage
 
-## Individual Test Runs
+## Running Tests
 
-Run tests separately with their individual coverage:
-
+### Full Test Suite (All Coverage)
 ```bash
-# Frontend unit tests only
+yarn test
+```
+Runs unit tests (Vitest + cargo) + E2E tests + merge coverage from all sources.
+
+### Unit Tests Only
+```bash
 yarn test:unit
+```
+Frontend (Vitest) + Rust (cargo llvm-cov) unit tests.
 
-# E2E tests only
+### E2E Tests Only
+```bash
 yarn test:e2e
+```
+Builds instrumented Rust binary, runs WebDriver.io, generates E2E coverage.
 
-# E2E report
-yarn test:e2e:report
+### Specific E2E Test
+```bash
+yarn test:e2e --spec="path/to/test.e2e.ts"
 ```
 
-## Coverage Configuration
+### Quick Critical Tests
+```bash
+yarn test:check
+```
+Unit tests + E2E tests marked `[CRITICAL]` (faster feedback loop).
 
-Coverage settings are defined in:
-- **Frontend**: `vitest.config.ts` (Vitest v8 coverage)
-- **Backend**: `src-tauri/src/` (inline unit tests)
-- **Consolidation**: `.nycrc` (nyc configuration)
+## Coverage Files Generated
 
-### Current Thresholds
+| File | Test Suite | Format | Merge Strategy |
+|------|-----------|--------|-----------------|
+| `coverage-final.json` | Frontend unit | Istanbul | Added first |
+| `e2e-coverage.json` | Frontend E2E | Istanbul | Smart merge (max count) |
+| `rust-coverage.json` | Rust unit | Istanbul | Smart merge (max count) |
+| `rust-e2e-coverage.json` | Rust E2E | Istanbul | Smart merge (max count) |
 
-Lines, statements, and functions: **70%**
-Branches: **65%**
+**LCOV files** (intermediate, not merged into JSON):
+- `rust-lcov.info` - Rust unit (raw output)
+- `rust-lcov-e2e.info` - Rust E2E (raw output)
 
-These are enforced on pre-push hooks (see `.lefthook.yml`).
+## Merge Strategy
+
+The merge script (`scripts/test/merge-coverage.mjs`) combines all four sources:
+
+1. Load frontend unit coverage
+2. **Merge** frontend E2E (takes max execution count per item)
+3. **Merge** Rust unit
+4. **Merge** Rust E2E
+
+For overlapping files/functions/branches, uses `Math.max()` to determine if code was exercised by ANY test suite.
+
+## Coverage Thresholds
+
+| Metric | Threshold |
+|--------|-----------|
+| Lines | 70% |
+| Statements | 70% |
+| Functions | 70% |
+| Branches | 65% |
+
+Enforced on pre-push (see `.lefthook.yml`).
 
 ### Excluded from Coverage
 
@@ -102,9 +139,38 @@ yarn test
 yarn codecov --file=coverage/lcov.info
 ```
 
+## Rust E2E Coverage Details
+
+When running `yarn test` or `yarn test:e2e`:
+
+1. **Build step**: `cargo llvm-cov build --no-report` with instrumentation
+2. **Test step**: E2E tests run against instrumented Rust binary
+3. **Coverage generation**: `cargo llvm-cov report --lcov` captures profiling data
+4. **Conversion**: LCOV → Istanbul JSON for merge
+
+This provides realistic backend coverage under actual usage patterns, not just unit test scenarios.
+
+## Troubleshooting
+
+### "Coverage below thresholds"
+1. Run `yarn test`
+2. Open `coverage/index.html`
+3. Look for uncovered files/branches
+4. Add tests or adjust thresholds in `scripts/test/check-coverage.js`
+
+### E2E Rust coverage not generated
+- Ensure `cargo-llvm-cov` installed: `cargo install cargo-llvm-cov`
+- Check E2E tests actually exercised Rust backend (not mocked)
+- Verify `coverage/rust-lcov-e2e.info` has reasonable size
+
+### Lower coverage than expected
+- Ensure all test modes ran (check for all 4 JSON files in `coverage/`)
+- Review merge-coverage.mjs console output for warnings
+- Check that no test suites failed silently
+
 ## Tips
 
-- Run `yarn test` before submitting PRs to check full coverage (unit + E2E)
+- Run `yarn test` before submitting PRs (ensures full coverage across all layers)
 - Use HTML report to identify untested code paths
 - E2E tests supplement unit tests; focus on user-visible behavior
-- Backend tests validate logic not exposed through UI
+- Rust unit tests validate logic; Rust E2E validates integration with frontend

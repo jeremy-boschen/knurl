@@ -75,20 +75,12 @@ const mergeCoverageData = (baseMap, newCoverage) => {
   })
 }
 
-// Load unit test coverage if it exists
-// Try unit-coverage.json first (renamed from coverage-final.json), fall back to coverage-final.json
-let unitCoveragePath = path.join(projectRoot, 'coverage', 'unit-coverage.json')
-let unitCoverageSource = 'unit-coverage.json'
-
-if (!fs.existsSync(unitCoveragePath)) {
-  unitCoveragePath = path.join(projectRoot, 'coverage', 'coverage-final.json')
-  unitCoverageSource = 'coverage-final.json'
-}
-
+// Load unit test coverage from Vitest output
+const unitCoveragePath = path.join(projectRoot, 'coverage', 'coverage-final.json')
 if (fs.existsSync(unitCoveragePath)) {
   try {
     const unitCoverage = JSON.parse(fs.readFileSync(unitCoveragePath, 'utf-8'))
-    map.merge(unitCoverage)
+    mergeCoverageData(map, unitCoverage)
     mergedCount++
     console.log(`✓ Loaded unit test coverage from ${path.relative(projectRoot, unitCoveragePath)}`)
   } catch (error) {
@@ -117,7 +109,7 @@ const rustE2eCoveragePath = path.join(projectRoot, 'coverage', 'rust-e2e-coverag
 if (fs.existsSync(rustCoveragePath)) {
   try {
     const rustCoverage = JSON.parse(fs.readFileSync(rustCoveragePath, 'utf-8'))
-    map.merge(rustCoverage)
+    mergeCoverageData(map, rustCoverage)
     mergedCount++
     console.log(`✓ Loaded Rust unit test coverage from ${path.relative(projectRoot, rustCoveragePath)}`)
   } catch (error) {
@@ -145,9 +137,10 @@ if (fs.existsSync(rustE2eCoveragePath)) {
 if (mergedCount === 0) {
   console.warn('⚠ No coverage files found to merge')
   console.warn(`  Expected paths:`)
-  console.warn(`  - coverage/unit-coverage.json`)
-  console.warn(`  - coverage/e2e-coverage.json`)
-  console.warn(`  - coverage/rust-coverage.json`)
+  console.warn(`  - coverage/coverage-final.json (frontend unit tests)`)
+  console.warn(`  - coverage/e2e-coverage.json (frontend E2E tests)`)
+  console.warn(`  - coverage/rust-coverage.json (Rust unit tests)`)
+  console.warn(`  - coverage/rust-e2e-coverage.json (Rust E2E tests)`)
   process.exit(0)
 }
 
