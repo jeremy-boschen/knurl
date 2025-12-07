@@ -140,8 +140,8 @@ fi
 if [ "$RUN_UNIT" = true ]; then
   echo ""
   echo "1️⃣  Running frontend unit tests..."
-  # Note: Vitest filtering via CLI not currently supported, all unit tests run
-  # E2E and Rust tests can be filtered via --grep
+  # Note: Vitest testNamePattern requires full test names, not regex patterns
+  # For now, all UI unit tests run when using --grep
   VITEST_COVERAGE=true node scripts/test/run-vitest-groups.mjs --run
 
   # Rename frontend coverage files to ui-unit-*
