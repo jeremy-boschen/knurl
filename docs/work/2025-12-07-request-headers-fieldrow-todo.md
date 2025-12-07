@@ -1,0 +1,1 @@
+- Update `src-ui/src/components/request/editor/request-headers-panel.tsx` to use the `FieldRow` component for its rows, matching how `src-ui/src/components/request/editor/request-parameters-panel.tsx` does.

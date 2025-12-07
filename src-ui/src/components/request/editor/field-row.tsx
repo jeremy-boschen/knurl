@@ -32,6 +32,17 @@ export type FieldRowProps = {
   hasUnsavedEnabled?: boolean
   hasUnsavedName?: boolean
   hasUnsavedSecure?: boolean
+  dataTestIds?: {
+    row?: string
+    enabled?: string
+    name?: string
+    value?: string
+    menuButton?: string
+    menuSensitive?: string
+    menuMoveUp?: string
+    menuMoveDown?: string
+    menuDelete?: string
+  }
 }
 
 function FieldRowComponent({
@@ -51,20 +62,21 @@ function FieldRowComponent({
   hasUnsavedEnabled = false,
   hasUnsavedName = false,
   hasUnsavedSecure = false,
+  dataTestIds,
 }: FieldRowProps) {
   const hasMenuActions = onSecureChange || onMoveUp || onMoveDown
 
   return (
     <div
       className="grid grid-cols-[1.5rem_minmax(0,6fr)_minmax(0,8fr)_2rem] items-center gap-3 py-1 first:pt-0"
-      data-test-id="field-row"
+      data-test-id={dataTestIds?.row ?? "field-row"}
     >
       <div className="flex h-9 items-center">
         <Checkbox
           checked={enabled}
           className={cn(hasUnsavedEnabled && "unsaved-changes")}
           onCheckedChange={(checked) => onEnabledChange(!!checked)}
-          data-test-id="field-row:enabled-checkbox"
+          data-test-id={dataTestIds?.enabled ?? "field-row:enabled-checkbox"}
         />
       </div>
       <div>
@@ -74,15 +86,26 @@ function FieldRowComponent({
           value={nameValue}
           onChange={(e) => onNameChange(e.target.value)}
           className={cn("font-mono", hasUnsavedName && "unsaved-changes")}
-          data-test-id="field-row:name-input"
+          data-test-id={dataTestIds?.name ?? "field-row:name-input"}
         />
       </div>
-      <div className="min-w-0">{valueInputProps ? <Input {...valueInputProps} /> : valueSlot}</div>
+      <div className="min-w-0">
+        {valueInputProps ? (
+          <Input {...valueInputProps} data-test-id={dataTestIds?.value ?? valueInputProps["data-test-id"]} />
+        ) : (
+          valueSlot
+        )}
+      </div>
       <div className="flex justify-center">
         {hasMenuActions ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-8 w-8 p-0" data-test-id="field-row:menu-button">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 p-0"
+                data-test-id={dataTestIds?.menuButton ?? "field-row:menu-button"}
+              >
                 <EllipsisIcon className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -93,7 +116,7 @@ function FieldRowComponent({
                     checked={secure}
                     onCheckedChange={onSecureChange}
                     className={cn(hasUnsavedSecure && "unsaved-changes")}
-                    data-test-id="field-row:menu-sensitive"
+                    data-test-id={dataTestIds?.menuSensitive ?? "field-row:menu-sensitive"}
                   >
                     Sensitive
                   </DropdownMenuCheckboxItem>
@@ -108,7 +131,7 @@ function FieldRowComponent({
                       onMoveUp?.()
                     }}
                     disabled={!canMoveUp}
-                    data-test-id="field-row:menu-move-up"
+                    data-test-id={dataTestIds?.menuMoveUp ?? "field-row:menu-move-up"}
                   >
                     <ChevronUpIcon className="mr-2 h-4 w-4" />
                     Move Up
@@ -119,7 +142,7 @@ function FieldRowComponent({
                       onMoveDown?.()
                     }}
                     disabled={!canMoveDown}
-                    data-test-id="field-row:menu-move-down"
+                    data-test-id={dataTestIds?.menuMoveDown ?? "field-row:menu-move-down"}
                   >
                     <ChevronDownIcon className="mr-2 h-4 w-4" />
                     Move Down
@@ -128,17 +151,17 @@ function FieldRowComponent({
                 </>
               )}
               <DropdownMenuItem
-                onClick={(e) => {
-                  e.preventDefault()
-                  onDelete()
-                }}
-                className="text-destructive focus:text-destructive"
-                data-test-id="field-row:menu-delete"
-              >
-                <Trash2Icon className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+                  onClick={(e) => {
+                    e.preventDefault()
+                    onDelete()
+                  }}
+                  className="text-destructive focus:text-destructive"
+                  data-test-id={dataTestIds?.menuDelete ?? "field-row:menu-delete"}
+                >
+                  <Trash2Icon className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
           </DropdownMenu>
         ) : (
           <div className="w-8" />
