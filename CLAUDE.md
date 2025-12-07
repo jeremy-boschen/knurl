@@ -238,3 +238,4 @@ When working with dependencies, libraries, or external APIs:
 - Release process: `scripts/update-version.mjs`
 - Active workstreams: `docs/plans/`
 - Commit style: Conventional Commits (`feat:`, `fix:`, `chore:`)
+- When running tests, always tee the output to a temporary log file

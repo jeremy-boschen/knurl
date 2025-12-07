@@ -33,11 +33,11 @@ const ESCAPE_KEY = "Escape"
  * Default timing configuration for waitFor operations:
  * - initialDelay: time to wait before starting to poll (allows UI to render)
  * - pollingInterval: how frequently to check once polling starts
- *   Note: 100ms is a good balance. Too aggressive (50ms) can starve the browser event loop.
+ *   Note: 200ms minimum. Too aggressive polling can starve the browser event loop.
  */
 const DEFAULT_WAIT_CONFIG = {
   initialDelay: 0,
-  pollingInterval: 100,
+  pollingInterval: 200,
 }
 
 /**
@@ -64,7 +64,7 @@ async function waitForAppReady(timeout = DEFAULT_TIMEOUT): Promise<void> {
     },
     {
       timeout: Math.min(timeout, 10000),
-      interval: 100,
+      interval: 200,
       timeoutMsg: "App did not load in time",
     },
   )
@@ -202,7 +202,7 @@ export async function navigateTo(path: string): Promise<void> {
     },
     {
       timeout: DEFAULT_TIMEOUT,
-      interval: 100,
+      interval: 200,
       timeoutMsg: `Failed to navigate to ${path}`,
     },
   )
@@ -237,7 +237,7 @@ export async function resetOverlays(attempts = 2): Promise<void> {
           },
           {
             timeout: 2000,
-            interval: 50,
+            interval: 200,
             timeoutMsg: "Overlay did not close after pressing Escape",
           },
         )
@@ -270,7 +270,7 @@ export async function ensureWorkspaceReady(): Promise<void> {
     },
     {
       timeout: DEFAULT_TIMEOUT,
-      interval: 100,
+      interval: 200,
       timeoutMsg: "Workspace close button did not appear - app hydration incomplete",
     },
   )
@@ -327,11 +327,25 @@ export async function resetAppState(): Promise<void> {
  * await setInputText("name-field", "John Doe")
  */
 export async function setInputText(testId: string, value: string): Promise<void> {
+  // Get element and wait for it to be displayed
   const element = await getElementByTestId(testId)
   await element.waitForDisplayed({ timeout: DEFAULT_TIMEOUT })
+
+  // Add a small pause to let React finish rendering the element
+  await browser.pause(100)
+
+  // Click to focus the element
   await element.click()
-  await element.setValue(value)
+
+  // Clear existing value first to ensure clean state
+  await element.clearValue()
+
+  // Use addValue which properly triggers React onChange events
+  // for controlled inputs (unlike setValue which just sets the DOM property)
+  await element.addValue(value)
+
   // Wait for the value to be set on the element (for controlled inputs)
+  // Use a longer interval since addValue() sends characters one-by-one and React needs time to process each one
   await browser.waitUntil(
     async () => {
       const val = await element.getValue()
@@ -339,7 +353,7 @@ export async function setInputText(testId: string, value: string): Promise<void>
     },
     {
       timeout: DEFAULT_TIMEOUT,
-      interval: 50,
+      interval: 200,
       timeoutMsg: `Input did not update to "${value}"`,
     },
   )
@@ -404,7 +418,7 @@ export async function waitForSendButtonReady(timeout = DEFAULT_TIMEOUT): Promise
     },
     {
       timeout,
-      interval: 100,
+      interval: 200,
       timeoutMsg: "Send button did not become ready (request may still be pending)",
     },
   )
@@ -443,7 +457,7 @@ export async function waitForTestIdToDisappear(testId: string, timeout = DEFAULT
   const locator = `[data-test-id="${testId}"]`
   await browser.waitUntil(async () => !(await $(locator).isExisting()), {
     timeout,
-    interval: 100,
+    interval: 200,
     timeoutMsg: `Element ${testId} remained visible`,
   })
 }
@@ -492,7 +506,7 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
     },
     {
       timeout: DEFAULT_TIMEOUT,
-      interval: 50,
+      interval: 200,
       timeoutMsg: `Trigger data-state did not change to "open" after clicking`,
     },
   )
@@ -509,7 +523,7 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
     },
     {
       timeout: DEFAULT_TIMEOUT,
-      interval: 100,
+      interval: 200,
       timeoutMsg: `Radix Select option "${optionTestId}" did not appear within ${DEFAULT_TIMEOUT}ms after opening trigger "${selectTriggerTestId}"`,
     },
   )
@@ -532,7 +546,7 @@ export async function selectOptionByTestId(selectTriggerTestId: string, optionTe
     },
     {
       timeout: DEFAULT_TIMEOUT,
-      interval: 50,
+      interval: 200,
       timeoutMsg: `Trigger data-state did not change to "closed" after selecting option`,
     },
   )
@@ -568,7 +582,7 @@ export async function closeApplicationWindow(timeout = DEFAULT_TIMEOUT): Promise
       }),
     {
       timeout,
-      interval: 100,
+      interval: 200,
       timeoutMsg: "Close button not available",
     },
   )
@@ -608,7 +622,7 @@ export async function closeApplicationWindow(timeout = DEFAULT_TIMEOUT): Promise
     },
     {
       timeout,
-      interval: 100,
+      interval: 200,
       timeoutMsg: "Application window did not close",
     },
   )
@@ -669,7 +683,7 @@ export async function ensureCollectionRowVisible(
       ),
     {
       timeout,
-      interval: 150,
+      interval: 200,
       timeoutMsg: `Collection row ${collectionId} not visible`,
     },
   )
@@ -715,7 +729,7 @@ export async function openCollectionMenu(collectionId: string): Promise<void> {
     },
     {
       timeout: 5000,
-      interval: 100,
+      interval: 200,
       timeoutMsg: "Context menu did not appear after right-click",
     },
   )
@@ -749,7 +763,7 @@ export async function selectMenuActionById(actionId: string, options: { triggerT
     },
     {
       timeout: 20000,
-      interval: 100,
+      interval: 200,
       timeoutMsg: `Menu action ${actionId} did not appear after opening menu`,
     },
   )
@@ -773,7 +787,7 @@ export async function selectMenuActionById(actionId: string, options: { triggerT
     },
     {
       timeout: 5000,
-      interval: 100,
+      interval: 200,
       timeoutMsg: `Menu did not close after selecting ${actionId}`,
     },
   )
@@ -800,7 +814,7 @@ export async function ensureSidebarExpanded(timeout = 5000): Promise<void> {
           },
           {
             timeout,
-            interval: 50,
+            interval: 200,
             timeoutMsg: "Sidebar did not expand in time",
           },
         )
@@ -882,7 +896,7 @@ export async function createCollection(name: string): Promise<string> {
     },
     {
       timeout: 20000,
-      interval: 150,
+      interval: 200,
       timeoutMsg: "New collection row did not appear in sidebar",
     },
   )
@@ -976,7 +990,7 @@ export async function waitForCollectionIdByName(name: string, timeout = 25000): 
     },
     {
       timeout,
-      interval: 150,
+      interval: 200,
       timeoutMsg: `Collection "${name}" not found in sidebar tree after scrolling`,
     },
   )
@@ -1019,7 +1033,7 @@ export async function clearSidebarSearch(timeout = 3000): Promise<void> {
           return true
         }
       },
-      { timeout, interval: 100, timeoutMsg: "Search input did not clear" },
+      { timeout, interval: 200, timeoutMsg: "Search input did not clear" },
     )
   } catch {
     // swallow cleanup errors; not fatal
@@ -1092,7 +1106,7 @@ export async function waitForResponseContaining(searchText: string, timeout = 50
       const text = await getResponseBodyText()
       return text.length > 0
     },
-    { timeout, interval: 100, timeoutMsg: `Response body did not appear within ${timeout}ms` },
+    { timeout, interval: 200, timeoutMsg: `Response body did not appear within ${timeout}ms` },
   )
 
   // Then extract once and verify content
@@ -1227,7 +1241,7 @@ export async function selectDropdownMenuItemByTestId(triggerTestId: string, item
     },
     {
       timeout: DEFAULT_TIMEOUT,
-      interval: 100,
+      interval: 200,
       timeoutMsg: `Radix dropdown menu item "${itemTestId}" did not appear within ${DEFAULT_TIMEOUT}ms after opening trigger "${triggerTestId}"`,
     },
   )

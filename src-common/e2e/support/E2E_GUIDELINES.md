@@ -18,22 +18,22 @@ The E2E test suite uses a shared `tauri-driver` instance across all test files. 
 
 #### Aggressive Polling Intervals
 
-All WebdriverIO wait operations use a 50ms polling interval (vs default 500ms):
+All WebdriverIO wait operations use a 200ms polling interval minimum (vs default 500ms):
 
 ```typescript
-// Fast element detection
+// Element detection with reasonable polling
 const element = await getElementByTestId('test-id', 15000, {
-  pollingInterval: 50
+  pollingInterval: 200
 })
 
-// Fast UI state checks
+// UI state checks with reasonable polling
 await browser.waitUntil(
   async () => document.querySelector('[data-test-id="ready"]'),
-  { timeout: 10000, interval: 50 }
+  { timeout: 10000, interval: 200 }
 )
 ```
 
-This provides ~10x faster detection when UI is ready.
+200ms prevents browser event loop starvation while still providing reasonable responsiveness.
 
 #### Test Settings Fixture
 
