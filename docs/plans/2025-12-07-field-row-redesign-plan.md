@@ -1,0 +1,3 @@
+- completed: Redesign FieldRow props to simplify: use `fieldKey`, `dataTestIdPrefix`, `field`, `unsaved`, and compact handlers.
+- completed: Update all callers (headers panel, parameters panel, body form items) to new FieldRow API and data-test-id scheme `{prefix}:{part}:{key}`.
+- completed: Update affected tests (headers, parameters, body panel) to new data-test-id scheme and behavior.

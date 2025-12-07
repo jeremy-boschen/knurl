@@ -4,7 +4,6 @@ import { ListIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
-import { cn } from "@/lib"
 import { onProfilerRender } from "@/lib/profiler-bridge"
 import { useRequestHeaders } from "@/state"
 import { FieldRow } from "./field-row"
@@ -95,36 +94,34 @@ function RequestHeadersPanelComponent({ tabId }: RequestHeadersPanelProps) {
             return (
               <FieldRow
                 key={header.id}
-                id={header.id}
-                dataTestPrefix="request-headers-panel"
-                rowSuffix="header-row"
-                enabled={header.enabled}
-                onEnabledChange={(enabled) => handleHeaderChange(header.id, { enabled })}
-                nameValue={header.name}
-                onNameChange={(name) => handleHeaderChange(header.id, { name })}
-                valueInputProps={{
-                  type: header.secure ? "password" : "text",
-                  placeholder: "Value",
+                fieldKey={header.id}
+                dataTestIdPrefix="request-headers-panel"
+                field={{
+                  enabled: header.enabled,
+                  name: header.name,
                   value: header.value,
-                  onChange: (e) => handleHeaderChange(header.id, { value: e.target.value }),
-                  className: cn("font-mono", original[header.id]?.value !== header.value && "unsaved-changes"),
+                  secure: header.secure,
                 }}
-                secure={header.secure}
-                onSecureChange={(secure) => handleHeaderChange(header.id, { secure })}
+                unsaved={{
+                  enabled: original[header.id]?.enabled !== header.enabled,
+                  name: original[header.id]?.name !== header.name,
+                  value: original[header.id]?.value !== header.value,
+                  secure: original[header.id]?.secure !== header.secure,
+                }}
+                onChange={(changes) => handleHeaderChange(header.id, changes)}
                 onDelete={() => actions.removeHeader(header.id)}
                 onMoveUp={() => handleHeaderMoveUp(header.id)}
                 onMoveDown={() => handleHeaderMoveDown(header.id)}
                 canMoveUp={headerIndex > 0}
                 canMoveDown={headerIndex < headerIds.length - 1}
-                hasUnsavedEnabled={original[header.id]?.enabled !== header.enabled}
-                hasUnsavedName={original[header.id]?.name !== header.name}
-                hasUnsavedSecure={original[header.id]?.secure !== header.secure}
               />
             )
           })}
 
           {Object.keys(headers ?? {}).length === 0 && (
-            <EmptyState message='No headers added yet. Click "Add Header" to get started.' />
+            <div data-test-id="request-headers-panel:empty-state">
+              <EmptyState message='No headers added yet. Click "Add Header" to get started.' />
+            </div>
           )}
         </div>
       </div>

@@ -6,7 +6,6 @@ import { CodeEditor } from "@/components/editor/"
 import type { CodeEditorHandle } from "@/components/editor/code-editor"
 import { Button } from "@/components/ui/button"
 import { FileInput } from "@/components/ui/knurl"
-import { Input } from "@/components/ui/knurl/input"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
 import { cn } from "@/lib"
 import { onProfilerRender } from "@/lib/profiler-bridge"
@@ -359,10 +358,20 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
                   return (
                     <FieldRow
                       key={item.id}
-                      enabled={item.enabled}
-                      onEnabledChange={(enabled) => actions.updateFormItem(item.id, { enabled })}
-                      nameValue={item.key}
-                      onNameChange={(key) => actions.updateFormItem(item.id, { key })}
+                      fieldKey={item.id}
+                      dataTestIdPrefix="request-body-panel:form"
+                      field={{
+                        enabled: item.enabled,
+                        name: item.key,
+                        value: item.value,
+                        secure: item.kind === "text" ? item.secure : undefined,
+                      }}
+                      unsaved={{
+                        enabled: original?.formData?.[item.id]?.enabled !== body?.formData?.[item.id]?.enabled,
+                        name: original?.formData?.[item.id]?.key !== body?.formData?.[item.id]?.key,
+                        value: original?.formData?.[item.id]?.value !== body?.formData?.[item.id]?.value,
+                        secure: original?.formData?.[item.id]?.secure !== body?.formData?.[item.id]?.secure,
+                      }}
                       valueSlot={
                         item.kind === "file" ? (
                           <FileInput
@@ -390,33 +399,27 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
                             }
                             data-test-id={`request-body-panel:form-file-input:${item.id}`}
                           />
-                        ) : (
-                          <Input
-                            type={item.secure ? "password" : "text"}
-                            placeholder="Value"
-                            value={item.value}
-                            onChange={(e) => actions.updateFormItem(item.id, { value: e.target.value })}
-                            className={cn(
-                              "font-mono",
-                              original?.formData?.[item.id]?.value !== body?.formData?.[item.id]?.value &&
-                                "unsaved-changes",
-                            )}
-                            data-test-id={`request-body-panel:form-value-input:${item.id}`}
-                          />
-                        )
+                        ) : undefined
                       }
+                      onChange={(changes) => {
+                        if ("enabled" in changes) {
+                          actions.updateFormItem(item.id, { enabled: !!changes.enabled })
+                        }
+                        if ("name" in changes && changes.name !== undefined) {
+                          actions.updateFormItem(item.id, { key: changes.name })
+                        }
+                        if ("value" in changes && changes.value !== undefined) {
+                          actions.updateFormItem(item.id, { value: changes.value })
+                        }
+                        if ("secure" in changes && changes.secure !== undefined) {
+                          actions.updateFormItem(item.id, { secure: !!changes.secure })
+                        }
+                      }}
                       onDelete={() => actions.removeFormItem(item.id)}
-                      secure={item.kind === "text" ? item.secure : undefined}
-                      onSecureChange={
-                        item.kind === "text" ? (secure) => actions.updateFormItem(item.id, { secure }) : undefined
-                      }
                       onMoveUp={() => handleFormItemMoveUp(item.id)}
                       onMoveDown={() => handleFormItemMoveDown(item.id)}
                       canMoveUp={itemIndex > 0}
                       canMoveDown={itemIndex < itemIds.length - 1}
-                      hasUnsavedEnabled={original?.formData?.[item.id]?.enabled !== body?.formData?.[item.id]?.enabled}
-                      hasUnsavedName={original?.formData?.[item.id]?.key !== body?.formData?.[item.id]?.key}
-                      hasUnsavedSecure={original?.formData?.[item.id]?.secure !== body?.formData?.[item.id]?.secure}
                     />
                   )
                 })}

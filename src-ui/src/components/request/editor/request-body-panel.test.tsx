@@ -184,7 +184,7 @@ describe("RequestBodyPanel", () => {
 
     renderPanel()
 
-    const valueInput = getByDataId("request-body-panel:form-value-input:f1") as HTMLInputElement
+    const valueInput = getByDataId("request-body-panel:form:value:f1") as HTMLInputElement
     fireEvent.change(valueInput, { target: { value: "baz" } })
     expect(actions.updateFormItem).toHaveBeenCalledWith("f1", { value: "baz" })
   })
