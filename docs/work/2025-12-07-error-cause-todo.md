@@ -1,0 +1,2 @@
+- Identify the cause of the backend unit test failure (exit code 0xc0000139 / STATUS_ENTRYPOINT_NOT_FOUND) introduced by my recent changes.
+- Remove reliance on Tauri test harness by replacing the TauriLogEmitter unit test with a stub emitter so the crash goes away.

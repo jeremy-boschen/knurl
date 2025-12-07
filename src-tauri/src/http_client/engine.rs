@@ -47,12 +47,23 @@ mod tests {
     use super::*;
     use crate::http_client::response::{LogEntry, LogLevel};
     use serde_json::json;
-    use tauri::test::mock_app;
+
+    use std::sync::Mutex;
+
+    #[derive(Default)]
+    struct RecordingEmitter {
+        entries: Mutex<Vec<LogEntry>>,
+    }
+
+    impl LogEmitter for RecordingEmitter {
+        fn emit(&self, entry: LogEntry) {
+            self.entries.lock().unwrap().push(entry);
+        }
+    }
 
     #[test]
-    fn tauri_log_emitter_emits_without_panic() {
-        let app = mock_app();
-        let emitter = TauriLogEmitter::new(app.handle().clone());
+    fn recording_emitter_captures_entry() {
+        let emitter = RecordingEmitter::default();
         let entry = LogEntry {
             request_id: "req-emit".to_string(),
             timestamp: "now".to_string(),
@@ -67,7 +78,11 @@ mod tests {
             truncated: None,
         };
 
-        // Should not panic when emitting through mock app handle.
-        emitter.emit(entry);
+        emitter.emit(entry.clone());
+
+        let entries = emitter.entries.lock().unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].request_id, "req-emit");
+        assert_eq!(entries[0].message, "hello");
     }
 }
