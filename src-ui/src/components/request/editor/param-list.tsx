@@ -24,14 +24,7 @@ export function ParamList({ tabId, kind, items, original, emptyMessage, emptySta
           return null
         }
         return (
-          <ParamRow
-            key={item.id}
-            tabId={tabId}
-            kind={kind}
-            param={item}
-            original={original?.[id]}
-            orderIds={order}
-          />
+          <ParamRow key={item.id} tabId={tabId} kind={kind} param={item} original={original?.[id]} orderIds={order} />
         )
       })}
 

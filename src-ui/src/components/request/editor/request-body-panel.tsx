@@ -322,7 +322,7 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
                   } catch {
                     // noop
                   }
-              }}
+                }}
                 data-test-id="request-body-panel:form-section"
               >
                 <FormFieldList
