@@ -40,6 +40,9 @@ function extractMetrics(coberturaXml) {
   const lineRate = parseFloat(attrs['line-rate'] || 0)
   const branchRate = parseFloat(attrs['branch-rate'] || 0)
 
+  // Skip if metrics are NaN or zero (indicates invalid/empty coverage data)
+  if (isNaN(lineRate) || lineRate === 0) return null
+
   return {
     lines: lineRate,
     branches: branchRate,
@@ -53,7 +56,10 @@ async function main() {
 
   const files = {
     uiUnit: path.join(projectRoot, 'coverage', 'ui-unit-coverage.xml'),
-    uiE2e: path.join(projectRoot, 'coverage', 'ui-e2e-coverage.xml'),
+    // E2E coverage conversion to XML may not work, try cobertura-e2e.xml as fallback
+    uiE2e: fs.existsSync(path.join(projectRoot, 'coverage', 'ui-e2e-coverage.xml'))
+      ? path.join(projectRoot, 'coverage', 'ui-e2e-coverage.xml')
+      : path.join(projectRoot, 'coverage', 'cobertura-e2e.xml'),
     rustUnit: path.join(projectRoot, 'coverage', 'rust-unit-coverage.xml'),
     rustE2e: path.join(projectRoot, 'coverage', 'rust-e2e-coverage.xml')
   }
@@ -84,6 +90,7 @@ async function main() {
   if (rustE2eMetrics) console.log(`  Rust E2E: ${(rustE2eMetrics.lines * 100).toFixed(2)}% lines, ${(rustE2eMetrics.branches * 100).toFixed(2)}% branches`)
 
   // Merge all metrics - use max for each type to show "covered across any test"
+  // Note: Rust doesn't support branch coverage instrumentation, so exclude it from branch calculation
   const merged = {
     lines: Math.max(
       uiUnitMetrics?.lines || 0,
@@ -103,11 +110,10 @@ async function main() {
       rustUnitMetrics?.functions || 0,
       rustE2eMetrics?.functions || 0
     ),
+    // Branch coverage: only use UI metrics (Rust doesn't support branch instrumentation)
     branches: Math.max(
       uiUnitMetrics?.branches || 0,
-      uiE2eMetrics?.branches || 0,
-      rustUnitMetrics?.branches || 0,
-      rustE2eMetrics?.branches || 0
+      uiE2eMetrics?.branches || 0
     )
   }
 
