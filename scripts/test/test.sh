@@ -20,11 +20,8 @@ generate_coverage_report() {
   echo ""
   echo "GENERATING COVERAGE REPORT..."
 
-  # 1. Merge Istanbul JSONs (Frontend Unit + Rust Unit + E2E Aggregated)
+  # Merge coverage: handles both Istanbul JSON and Cobertura XML merging
   node scripts/test/merge-coverage.mjs
-
-  # 2. Merge Cobertura XMLs (Frontend + Rust + E2E) - useful for CI
-  node scripts/test/merge-cobertura.mjs
 
   echo ""
   echo "CHECKING THRESHOLDS..."
