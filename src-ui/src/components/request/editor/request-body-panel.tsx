@@ -14,7 +14,7 @@ import { generateUniqueId } from "@/lib/utils"
 import { useRequestBody, useRequestTab } from "@/state"
 import { CodeLanguages, type FormField, type RequestBodyData, type RequestHeader, type RequestState } from "@/types"
 import { EmptyState } from "./empty-state"
-import { FormFieldRow } from "./form-field-row"
+import { FormFieldList } from "./form-field-list"
 import { SectionHeader } from "./section-header"
 
 export function guessContentTypeByExt(name: string | undefined): string | undefined {
@@ -322,23 +322,15 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
                   } catch {
                     // noop
                   }
-                }}
+              }}
                 data-test-id="request-body-panel:form-section"
               >
-                {Object.values(body.formData ?? {}).map((item) => (
-                  <FormFieldRow
-                    key={item.id}
-                    tabId={tabId}
-                    field={item}
-                    original={original?.formData?.[item.id]}
-                    orderIds={Object.keys(body.formData ?? {})}
-                    onGuessContentType={guessContentTypeByExt}
-                  />
-                ))}
-
-                {Object.keys(body.formData ?? {}).length === 0 && (
-                  <EmptyState message="No form items added yet. Click 'Add Form Item' to get started." />
-                )}
+                <FormFieldList
+                  tabId={tabId}
+                  formData={body.formData}
+                  originalFormData={original?.formData}
+                  onGuessContentType={guessContentTypeByExt}
+                />
               </section>
             </div>
           )}

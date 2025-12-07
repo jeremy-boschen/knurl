@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
 import { onProfilerRender } from "@/lib/profiler-bridge"
 import { useRequestHeaders } from "@/state"
-import { EmptyState } from "./empty-state"
-import { ParamRow } from "./param-row"
+import { ParamList } from "./param-list"
 
 export type RequestHeadersPanelProps = {
   tabId: string
@@ -41,31 +40,14 @@ function RequestHeadersPanelComponent({ tabId }: RequestHeadersPanelProps) {
           </Tooltip>
         </div>
 
-        <div className="flex flex-col gap-1 divide-y divide-border/10">
-          {Object.keys(headers ?? {}).map((headerId) => {
-            const header = headers?.[headerId]
-            if (!header) {
-              return null
-            }
-            const orderIds = Object.keys(headers ?? {})
-            return (
-              <ParamRow
-                key={header.id}
-                tabId={tabId}
-                kind="header"
-                param={header}
-                original={original[header.id]}
-                orderIds={orderIds}
-              />
-            )
-          })}
-
-          {Object.keys(headers ?? {}).length === 0 && (
-            <div data-test-id="request-headers-panel:empty-state">
-              <EmptyState message='No headers added yet. Click "Add Header" to get started.' />
-            </div>
-          )}
-        </div>
+        <ParamList
+          tabId={tabId}
+          kind="header"
+          items={headers}
+          original={original}
+          emptyMessage='No headers added yet. Click "Add Header" to get started.'
+          emptyStateTestId="request-headers-panel:empty-state"
+        />
       </div>
     </Profiler>
   )

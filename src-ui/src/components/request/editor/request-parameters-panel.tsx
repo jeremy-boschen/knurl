@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
 import { onProfilerRender } from "@/lib/profiler-bridge"
 import { useRequestParameters } from "@/state"
-import { ParamRow } from "./param-row"
-import { EmptyState } from "./empty-state"
+import { ParamList } from "./param-list"
 
 export type RequestParametersPanelProps = {
   tabId: string
@@ -18,10 +17,6 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
     state: { queryParams, pathParams, cookieParams, original },
     actions,
   } = useRequestParameters(tabId)
-
-  const pathOrder = Object.keys(pathParams ?? {})
-  const queryOrder = Object.keys(queryParams ?? {})
-  const cookieOrder = Object.keys(cookieParams ?? {})
 
   return (
     <Profiler id="RequestParametersPanel" onRender={onProfilerRender}>
@@ -47,28 +42,13 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
             </Tooltip>
           </div>
 
-          <div className="flex flex-col gap-3 divide-y divide-border/10">
-            {pathOrder.map((paramId) => {
-              const pathParam = pathParams?.[paramId]
-              if (!pathParam) {
-                return null
-              }
-              return (
-                <ParamRow
-                  key={pathParam.id}
-                  tabId={tabId}
-                  kind="path"
-                  param={pathParam}
-                  original={original.pathParams?.[pathParam.id]}
-                  orderIds={pathOrder}
-                />
-              )
-            })}
-
-            {pathOrder.length === 0 && (
-              <EmptyState message="No path parameters added yet. Path parameters replace placeholders in the URL (e.g., /users/:id)." />
-            )}
-          </div>
+          <ParamList
+            tabId={tabId}
+            kind="path"
+            items={pathParams}
+            original={original.pathParams}
+            emptyMessage="No path parameters added yet. Path parameters replace placeholders in the URL (e.g., /users/:id)."
+          />
         </div>
 
         {/* Query Parameters Section */}
@@ -92,28 +72,13 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
             </Tooltip>
           </div>
 
-          <div className="flex flex-col gap-3 divide-y divide-border/10">
-            {queryOrder.map((paramId) => {
-              const param = queryParams?.[paramId]
-              if (!param) {
-                return null
-              }
-              return (
-                <ParamRow
-                  key={param.id}
-                  tabId={tabId}
-                  kind="query"
-                  param={param}
-                  original={original.queryParams?.[param.id]}
-                  orderIds={queryOrder}
-                />
-              )
-            })}
-
-            {queryOrder.length === 0 && (
-              <EmptyState message="No query parameters added yet. Query parameters are appended to the URL (e.g., ?name=value)." />
-            )}
-          </div>
+          <ParamList
+            tabId={tabId}
+            kind="query"
+            items={queryParams}
+            original={original.queryParams}
+            emptyMessage="No query parameters added yet. Query parameters are appended to the URL (e.g., ?name=value)."
+          />
         </div>
 
         {/* Cookies Section (render only when provided to keep tests deterministic) */}
@@ -138,26 +103,13 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
               </Tooltip>
             </div>
 
-            <div className="flex flex-col gap-3 divide-y divide-border/10">
-              {cookieOrder.map((paramId) => {
-                const param = cookieParams?.[paramId]
-                if (!param) {
-                  return null
-                }
-                return (
-                  <ParamRow
-                    key={param.id}
-                    tabId={tabId}
-                    kind="cookie"
-                    param={param}
-                    original={original.cookieParams?.[param.id]}
-                    orderIds={cookieOrder}
-                  />
-                )
-              })}
-
-              {cookieOrder.length === 0 && <EmptyState message="No cookies added yet." />}
-            </div>
+            <ParamList
+              tabId={tabId}
+              kind="cookie"
+              items={cookieParams}
+              original={original.cookieParams}
+              emptyMessage="No cookies added yet."
+            />
           </div>
         )}
       </div>

@@ -5,3 +5,4 @@
 - Update any e2e specs in src-common/e2e/specs/ impacted by selector/data-test-id changes.
 - Run yarn test:e2e --spec requests.e2e.ts and report results.
 - Commit the work after tests pass.
+- Extract shared ParamList and FormFieldList components to remove duplicate looping/render logic in panels.
