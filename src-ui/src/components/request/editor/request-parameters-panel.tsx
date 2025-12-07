@@ -156,9 +156,7 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
                 )
               })}
 
-              {cookieOrder.length === 0 && (
-                <EmptyState message="No cookies added yet." />
-              )}
+              {cookieOrder.length === 0 && <EmptyState message="No cookies added yet." />}
             </div>
           </div>
         )}

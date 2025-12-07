@@ -49,14 +49,14 @@ function RequestHeadersPanelComponent({ tabId }: RequestHeadersPanelProps) {
             }
             const orderIds = Object.keys(headers ?? {})
             return (
-            <ParamRow
-              key={header.id}
-              tabId={tabId}
-              kind="header"
-              param={header}
-              original={original[header.id]}
-              orderIds={orderIds}
-            />
+              <ParamRow
+                key={header.id}
+                tabId={tabId}
+                kind="header"
+                param={header}
+                original={original[header.id]}
+                orderIds={orderIds}
+              />
             )
           })}
 
