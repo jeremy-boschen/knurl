@@ -2445,19 +2445,24 @@ mod tests {
         assert_eq!(captured.len(), 1);
         let details = captured[0].details.as_ref().unwrap();
         assert_eq!(details.get("method").and_then(|v| v.as_str()), Some("POST"));
-        assert!(details
-            .get("headers")
-            .and_then(|v| v.as_array())
-            .map(|arr| {
-                arr.iter()
-                    .any(|entry| entry.get("name").and_then(|n| n.as_str()) == Some("Authorization"))
-            })
-            .unwrap_or(false));
-        assert!(details
-            .get("body")
-            .and_then(|v| v.as_array())
-            .map(|arr| !arr.is_empty())
-            .unwrap_or(false));
+        assert!(
+            details
+                .get("headers")
+                .and_then(|v| v.as_array())
+                .map(|arr| {
+                    arr.iter().any(|entry| {
+                        entry.get("name").and_then(|n| n.as_str()) == Some("Authorization")
+                    })
+                })
+                .unwrap_or(false)
+        );
+        assert!(
+            details
+                .get("body")
+                .and_then(|v| v.as_array())
+                .map(|arr| !arr.is_empty())
+                .unwrap_or(false)
+        );
     }
 
     // ========== Auth placement tests ==========
