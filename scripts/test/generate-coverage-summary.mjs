@@ -40,6 +40,9 @@ function extractMetrics(coberturaXml) {
   const lineRate = parseFloat(attrs['line-rate'] || 0)
   const branchRate = parseFloat(attrs['branch-rate'] || 0)
 
+  // Skip if metrics are NaN or zero (indicates invalid/empty coverage data)
+  if (isNaN(lineRate) || lineRate === 0) return null
+
   return {
     lines: lineRate,
     branches: branchRate,
@@ -53,7 +56,10 @@ async function main() {
 
   const files = {
     uiUnit: path.join(projectRoot, 'coverage', 'ui-unit-coverage.xml'),
-    uiE2e: path.join(projectRoot, 'coverage', 'ui-e2e-coverage.xml'),
+    // E2E coverage conversion to XML may not work, try cobertura-e2e.xml as fallback
+    uiE2e: fs.existsSync(path.join(projectRoot, 'coverage', 'ui-e2e-coverage.xml'))
+      ? path.join(projectRoot, 'coverage', 'ui-e2e-coverage.xml')
+      : path.join(projectRoot, 'coverage', 'cobertura-e2e.xml'),
     rustUnit: path.join(projectRoot, 'coverage', 'rust-unit-coverage.xml'),
     rustE2e: path.join(projectRoot, 'coverage', 'rust-e2e-coverage.xml')
   }
