@@ -531,13 +531,12 @@ describe("RequestBodyPanel", () => {
 
     renderPanel()
 
-    const menus = Array.from(document.querySelectorAll('[data-test-id="field-row:menu-button"]')) as HTMLElement[]
-    await user.click(menus[0])
-    await user.click(getByDataId("field-row:menu-move-down"))
+    await user.click(getByDataId("request-body-panel:form:menu-button:a"))
+    await user.click(getByDataId("request-body-panel:form:menu-move-down:a"))
     expect(actions.reorderFormItems).toHaveBeenCalledWith(["b", "a"])
 
-    await user.click(menus[1])
-    await user.click(getByDataId("field-row:menu-move-up"))
+    await user.click(getByDataId("request-body-panel:form:menu-button:b"))
+    await user.click(getByDataId("request-body-panel:form:menu-move-up:b"))
     expect(actions.reorderFormItems).toHaveBeenCalledWith(["b", "a"])
   })
 

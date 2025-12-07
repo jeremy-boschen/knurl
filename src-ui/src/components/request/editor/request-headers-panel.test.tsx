@@ -7,9 +7,10 @@ import { RequestHeadersPanel } from "./request-headers-panel"
 
 vi.mock("@/state", () => ({
   useRequestHeaders: vi.fn(),
+  useRequestParameters: vi.fn(),
 }))
 
-import { useRequestHeaders } from "@/state"
+import { useRequestHeaders, useRequestParameters } from "@/state"
 
 describe("RequestHeadersPanel", () => {
   const tabId = "tab-x"
@@ -29,6 +30,23 @@ describe("RequestHeadersPanel", () => {
     vi.mocked(useRequestHeaders).mockReturnValue({
       state: { headers, original },
       actions,
+    } as any)
+    vi.mocked(useRequestParameters).mockReturnValue({
+      state: { queryParams: {}, pathParams: {}, cookieParams: {}, original: {} },
+      actions: {
+        updatePathParam: vi.fn(),
+        updateQueryParam: vi.fn(),
+        updateCookieParam: vi.fn(),
+        removePathParam: vi.fn(),
+        removeQueryParam: vi.fn(),
+        removeCookieParam: vi.fn(),
+        reorderPathParams: vi.fn(),
+        reorderQueryParams: vi.fn(),
+        reorderCookieParams: vi.fn(),
+        addPathParam: vi.fn(),
+        addQueryParam: vi.fn(),
+        addCookieParam: vi.fn(),
+      },
     } as any)
     return render(
       <TooltipProvider>
