@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
+import userEvent, { PointerEventsCheckLevel } from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { TooltipProvider } from "@/components/ui/knurl/tooltip"
@@ -166,5 +166,73 @@ describe("RequestParametersPanel", () => {
     const deleteButton = (await waitFor(() => queryByDataTestId("field-row:menu-delete"))) as HTMLElement
     await user.click(deleteButton)
     expect(actions.removeCookieParam).toHaveBeenCalledWith("c1")
+  })
+
+  it("adds new params when add buttons are clicked", async () => {
+    renderWith({}, {}, {}, {})
+
+    const pathButton = queryByDataTestId("request-parameters-panel:add-path-param-button")
+    const queryButton = queryByDataTestId("request-parameters-panel:add-query-param-button")
+    const cookieButton = queryByDataTestId("request-parameters-panel:add-cookie-param-button")
+
+    expect(pathButton).not.toBeNull()
+    expect(queryButton).not.toBeNull()
+    expect(cookieButton).not.toBeNull()
+
+    fireEvent.click(pathButton as HTMLElement)
+    fireEvent.click(queryButton as HTMLElement)
+    fireEvent.click(cookieButton as HTMLElement)
+
+    expect(actions.addPathParam).toHaveBeenCalled()
+    expect(actions.addQueryParam).toHaveBeenCalled()
+    expect(actions.addCookieParam).toHaveBeenCalled()
+  })
+
+  it("reorders parameters via menu move actions", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: PointerEventsCheckLevel.Never })
+    const pathParams = {
+      p1: { id: "p1", name: "first", value: "1", enabled: true, secure: false },
+      p2: { id: "p2", name: "second", value: "2", enabled: true, secure: false },
+    }
+    const queryParams = {
+      q1: { id: "q1", name: "a", value: "1", enabled: true, secure: false },
+      q2: { id: "q2", name: "b", value: "2", enabled: true, secure: false },
+    }
+
+    renderWith(pathParams, queryParams, { pathParams, queryParams }, {})
+
+    const menuButtons = Array.from(document.querySelectorAll('[data-test-id="field-row:menu-button"]')) as HTMLElement[]
+    // path param p1 move down
+    await user.click(menuButtons[0])
+    const moveDown = await waitFor(() => queryByDataTestId("field-row:menu-move-down") as HTMLElement)
+    await user.click(moveDown!)
+    expect(actions.reorderPathParams).toHaveBeenCalledWith(["p2", "p1"])
+
+    // query param q2 move up (menu index 3 because path rows first)
+    const refreshedButtons = Array.from(
+      document.querySelectorAll('[data-test-id="field-row:menu-button"]'),
+    ) as HTMLElement[]
+    await user.click(refreshedButtons[3])
+    const moveUp = await waitFor(() => queryByDataTestId("field-row:menu-move-up") as HTMLElement)
+    await user.click(moveUp!)
+    expect(actions.reorderQueryParams).toHaveBeenCalledWith(["q2", "q1"])
+  })
+
+  it("flags unsaved enabled/name/secure states", async () => {
+    const user = userEvent.setup()
+    const pathParam = { id: "p1", name: "id", value: "1", enabled: true, secure: true }
+    const original = { pathParams: { p1: { ...pathParam, enabled: false, name: "old-id", secure: false } } }
+
+    renderWith({ [pathParam.id]: pathParam }, {}, original, {})
+
+    const enabled = document.querySelector('[data-test-id="field-row:enabled-checkbox"]') as HTMLElement
+    const nameInput = document.querySelector('[data-test-id="field-row:name-input"]') as HTMLInputElement
+    expect(enabled.className).toContain("unsaved-changes")
+    expect(nameInput.className).toContain("unsaved-changes")
+
+    const menuButton = queryByDataTestId("field-row:menu-button") as HTMLElement
+    await user.click(menuButton)
+    const sensitiveItem = (await waitFor(() => queryByDataTestId("field-row:menu-sensitive"))) as HTMLElement
+    expect(sensitiveItem.className).toContain("unsaved-changes")
   })
 })

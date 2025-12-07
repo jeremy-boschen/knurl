@@ -90,3 +90,6 @@ rustls-platform-verifier = { version = "0.6.1" }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-cli = "2"
+
+[dev-dependencies]
+tauri = { version = "2", features = ["test"] }

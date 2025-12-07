@@ -3,7 +3,7 @@ use std::future::Future;
 use std::io;
 use std::net::{IpAddr, SocketAddr};
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::task::{Context, Poll};
 use std::time::{Duration, Instant};
 
@@ -345,6 +345,8 @@ fn build_tls_config(
     disable_verification: bool,
     custom_ca: Option<&str>,
 ) -> Result<ClientConfig, AppError> {
+    ensure_crypto_provider_installed();
+
     // Load OS trust store first; fall back to webpki roots if unavailable or empty.
     let mut roots = RootCertStore::empty();
     #[cfg(target_os = "windows")]
@@ -438,6 +440,15 @@ fn build_tls_config(
     }
 
     Ok(config)
+}
+
+fn ensure_crypto_provider_installed() {
+    static INSTALL: OnceLock<()> = OnceLock::new();
+
+    INSTALL.get_or_init(|| {
+        // Ignoring the result is fine; Err indicates another provider is already installed.
+        let _ = rustls::crypto::ring::default_provider().install_default();
+    });
 }
 
 #[derive(Debug)]
@@ -1428,6 +1439,76 @@ mod tests {
                 assert!(err.message.contains("host"));
             }
         }
+    }
+
+    #[test]
+    fn build_connector_respects_ip_override_and_http2() {
+        use crate::http_client::engine::LogEmitter;
+        use crate::http_client::response::LogEntry;
+        use std::sync::Arc;
+        use std::time::Instant;
+
+        struct NullEmitter;
+        impl LogEmitter for NullEmitter {
+            fn emit(&self, _entry: LogEntry) {}
+        }
+
+        let logger = RequestLogger::new(
+            Arc::new(NullEmitter),
+            "req-ip-override".into(),
+            Instant::now(),
+        );
+        let request = Request {
+            ip_override: Some("127.0.0.1".to_string()),
+            http_version: Some(HttpVersionPref::Http2),
+            ..Request::default()
+        };
+        let uri: Uri = "https://example.com/api".parse().unwrap();
+
+        let result = build_connector(&request, &uri, logger);
+        assert!(
+            result.is_ok(),
+            "expected connector to build with override IP"
+        );
+    }
+
+    #[test]
+    fn build_connector_rejects_invalid_ip_override() {
+        use crate::http_client::engine::LogEmitter;
+        use crate::http_client::response::LogEntry;
+        use std::sync::Arc;
+        use std::time::Instant;
+
+        struct NullEmitter;
+        impl LogEmitter for NullEmitter {
+            fn emit(&self, _entry: LogEntry) {}
+        }
+
+        let logger = RequestLogger::new(
+            Arc::new(NullEmitter),
+            "req-bad-override".into(),
+            Instant::now(),
+        );
+        let request = Request {
+            ip_override: Some("not-an-ip".to_string()),
+            ..Request::default()
+        };
+        let uri: Uri = "https://example.com/api".parse().unwrap();
+
+        let result = build_connector(&request, &uri, logger);
+        match result {
+            Ok(_) => panic!("expected bad override to error"),
+            Err(err) => {
+                assert_eq!(err.kind, ErrorKind::BadRequest);
+                assert!(err.message.contains("Invalid IP override"));
+            }
+        }
+    }
+
+    #[test]
+    fn compute_host_header_handles_ipv6_literal_with_port() {
+        let host = compute_host_header(Some("[2001:db8::1]:8080"), Some("fallback.io"));
+        assert_eq!(host.as_deref(), Some("[2001:db8::1]"));
     }
 
     // ========== build_tls_config tests ==========

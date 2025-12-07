@@ -1,0 +1,1 @@
+- Audit all `src-common/e2e/specs/` tests and `wdio.conf.ts` to identify every `browser.pause()` longer than 500ms and list them.

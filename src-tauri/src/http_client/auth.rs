@@ -2423,6 +2423,43 @@ mod tests {
         );
     }
 
+    #[test]
+    fn log_token_request_preview_includes_headers_and_params() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let emitter = CollectEmitter {
+            events: events.clone(),
+        };
+        let headers = HashMap::from([("Authorization".to_string(), "Basic abc".to_string())]);
+        let params = vec![("grant_type".to_string(), "client_credentials".to_string())];
+
+        log_token_request_preview(
+            &emitter,
+            "req-preview",
+            "POST",
+            "https://idp/token",
+            &headers,
+            &params,
+        );
+
+        let captured = events.lock().unwrap();
+        assert_eq!(captured.len(), 1);
+        let details = captured[0].details.as_ref().unwrap();
+        assert_eq!(details.get("method").and_then(|v| v.as_str()), Some("POST"));
+        assert!(details
+            .get("headers")
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .any(|entry| entry.get("name").and_then(|n| n.as_str()) == Some("Authorization"))
+            })
+            .unwrap_or(false));
+        assert!(details
+            .get("body")
+            .and_then(|v| v.as_array())
+            .map(|arr| !arr.is_empty())
+            .unwrap_or(false));
+    }
+
     // ========== Auth placement tests ==========
 
     #[test]

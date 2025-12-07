@@ -753,4 +753,19 @@ mod tests {
             std::env::remove_var("KNURL_START_PROBE");
         }
     }
+
+    #[test]
+    fn startup_probe_open_log_file_writes_lines() {
+        let file_mutex = StartupProbe::open_log_file().expect("log file open");
+        {
+            let mut file = file_mutex.lock().unwrap();
+            use std::io::Write;
+            writeln!(file, "unit-test-line").unwrap();
+        }
+        let log_path = std::env::temp_dir()
+            .join("knurl-startup")
+            .join("startup.log");
+        let contents = fs::read_to_string(log_path).expect("log readable");
+        assert!(contents.contains("unit-test-line"));
+    }
 }

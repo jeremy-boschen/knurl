@@ -25,14 +25,39 @@ vi.mock("@/components/ui/knurl", async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...actual,
-    FileInput: ({ onFileChange, "data-test-id": dataTestId }: any) => (
-      <button
-        type="button"
-        data-test-id={dataTestId ?? "mock-file-input"}
-        onClick={() => onFileChange("/tmp/demo.txt", "demo.txt", "text/plain")}
-      >
-        upload
-      </button>
+    FileInput: ({
+      onFileChange,
+      onContentTypeChange,
+      onClear,
+      "data-test-id": dataTestId,
+    }: any) => (
+      <div>
+        <button
+          type="button"
+          data-test-id={dataTestId ?? "mock-file-input"}
+          onClick={() => onFileChange("/tmp/demo.txt", "demo.txt", "text/plain")}
+        >
+          upload
+        </button>
+        {onContentTypeChange && (
+          <button
+            type="button"
+            data-test-id={`${dataTestId ?? "mock-file-input"}:set-content-type`}
+            onClick={() => onContentTypeChange("image/jpeg")}
+          >
+            set-ct
+          </button>
+        )}
+        {onClear && (
+          <button
+            type="button"
+            data-test-id={`${dataTestId ?? "mock-file-input"}:clear`}
+            onClick={() => onClear()}
+          >
+            clear
+          </button>
+        )}
+      </div>
     ),
   }
 })
@@ -85,7 +110,7 @@ describe("RequestBodyPanel", () => {
   })
 
   it("disables formatting for plain text bodies", async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
     const actions = { updateBodyContent: vi.fn(), updateBody: vi.fn(), updateFormItem: vi.fn(), removeFormItem: vi.fn() }
     useRequestBodyMock.mockReturnValue({
       state: {
@@ -308,6 +333,45 @@ describe("RequestBodyPanel", () => {
     expect(warnings.textContent).toContain("Binary body conflicts")
   })
 
+  it("shows multipart header conflict warning for form bodies", () => {
+    applicationState.requestTabsState.openTabs = {
+      "tab-1": {
+        merged: {
+          headers: {
+            h1: { id: "h1", name: "Content-Type", value: "application/json", enabled: true },
+          },
+        },
+      },
+    }
+
+    const actions = {
+      updateBodyContent: vi.fn(),
+      updateBody: vi.fn(),
+      updateFormItem: vi.fn(),
+      removeFormItem: vi.fn(),
+      addFormItem: vi.fn(),
+      reorderFormItems: vi.fn(),
+    }
+    useRequestBodyMock.mockReturnValue({
+      state: {
+        body: {
+          type: "form",
+          encoding: "multipart",
+          formData: {
+            f1: { id: "f1", key: "file", value: "", enabled: true, secure: false, kind: "file" },
+          },
+        },
+        original: { type: "form", encoding: "multipart", formData: {} },
+      },
+      actions,
+    })
+
+    renderPanel()
+
+    const warnings = getByDataId("request-body-panel:warnings")
+    expect(warnings.textContent).toContain("Content-Type header conflicts")
+  })
+
   it("pre-warms prettier for non-plain text bodies", () => {
     const actions = { updateBodyContent: vi.fn(), updateBody: vi.fn(), updateFormItem: vi.fn(), removeFormItem: vi.fn() }
     useRequestBodyMock.mockReturnValue({
@@ -321,6 +385,28 @@ describe("RequestBodyPanel", () => {
     renderPanel()
 
     expect(warmPrettier).toHaveBeenCalledWith(["json"])
+  })
+
+  it("renders empty state when body type is none", () => {
+    const actions = {
+      updateBodyContent: vi.fn(),
+      updateBody: vi.fn(),
+      updateFormItem: vi.fn(),
+      removeFormItem: vi.fn(),
+      addFormItem: vi.fn(),
+      reorderFormItems: vi.fn(),
+    }
+    useRequestBodyMock.mockReturnValue({
+      state: {
+        body: { type: "none" },
+        original: { type: "none" },
+      },
+      actions,
+    })
+
+    renderPanel()
+
+    expect(screen.getByText(/does not have a body/i)).toBeInTheDocument()
   })
 
   it("shows header conflict warning for text bodies with form content-type", () => {
@@ -380,6 +466,81 @@ describe("RequestBodyPanel", () => {
     })
   })
 
+  it("adds form items via add buttons", async () => {
+    const user = userEvent.setup()
+    const actions = {
+      updateBodyContent: vi.fn(),
+      updateBody: vi.fn(),
+      updateFormItem: vi.fn(),
+      removeFormItem: vi.fn(),
+      addFormItem: vi.fn(),
+      reorderFormItems: vi.fn(),
+    }
+    useRequestBodyMock.mockReturnValue({
+      state: {
+        body: { type: "form", encoding: "url", formData: {} },
+        original: { type: "form", encoding: "url", formData: {} },
+      },
+      actions,
+    })
+
+    renderPanel()
+
+    await user.click(getByDataId("request-body-panel:add-text-field-button"))
+    expect(actions.addFormItem).toHaveBeenCalled()
+
+    await user.click(getByDataId("request-body-panel:add-file-field-button"))
+    expect(actions.updateBody).toHaveBeenCalledWith({ encoding: "multipart" })
+    expect(actions.updateFormItem).toHaveBeenCalledWith(
+      "gen-id",
+      expect.objectContaining({ id: "gen-id", kind: "file", key: "", value: "", enabled: true, secure: false })
+    )
+  })
+
+  it("reorders form items through move menu", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const actions = {
+      updateBodyContent: vi.fn(),
+      updateBody: vi.fn(),
+      updateFormItem: vi.fn(),
+      removeFormItem: vi.fn(),
+      addFormItem: vi.fn(),
+      reorderFormItems: vi.fn(),
+    }
+    useRequestBodyMock.mockReturnValue({
+      state: {
+        body: {
+          type: "form",
+          encoding: "multipart",
+          formData: {
+            a: { id: "a", key: "one", value: "1", enabled: true, secure: false, kind: "text" },
+            b: { id: "b", key: "two", value: "2", enabled: true, secure: false, kind: "text" },
+          },
+        },
+        original: {
+          type: "form",
+          encoding: "multipart",
+          formData: {
+            a: { id: "a", key: "one", value: "1", enabled: true },
+            b: { id: "b", key: "two", value: "2", enabled: true },
+          },
+        },
+      },
+      actions,
+    })
+
+    renderPanel()
+
+    const menus = Array.from(document.querySelectorAll('[data-test-id="field-row:menu-button"]')) as HTMLElement[]
+    await user.click(menus[0])
+    await user.click(getByDataId("field-row:menu-move-down"))
+    expect(actions.reorderFormItems).toHaveBeenCalledWith(["b", "a"])
+
+    await user.click(menus[1])
+    await user.click(getByDataId("field-row:menu-move-up"))
+    expect(actions.reorderFormItems).toHaveBeenCalledWith(["b", "a"])
+  })
+
   it("sets binary content type when dropping a file onto binary section", () => {
     const actions = { updateBodyContent: vi.fn(), updateBody: vi.fn(), updateFormItem: vi.fn(), removeFormItem: vi.fn() }
     useRequestBodyMock.mockReturnValue({
@@ -404,6 +565,42 @@ describe("RequestBodyPanel", () => {
       expect.objectContaining({ binaryPath: "/tmp/archive.tgz", binaryContentType: "application/gzip" }),
     )
   })
+
+  it("allows clearing and overriding binary body metadata", async () => {
+    const user = userEvent.setup()
+    const actions = {
+      updateBodyContent: vi.fn(),
+      updateBody: vi.fn(),
+      updateFormItem: vi.fn(),
+      removeFormItem: vi.fn(),
+      addFormItem: vi.fn(),
+      reorderFormItems: vi.fn(),
+    }
+    useRequestBodyMock.mockReturnValue({
+      state: {
+        body: {
+          type: "binary",
+          binaryPath: "/tmp/demo.txt",
+          binaryFileName: "demo.txt",
+          binaryContentType: "text/plain",
+        },
+        original: { type: "binary" },
+      },
+      actions,
+    })
+
+    renderPanel()
+
+    await user.click(getByDataId("request-body-panel:binary-file-input:set-content-type"))
+    expect(actions.updateBody).toHaveBeenCalledWith({ binaryContentType: "image/jpeg" })
+
+    await user.click(getByDataId("request-body-panel:binary-file-input:clear"))
+    expect(actions.updateBody).toHaveBeenCalledWith({
+      binaryPath: undefined,
+      binaryFileName: undefined,
+      binaryContentType: undefined,
+    })
+  })
 })
 
 describe("Request body helpers", () => {
@@ -423,6 +620,21 @@ describe("Request body helpers", () => {
     expect(getBodyTypeLabel({ type: "text", language: "json" } as any)).toBe("Text > JSON")
     expect(getBodyTypeLabel({ type: "text", language: "custom" as any } as any)).toBe("Text > Plain")
     expect(getBodyTypeLabel({ type: "unknown" } as any)).toBe("Select Body Type")
+  })
+
+  it("covers remaining content-type guesses", () => {
+    expect(guessContentTypeByExt("readme.txt")).toBe("text/plain")
+    expect(guessContentTypeByExt("note.xml")).toBe("application/xml")
+    expect(guessContentTypeByExt("config.yaml")).toBe("application/yaml")
+    expect(guessContentTypeByExt("styles.css")).toBe("text/css")
+    expect(guessContentTypeByExt("script.js")).toBe("application/javascript")
+    expect(guessContentTypeByExt("types.ts")).toBe("application/typescript")
+    expect(guessContentTypeByExt("vector.svg")).toBe("image/svg+xml")
+    expect(guessContentTypeByExt("doc.pdf")).toBe("application/pdf")
+    expect(guessContentTypeByExt("bundle.zip")).toBe("application/zip")
+    expect(guessContentTypeByExt("archive.tar")).toBe("application/x-tar")
+    expect(guessContentTypeByExt("graphic.webp")).toBe("image/webp")
+    expect(guessContentTypeByExt("photo.gif")).toBe("image/gif")
   })
 })
 
