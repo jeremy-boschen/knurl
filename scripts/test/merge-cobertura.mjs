@@ -8,10 +8,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const projectRoot = path.resolve(__dirname, '../..')
 
 function mergeCobertura() {
-  const frontendPath = path.join(projectRoot, 'coverage', 'cobertura-coverage.xml')
-  const rustPath = path.join(projectRoot, 'coverage', 'cobertura-rust.xml')
+  const frontendPath = path.join(projectRoot, 'coverage', 'ui-unit-coverage.xml')
+  const rustUnitPath = path.join(projectRoot, 'coverage', 'rust-unit-coverage.xml')
+  const rustE2ePath = path.join(projectRoot, 'coverage', 'rust-e2e-coverage.xml')
   const e2ePath = path.join(projectRoot, 'coverage', 'cobertura-e2e.xml')
-  const outputPath = path.join(projectRoot, 'coverage', 'cobertura-merged.xml')
+  const outputPath = path.join(projectRoot, 'coverage', 'coverage-merged.xml')
 
   // At minimum, we need frontend coverage. Rust and E2E are optional
   if (!fs.existsSync(frontendPath)) {
@@ -22,18 +23,21 @@ function mergeCobertura() {
 
   const available = {
     frontend: fs.existsSync(frontendPath),
-    rust: fs.existsSync(rustPath),
+    rustUnit: fs.existsSync(rustUnitPath),
+    rustE2e: fs.existsSync(rustE2ePath),
     e2e: fs.existsSync(e2ePath),
   }
 
   console.log('ℹ Cobertura sources available:')
-  console.log(`  Frontend: ${available.frontend ? '✓' : '✗'}`)
-  console.log(`  Rust:     ${available.rust ? '✓' : '✗'}`)
-  console.log(`  E2E:      ${available.e2e ? '✓' : '✗'}`)
+  console.log(`  Frontend (UI unit):   ${available.frontend ? '✓' : '✗'}`)
+  console.log(`  Rust (unit):          ${available.rustUnit ? '✓' : '✗'}`)
+  console.log(`  Rust (E2E):           ${available.rustE2e ? '✓' : '✗'}`)
+  console.log(`  E2E (UI):             ${available.e2e ? '✓' : '✗'}`)
 
   try {
     const frontendXml = fs.readFileSync(frontendPath, 'utf-8')
-    const rustXml = available.rust ? fs.readFileSync(rustPath, 'utf-8') : null
+    const rustUnitXml = available.rustUnit ? fs.readFileSync(rustUnitPath, 'utf-8') : null
+    const rustE2eXml = available.rustE2e ? fs.readFileSync(rustE2ePath, 'utf-8') : null
     const e2eXml = available.e2e ? fs.readFileSync(e2ePath, 'utf-8') : null
 
     // Extract packages from frontend (match <package ...> but not <packages>)
@@ -42,8 +46,8 @@ function mergeCobertura() {
       return pkg.replace(/\\/g, '/')
     })
 
-    // Extract Rust packages and rewrite paths from src/ to src-tauri/src/
-    const rustPackages = rustXml ? (rustXml.match(/<package(?:\s|>)[^>]*>[\s\S]*?<\/package>/g) || []).map(pkg => {
+    // Extract Rust unit test packages and rewrite paths from src/ to src-tauri/src/
+    const rustUnitPackages = rustUnitXml ? (rustUnitXml.match(/<package(?:\s|>)[^>]*>[\s\S]*?<\/package>/g) || []).map(pkg => {
       // Normalize all Windows backslashes to forward slashes globally
       let rewritten = pkg.replace(/\\/g, '/')
 
@@ -59,14 +63,29 @@ function mergeCobertura() {
       return rewritten
     }) : []
 
-    // Extract E2E packages (no special path rewriting needed, already has correct paths)
-    const e2ePackages = e2eXml ? (e2eXml.match(/<package(?:\s|>)[^>]*>[\s\S]*?<\/package>/g) || []).map(pkg => {
+    // Extract Rust E2E packages and rewrite paths similarly
+    const rustE2ePackages = rustE2eXml ? (rustE2eXml.match(/<package(?:\s|>)[^>]*>[\s\S]*?<\/package>/g) || []).map(pkg => {
+      // Normalize all Windows backslashes to forward slashes globally
+      let rewritten = pkg.replace(/\\/g, '/')
+
+      // Rewrite package name:
+      rewritten = rewritten.replace(/name="src"/g, 'name="src-tauri.src"')
+      rewritten = rewritten.replace(/name="src\./g, 'name="src-tauri.src.')
+
+      // Rewrite filename paths: src/foo -> src-tauri/src/foo
+      rewritten = rewritten.replace(/filename="src\//g, 'filename="src-tauri/src/')
+
+      return rewritten
+    }) : []
+
+    // Extract UI E2E packages (no special path rewriting needed, already has correct paths)
+    const uiE2ePackages = e2eXml ? (e2eXml.match(/<package(?:\s|>)[^>]*>[\s\S]*?<\/package>/g) || []).map(pkg => {
       // Normalize all Windows backslashes to forward slashes globally
       return pkg.replace(/\\/g, '/')
     }) : []
 
     // Combine packages from all available sources
-    const allPackages = [...frontendPackages, ...rustPackages, ...e2ePackages]
+    const allPackages = [...frontendPackages, ...rustUnitPackages, ...rustE2ePackages, ...uiE2ePackages]
 
     // Create merged coverage with combined packages
     const merged = `<?xml version="1.0" ?>

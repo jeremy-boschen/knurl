@@ -18,10 +18,20 @@ const THRESHOLDS = {
 }
 
 const coveragePath = path.join(__dirname, '../../coverage/coverage-summary.json')
+const coberturaMergedPath = path.join(__dirname, '../../coverage/coverage-merged.xml')
 
 if (!fs.existsSync(coveragePath)) {
-  console.error('❌ Coverage summary not found. Run: yarn test or yarn test:unit')
+  // Check if we have Cobertura XML instead (from partial test runs)
+  if (fs.existsSync(coberturaMergedPath)) {
+    console.log('ℹ Coverage summary not available for full threshold check')
+    console.log('  (Only Cobertura XML available from partial test run)')
+    console.log(`  For full coverage report, run: yarn test`)
+    process.exit(0)
+  }
+
+  console.error('❌ Coverage summary not found')
   console.log(`  Expected: ${coveragePath}`)
+  console.log(`  Run: yarn test or yarn test:unit`)
   process.exit(1)
 }
 

@@ -57,7 +57,7 @@ async function aggregateCoverage() {
     console.log('[coverage] Merging E2E coverage data...');
 
     // Merge all individual coverage files into a single coverage.json
-    execSync('nyc merge .nyc_output coverage/e2e-coverage.json --temp-dir=.nyc_output', {
+    execSync('yarn nyc merge .nyc_output coverage/ui-e2e-coverage.json --temp-dir=.nyc_output', {
       cwd: projectRoot,
       stdio: 'inherit',
     });
@@ -65,7 +65,7 @@ async function aggregateCoverage() {
     console.log('[coverage] Generating E2E coverage report...');
 
     // Generate reports from the merged coverage data
-    execSync('nyc report --reporter=html --reporter=json --temp-dir=.nyc_output --report-dir=coverage/e2e', {
+    execSync('yarn nyc report --reporter=html --reporter=json --temp-dir=.nyc_output --report-dir=coverage/e2e', {
       cwd: projectRoot,
       stdio: 'inherit',
     });

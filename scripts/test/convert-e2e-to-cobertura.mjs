@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const projectRoot = path.resolve(__dirname, '../..')
 
 function convertE2EToCobertua() {
-  const e2eCoveragePath = path.join(projectRoot, 'coverage', 'e2e-coverage.json')
+  const e2eCoveragePath = path.join(projectRoot, 'coverage', 'ui-e2e-coverage.json')
   const outputPath = path.join(projectRoot, 'coverage', 'cobertura-e2e.xml')
 
   if (!fs.existsSync(e2eCoveragePath)) {

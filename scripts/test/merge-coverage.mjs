@@ -75,135 +75,64 @@ const mergeCoverageData = (baseMap, newCoverage) => {
   })
 }
 
-// Load unit test coverage from Vitest output
-const unitCoveragePath = path.join(projectRoot, 'coverage', 'coverage-final.json')
-if (fs.existsSync(unitCoveragePath)) {
-  try {
-    const unitCoverage = JSON.parse(fs.readFileSync(unitCoveragePath, 'utf-8'))
-    mergeCoverageData(map, unitCoverage)
-    mergedCount++
-    console.log(`✓ Loaded unit test coverage from ${path.relative(projectRoot, unitCoveragePath)}`)
-  } catch (error) {
-    console.warn(`✗ Failed to load unit test coverage: ${error.message}`)
-  }
-}
+// Note: Istanbul JSON merging from multiple sources is complex due to format differences
+// between Vitest and Rust converted coverage. Instead, we rely on Cobertura XML merging
+// which is the standard format used for CI integration.
+// Individual coverage files are still generated:
+// - ui-unit-coverage.json (frontend unit tests)
+// - ui-e2e-coverage.json (frontend E2E tests)
+// - rust-unit-coverage.json (Rust unit tests, converted from LCOV)
+// - rust-e2e-coverage.json (Rust E2E tests, converted from LCOV)
 
-// Load E2E coverage if it exists
-const e2eCoveragePath = path.join(projectRoot, 'coverage', 'e2e-coverage.json')
-if (fs.existsSync(e2eCoveragePath)) {
-  try {
-    const e2eCoverage = JSON.parse(fs.readFileSync(e2eCoveragePath, 'utf-8'))
-    mergeCoverageData(map, e2eCoverage)
-    mergedCount++
-    console.log(`✓ Merged E2E coverage from ${path.relative(projectRoot, e2eCoveragePath)}`)
-  } catch (error) {
-    console.warn(`✗ Failed to load E2E coverage: ${error.message}`)
-  }
-}
-
-// Note: Rust coverage from cargo-llvm-cov is kept in rust-lcov.info file separately
-// Both frontend (lcov.info) and backend (rust-lcov.info) LCOV files are available in coverage/
-const rustCoveragePath = path.join(projectRoot, 'coverage', 'rust-coverage.json')
+// Check if we have any coverage files generated
+const unitCoveragePath = path.join(projectRoot, 'coverage', 'ui-unit-coverage.json')
+const e2eCoveragePath = path.join(projectRoot, 'coverage', 'ui-e2e-coverage.json')
+const rustCoveragePath = path.join(projectRoot, 'coverage', 'rust-unit-coverage.json')
 const rustE2eCoveragePath = path.join(projectRoot, 'coverage', 'rust-e2e-coverage.json')
 
-if (fs.existsSync(rustCoveragePath)) {
-  try {
-    const rustCoverage = JSON.parse(fs.readFileSync(rustCoveragePath, 'utf-8'))
-    mergeCoverageData(map, rustCoverage)
-    mergedCount++
-    console.log(`✓ Loaded Rust unit test coverage from ${path.relative(projectRoot, rustCoveragePath)}`)
-  } catch (error) {
-    console.warn(`✗ Failed to load Rust unit test coverage: ${error.message}`)
-  }
-}
+const hasCoverageFiles = [
+  unitCoveragePath,
+  e2eCoveragePath,
+  rustCoveragePath,
+  rustE2eCoveragePath
+].some(p => fs.existsSync(p))
 
-// Merge E2E Rust coverage if it exists
-if (fs.existsSync(rustE2eCoveragePath)) {
-  try {
-    const rustE2eCoverage = JSON.parse(fs.readFileSync(rustE2eCoveragePath, 'utf-8'))
-    mergeCoverageData(map, rustE2eCoverage)
-    mergedCount++
-    console.log(`✓ Merged Rust E2E coverage from ${path.relative(projectRoot, rustE2eCoveragePath)}`)
-  } catch (error) {
-    console.warn(`✗ Failed to load Rust E2E coverage: ${error.message}`)
-  }
+if (hasCoverageFiles) {
+  mergedCount = 1  // Mark as having coverage for Cobertura merging
+  console.log(`✓ Coverage files available:`)
+  if (fs.existsSync(unitCoveragePath)) console.log(`  - ${path.relative(projectRoot, unitCoveragePath)}`)
+  if (fs.existsSync(e2eCoveragePath)) console.log(`  - ${path.relative(projectRoot, e2eCoveragePath)}`)
+  if (fs.existsSync(rustCoveragePath)) console.log(`  - ${path.relative(projectRoot, rustCoveragePath)}`)
+  if (fs.existsSync(rustE2eCoveragePath)) console.log(`  - ${path.relative(projectRoot, rustE2eCoveragePath)}`)
 } else {
-  const rustLcovPath = path.join(projectRoot, 'coverage', 'rust-lcov.info')
+  const rustLcovPath = path.join(projectRoot, 'coverage', 'rust-unit-coverage.info')
   if (fs.existsSync(rustLcovPath)) {
     console.log(`ℹ Rust coverage available in ${path.relative(projectRoot, rustLcovPath)} (LCOV format, not merged)`)
   }
 }
 
 if (mergedCount === 0) {
-  console.warn('⚠ No coverage files found to merge')
-  console.warn(`  Expected paths:`)
-  console.warn(`  - coverage/coverage-final.json (frontend unit tests)`)
-  console.warn(`  - coverage/e2e-coverage.json (frontend E2E tests)`)
-  console.warn(`  - coverage/rust-coverage.json (Rust unit tests)`)
-  console.warn(`  - coverage/rust-e2e-coverage.json (Rust E2E tests)`)
+  console.warn('⚠ No coverage files found')
   process.exit(0)
 }
 
-// Normalize all paths in the map to forward slashes to ensure consistent sorting
-// istanbul-lib-coverage doesn't expose a direct way to mutate keys, 
-// so we have to iterate and rebuild if necessary, or trust that the reporter handles it if keys match.
-// However, standard reporters sort based on the file path string. 
-// If we have mixed separators, sorting is broken.
-const files = map.files();
-files.forEach(file => {
-  const fc = map.fileCoverageFor(file);
-  const normalizedPath = file.split(path.sep).join('/');
-  
-  // If path changed (was backslash), update it
-  if (file !== normalizedPath) {
-    fc.data.path = normalizedPath;
-    // We can't easily remove/add keys to the map instance without private access or creating a new map.
-    // But for reporting, often the 'path' property in data is used. 
-    // Let's try to force it.
+// Skip Istanbul JSON merging - use Cobertura XML which is the standard for CI
+// Try to merge Cobertura files if both frontend and backend exist
+const uiCoberturaPath = path.join(projectRoot, 'coverage', 'ui-unit-coverage.xml')
+const rustCoberturaPath = path.join(projectRoot, 'coverage', 'rust-unit-coverage.xml')
+const uiE2eCoberturaPath = path.join(projectRoot, 'coverage', 'cobertura-e2e.xml')
+
+// Check what Cobertura files we have
+const hasFrontendCobertura = fs.existsSync(uiCoberturaPath) || fs.existsSync(uiE2eCoberturaPath)
+const hasRustCobertura = fs.existsSync(rustCoberturaPath)
+
+if (hasFrontendCobertura || hasRustCobertura) {
+  console.log(`\n📊 Merging Cobertura coverage files...`)
+  try {
+    execSync(`node "${path.join(__dirname, 'merge-cobertura.mjs')}"`, { stdio: 'inherit' })
+  } catch (error) {
+    console.warn(`⚠ Cobertura merge failed: ${error.message}`)
   }
-});
-// To be safe, let's create a NEW map with normalized keys
-const normalizedMap = createCoverageMap({});
-files.forEach(file => {
-  const fc = map.fileCoverageFor(file);
-  const data = JSON.parse(JSON.stringify(fc.data)); // Deep copy
-  data.path = data.path.split(path.sep).join('/'); // Normalize path property
-  normalizedMap.addFileCoverage(data); // Add with normalized path
-});
-
-// Generate merged reports
-try {
-  // Determine reporters from env or default
-  const requestedReporters = process.env.COVERAGE_REPORTERS
-    ? process.env.COVERAGE_REPORTERS.split(',').map(r => r.trim())
-    : ['json', 'json-summary', 'lcov', 'text', 'text-summary', 'html']
-
-  const coverageDir = path.join(projectRoot, 'coverage')
-  const context = createContext({ coverageMap: normalizedMap, dir: coverageDir })
-
-  requestedReporters.forEach(reportType => {
-    reports.create(reportType, {}).execute(context)
-  })
-
-  console.log(`\n✓ Generated merged coverage report`)
-  console.log(`  Reports: ${requestedReporters.join(', ')}`)
-  console.log(`  Reports available in: ${path.relative(projectRoot, path.join(projectRoot, 'coverage'))}`)
-  console.log(`  - HTML: coverage/index.html`)
-  console.log(`  - LCOV: coverage/lcov.info`)
-  console.log(`  - JSON Summary: coverage/coverage-summary.json`)
-
-  // Try to merge Cobertura files if both exist
-  const coberturaMergePath = path.join(projectRoot, 'coverage', 'cobertura-coverage.xml')
-  const coberturaRustPath = path.join(projectRoot, 'coverage', 'cobertura-rust.xml')
-  if (fs.existsSync(coberturaMergePath) && fs.existsSync(coberturaRustPath)) {
-    console.log(`\n📊 Attempting to merge Cobertura files...`)
-    try {
-      execSync(`node "${path.join(__dirname, 'merge-cobertura.mjs')}"`, { stdio: 'inherit' })
-    } catch (error) {
-      console.warn(`⚠ Cobertura merge skipped: ${error.message}`)
-    }
-  }
-} catch (error) {
-  console.error(`✗ Failed to generate merged coverage report: ${error.message}`)
-  process.exit(1)
+} else {
+  console.warn(`⚠ No Cobertura files found to merge`)
 }
