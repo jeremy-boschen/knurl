@@ -95,6 +95,9 @@ function RequestHeadersPanelComponent({ tabId }: RequestHeadersPanelProps) {
             return (
               <FieldRow
                 key={header.id}
+                id={header.id}
+                dataTestPrefix="request-headers-panel"
+                rowSuffix="header-row"
                 enabled={header.enabled}
                 onEnabledChange={(enabled) => handleHeaderChange(header.id, { enabled })}
                 nameValue={header.name}
@@ -105,7 +108,6 @@ function RequestHeadersPanelComponent({ tabId }: RequestHeadersPanelProps) {
                   value: header.value,
                   onChange: (e) => handleHeaderChange(header.id, { value: e.target.value }),
                   className: cn("font-mono", original[header.id]?.value !== header.value && "unsaved-changes"),
-                  "data-test-id": `request-headers-panel:value-input:${header.id}`,
                 }}
                 secure={header.secure}
                 onSecureChange={(secure) => handleHeaderChange(header.id, { secure })}
@@ -117,16 +119,6 @@ function RequestHeadersPanelComponent({ tabId }: RequestHeadersPanelProps) {
                 hasUnsavedEnabled={original[header.id]?.enabled !== header.enabled}
                 hasUnsavedName={original[header.id]?.name !== header.name}
                 hasUnsavedSecure={original[header.id]?.secure !== header.secure}
-                dataTestIds={{
-                  row: `request-headers-panel:header-row:${header.id}`,
-                  enabled: `request-headers-panel:enabled-checkbox:${header.id}`,
-                  name: `request-headers-panel:name-input:${header.id}`,
-                  menuButton: `request-headers-panel:menu-button:${header.id}`,
-                  menuSensitive: `request-headers-panel:menu-sensitive:${header.id}`,
-                  menuMoveUp: `request-headers-panel:menu-move-up:${header.id}`,
-                  menuMoveDown: `request-headers-panel:menu-move-down:${header.id}`,
-                  menuDelete: `request-headers-panel:menu-delete:${header.id}`,
-                }}
               />
             )
           })}
