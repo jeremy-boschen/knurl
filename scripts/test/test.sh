@@ -223,9 +223,6 @@ if [ "$RUN_E2E" = true ]; then
   echo "Aggregating E2E coverage..."
   node scripts/test/aggregate-e2e-coverage.mjs
 
-  echo "Converting E2E to Cobertura..."
-  node scripts/test/convert-e2e-to-cobertura.mjs
-
   # Generate E2E Rust coverage
   echo "Generating E2E Rust coverage..."
   cd src-tauri
