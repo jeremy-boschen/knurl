@@ -115,8 +115,8 @@ if (hasFrontendCobertura || hasRustCobertura) {
   try {
     execSync(`node "${path.join(__dirname, 'merge-cobertura.mjs')}"`, { stdio: 'inherit' })
 
-    // Generate coverage-summary.json from the merged Cobertura XML for threshold checking
-    execSync(`node "${path.join(__dirname, 'cobertura-to-summary.mjs')}"`, { stdio: 'inherit' })
+    // Generate coverage-summary.json from all Cobertura XML sources for threshold checking
+    execSync(`node "${path.join(__dirname, 'generate-coverage-summary.mjs')}"`, { stdio: 'inherit' })
   } catch (error) {
     console.warn(`⚠ Cobertura merge or summary generation failed: ${error.message}`)
   }
