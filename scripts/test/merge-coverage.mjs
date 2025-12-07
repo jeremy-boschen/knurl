@@ -76,7 +76,7 @@ const mergeCoverageData = (baseMap, newCoverage) => {
 }
 
 // Load unit test coverage from Vitest output
-const unitCoveragePath = path.join(projectRoot, 'coverage', 'coverage-final.json')
+const unitCoveragePath = path.join(projectRoot, 'coverage', 'ui-unit-coverage.json')
 if (fs.existsSync(unitCoveragePath)) {
   try {
     const unitCoverage = JSON.parse(fs.readFileSync(unitCoveragePath, 'utf-8'))
@@ -89,7 +89,7 @@ if (fs.existsSync(unitCoveragePath)) {
 }
 
 // Load E2E coverage if it exists
-const e2eCoveragePath = path.join(projectRoot, 'coverage', 'e2e-coverage.json')
+const e2eCoveragePath = path.join(projectRoot, 'coverage', 'ui-e2e-coverage.json')
 if (fs.existsSync(e2eCoveragePath)) {
   try {
     const e2eCoverage = JSON.parse(fs.readFileSync(e2eCoveragePath, 'utf-8'))
@@ -101,9 +101,9 @@ if (fs.existsSync(e2eCoveragePath)) {
   }
 }
 
-// Note: Rust coverage from cargo-llvm-cov is kept in rust-lcov.info file separately
-// Both frontend (lcov.info) and backend (rust-lcov.info) LCOV files are available in coverage/
-const rustCoveragePath = path.join(projectRoot, 'coverage', 'rust-coverage.json')
+// Note: Rust coverage from cargo-llvm-cov is kept in *.info files separately
+// Both frontend (lcov.info) and backend (rust-unit-coverage.info, rust-e2e-coverage.info) LCOV files are available in coverage/
+const rustCoveragePath = path.join(projectRoot, 'coverage', 'rust-unit-coverage.json')
 const rustE2eCoveragePath = path.join(projectRoot, 'coverage', 'rust-e2e-coverage.json')
 
 if (fs.existsSync(rustCoveragePath)) {
@@ -128,7 +128,7 @@ if (fs.existsSync(rustE2eCoveragePath)) {
     console.warn(`✗ Failed to load Rust E2E coverage: ${error.message}`)
   }
 } else {
-  const rustLcovPath = path.join(projectRoot, 'coverage', 'rust-lcov.info')
+  const rustLcovPath = path.join(projectRoot, 'coverage', 'rust-unit-coverage.info')
   if (fs.existsSync(rustLcovPath)) {
     console.log(`ℹ Rust coverage available in ${path.relative(projectRoot, rustLcovPath)} (LCOV format, not merged)`)
   }
@@ -137,9 +137,9 @@ if (fs.existsSync(rustE2eCoveragePath)) {
 if (mergedCount === 0) {
   console.warn('⚠ No coverage files found to merge')
   console.warn(`  Expected paths:`)
-  console.warn(`  - coverage/coverage-final.json (frontend unit tests)`)
-  console.warn(`  - coverage/e2e-coverage.json (frontend E2E tests)`)
-  console.warn(`  - coverage/rust-coverage.json (Rust unit tests)`)
+  console.warn(`  - coverage/ui-unit-coverage.json (frontend unit tests)`)
+  console.warn(`  - coverage/ui-e2e-coverage.json (frontend E2E tests)`)
+  console.warn(`  - coverage/rust-unit-coverage.json (Rust unit tests)`)
   console.warn(`  - coverage/rust-e2e-coverage.json (Rust E2E tests)`)
   process.exit(0)
 }
@@ -185,11 +185,19 @@ try {
     reports.create(reportType, {}).execute(context)
   })
 
+  // Rename coverage.json to coverage-merged.json
+  const coverageJson = path.join(coverageDir, 'coverage.json')
+  const coverageMergedJson = path.join(coverageDir, 'coverage-merged.json')
+  if (fs.existsSync(coverageJson) && coverageJson !== coverageMergedJson) {
+    fs.renameSync(coverageJson, coverageMergedJson)
+  }
+
   console.log(`\n✓ Generated merged coverage report`)
   console.log(`  Reports: ${requestedReporters.join(', ')}`)
   console.log(`  Reports available in: ${path.relative(projectRoot, path.join(projectRoot, 'coverage'))}`)
   console.log(`  - HTML: coverage/index.html`)
   console.log(`  - LCOV: coverage/lcov.info`)
+  console.log(`  - JSON: coverage/coverage-merged.json`)
   console.log(`  - JSON Summary: coverage/coverage-summary.json`)
 
   // Try to merge Cobertura files if both exist

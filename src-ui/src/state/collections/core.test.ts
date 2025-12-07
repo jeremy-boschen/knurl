@@ -130,7 +130,7 @@ describe("collections/core", () => {
       id: "col-loaded",
       name: "Loaded",
       description: "",
-      updated: new Date().toISOString(),
+      updated: new Date(Date.now() - 1000).toISOString(),
       encryption: { algorithm: "aes-gcm" },
       authentication: { type: "none" },
       environments: {},
