@@ -14,7 +14,7 @@ import { generateUniqueId } from "@/lib/utils"
 import { useRequestBody, useRequestTab } from "@/state"
 import { CodeLanguages, type FormField, type RequestBodyData, type RequestHeader, type RequestState } from "@/types"
 import { EmptyState } from "./empty-state"
-import { FieldRow } from "./field-row"
+import { FormFieldRow } from "./form-field-row"
 import { SectionHeader } from "./section-header"
 
 export function guessContentTypeByExt(name: string | undefined): string | undefined {
@@ -98,33 +98,6 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
   const editorRef = useRef<CodeEditorHandle | null>(null)
 
   const [, startTransition] = useTransition()
-
-  // Form item reordering handlers
-  const handleFormItemMoveUp = useCallback(
-    (itemId: string) => {
-      const ids = Object.keys(body.formData ?? {})
-      const index = ids.indexOf(itemId)
-      if (index > 0) {
-        const newIds = [...ids]
-        ;[newIds[index - 1], newIds[index]] = [newIds[index], newIds[index - 1]]
-        actions.reorderFormItems(newIds)
-      }
-    },
-    [body.formData, actions],
-  )
-
-  const handleFormItemMoveDown = useCallback(
-    (itemId: string) => {
-      const ids = Object.keys(body.formData ?? {})
-      const index = ids.indexOf(itemId)
-      if (index < ids.length - 1) {
-        const newIds = [...ids]
-        ;[newIds[index], newIds[index + 1]] = [newIds[index + 1], newIds[index]]
-        actions.reorderFormItems(newIds)
-      }
-    },
-    [body.formData, actions],
-  )
 
   // Optimistic updates for instant feedback
   const [optimisticBody, updateBodyOptimistic] = useOptimistic(body, (state, changes: Record<string, unknown>) => ({
@@ -352,77 +325,16 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
                 }}
                 data-test-id="request-body-panel:form-section"
               >
-                {Object.values(body.formData ?? {}).map((item) => {
-                  const itemIds = Object.keys(body.formData ?? {})
-                  const itemIndex = itemIds.indexOf(item.id)
-                  return (
-                    <FieldRow
-                      key={item.id}
-                      fieldKey={item.id}
-                      dataTestIdPrefix="request-body-panel:form"
-                      field={{
-                        enabled: item.enabled,
-                        name: item.key,
-                        value: item.value,
-                        secure: item.kind === "text" ? item.secure : undefined,
-                      }}
-                      unsaved={{
-                        enabled: original?.formData?.[item.id]?.enabled !== body?.formData?.[item.id]?.enabled,
-                        name: original?.formData?.[item.id]?.key !== body?.formData?.[item.id]?.key,
-                        value: original?.formData?.[item.id]?.value !== body?.formData?.[item.id]?.value,
-                        secure: original?.formData?.[item.id]?.secure !== body?.formData?.[item.id]?.secure,
-                      }}
-                      valueSlot={
-                        item.kind === "file" ? (
-                          <FileInput
-                            fileName={item.fileName ?? ""}
-                            contentType={item.contentType ?? ""}
-                            onFileChange={(path, name, mimeType) => {
-                              const detected = mimeType ?? guessContentTypeByExt(name)
-                              actions.updateFormItem(item.id, {
-                                kind: "file",
-                                fileName: name,
-                                filePath: path,
-                                contentType: detected,
-                                value: "",
-                              })
-                            }}
-                            onContentTypeChange={(ct) => actions.updateFormItem(item.id, { contentType: ct })}
-                            onClear={() =>
-                              actions.updateFormItem(item.id, {
-                                kind: "file",
-                                fileName: "",
-                                filePath: undefined,
-                                contentType: "",
-                                value: "",
-                              })
-                            }
-                            data-test-id={`request-body-panel:form-file-input:${item.id}`}
-                          />
-                        ) : undefined
-                      }
-                      onChange={(changes) => {
-                        if ("enabled" in changes) {
-                          actions.updateFormItem(item.id, { enabled: !!changes.enabled })
-                        }
-                        if ("name" in changes && changes.name !== undefined) {
-                          actions.updateFormItem(item.id, { key: changes.name })
-                        }
-                        if ("value" in changes && changes.value !== undefined) {
-                          actions.updateFormItem(item.id, { value: changes.value })
-                        }
-                        if ("secure" in changes && changes.secure !== undefined) {
-                          actions.updateFormItem(item.id, { secure: !!changes.secure })
-                        }
-                      }}
-                      onDelete={() => actions.removeFormItem(item.id)}
-                      onMoveUp={() => handleFormItemMoveUp(item.id)}
-                      onMoveDown={() => handleFormItemMoveDown(item.id)}
-                      canMoveUp={itemIndex > 0}
-                      canMoveDown={itemIndex < itemIds.length - 1}
-                    />
-                  )
-                })}
+                {Object.values(body.formData ?? {}).map((item) => (
+                  <FormFieldRow
+                    key={item.id}
+                    tabId={tabId}
+                    field={item}
+                    original={original?.formData?.[item.id]}
+                    orderIds={Object.keys(body.formData ?? {})}
+                    onGuessContentType={guessContentTypeByExt}
+                  />
+                ))}
 
                 {Object.keys(body.formData ?? {}).length === 0 && (
                   <EmptyState message="No form items added yet. Click 'Add Form Item' to get started." />
