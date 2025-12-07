@@ -4,7 +4,6 @@ import { RouteIcon, FilterIcon, CookieIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
-import { cn } from "@/lib"
 import { onProfilerRender } from "@/lib/profiler-bridge"
 import { useRequestParameters } from "@/state"
 import type { RequestCookieParam } from "@/types"
@@ -278,31 +277,39 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
               return (
                 <FieldRow
                   key={pathParam.id}
-                  enabled={pathParam.enabled}
-                  onEnabledChange={(enabled) => handlePathParamEnabledChange(pathParam.id, enabled)}
-                  nameValue={pathParam.name}
-                  onNameChange={(name) => handlePathParamNameChange(pathParam.id, name)}
-                  valueInputProps={{
-                    type: pathParam.secure ? "password" : "text",
-                    placeholder: "Value",
+                  fieldKey={pathParam.id}
+                  dataTestIdPrefix="request-parameters-panel:path"
+                  field={{
+                    enabled: pathParam.enabled,
+                    name: pathParam.name,
                     value: pathParam.value,
-                    onChange: (e) => handlePathParamValueChange(pathParam.id, e.target.value),
-                    className: cn(
-                      "font-mono",
-                      original.pathParams?.[pathParam.id]?.value !== pathParam.value && "unsaved-changes",
-                    ),
-                    "data-test-id": `request-parameters-panel:path-param-value-input:${pathParam.id}`,
+                    secure: pathParam.secure,
+                  }}
+                  unsaved={{
+                    enabled: original.pathParams?.[pathParam.id]?.enabled !== pathParam.enabled,
+                    name: original.pathParams?.[pathParam.id]?.name !== pathParam.name,
+                    value: original.pathParams?.[pathParam.id]?.value !== pathParam.value,
+                    secure: original.pathParams?.[pathParam.id]?.secure !== pathParam.secure,
+                  }}
+                  onChange={(changes) => {
+                    if ("enabled" in changes) {
+                      handlePathParamEnabledChange(pathParam.id, !!changes.enabled)
+                    }
+                    if ("name" in changes && changes.name !== undefined) {
+                      handlePathParamNameChange(pathParam.id, changes.name)
+                    }
+                    if ("value" in changes && changes.value !== undefined) {
+                      handlePathParamValueChange(pathParam.id, changes.value)
+                    }
+                    if ("secure" in changes && changes.secure !== undefined) {
+                      handlePathParamSecureChange(pathParam.id, !!changes.secure)
+                    }
                   }}
                   onDelete={() => handlePathParamDelete(pathParam.id)}
-                  secure={pathParam.secure}
-                  onSecureChange={(secure) => handlePathParamSecureChange(pathParam.id, secure)}
                   onMoveUp={() => handlePathParamMoveUp(pathParam.id)}
                   onMoveDown={() => handlePathParamMoveDown(pathParam.id)}
                   canMoveUp={paramIndex > 0}
                   canMoveDown={paramIndex < pathParamIds.length - 1}
-                  hasUnsavedEnabled={original.pathParams?.[pathParam.id]?.enabled !== pathParam.enabled}
-                  hasUnsavedName={original.pathParams?.[pathParam.id]?.name !== pathParam.name}
-                  hasUnsavedSecure={original.pathParams?.[pathParam.id]?.secure !== pathParam.secure}
                 />
               )
             })}
@@ -341,31 +348,39 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
               return (
                 <FieldRow
                   key={param.id}
-                  enabled={param.enabled}
-                  onEnabledChange={(enabled) => handleQueryParamEnabledChange(param.id, enabled)}
-                  nameValue={param.name}
-                  onNameChange={(name) => handleQueryParamNameChange(param.id, name)}
-                  valueInputProps={{
-                    type: param.secure ? "password" : "text",
-                    placeholder: "Value",
+                  fieldKey={param.id}
+                  dataTestIdPrefix="request-parameters-panel:query"
+                  field={{
+                    enabled: param.enabled,
+                    name: param.name,
                     value: param.value,
-                    onChange: (e) => handleQueryParamValueChange(param.id, e.target.value),
-                    className: cn(
-                      "font-mono",
-                      original.queryParams?.[param.id]?.value !== param.value && "unsaved-changes",
-                    ),
-                    "data-test-id": `request-parameters-panel:query-param-value-input:${param.id}`,
+                    secure: param.secure,
+                  }}
+                  unsaved={{
+                    enabled: original.queryParams?.[param.id]?.enabled !== param.enabled,
+                    name: original.queryParams?.[param.id]?.name !== param.name,
+                    value: original.queryParams?.[param.id]?.value !== param.value,
+                    secure: original.queryParams?.[param.id]?.secure !== param.secure,
+                  }}
+                  onChange={(changes) => {
+                    if ("enabled" in changes) {
+                      handleQueryParamEnabledChange(param.id, !!changes.enabled)
+                    }
+                    if ("name" in changes && changes.name !== undefined) {
+                      handleQueryParamNameChange(param.id, changes.name)
+                    }
+                    if ("value" in changes && changes.value !== undefined) {
+                      handleQueryParamValueChange(param.id, changes.value)
+                    }
+                    if ("secure" in changes && changes.secure !== undefined) {
+                      handleQueryParamSecureChange(param.id, !!changes.secure)
+                    }
                   }}
                   onDelete={() => handleQueryParamDelete(param.id)}
-                  secure={param.secure}
-                  onSecureChange={(secure) => handleQueryParamSecureChange(param.id, secure)}
                   onMoveUp={() => handleQueryParamMoveUp(param.id)}
                   onMoveDown={() => handleQueryParamMoveDown(param.id)}
                   canMoveUp={paramIndex > 0}
                   canMoveDown={paramIndex < queryParamIds.length - 1}
-                  hasUnsavedEnabled={original.queryParams?.[param.id]?.enabled !== param.enabled}
-                  hasUnsavedName={original.queryParams?.[param.id]?.name !== param.name}
-                  hasUnsavedSecure={original.queryParams?.[param.id]?.secure !== param.secure}
                 />
               )
             })}
@@ -406,31 +421,39 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
                   return (
                     <FieldRow
                       key={param.id}
-                      enabled={param.enabled}
-                      onEnabledChange={(enabled) => handleCookieParamEnabledChange(param.id, enabled)}
-                      nameValue={param.name}
-                      onNameChange={(name) => handleCookieParamNameChange(param.id, name)}
-                      valueInputProps={{
-                        type: param.secure ? "password" : "text",
-                        placeholder: "Value",
+                      fieldKey={param.id}
+                      dataTestIdPrefix="request-parameters-panel:cookie"
+                      field={{
+                        enabled: param.enabled,
+                        name: param.name,
                         value: param.value,
-                        onChange: (e) => handleCookieParamValueChange(param.id, e.target.value),
-                        className: cn(
-                          "font-mono",
-                          original.cookieParams?.[param.id]?.value !== param.value && "unsaved-changes",
-                        ),
-                        "data-test-id": `request-parameters-panel:cookie-param-value-input:${param.id}`,
+                        secure: param.secure,
+                      }}
+                      unsaved={{
+                        enabled: original.cookieParams?.[param.id]?.enabled !== param.enabled,
+                        name: original.cookieParams?.[param.id]?.name !== param.name,
+                        value: original.cookieParams?.[param.id]?.value !== param.value,
+                        secure: original.cookieParams?.[param.id]?.secure !== param.secure,
+                      }}
+                      onChange={(changes) => {
+                        if ("enabled" in changes) {
+                          handleCookieParamEnabledChange(param.id, !!changes.enabled)
+                        }
+                        if ("name" in changes && changes.name !== undefined) {
+                          handleCookieParamNameChange(param.id, changes.name)
+                        }
+                        if ("value" in changes && changes.value !== undefined) {
+                          handleCookieParamValueChange(param.id, changes.value)
+                        }
+                        if ("secure" in changes && changes.secure !== undefined) {
+                          handleCookieParamSecureChange(param.id, !!changes.secure)
+                        }
                       }}
                       onDelete={() => handleCookieParamDelete(param.id)}
-                      secure={param.secure}
-                      onSecureChange={(secure) => handleCookieParamSecureChange(param.id, secure)}
                       onMoveUp={() => handleCookieParamMoveUp(param.id)}
                       onMoveDown={() => handleCookieParamMoveDown(param.id)}
                       canMoveUp={paramIndex > 0}
                       canMoveDown={paramIndex < cookieParamIds.length - 1}
-                      hasUnsavedEnabled={original.cookieParams?.[param.id]?.enabled !== param.enabled}
-                      hasUnsavedName={original.cookieParams?.[param.id]?.name !== param.name}
-                      hasUnsavedSecure={original.cookieParams?.[param.id]?.secure !== param.secure}
                     />
                   )
                 },

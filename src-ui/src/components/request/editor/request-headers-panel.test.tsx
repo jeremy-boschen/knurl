@@ -71,7 +71,7 @@ describe("RequestHeadersPanel", () => {
     const h = { id: "h2", name: "Auth", value: "secret", enabled: false, secure: false }
     renderWith({ [h.id]: h }, { [h.id]: h })
 
-    const enabled = queryByDataTestId("request-headers-panel:enabled-checkbox:h2") as HTMLElement
+    const enabled = queryByDataTestId("request-headers-panel:enabled:h2") as HTMLElement
     await user.click(enabled)
     expect(actions.updateHeader).toHaveBeenCalledWith("h2", { enabled: true })
 
@@ -96,9 +96,7 @@ describe("RequestHeadersPanel", () => {
     const h = { id: "h3", name: "Auth", value: "secret", enabled: true, secure: true }
     renderWith({ [h.id]: h }, { [h.id]: { ...h, value: "old", secure: false } })
 
-    const valueInput = document.querySelector(
-      '[data-test-id="request-headers-panel:value-input:h3"]',
-    ) as HTMLInputElement
+    const valueInput = document.querySelector('[data-test-id="request-headers-panel:value:h3"]') as HTMLInputElement
     expect(valueInput.type).toBe("password")
     expect(valueInput.className).toContain("unsaved-changes")
   })

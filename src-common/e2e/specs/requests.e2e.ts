@@ -420,7 +420,7 @@ describe("[CRITICAL] Multi-Tab Unsaved Edits Management", () => {
     await clickByTestId("request-editor:headers-tab")
 
     // Get initial header count for tab 1
-    const tab1HeaderCountBefore = await countElementsByTestIdPrefix("request-headers-panel:value-input:")
+    const tab1HeaderCountBefore = await countElementsByTestIdPrefix("request-headers-panel:value:")
 
     // Switch to tab 2
     const tab2 = await getElementByTestId(`request-tab:${tab2Key}`, 5000).catch(() => null)
@@ -429,7 +429,7 @@ describe("[CRITICAL] Multi-Tab Unsaved Edits Management", () => {
     // Verify we're on tab 2 by checking the headers tab button exists
     await clickByTestId("request-editor:headers-tab")
 
-    const tab2HeaderCount = await countElementsByTestIdPrefix("request-headers-panel:value-input:")
+    const tab2HeaderCount = await countElementsByTestIdPrefix("request-headers-panel:value:")
 
     // Tab 2 should have different headers (likely none if not edited)
     expect(tab2HeaderCount).toBeGreaterThanOrEqual(0)
@@ -439,7 +439,7 @@ describe("[CRITICAL] Multi-Tab Unsaved Edits Management", () => {
 
     await clickByTestId("request-editor:headers-tab")
 
-    const tab1HeaderCountAfter = await countElementsByTestIdPrefix("request-headers-panel:value-input:")
+    const tab1HeaderCountAfter = await countElementsByTestIdPrefix("request-headers-panel:value:")
 
     expect(tab1HeaderCountAfter).toBe(tab1HeaderCountBefore)
   })
