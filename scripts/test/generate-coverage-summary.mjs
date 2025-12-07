@@ -84,6 +84,7 @@ async function main() {
   if (rustE2eMetrics) console.log(`  Rust E2E: ${(rustE2eMetrics.lines * 100).toFixed(2)}% lines, ${(rustE2eMetrics.branches * 100).toFixed(2)}% branches`)
 
   // Merge all metrics - use max for each type to show "covered across any test"
+  // Note: Rust doesn't support branch coverage instrumentation, so exclude it from branch calculation
   const merged = {
     lines: Math.max(
       uiUnitMetrics?.lines || 0,
@@ -103,11 +104,10 @@ async function main() {
       rustUnitMetrics?.functions || 0,
       rustE2eMetrics?.functions || 0
     ),
+    // Branch coverage: only use UI metrics (Rust doesn't support branch instrumentation)
     branches: Math.max(
       uiUnitMetrics?.branches || 0,
-      uiE2eMetrics?.branches || 0,
-      rustUnitMetrics?.branches || 0,
-      rustE2eMetrics?.branches || 0
+      uiE2eMetrics?.branches || 0
     )
   }
 
