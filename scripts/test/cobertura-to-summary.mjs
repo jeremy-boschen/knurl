@@ -23,20 +23,23 @@ function parseCobertura() {
   try {
     const xml = fs.readFileSync(mergedXmlPath, 'utf-8')
 
-    // Extract coverage attribute from root element
-    // Example: <coverage line-rate="0.85" branch-rate="0.75" complexity="1.0">
-    const coverageMatch = xml.match(/<coverage[^>]*>/)
-    if (!coverageMatch) {
-      console.warn('⚠ Could not parse Cobertura XML')
-      return
+    // Extract line-rate and branch-rate from all package elements
+    // and calculate averages (since packages have different rates)
+    const packageMatches = xml.matchAll(/<package[^>]*line-rate="([^"]*)"[^>]*branch-rate="([^"]*)"/g)
+
+    let totalLineRate = 0
+    let totalBranchRate = 0
+    let packageCount = 0
+
+    for (const match of packageMatches) {
+      totalLineRate += parseFloat(match[1])
+      totalBranchRate += parseFloat(match[2])
+      packageCount++
     }
 
-    // Parse line-rate, branch-rate, and other metrics
-    const lineRateMatch = coverageMatch[0].match(/line-rate="([^"]*)"/)
-    const branchRateMatch = coverageMatch[0].match(/branch-rate="([^"]*)"/)
-
-    const lineRate = lineRateMatch ? parseFloat(lineRateMatch[1]) * 100 : 0
-    const branchRate = branchRateMatch ? parseFloat(branchRateMatch[1]) * 100 : 0
+    // Calculate averages and convert to percentages
+    const lineRate = packageCount > 0 ? (totalLineRate / packageCount) * 100 : 0
+    const branchRate = packageCount > 0 ? (totalBranchRate / packageCount) * 100 : 0
 
     // For statements and functions, we approximate from line rate
     // (In real coverage tools these are sometimes tracked separately)
