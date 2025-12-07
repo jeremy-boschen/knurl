@@ -75,35 +75,18 @@ const mergeCoverageData = (baseMap, newCoverage) => {
   })
 }
 
-// Note: Istanbul JSON merging from multiple sources is complex due to format differences
-// between Vitest and Rust converted coverage. Instead, we rely on Cobertura XML merging
-// which is the standard format used for CI integration.
-// Individual coverage files are still generated:
-// - ui-unit-coverage.json (frontend unit tests)
-// - ui-e2e-coverage.json (frontend E2E tests)
-// - rust-unit-coverage.json (Rust unit tests, converted from LCOV)
-// - rust-e2e-coverage.json (Rust E2E tests, converted from LCOV)
-
-// Check if we have any coverage files generated
+// Check what coverage files we have available
 const unitCoveragePath = path.join(projectRoot, 'coverage', 'ui-unit-coverage.json')
 const e2eCoveragePath = path.join(projectRoot, 'coverage', 'ui-e2e-coverage.json')
 const rustCoveragePath = path.join(projectRoot, 'coverage', 'rust-unit-coverage.json')
 const rustE2eCoveragePath = path.join(projectRoot, 'coverage', 'rust-e2e-coverage.json')
 
-const hasCoverageFiles = [
-  unitCoveragePath,
-  e2eCoveragePath,
-  rustCoveragePath,
-  rustE2eCoveragePath
-].some(p => fs.existsSync(p))
+const coverageFiles = [unitCoveragePath, e2eCoveragePath, rustCoveragePath, rustE2eCoveragePath]
+const existingFiles = coverageFiles.filter(p => fs.existsSync(p))
 
-if (hasCoverageFiles) {
-  mergedCount = 1  // Mark as having coverage for Cobertura merging
+if (existingFiles.length > 0) {
   console.log(`✓ Coverage files available:`)
-  if (fs.existsSync(unitCoveragePath)) console.log(`  - ${path.relative(projectRoot, unitCoveragePath)}`)
-  if (fs.existsSync(e2eCoveragePath)) console.log(`  - ${path.relative(projectRoot, e2eCoveragePath)}`)
-  if (fs.existsSync(rustCoveragePath)) console.log(`  - ${path.relative(projectRoot, rustCoveragePath)}`)
-  if (fs.existsSync(rustE2eCoveragePath)) console.log(`  - ${path.relative(projectRoot, rustE2eCoveragePath)}`)
+  existingFiles.forEach(p => console.log(`  - ${path.relative(projectRoot, p)}`))
 } else {
   const rustLcovPath = path.join(projectRoot, 'coverage', 'rust-unit-coverage.info')
   if (fs.existsSync(rustLcovPath)) {
@@ -111,13 +94,14 @@ if (hasCoverageFiles) {
   }
 }
 
-if (mergedCount === 0) {
-  console.warn('⚠ No coverage files found')
-  process.exit(0)
+// Mark as having coverage files (for Cobertura merging)
+if (existingFiles.length > 0) {
+  mergedCount = 1
+} else {
+  mergedCount = 0
 }
 
-// Skip Istanbul JSON merging - use Cobertura XML which is the standard for CI
-// Try to merge Cobertura files if both frontend and backend exist
+// Merge Cobertura XML files (which is the standard for CI)
 const uiCoberturaPath = path.join(projectRoot, 'coverage', 'ui-unit-coverage.xml')
 const rustCoberturaPath = path.join(projectRoot, 'coverage', 'rust-unit-coverage.xml')
 const uiE2eCoberturaPath = path.join(projectRoot, 'coverage', 'cobertura-e2e.xml')
@@ -130,8 +114,11 @@ if (hasFrontendCobertura || hasRustCobertura) {
   console.log(`\n📊 Merging Cobertura coverage files...`)
   try {
     execSync(`node "${path.join(__dirname, 'merge-cobertura.mjs')}"`, { stdio: 'inherit' })
+
+    // Generate coverage-summary.json from the merged Cobertura XML for threshold checking
+    execSync(`node "${path.join(__dirname, 'cobertura-to-summary.mjs')}"`, { stdio: 'inherit' })
   } catch (error) {
-    console.warn(`⚠ Cobertura merge failed: ${error.message}`)
+    console.warn(`⚠ Cobertura merge or summary generation failed: ${error.message}`)
   }
 } else {
   console.warn(`⚠ No Cobertura files found to merge`)
