@@ -1,6 +1,6 @@
 import React, { Profiler } from "react"
 
-import { RouteIcon, FilterIcon, CookieIcon } from "lucide-react"
+import { PlusIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
@@ -32,10 +32,10 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
                   size="sm"
                   onClick={() => actions.addPathParam()}
                   data-test-id="request-parameters-panel:add-path-param-button"
-                  className="h-6 px-2 gap-1"
+                  className="h-6 px-2 gap-1 hover:text-primary"
                 >
-                  <span className="text-xs">Add</span>
-                  <RouteIcon className="h-3.5 w-3.5" />
+                  <PlusIcon className="h-3.5 w-3.5" />
+                  <span className="text-xs">Path</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Add Path Parameter</TooltipContent>
@@ -62,10 +62,10 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
                   size="sm"
                   onClick={() => actions.addQueryParam()}
                   data-test-id="request-parameters-panel:add-query-param-button"
-                  className="h-6 px-2 gap-1"
+                  className="h-6 px-2 gap-1 hover:text-primary"
                 >
-                  <span className="text-xs">Add</span>
-                  <FilterIcon className="h-3.5 w-3.5" />
+                  <PlusIcon className="h-3.5 w-3.5" />
+                  <span className="text-xs">Query</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Add Query Parameter</TooltipContent>
@@ -93,10 +93,10 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
                     size="sm"
                     onClick={() => actions.addCookieParam()}
                     data-test-id="request-parameters-panel:add-cookie-param-button"
-                    className="h-6 px-2 gap-1"
+                    className="h-6 px-2 gap-1 hover:text-primary"
                   >
-                    <span className="text-xs">Add</span>
-                    <CookieIcon className="h-3.5 w-3.5" />
+                    <PlusIcon className="h-3.5 w-3.5" />
+                    <span className="text-xs">Cookie</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Add Cookie</TooltipContent>

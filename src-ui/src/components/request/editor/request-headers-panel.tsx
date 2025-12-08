@@ -1,6 +1,6 @@
 import React, { Profiler } from "react"
 
-import { ListIcon } from "lucide-react"
+import { PlusIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/knurl/tooltip"
@@ -30,10 +30,10 @@ function RequestHeadersPanelComponent({ tabId }: RequestHeadersPanelProps) {
                 size="sm"
                 onClick={() => actions.addHeader()}
                 data-test-id="request-headers-panel:add-header-button"
-                className="h-6 px-2 gap-1"
+                className="h-6 px-2 gap-1 hover:text-primary"
               >
-                <span className="text-xs">Add</span>
-                <ListIcon className="h-3.5 w-3.5" />
+                <PlusIcon className="h-3.5 w-3.5" />
+                <span className="text-xs">Header</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>Add Header</TooltipContent>

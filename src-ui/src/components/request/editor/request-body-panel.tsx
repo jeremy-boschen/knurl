@@ -1,6 +1,6 @@
 import React, { Profiler, useCallback, useEffect, useMemo, useRef, useOptimistic, useTransition } from "react"
 
-import { CodeIcon, TypeIcon, FilePlus2Icon } from "lucide-react"
+import { CodeIcon, PlusIcon } from "lucide-react"
 
 import { CodeEditor } from "@/components/editor/"
 import type { CodeEditorHandle } from "@/components/editor/code-editor"
@@ -244,10 +244,10 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
                       size="sm"
                       onClick={() => addFormField("text")}
                       data-test-id="request-body-panel:add-text-field-button"
-                      className="h-6 px-2 gap-1"
+                      className="h-6 px-2 gap-1 hover:text-primary"
                     >
-                      <span className="text-xs">Text</span>
-                      <TypeIcon className="h-3.5 w-3.5" />
+                      <PlusIcon className="h-3.5 w-3.5" />
+                      <span className="text-xs">Text Field</span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Add Text Field</TooltipContent>
@@ -259,10 +259,10 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
                       size="sm"
                       onClick={() => addFormField("file")}
                       data-test-id="request-body-panel:add-file-field-button"
-                      className="h-6 px-2 gap-1"
+                      className="h-6 px-2 gap-1 hover:text-primary"
                     >
-                      <span className="text-xs">File</span>
-                      <FilePlus2Icon className="h-3.5 w-3.5" />
+                      <PlusIcon className="h-3.5 w-3.5" />
+                      <span className="text-xs">File Field</span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Add File Field</TooltipContent>
