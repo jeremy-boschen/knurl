@@ -235,6 +235,28 @@ export const ensureParamPatch = <K extends RequestParamKey>(
   return created
 }
 
+export const ensureFormDataPatch = (
+  request: RequestState,
+  bodyPatch: Partial<RequestBodyData>,
+): Record<string, FormField> => {
+  const existing = bodyPatch.formData as Record<string, FormField> | undefined
+  if (existing) {
+    return existing
+  }
+
+  const created: Record<string, FormField> = {}
+  const baseFormData = request.body?.formData ?? {}
+  for (const [fieldId, fieldValue] of Object.entries(baseFormData)) {
+    created[fieldId] = zFormField.parse({
+      ...(fieldValue as Partial<FormField>),
+      id: fieldId,
+    })
+  }
+
+  bodyPatch.formData = created
+  return created
+}
+
 export const pruneParamPatchIfEqual = <K extends RequestParamKey>(
   request: RequestState,
   patch: RequestState["patch"],
@@ -268,11 +290,7 @@ export const applyBodyPatchUpdates = (
     RequestBodyData[keyof RequestBodyData],
   ][]) {
     if (bodyKey === "formData") {
-      let formDataPatch = patchBody.formData as Record<string, FormField> | undefined
-      if (!formDataPatch) {
-        formDataPatch = {}
-        patchBody.formData = formDataPatch
-      }
+      const formDataPatch = ensureFormDataPatch(request, patchBody)
       const baseFormData = request.body?.formData ?? {}
 
       for (const [fieldKey, fieldValue] of Object.entries(bodyValue as Record<string, FormField | null | undefined>)) {

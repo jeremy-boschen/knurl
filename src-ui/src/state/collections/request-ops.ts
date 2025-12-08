@@ -18,6 +18,7 @@ import {
   countCollectionRequests,
   ensureObjectPatch,
   ensureParamPatch,
+  ensureFormDataPatch,
   ensureRequestPatch,
   findRequestInCollection,
   insertRequestIntoFolder,
@@ -631,7 +632,7 @@ export function createRequestOps(set: ReturnType<StateCreator<Application>>, get
         const { request } = findRequestInCollection(app.collectionsState.cache[collectionId], requestId)
         const patch = ensureRequestPatch(request)
         const bodyPatch = ensureObjectPatch(request, patch, "body")
-        const formDataPatch = ensureObjectPatch(request, bodyPatch, "formData")
+        const formDataPatch = ensureFormDataPatch(request, bodyPatch)
         const reorderedFormItems: Record<string, FormField> = {}
         for (const id of orderedIds) {
           const item = formDataPatch[id] ?? request.body.formData?.[id]
