@@ -125,6 +125,8 @@ describe("collections/core", () => {
   })
 
   it("requires collections to be marked as loaded before retrieval", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date("2024-01-01T00:00:00.000Z"))
     const app = createAppState()
     const collection = {
       id: "col-loaded",
@@ -154,9 +156,12 @@ describe("collections/core", () => {
     markCollectionLoaded(collection.id)
     expect(getLoadedCollection(get(app), collection.id)).toBe(collection)
 
+    // Advance time so touch updates timestamp deterministically
+    vi.advanceTimersByTime(1)
     const previousTimestamp = collection.updated
     const touched = touch(collection as unknown as Collection)
     expect(touched.updated).not.toBe(previousTimestamp)
+    vi.useRealTimers()
   })
 
   it("registers storage provider and loads index data", async () => {
