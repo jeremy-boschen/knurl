@@ -11,7 +11,7 @@ function mergeCobertura() {
   const frontendPath = path.join(projectRoot, 'coverage', 'ui-unit-coverage.xml')
   const rustUnitPath = path.join(projectRoot, 'coverage', 'rust-unit-coverage.xml')
   const rustE2ePath = path.join(projectRoot, 'coverage', 'rust-e2e-coverage.xml')
-  const e2ePath = path.join(projectRoot, 'coverage', 'cobertura-e2e.xml')
+  const e2ePath = path.join(projectRoot, 'coverage', 'ui-e2e-coverage.xml')
   const outputPath = path.join(projectRoot, 'coverage', 'coverage-merged.xml')
 
   // At minimum, we need frontend coverage. Rust and E2E are optional

@@ -104,7 +104,7 @@ if (existingFiles.length > 0) {
 // Merge Cobertura XML files (which is the standard for CI)
 const uiCoberturaPath = path.join(projectRoot, 'coverage', 'ui-unit-coverage.xml')
 const rustCoberturaPath = path.join(projectRoot, 'coverage', 'rust-unit-coverage.xml')
-const uiE2eCoberturaPath = path.join(projectRoot, 'coverage', 'cobertura-e2e.xml')
+const uiE2eCoberturaPath = path.join(projectRoot, 'coverage', 'ui-e2e-coverage.xml')
 
 // Check what Cobertura files we have
 const hasFrontendCobertura = fs.existsSync(uiCoberturaPath) || fs.existsSync(uiE2eCoberturaPath)

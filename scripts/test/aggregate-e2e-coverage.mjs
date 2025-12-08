@@ -62,30 +62,16 @@ async function aggregateCoverage() {
       stdio: 'inherit',
     });
 
-    console.log('[coverage] Generating E2E coverage report...');
+    console.log('[coverage] Converting E2E coverage to Cobertura format...');
 
-    // Copy merged coverage back to .nyc_output for nyc report to read
-    const mergedCoverage = path.join(projectRoot, 'coverage/ui-e2e-coverage.json');
-    const nycOutputCoverage = path.join(projectRoot, '.nyc_output/coverage.json');
-    if (existsSync(mergedCoverage)) {
-      copyFileSync(mergedCoverage, nycOutputCoverage);
-    }
-
-    // Generate reports from the merged coverage data (including Cobertura for CI/CD integration)
-    execSync('yarn nyc report --reporter=html --reporter=json --reporter=cobertura --temp-dir=.nyc_output --report-dir=coverage/e2e', {
+    // Use the dedicated conversion script to convert Istanbul JSON to Cobertura XML
+    // This is more reliable than using nyc report which doesn't handle E2E coverage well
+    execSync(`node "${path.join(__dirname, 'convert-e2e-to-cobertura.mjs')}"`, {
       cwd: projectRoot,
       stdio: 'inherit',
     });
 
-    // Copy cobertura.xml to root coverage dir for merging
-    const coberturaSource = path.join(projectRoot, 'coverage/e2e/cobertura-coverage.xml');
-    const coberturaTarget = path.join(projectRoot, 'coverage/ui-e2e-coverage.xml');
-    if (existsSync(coberturaSource)) {
-      copyFileSync(coberturaSource, coberturaTarget);
-      console.log('[coverage] ✓ Cobertura XML copied to coverage/ui-e2e-coverage.xml');
-    }
-
-    console.log('[coverage] ✓ E2E coverage report generated in coverage/e2e/');
+    console.log('[coverage] ✓ E2E coverage report generated');
     process.exit(0);
   } catch (error) {
     console.error(

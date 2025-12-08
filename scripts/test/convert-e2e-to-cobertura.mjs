@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 
-import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import coverageLib from 'istanbul-lib-coverage'
+import report from 'istanbul-lib-report'
+import reports from 'istanbul-reports'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const projectRoot = path.resolve(__dirname, '../..')
 
 function convertE2EToCobertua() {
   const e2eCoveragePath = path.join(projectRoot, 'coverage', 'ui-e2e-coverage.json')
-  const outputPath = path.join(projectRoot, 'coverage', 'cobertura-e2e.xml')
+  const outputPath = path.join(projectRoot, 'coverage', 'ui-e2e-coverage.xml')
 
   if (!fs.existsSync(e2eCoveragePath)) {
     console.log('⚠ E2E coverage file not found. Skipping conversion.')
@@ -19,37 +21,41 @@ function convertE2EToCobertua() {
   }
 
   try {
-    // Create temporary .nyc_output directory with the coverage file
-    const nycOutputDir = path.join(projectRoot, '.nyc_output_e2e_temp')
-    const tempCoverageFile = path.join(nycOutputDir, 'coverage.json')
+    // Read the Istanbul JSON coverage file
+    const rawCoverage = JSON.parse(fs.readFileSync(e2eCoveragePath, 'utf-8'))
 
-    if (!fs.existsSync(nycOutputDir)) {
-      fs.mkdirSync(nycOutputDir, { recursive: true })
+    // Create coverage map from raw coverage data
+    const { createCoverageMap } = coverageLib
+    const map = createCoverageMap(rawCoverage)
+
+    // Create output directory if it doesn't exist
+    const reportDir = path.dirname(outputPath)
+    if (!fs.existsSync(reportDir)) {
+      fs.mkdirSync(reportDir, { recursive: true })
     }
 
-    // Copy e2e coverage to temp location for nyc to process
-    fs.copyFileSync(e2eCoveragePath, tempCoverageFile)
-
-    // Use nyc to generate cobertura report
-    execSync(`npx nyc report --reporter=cobertura --temp-dir="${nycOutputDir}" --report-dir="${nycOutputDir}"`, {
-      cwd: projectRoot,
-      stdio: 'pipe',
+    // Create context and generate Cobertura report
+    const { createContext } = report
+    const ctx = createContext({
+      dir: reportDir,
+      coverageMap: map,
     })
 
-    // Move generated cobertura.xml to our expected location
-    const generatedCobertura = path.join(nycOutputDir, 'cobertura-coverage.xml')
-    if (fs.existsSync(generatedCobertura)) {
-      fs.renameSync(generatedCobertura, outputPath)
-      console.log(`✓ Converted E2E coverage to Cobertura format`)
-      console.log(`  Output: ${path.relative(projectRoot, outputPath)}`)
-    } else {
-      console.warn(`⚠ Cobertura output not found at expected path: ${generatedCobertura}`)
+    // Generate cobertura reporter
+    const CoberturaReporter = reports.create('cobertura')
+    CoberturaReporter.execute(ctx)
+
+    // The reporter should have created cobertura-coverage.xml in the report dir
+    const generatedFile = path.join(reportDir, 'cobertura-coverage.xml')
+    if (fs.existsSync(generatedFile) && generatedFile !== outputPath) {
+      fs.renameSync(generatedFile, outputPath)
     }
 
-    // Clean up temp directory
-    fs.rmSync(nycOutputDir, { recursive: true, force: true })
+    console.log(`✓ Converted E2E coverage to Cobertura format`)
+    console.log(`  Output: ${path.relative(projectRoot, outputPath)}`)
   } catch (error) {
     console.error(`✗ Failed to convert E2E coverage: ${error.message}`)
+    console.error(error.stack)
   }
 }
 
