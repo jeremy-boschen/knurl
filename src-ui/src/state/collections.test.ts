@@ -116,6 +116,78 @@ describe("collections patch helpers", () => {
     expect(committed.pathParams?.p1?.value).toBe("99")
     expect(committed.pathParams?.p2?.value).toBe("2")
   })
+
+  it("preserves sibling query params when editing one", async () => {
+    const {collectionsApi} = useApplication.getState()
+    const col = collectionsApi.addCollection("Query Preserve")
+    const req = collectionsApi.createRequest(col.id, {name: "R"})
+    collectionsApi.updateRequest(col.id, req.id, {
+      queryParams: {
+        q1: {id: "q1", name: "foo", value: "1", enabled: true, secure: false},
+        q2: {id: "q2", name: "bar", value: "2", enabled: true, secure: false},
+      },
+    })
+
+    collectionsApi.updateRequestPatchQueryParam(col.id, req.id, "q1", {value: "99"})
+    const patched = collectionsApi.getRequest(col.id, req.id)
+    expect(patched.patch?.queryParams?.q1?.value).toBe("99")
+    expect(patched.patch?.queryParams?.q2?.value).toBe("2")
+
+    collectionsApi.commitRequestPatch(col.id, req.id)
+    const committed = collectionsApi.getRequest(col.id, req.id)
+    expect(committed.queryParams?.q1?.value).toBe("99")
+    expect(committed.queryParams?.q2?.value).toBe("2")
+  })
+
+  it("preserves sibling cookies when editing one", async () => {
+    const {collectionsApi} = useApplication.getState()
+    const col = collectionsApi.addCollection("Cookie Preserve")
+    const req = collectionsApi.createRequest(col.id, {name: "R"})
+    collectionsApi.updateRequest(col.id, req.id, {
+      cookieParams: {
+        c1: {id: "c1", name: "sid", value: "a", enabled: true, secure: false},
+        c2: {id: "c2", name: "cid", value: "b", enabled: true, secure: false},
+      },
+    })
+
+    collectionsApi.updateRequestPatchCookieParam(col.id, req.id, "c1", {value: "zzz"})
+    const patched = collectionsApi.getRequest(col.id, req.id)
+    expect(patched.patch?.cookieParams?.c1?.value).toBe("zzz")
+    expect(patched.patch?.cookieParams?.c2?.value).toBe("b")
+
+    collectionsApi.commitRequestPatch(col.id, req.id)
+    const committed = collectionsApi.getRequest(col.id, req.id)
+    expect(committed.cookieParams?.c1?.value).toBe("zzz")
+    expect(committed.cookieParams?.c2?.value).toBe("b")
+  })
+
+  it("preserves sibling formData fields when editing one", async () => {
+    const {collectionsApi} = useApplication.getState()
+    const col = collectionsApi.addCollection("Form Preserve")
+    const req = collectionsApi.createRequest(col.id, {name: "R"})
+    collectionsApi.updateRequest(col.id, req.id, {
+      body: {
+        type: "form",
+        encoding: "url",
+        formData: {
+          f1: {id: "f1", key: "one", value: "1", enabled: true, secure: false, kind: "text"},
+          f2: {id: "f2", key: "two", value: "2", enabled: true, secure: false, kind: "text"},
+        },
+      },
+    })
+
+    collectionsApi.setRequestBodyFormField(col.id, req.id, "f1", {value: "9"})
+    const patched = collectionsApi.getRequest(col.id, req.id)
+    expect(patched.patch?.body?.formData?.f1?.value).toBe("9")
+    expect(patched.patch?.body?.formData?.f2?.value).toBe("2")
+    expect(Object.keys(patched.body.formData ?? {})).toEqual(["f1", "f2"])
+
+    collectionsApi.commitRequestPatch(col.id, req.id)
+    const committed = collectionsApi.getRequest(col.id, req.id)
+    expect(committed.body.formData?.f1?.value).toBe("9")
+    expect(committed.body.formData?.f2?.value).toBe("2")
+    expect(committed.patch?.body?.formData).toBeUndefined()
+  })
 })
 
 describe("collections patch and merge logic", () => {
