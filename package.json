@@ -125,6 +125,7 @@
     "@wdio/spec-reporter": "^9.20.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "cross-env": "^10.1.0",
+    "esbuild": "^0.25.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-compiler": "^19.1.0-rc.2",
     "execa": "^9.6.1",
@@ -152,6 +153,7 @@
     "vite-plugin-istanbul": "^7.2.1",
     "vitest": "^4.0.15",
     "vitest-browser-react": "^2.0.2",
+    "webdriver": "^9.21.0",
     "webdriverio": "^9.21.0",
     "xml2js": "^0.6.2",
     "yazl": "^3.3.1"
