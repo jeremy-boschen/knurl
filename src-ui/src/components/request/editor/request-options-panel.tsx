@@ -228,7 +228,7 @@ function RequestOptionsPanelComponent({ tabId }: RequestOptionsPanelProps) {
                     }}
                     data-test-id="request-options-panel:ca-path-browse-button"
                   >
-                    Browse…
+                    Browse...
                   </Button>
                 }
               />

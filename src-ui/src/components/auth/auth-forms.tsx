@@ -151,7 +151,7 @@ export const BearerAuthForm: FC<BearerAuthFormProps> = ({
                     JWT
                   </SelectItem>
                   <SelectItem value="custom" data-test-id={`${testIdPrefix}:bearer-auth-scheme-custom`}>
-                    Custom…
+                    Custom...
                   </SelectItem>
                 </SelectContent>
               </Select>

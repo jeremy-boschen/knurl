@@ -1,7 +1,8 @@
-import { Upload, XIcon } from "lucide-react"
+import { XIcon } from "lucide-react"
 import { useEffect, useRef, type DragEventHandler } from "react"
 import type React from "react"
 import type { Input } from "./input"
+import { Button } from "@/components/ui/button"
 import { openFile } from "@/bindings/knurl"
 import { getCurrentWebview } from "@tauri-apps/api/webview"
 
@@ -143,15 +144,15 @@ export function FileInput({ name: _name, fileName, contentType, onFileChange, on
         className="min-w-0 bg-transparent px-3 py-2 text-sm text-white border-none outline-none placeholder:text-zinc-500"
       />
 
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={handleChooseFile}
-        className="flex h-full items-center justify-center text-white hover:bg-zinc-700 transition-colors"
         title="Choose file"
-        aria-label="Choose file"
+        className="h-full rounded-none text-white"
       >
-        <Upload className="w-4 h-4" />
-      </button>
+        Browse...
+      </Button>
 
       <button
         type="button"

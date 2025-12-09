@@ -165,7 +165,7 @@ export function ImportKeyDialog({ open, onOpenChange }: ImportKeyDialogProps) {
           </Alert>
 
           <Textarea
-            placeholder="Paste your encryption key here…"
+            placeholder="Paste your encryption key here..."
             value={newKeyInput}
             onChange={(e) => setState((s) => ({ ...s, newKeyInput: e.target.value }))}
             disabled={isLoading}
