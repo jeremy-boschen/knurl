@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react"
+import { useCallback, useLayoutEffect, useRef, useState } from "react"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 import { MaximizeIcon, MinusIcon, XIcon } from "lucide-react"
 
@@ -16,36 +16,39 @@ export function WindowControlDropdownMenuContent({
   const [isMinimized, setIsMinimized] = useState(false)
   const isLoadedRef = useRef(false)
 
+  const updateWindowState = useCallback(async () => {
+    const window = await getCurrentWindow()
+    setIsMaximized(await window.isMaximized())
+    setIsMinimized(await window.isMinimized())
+  }, [])
+
   useLayoutEffect(() => {
-    const updateWindowState = async () => {
-      const window = await getCurrentWindow()
-      setIsMaximized(await window.isMaximized())
-      setIsMinimized(await window.isMinimized())
+    const initWindowState = async () => {
+      await updateWindowState()
       isLoadedRef.current = true
     }
 
-    updateWindowState()
-  }, [])
+    initWindowState()
+  }, [updateWindowState])
 
   const handleRestore = async () => {
     const window = await getCurrentWindow()
     if (isMaximized) {
       await window.unmaximize()
-      setIsMaximized(false)
     } else if (isMinimized) {
       await window.unminimize()
-      setIsMinimized(false)
     }
+    await updateWindowState()
   }
 
-  const handleMinimize = () => {
-    getCurrentWindow().minimize()
-    setIsMinimized(true)
+  const handleMinimize = async () => {
+    await getCurrentWindow().minimize()
+    await updateWindowState()
   }
 
-  const handleMaximize = () => {
-    getCurrentWindow().maximize()
-    setIsMaximized(true)
+  const handleMaximize = async () => {
+    await getCurrentWindow().maximize()
+    await updateWindowState()
   }
 
   const handleClose = () => {

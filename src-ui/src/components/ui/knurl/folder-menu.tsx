@@ -1,7 +1,15 @@
 import { useCallback, useMemo } from "react"
 import type React from "react"
 
-import { ChevronDownIcon, ChevronUpIcon, Edit2Icon, FolderIcon, FolderPlusIcon, PlusIcon, Trash2Icon } from "lucide-react"
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  Edit2Icon,
+  FolderIcon,
+  FolderPlusIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react"
 
 import {
   DropdownMenuContent,
@@ -152,28 +160,6 @@ export function FolderMenuContent({ collectionId, folder, onAction }: FolderMenu
       onClick: (event: React.MouseEvent<HTMLElement>) => invoke(event.nativeEvent as unknown as Event),
     }
   }
-
-  const handleMoveUp = useCallback(() => {
-    if (canMoveUp) {
-      const newOrder = [...siblingFolderIds]
-      ;[newOrder[currentSiblingIndex], newOrder[currentSiblingIndex - 1]] = [
-        newOrder[currentSiblingIndex - 1],
-        newOrder[currentSiblingIndex],
-      ]
-      collectionsApi().reorderFolders(collectionId, currentParentId, newOrder)
-    }
-  }, [canMoveUp, currentSiblingIndex, siblingFolderIds, collectionId, currentParentId])
-
-  const handleMoveDown = useCallback(() => {
-    if (canMoveDown) {
-      const newOrder = [...siblingFolderIds]
-      ;[newOrder[currentSiblingIndex], newOrder[currentSiblingIndex + 1]] = [
-        newOrder[currentSiblingIndex + 1],
-        newOrder[currentSiblingIndex],
-      ]
-      collectionsApi().reorderFolders(collectionId, currentParentId, newOrder)
-    }
-  }, [canMoveDown, currentSiblingIndex, siblingFolderIds, collectionId, currentParentId])
 
   return (
     <DropdownMenuContent align="start" className="w-48" sideOffset={4}>
