@@ -131,7 +131,7 @@ export function FileInput({ name: _name, fileName, contentType, onFileChange, on
   }
 
   const containerClass =
-    "grid grid-cols-[minmax(0,6fr)_auto_2rem_1px_minmax(0,6fr)] items-center gap-x-0 bg-zinc-800 border border-zinc-700 rounded-md overflow-hidden focus-within:ring-1 focus-within:ring-zinc-600 p-0 m-0"
+    "grid grid-cols-[minmax(0,6fr)_auto_1px_minmax(0,6fr)_2rem] items-center gap-x-0 bg-zinc-800 border border-zinc-700 rounded-md overflow-hidden focus-within:ring-1 focus-within:ring-zinc-600 p-0 m-0"
 
   return (
     <fieldset className={containerClass} ref={dropZoneRef} onDragOver={handleDragOver} onDrop={handleDrop}>
@@ -154,17 +154,6 @@ export function FileInput({ name: _name, fileName, contentType, onFileChange, on
         Browse...
       </Button>
 
-      <button
-        type="button"
-        onClick={handleClear}
-        className="flex h-full items-center justify-center text-white hover:bg-zinc-700 transition-colors disabled:pointer-events-none disabled:opacity-50 border-l border-l-zinc-700/60"
-        title="Clear file"
-        aria-label="Clear file"
-        disabled={!fileName}
-      >
-        <XIcon className="w-4 h-4" />
-      </button>
-
       <div className="h-6 w-full bg-zinc-700" aria-hidden="true"></div>
 
       <input
@@ -174,6 +163,17 @@ export function FileInput({ name: _name, fileName, contentType, onFileChange, on
         placeholder="content-type"
         className="min-w-0 bg-transparent px-3 py-2 text-sm text-white border-none outline-none placeholder:text-zinc-500"
       />
+
+      <button
+        type="button"
+        onClick={handleClear}
+        className="flex h-full items-center justify-center text-white hover:bg-zinc-700 transition-colors disabled:pointer-events-none disabled:opacity-50"
+        title="Clear content-type"
+        aria-label="Clear content-type"
+        disabled={!contentType}
+      >
+        <XIcon className="w-4 h-4" />
+      </button>
     </fieldset>
   )
 }
