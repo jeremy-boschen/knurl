@@ -13,6 +13,10 @@ export const zClientOptionsData = z.object({
    */
   caPath: z.string().optional(),
   /**
+   * Raw CA certificate text (PEM format) as alternative to caPath
+   */
+  caText: z.string().optional(),
+  /**
    * Hostname part for custom DNS override (e.g., "api.example.com")
    */
   hostOverride: z.string().optional(),
