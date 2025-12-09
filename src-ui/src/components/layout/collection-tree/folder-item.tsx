@@ -1,6 +1,6 @@
 import { FolderClosedIcon, FolderOpenIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { Clickable } from "@/components/ui/knurl"
 import { useCollectionFromCache, useCollectionTree } from "@/state"
 import { useShowableIds } from "@/hooks/use-showable-ids"
 import { FolderItemList } from "./folder-item-list"
@@ -36,7 +36,8 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
 
   return (
     <div>
-      <div
+      <Clickable
+        className="flex items-center space-x-2 rounded px-2 py-2 cursor-pointer text-sm text-muted-foreground hover:bg-muted"
         data-test-id={`collection-tree:folder-row:${folderId}`}
         data-collection-id={collectionId}
         data-folder-id={folderId}
@@ -45,20 +46,13 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
         role="treeitem"
         aria-expanded={isOpen}
         tabIndex={0}
+        onClick={handleToggle}
       >
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleToggle}
-          className="flex w-full items-center space-x-2 text-muted-foreground"
-          aria-expanded={isOpen}
-        >
-          <span aria-hidden className="text-primary">
-            {isOpen ? <FolderOpenIcon className="h-3.5 w-3.5" /> : <FolderClosedIcon className="h-3.5 w-3.5" />}
-          </span>
-          <span>{folder.name}</span>
-        </Button>
-      </div>
+        <span aria-hidden className="text-primary">
+          {isOpen ? <FolderOpenIcon className="h-3.5 w-3.5" /> : <FolderClosedIcon className="h-3.5 w-3.5" />}
+        </span>
+        <span className="pt-1 text-sm leading-none">{folder.name}</span>
+      </Clickable>
 
       {isOpen ? (
         <div className="ml-3 space-y-1">

@@ -52,7 +52,7 @@ export function RequestItem({ collectionId, requestId }: RequestItemProps) {
 
   return (
     <Clickable
-      className={cn("flex items-center space-x-2 rounded px-2 py-2 cursor-pointer text-sm hover:bg-muted")}
+      className={cn("flex items-center justify-start space-x-2 rounded px-2 py-2 cursor-pointer text-sm hover:bg-muted")}
       data-test-id={`collection-tree:request-row:${requestId}`}
       data-collection-id={collectionId}
       data-request-id={requestId}
