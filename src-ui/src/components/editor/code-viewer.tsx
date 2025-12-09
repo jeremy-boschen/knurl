@@ -17,7 +17,15 @@ type CodeViewerProps = {
 
 const noop = () => {}
 
-export function CodeViewer({ value, language, formatted, className, height = "100%", placeholder, syntaxHighlighting = true }: CodeViewerProps) {
+export function CodeViewer({
+  value,
+  language,
+  formatted,
+  className,
+  height = "100%",
+  placeholder,
+  syntaxHighlighting = true,
+}: CodeViewerProps) {
   // cache formatted result per (language,value)
   const [cache, setCache] = useState<{ key: string; out: string } | null>(null)
   const formatSequence = useRef(0)
