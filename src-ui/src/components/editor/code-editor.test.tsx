@@ -145,19 +145,30 @@ describe("CodeEditor", () => {
     expect(onChange).not.toHaveBeenCalled()
   })
 
-  it("respects syntaxHighlighting prop", () => {
+  it("disables language extension when syntaxHighlighting is false", () => {
     const handleChange = vi.fn()
     render(<CodeEditor value="{}" language="json" onChange={handleChange} syntaxHighlighting={false} />)
 
-    const props = getLastRenderProps()
-    expect(props.basicSetup).toEqual(expect.objectContaining({ syntaxHighlighting: false }))
+    const extensions = (getLastRenderProps().extensions || []) as Array<{ type?: string }>
+    // Language extension should not be included
+    expect(extensions.some((ext) => ext?.type === "json")).toBe(false)
   })
 
-  it("defaults syntaxHighlighting to true when not specified", () => {
+  it("includes language extension when syntaxHighlighting is true", () => {
+    const handleChange = vi.fn()
+    render(<CodeEditor value="{}" language="json" onChange={handleChange} syntaxHighlighting={true} />)
+
+    const extensions = (getLastRenderProps().extensions || []) as Array<{ type?: string }>
+    // Language extension should be included
+    expect(extensions.some((ext) => ext?.type === "json")).toBe(true)
+  })
+
+  it("includes language extension by default when syntaxHighlighting is not specified", () => {
     const handleChange = vi.fn()
     render(<CodeEditor value="{}" language="json" onChange={handleChange} />)
 
-    const props = getLastRenderProps()
-    expect(props.basicSetup).toEqual(expect.objectContaining({ syntaxHighlighting: true }))
+    const extensions = (getLastRenderProps().extensions || []) as Array<{ type?: string }>
+    // Language extension should be included by default
+    expect(extensions.some((ext) => ext?.type === "json")).toBe(true)
   })
 })

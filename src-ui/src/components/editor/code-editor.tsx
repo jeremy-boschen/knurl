@@ -115,14 +115,14 @@ export function CodeEditor({
       foldKeymap: false,
       completionKeymap: false,
       lintKeymap: false,
-      syntaxHighlighting: syntaxHighlighting,
     }),
-    [lineNumbers, mode, syntaxHighlighting],
+    [lineNumbers, mode],
   )
 
   const extensions = useMemo(() => {
     const exts: Extension[] = [...baseExtensions]
-    if (langExt) {
+    // Only add language extension with syntax highlighting if enabled
+    if (syntaxHighlighting && langExt) {
       exts.push(langExt)
     }
     if (placeholder) {
@@ -130,7 +130,7 @@ export function CodeEditor({
     }
     exts.push(...extraExtensions)
     return exts
-  }, [baseExtensions, langExt, extraExtensions, placeholder])
+  }, [baseExtensions, langExt, extraExtensions, placeholder, syntaxHighlighting])
 
   const props: ReactCodeMirrorProps = {
     className: className,
