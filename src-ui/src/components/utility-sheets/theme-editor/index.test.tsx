@@ -26,6 +26,9 @@ const settingsApi = vi.fn(() => settingsActions)
 const sheetsPopMock = vi.fn()
 
 vi.mock("@/state", () => ({
+  useApplication: () => ({
+    settingsState: { appearance: { autoHighlight: true } },
+  }),
   useSettings: () => ({
     state: settingsState,
     actions: { settingsApi },

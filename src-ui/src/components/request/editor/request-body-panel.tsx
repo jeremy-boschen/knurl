@@ -11,7 +11,7 @@ import { cn } from "@/lib"
 import { onProfilerRender } from "@/lib/profiler-bridge"
 import { warmPrettier } from "@/lib/prettier"
 import { generateUniqueId } from "@/lib/utils"
-import { useRequestBody, useRequestTab } from "@/state"
+import { useApplication, useRequestBody, useRequestTab } from "@/state"
 import { CodeLanguages, type FormField, type RequestBodyData, type RequestHeader, type RequestState } from "@/types"
 import { EmptyState } from "./empty-state"
 import { FormFieldList } from "./form-field-list"
@@ -95,6 +95,7 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
     state: { body, original },
     actions,
   } = useRequestBody(tabId)
+  const { settingsState } = useApplication()
   const editorRef = useRef<CodeEditorHandle | null>(null)
 
   const [, startTransition] = useTransition()
@@ -228,6 +229,7 @@ function RequestBodyPanelComponent({ tabId }: RequestBodyPanelProps) {
                 }}
                 lineNumbers={(optimisticBody.content?.length ?? 0) > 0}
                 placeholder="Enter request body (JSON, YAML, GraphQL, XML, etc.)"
+                syntaxHighlighting={settingsState.appearance.autoHighlight}
                 data-test-id="request-body-panel:text-editor"
               />
             </div>

@@ -10,7 +10,7 @@ import { LabeledField } from "@/components/ui/knurl"
 import { Input } from "@/components/ui/knurl/input"
 import { SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useCollections } from "@/state"
+import { useApplication, useCollections } from "@/state"
 
 import { useImportParser } from "./use-import-parser"
 import { useSelectionManager } from "./use-selection-manager"
@@ -23,6 +23,7 @@ import type { ImportFormat } from "./types"
 type TabValue = "preview" | "native-source" | "openapi-source" | "postman-source"
 
 export default function ImportCollectionSheet() {
+  const { settingsState } = useApplication()
   // --- STATE MANAGEMENT ---
   // Raw input state
   const [importData, setImportData] = useState("")
@@ -256,6 +257,7 @@ export default function ImportCollectionSheet() {
                   onChange={setImportData}
                   className="absolute inset-0 h-full w-full rounded-sm border"
                   language="json"
+                  syntaxHighlighting={settingsState.appearance.autoHighlight}
                 />
               </TabsContent>
               {detectedFormat === "openapi" && (
@@ -266,6 +268,7 @@ export default function ImportCollectionSheet() {
                     className="absolute h-full w-full rounded-sm border"
                     language={importData.trim().startsWith("{") ? "json" : "yaml"}
                     lineNumbers
+                    syntaxHighlighting={settingsState.appearance.autoHighlight}
                   />
                 </TabsContent>
               )}
@@ -277,6 +280,7 @@ export default function ImportCollectionSheet() {
                     className="absolute h-full w-full rounded-sm border"
                     language="json"
                     lineNumbers
+                    syntaxHighlighting={settingsState.appearance.autoHighlight}
                   />
                 </TabsContent>
               )}

@@ -66,4 +66,18 @@ describe("CodeViewer", () => {
     await waitFor(() => expect(mockedPrettier.mock.calls.length).toBeGreaterThan(afterSecondFormat))
     await waitFor(() => expect(codeEditorMock.mock.calls.at(-1)?.[0].value).toBe(formatted("[]", "yaml")))
   })
+
+  it("respects syntaxHighlighting prop", () => {
+    render(<CodeViewer value="raw" language="json" formatted={false} syntaxHighlighting={false} />)
+
+    const props = codeEditorMock.mock.calls.at(-1)?.[0] as CodeEditorProps
+    expect(props.syntaxHighlighting).toBe(false)
+  })
+
+  it("defaults syntaxHighlighting to true when not specified", () => {
+    render(<CodeViewer value="raw" language="json" formatted={false} />)
+
+    const props = codeEditorMock.mock.calls.at(-1)?.[0] as CodeEditorProps
+    expect(props.syntaxHighlighting).toBe(true)
+  })
 })

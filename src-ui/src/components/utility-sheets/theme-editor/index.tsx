@@ -6,7 +6,7 @@ import { CodeEditor } from "@/components/editor/code-editor"
 import { Button } from "@/components/ui/button"
 import { SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { appendMissingCustomVars, buildDefaultThemeCss, ensureCustomCssVarsDetailed } from "@/lib/theme/custom-css-vars"
-import { useSettings, utilitySheetsApi } from "@/state"
+import { useApplication, useSettings, utilitySheetsApi } from "@/state"
 import type { CustomTheme } from "@/types"
 
 const DefaultThemeCss: string = buildDefaultThemeCss()
@@ -76,6 +76,7 @@ export function generateThemeCss(themeJson: CustomTheme): string {
 }
 
 export default function ThemeEditorSheet() {
+  const { settingsState: appSettings } = useApplication()
   const {
     state: settingsState,
     actions: { settingsApi },
@@ -140,6 +141,7 @@ export default function ThemeEditorSheet() {
             language="css"
             className="absolute inset-0 h-full w-full rounded-sm border"
             lineNumbers={true}
+            syntaxHighlighting={appSettings.appearance.autoHighlight}
           />
         </div>
       </div>

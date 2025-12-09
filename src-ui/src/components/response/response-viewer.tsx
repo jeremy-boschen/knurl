@@ -13,7 +13,7 @@ import { useEvent } from "@/hooks/use-event"
 import { warmPrettier } from "@/lib/prettier"
 import { onProfilerRender } from "@/lib/profiler-bridge"
 import { cn, isNotEmpty } from "@/lib/utils"
-import { useRequestTab } from "@/state"
+import { useApplication, useRequestTab } from "@/state"
 import { type CodeLanguage, CodeLanguages, DEFAULT_LOG_LEVELS, type ResponseState } from "@/types"
 import { CookieList, HeadersList, LogsList } from "./components"
 
@@ -71,6 +71,7 @@ export type RequestTabsProps = {
 }
 
 export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
+  const { settingsState } = useApplication()
   const requestTab = useRequestTab(tabId)
   const [responseLanguage, setResponseLanguage] = useState<CodeLanguage>("text")
   const [activeResponseTab, setActiveResponseTab] = useState("response-body")
@@ -447,6 +448,7 @@ export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
                         value={httpResponse?.body ?? ""}
                         language={responseLanguage as CodeLanguage}
                         formatted={formattedView}
+                        syntaxHighlighting={settingsState.appearance.autoHighlight}
                       />
                     )}
                   </div>

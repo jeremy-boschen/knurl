@@ -144,4 +144,20 @@ describe("CodeEditor", () => {
 
     expect(onChange).not.toHaveBeenCalled()
   })
+
+  it("respects syntaxHighlighting prop", () => {
+    const handleChange = vi.fn()
+    render(<CodeEditor value="{}" language="json" onChange={handleChange} syntaxHighlighting={false} />)
+
+    const props = getLastRenderProps()
+    expect(props.basicSetup).toEqual(expect.objectContaining({ syntaxHighlighting: false }))
+  })
+
+  it("defaults syntaxHighlighting to true when not specified", () => {
+    const handleChange = vi.fn()
+    render(<CodeEditor value="{}" language="json" onChange={handleChange} />)
+
+    const props = getLastRenderProps()
+    expect(props.basicSetup).toEqual(expect.objectContaining({ syntaxHighlighting: true }))
+  })
 })

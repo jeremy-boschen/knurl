@@ -34,6 +34,7 @@ type Props = {
   lineNumbers?: boolean
   placeholder?: string
   readOnly?: boolean
+  syntaxHighlighting?: boolean
 }
 
 export function CodeEditor({
@@ -49,6 +50,7 @@ export function CodeEditor({
   lineNumbers = false,
   placeholder,
   readOnly = false,
+  syntaxHighlighting = true,
 }: Props) {
   const latestValueRef = useRef(value)
   latestValueRef.current = value
@@ -113,9 +115,9 @@ export function CodeEditor({
       foldKeymap: false,
       completionKeymap: false,
       lintKeymap: false,
-      syntaxHighlighting: true,
+      syntaxHighlighting: syntaxHighlighting,
     }),
-    [lineNumbers, mode],
+    [lineNumbers, mode, syntaxHighlighting],
   )
 
   const extensions = useMemo(() => {
