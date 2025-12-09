@@ -8,7 +8,6 @@ import { CollectionMenuContent } from "@/components/ui/knurl/collection-menu"
 import { FolderMenuContent, type FolderMenuPayload } from "@/components/ui/knurl/folder-menu"
 import RenameDialog from "@/components/ui/knurl/rename-dialog"
 import { RequestMenuContent, type RequestMenuPayload } from "@/components/ui/knurl/request-menu"
-import { buildFolderOptions } from "@/lib/collections/folder-options"
 import { isScratchCollection, useCollection, useCollections, useRequestTab } from "@/state"
 import type { CollectionsApi, RequestTabsApi } from "@/types"
 import { RootCollectionFolderId } from "@/types"
@@ -62,6 +61,9 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
   const {
     state: { collection },
   } = useCollection(activeTab.collectionId)
+  const {
+    state: { collectionsIndex },
+  } = useCollections()
 
   const request = tabData.state.request as NonNullable<typeof tabData.state.request>
   const location = collection.requestIndex[request.id]
@@ -75,13 +77,6 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
       .map((folderId) => collection.folders[folderId])
       .filter((folder): folder is NonNullable<typeof folder> => Boolean(folder))
   }, [collection, location])
-
-  const requestFolderId = location?.folderId ?? RootCollectionFolderId
-  const folderOptions = useMemo(() => buildFolderOptions(collection), [collection])
-  const moveTargets = useMemo(
-    () => folderOptions.filter((option) => option.id !== requestFolderId),
-    [folderOptions, requestFolderId],
-  )
 
   const handleFolderAction = (payload: FolderMenuPayload) => {
     switch (payload.actionId) {
@@ -97,6 +92,20 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
           parentId: payload.parentId ?? payload.folderId,
           currentName: "",
         })
+        break
+      }
+      case "move-up": {
+        // Handled by FolderMenuContent
+        break
+      }
+      case "move-down": {
+        // Handled by FolderMenuContent
+        break
+      }
+      case "folder:move": {
+        if (payload.targetParentId !== undefined) {
+          collectionsApi().moveFolder(payload.collectionId, payload.folderId, payload.targetParentId)
+        }
         break
       }
       case "folder:rename": {
@@ -147,11 +156,12 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
         }
         break
       }
-      case "copy": {
+      case "copy-json": {
         try {
-          await requestTabsApi.loadTab(payload.collectionId, payload.requestId)
           const req = collectionsApi().getRequest(payload.collectionId, payload.requestId)
-          await navigator.clipboard.writeText(JSON.stringify(req, null, 2))
+          if (req) {
+            await navigator.clipboard.writeText(JSON.stringify(req, null, 2))
+          }
         } catch (error) {
           console.error("Failed to copy request JSON", error)
         }
@@ -243,7 +253,11 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
                   <span className="max-w-48 truncate">{collection.name}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <CollectionMenuContent collection={collection} exclude={["delete", "clear-scratch"]} />
+              <CollectionMenuContent
+                collection={collection}
+                collectionsIndex={collectionsIndex}
+                exclude={["delete", "clear-scratch"]}
+              />
             </DropdownMenu>
           </BreadcrumbItem>
           {folderTrail.map((folder, index) => (
@@ -283,7 +297,6 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
                 requestId={request.id}
                 requestName={request.name}
                 isScratch={isScratch}
-                moveTargets={moveTargets.map((target) => ({ id: target.id, path: target.path }))}
                 onAction={handleRequestAction}
               />
             </DropdownMenu>

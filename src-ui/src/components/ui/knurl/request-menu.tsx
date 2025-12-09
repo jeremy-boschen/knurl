@@ -1,6 +1,7 @@
+import { useCallback, useMemo } from "react"
 import type React from "react"
 
-import { CopyIcon, Edit2Icon, FolderOpenIcon, Trash2Icon } from "lucide-react"
+import { CopyIcon, Edit2Icon, FolderIcon, Trash2Icon } from "lucide-react"
 
 import {
   DropdownMenuContent,
@@ -10,16 +11,23 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu"
+import { collectionsApi, useCollection } from "@/state"
+import { RootCollectionFolderId } from "@/types"
 
 export type RequestMenuMoveTarget = {
   id: string
   path: string
 }
 
-export type RequestMenuActionId = "rename" | "duplicate" | "request:move" | "copy" | "delete"
+export type RequestMenuActionId =
+  | "rename"
+  | "duplicate"
+  | "request:move"
+  | "copy-json"
+  | "delete"
 
 export type RequestMenuPayload = {
-  actionId: RequestMenuActionId | "request:move"
+  actionId: RequestMenuActionId
   kind: "request"
   collectionId: string
   requestId: string
@@ -36,14 +44,93 @@ export type RequestMenuContentProps = {
   onAction: (payload: RequestMenuPayload) => void
 }
 
+type FolderPath = {
+  folderId: string
+  path: string
+}
+
+function buildFolderPaths(collection: ReturnType<typeof useCollection>["state"]["collection"]): FolderPath[] {
+  const paths: FolderPath[] = []
+  const folderMap = collection.folders
+
+  // Helper to build path for a folder
+  const buildPath = (folderId: string): string[] => {
+    const folder = folderMap[folderId]
+    if (!folder || folder.parentId === null) {
+      return folder ? [folder.name] : []
+    }
+    const parentPath = buildPath(folder.parentId)
+    return [...parentPath, folder.name]
+  }
+
+  // Recursively traverse folders in order using childFolderIds
+  const traverseFolder = (parentId: string | null) => {
+    const folder = parentId === null ? folderMap[Object.keys(folderMap)[0]] : folderMap[parentId]
+    if (!folder) {
+      return
+    }
+
+    const childIds =
+      parentId === null
+        ? Object.entries(folderMap)
+            .filter(([, f]) => f.parentId === null)
+            .sort((a, b) => a[1].order - b[1].order)
+            .map(([id]) => id)
+        : folder.childFolderIds
+
+    for (const childId of childIds) {
+      const child = folderMap[childId]
+      if (child && child.parentId !== null) {
+        // Skip root, only include nested folders
+        const pathParts = buildPath(childId)
+        paths.push({
+          folderId: childId,
+          path: pathParts.join(" / "),
+        })
+      }
+      // Recurse into children
+      traverseFolder(childId)
+    }
+  }
+
+  // Start traversal from root
+  traverseFolder(null)
+  return paths
+}
+
+function getCurrentRequestFolder(
+  collection: ReturnType<typeof useCollection>["state"]["collection"],
+  requestId: string,
+): string | null {
+  for (const [folderId, folder] of Object.entries(collection.folders)) {
+    if (folder.requestIds.includes(requestId)) {
+      return folderId
+    }
+  }
+  return null
+}
+
 export function RequestMenuContent({
   collectionId,
   requestId,
   requestName,
   isScratch,
-  moveTargets = [],
   onAction,
 }: RequestMenuContentProps) {
+  const { state: collectionState } = useCollection(collectionId)
+
+  const currentFolderId = useMemo(
+    () => getCurrentRequestFolder(collectionState.collection, requestId),
+    [collectionState.collection, requestId],
+  )
+
+  const folderPaths = useMemo(() => buildFolderPaths(collectionState.collection), [collectionState.collection])
+
+  const availableFolders = useMemo(
+    () => folderPaths.filter((folder) => folder.folderId !== currentFolderId),
+    [folderPaths, currentFolderId],
+  )
+
   const createHandlers = (payload: Omit<RequestMenuPayload, "kind">) => {
     let handled = false
     const invoke = (event?: Event) => {
@@ -63,7 +150,18 @@ export function RequestMenuContent({
     }
   }
 
-  const hasMoveTargets = !isScratch && moveTargets.length > 0
+  const handleMoveToFolder = useCallback(
+    (targetFolderId: string) => {
+      try {
+        collectionsApi().moveRequestToFolder(collectionId, requestId, targetFolderId)
+      } catch (error) {
+        console.error("Failed to move request", error)
+      }
+    },
+    [collectionId, requestId],
+  )
+
+  const hasMoveTargets = !isScratch && availableFolders.length > 0
 
   return (
     <DropdownMenuContent className="w-48" align="start" sideOffset={2}>
@@ -104,28 +202,18 @@ export function RequestMenuContent({
           {hasMoveTargets && (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger className="cursor-pointer">
-                <FolderOpenIcon className="mr-2 h-4 w-4" /> Move to Folder
+                <FolderIcon className="mr-2 h-4 w-4" /> Move to folder
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="w-48">
-                {moveTargets.map((target) => (
+              <DropdownMenuSubContent className="!max-h-96 !overflow-y-auto w-48 p-1">
+                {currentFolderId !== RootCollectionFolderId && (
+                  <DropdownMenuItem onClick={() => handleMoveToFolder(RootCollectionFolderId)}>Root</DropdownMenuItem>
+                )}
+                {availableFolders.map((folder) => (
                   <DropdownMenuItem
-                    key={target.id}
-                    className="cursor-pointer"
-                    {...createHandlers({
-                      actionId: "request:move",
-                      collectionId,
-                      requestId,
-                      name: requestName,
-                      targetFolderId: target.id,
-                    })}
-                    data-action-id="request:move"
-                    data-kind="request"
-                    data-collection-id={collectionId}
-                    data-request-id={requestId}
-                    data-target-folder-id={target.id}
-                    data-name={requestName}
+                    key={folder.folderId}
+                    onClick={() => handleMoveToFolder(folder.folderId)}
                   >
-                    {target.path}
+                    {folder.path}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuSubContent>
@@ -137,12 +225,12 @@ export function RequestMenuContent({
       <DropdownMenuItem
         className="cursor-pointer"
         {...createHandlers({
-          actionId: "copy",
+          actionId: "copy-json",
           collectionId,
           requestId,
           name: requestName,
         })}
-        data-action-id="copy"
+        data-action-id="copy-json"
         data-kind="request"
         data-collection-id={collectionId}
         data-request-id={requestId}
