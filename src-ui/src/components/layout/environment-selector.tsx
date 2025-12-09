@@ -104,7 +104,7 @@ function EnvironmentSelectorImpl({ collectionId, tabId, requestTabsApi }: Enviro
           onSelect={handleManageEnvironments}
           data-test-id="environment-selector:manage-environments-item"
         >
-          <SettingsIcon className="h-4 w-4" />
+          <SettingsIcon className="mr-2 h-4 w-4" />
           Manage Environments
         </DropdownMenuItem>
       </DropdownMenuContent>
