@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from "react"
+import { useLayoutEffect, useState } from "react"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 import { MaximizeIcon, MinusIcon, XIcon } from "lucide-react"
 
@@ -14,22 +14,18 @@ export function WindowControlDropdownMenuContent({
 }) {
   const [isMaximized, setIsMaximized] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
-  const isLoadedRef = useRef(false)
-
-  const updateWindowState = useCallback(async () => {
-    const window = await getCurrentWindow()
-    setIsMaximized(await window.isMaximized())
-    setIsMinimized(await window.isMinimized())
-  }, [])
+  const [isLoaded, setIsLoaded] = useState(false)
 
   useLayoutEffect(() => {
-    const initWindowState = async () => {
-      await updateWindowState()
-      isLoadedRef.current = true
+    const loadWindowState = async () => {
+      const window = await getCurrentWindow()
+      setIsMaximized(await window.isMaximized())
+      setIsMinimized(await window.isMinimized())
+      setIsLoaded(true)
     }
 
-    initWindowState()
-  }, [updateWindowState])
+    loadWindowState()
+  }, [])
 
   const handleRestore = async () => {
     const window = await getCurrentWindow()
@@ -38,17 +34,25 @@ export function WindowControlDropdownMenuContent({
     } else if (isMinimized) {
       await window.unminimize()
     }
-    await updateWindowState()
+    // Refresh state after operation
+    setIsMaximized(await window.isMaximized())
+    setIsMinimized(await window.isMinimized())
   }
 
   const handleMinimize = async () => {
-    await getCurrentWindow().minimize()
-    await updateWindowState()
+    const window = await getCurrentWindow()
+    await window.minimize()
+    // Refresh state after operation
+    setIsMaximized(await window.isMaximized())
+    setIsMinimized(await window.isMinimized())
   }
 
   const handleMaximize = async () => {
-    await getCurrentWindow().maximize()
-    await updateWindowState()
+    const window = await getCurrentWindow()
+    await window.maximize()
+    // Refresh state after operation
+    setIsMaximized(await window.isMaximized())
+    setIsMinimized(await window.isMinimized())
   }
 
   const handleClose = () => {
@@ -58,7 +62,7 @@ export function WindowControlDropdownMenuContent({
   const canRestore = isMaximized || isMinimized
   const canMaximize = !isMaximized
 
-  if (!isLoadedRef.current) {
+  if (!isLoaded) {
     return null
   }
 
