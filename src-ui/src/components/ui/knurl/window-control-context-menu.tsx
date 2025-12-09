@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 import { MaximizeIcon, MinusIcon, XIcon } from "lucide-react"
 
@@ -13,29 +13,25 @@ type WindowState = {
 function useWindowState() {
   const [state, setState] = useState<WindowState | null>(null)
 
-  useLayoutEffect(() => {
-    const loadWindowState = async () => {
-      const window = await getCurrentWindow()
-      const [isMaximized, isMinimized] = await Promise.all([
-        window.isMaximized(),
-        window.isMinimized(),
-      ])
-      setState({ isMaximized, isMinimized })
-    }
-
-    loadWindowState()
+  const updateState = useCallback(async () => {
+    const window = await getCurrentWindow()
+    const [isMaximized, isMinimized] = await Promise.all([window.isMaximized(), window.isMinimized()])
+    setState({ isMaximized, isMinimized })
   }, [])
 
-  const refreshState = async () => {
-    const window = await getCurrentWindow()
-    const [isMaximized, isMinimized] = await Promise.all([
-      window.isMaximized(),
-      window.isMinimized(),
-    ])
-    setState({ isMaximized, isMinimized })
-  }
+  useEffect(() => {
+    updateState()
 
-  return { state, refreshState }
+    const unlistenResized = getCurrentWindow().onResized(() => {
+      updateState()
+    })
+
+    return () => {
+      unlistenResized.then((unlisten) => unlisten())
+    }
+  }, [updateState])
+
+  return state
 }
 
 export function WindowControlDropdownMenuContent({
@@ -45,7 +41,7 @@ export function WindowControlDropdownMenuContent({
   align?: "start" | "center" | "end"
   alignOffset?: number
 }) {
-  const { state, refreshState } = useWindowState()
+  const state = useWindowState()
 
   const handleRestore = async () => {
     const window = await getCurrentWindow()
@@ -54,19 +50,16 @@ export function WindowControlDropdownMenuContent({
     } else if (state?.isMinimized) {
       await window.unminimize()
     }
-    await refreshState()
   }
 
   const handleMinimize = async () => {
     const window = await getCurrentWindow()
     await window.minimize()
-    await refreshState()
   }
 
   const handleMaximize = async () => {
     const window = await getCurrentWindow()
     await window.maximize()
-    await refreshState()
   }
 
   const handleClose = () => {
