@@ -131,7 +131,7 @@ export function FileInput({ name: _name, fileName, contentType, onFileChange, on
   }
 
   const containerClass =
-    "grid grid-cols-[minmax(0,6fr)_2rem_2rem_1px_minmax(0,6fr)] items-center gap-x-0 bg-zinc-800 border border-zinc-700 rounded-md overflow-hidden focus-within:ring-1 focus-within:ring-zinc-600 p-0 m-0"
+    "grid grid-cols-[minmax(0,6fr)_auto_2rem_1px_minmax(0,6fr)] items-center gap-x-0 bg-zinc-800 border border-zinc-700 rounded-md overflow-hidden focus-within:ring-1 focus-within:ring-zinc-600 p-0 m-0"
 
   return (
     <fieldset className={containerClass} ref={dropZoneRef} onDragOver={handleDragOver} onDrop={handleDrop}>
@@ -149,7 +149,7 @@ export function FileInput({ name: _name, fileName, contentType, onFileChange, on
         size="sm"
         onClick={handleChooseFile}
         title="Choose file"
-        className="h-full rounded-none text-white"
+        className="h-full px-3 rounded-none text-white"
       >
         Browse...
       </Button>
