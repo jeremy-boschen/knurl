@@ -2,6 +2,7 @@ import { Suspense } from "react"
 
 import { ChevronDownIcon, ChevronRightIcon, FolderClosedIcon, FolderOpenIcon } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
 import { useCollection, useCollectionTree } from "@/state"
 import { RootCollectionFolderId } from "@/types"
 import { FolderItemList } from "./folder-item-list"
@@ -37,11 +38,12 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
       aria-expanded={isOpen}
       tabIndex={0}
     >
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={handleToggle}
         data-test-id={`collection-tree:expand-toggle:${collectionId}`}
-        className="group flex w-full items-center justify-between rounded p-2 text-sm hover:bg-accent"
+        className="group w-full justify-between"
         aria-expanded={isOpen}
       >
         <span className="flex items-center space-x-2">
@@ -53,7 +55,7 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
           </span>
           <span>{collectionName}</span>
         </span>
-      </button>
+      </Button>
 
       {isOpen ? (
         <div className="ml-3 space-y-1">

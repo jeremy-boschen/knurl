@@ -8,6 +8,7 @@ import { saveFile } from "@/bindings/knurl"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LabeledField } from "@/components/ui/knurl"
 import { Input } from "@/components/ui/knurl/input"
@@ -237,7 +238,7 @@ export default function ExportCollectionSheet({ collectionId }: Props) {
                       const checked = selectedRequests.has(r.id)
                       return (
                         <li key={r.id}>
-                          <label
+                          <Label
                             htmlFor={`req-${r.id}`}
                             className="grid grid-cols-[auto_0.4fr_1fr_minmax(0,1fr)] items-center gap-2 p-2 rounded hover:bg-muted/50 focus-within:bg-muted/60 cursor-pointer min-w-0"
                           >
@@ -252,7 +253,7 @@ export default function ExportCollectionSheet({ collectionId }: Props) {
                             </span>
                             <span className="text-sm font-medium">{r.name}</span>
                             <span className="text-xs text-muted-foreground truncate">{r.url || " "}</span>
-                          </label>
+                          </Label>
                         </li>
                       )
                     })}
@@ -293,7 +294,7 @@ export default function ExportCollectionSheet({ collectionId }: Props) {
                       const checked = selectedEnvironments.has(e.id)
                       return (
                         <li key={e.id}>
-                          <label
+                          <Label
                             htmlFor={`env-${e.id}`}
                             className="flex items-center gap-2 p-2 rounded hover:bg-muted/50 focus-within:bg-muted/60 cursor-pointer min-w-0"
                           >
@@ -307,7 +308,7 @@ export default function ExportCollectionSheet({ collectionId }: Props) {
                             <span className="ml-auto text-[11px] px-1.5 py-0.5 rounded bg-muted-foreground/10 shrink-0">
                               {varCount} vars
                             </span>
-                          </label>
+                          </Label>
                         </li>
                       )
                     })}

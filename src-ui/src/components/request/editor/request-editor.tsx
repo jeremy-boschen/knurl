@@ -185,10 +185,11 @@ function TabDropdown({ ariaLabel, children, onActivate, tabName }: TabDropdownPr
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           aria-label={ariaLabel}
-          className="absolute right-1 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2"
           onPointerDown={() => onActivate?.()}
           onClick={(event) => {
             if (event.detail === 0) {
@@ -198,7 +199,7 @@ function TabDropdown({ ariaLabel, children, onActivate, tabName }: TabDropdownPr
           data-test-id={`request-editor:${tabName}-tab-dropdown-trigger`}
         >
           <ChevronDownIcon className="h-4 w-4" />
-        </button>
+        </Button>
       </DropdownMenuTrigger>
       {children}
     </DropdownMenu>

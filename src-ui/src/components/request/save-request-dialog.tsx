@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/knurl/dialog"
 import { Input } from "@/components/ui/knurl/input"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ScratchCollectionId, useCollections } from "@/state"
 import type { RequestState } from "@/types"
@@ -108,9 +109,9 @@ export default function SaveRequestDialog({ open, onSave, onClose, request }: Sa
 
         <div className="space-y-4">
           <div className="grid grid-cols-[8rem_1fr] items-start gap-4">
-            <label className="text-right text-sm text-muted-foreground" htmlFor={nameInputId}>
+            <Label htmlFor={nameInputId} className="text-right text-sm text-muted-foreground">
               Name
-            </label>
+            </Label>
             <div className="space-y-2">
               <Input
                 id={nameInputId}
@@ -130,9 +131,9 @@ export default function SaveRequestDialog({ open, onSave, onClose, request }: Sa
           </div>
 
           <div className="grid grid-cols-[8rem_1fr] items-start gap-4">
-            <label className="text-right text-sm text-muted-foreground" htmlFor={collectionSelectId}>
+            <Label htmlFor={collectionSelectId} className="text-right text-sm text-muted-foreground">
               Collection
-            </label>
+            </Label>
             <div className="space-y-2">
               {collections.length === 0 ? (
                 <p className="text-sm text-destructive">No collections available. Create a collection first.</p>

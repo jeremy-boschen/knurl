@@ -3,6 +3,8 @@ import { Component, type ErrorInfo, type ReactNode } from "react"
 import { AlertTriangleIcon } from "lucide-react"
 import { toast } from "sonner"
 
+import { Button } from "@/components/ui/button"
+
 interface Props {
   children: ReactNode
   fallback?: ReactNode | ((error: Error) => ReactNode)
@@ -54,14 +56,12 @@ class ErrorBoundary extends Component<Props, State> {
           >
             <h2 className="mb-2 text-lg font-semibold">Something went wrong</h2>
             <p className="mb-2">{this.state.error?.message || "An unexpected error occurred"}</p>
-            <button
-              type="button"
-              className="rounded bg-error px-3 py-1 text-white hover:bg-error"
+            <Button
               onClick={() => this.setState({ hasError: false, error: null })}
               data-test-id="error-boundary:try-again-button"
             >
               Try again
-            </button>
+            </Button>
           </div>
         )
       )
