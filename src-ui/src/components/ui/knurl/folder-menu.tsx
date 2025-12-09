@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react"
+import { useMemo } from "react"
 import type React from "react"
 
 import {
@@ -19,7 +19,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu"
-import { collectionsApi, useCollection } from "@/state"
+import { useCollection } from "@/state"
 import { RootCollectionFolderId } from "@/types"
 import type { CollectionFolderNode } from "@/types"
 
