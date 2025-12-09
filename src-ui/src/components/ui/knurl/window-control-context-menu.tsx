@@ -56,7 +56,7 @@ export function WindowControlDropdownMenuContent({
   }
 
   const canRestore = isLoadedRef.current && (isMaximized || isMinimized)
-  const canMaximize = isLoadedRef.current && !isMaximized
+  const canMaximize = !isLoadedRef.current || !isMaximized
 
   return (
     <DropdownMenuContent align={align} alignOffset={alignOffset} className="w-40">
