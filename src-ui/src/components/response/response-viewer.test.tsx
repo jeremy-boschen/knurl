@@ -3,6 +3,9 @@ import userEvent from "@testing-library/user-event"
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 
 const stateMocks = vi.hoisted(() => ({
+  useApplication: vi.fn(() => ({
+    settingsState: { appearance: { autoHighlight: true } },
+  })),
   useRequestTab: vi.fn(),
 }))
 

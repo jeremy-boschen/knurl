@@ -71,6 +71,9 @@ vi.mock("@/lib/utils", async (importOriginal) => {
 })
 
 vi.mock("@/state", () => ({
+  useApplication: vi.fn(() => ({
+    settingsState: { appearance: { autoHighlight: true } },
+  })),
   useRequestBody: (tabId: string) => useRequestBodyMock(tabId),
   useRequestTab: vi.fn(),
 }))

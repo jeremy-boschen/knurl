@@ -24,7 +24,12 @@ const collectionsHook = vi.hoisted(() => ({
 vi.mock("./use-import-parser", () => parserMock)
 vi.mock("./use-selection-manager", () => selectionMock)
 vi.mock("./use-import-actions", () => actionsMock)
-vi.mock("@/state", () => collectionsHook)
+vi.mock("@/state", () => ({
+  ...collectionsHook,
+  useApplication: vi.fn(() => ({
+    settingsState: { appearance: { autoHighlight: true } },
+  })),
+}))
 
 vi.mock("./components/import-source-step", () => ({
   ImportSourceStep: (props: any) => (
