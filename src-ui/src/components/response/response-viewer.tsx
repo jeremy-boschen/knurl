@@ -1,4 +1,4 @@
-import React, { Profiler, useState } from "react"
+import React, { Profiler, useRef, useState } from "react"
 
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener"
 import { CodeIcon, CopyIcon, ExternalLinkIcon, FolderOpenIcon, ListRestartIcon } from "lucide-react"
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useEvent } from "@/hooks/use-event"
-import { warmPrettier } from "@/lib/prettier"
+import { formatWithPrettier, warmPrettier } from "@/lib/prettier"
 import { onProfilerRender } from "@/lib/profiler-bridge"
 import { cn, isNotEmpty } from "@/lib/utils"
 import { useApplication, useRequestTab } from "@/state"
@@ -76,6 +76,8 @@ export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
   const [responseLanguage, setResponseLanguage] = useState<CodeLanguage>("text")
   const [activeResponseTab, setActiveResponseTab] = useState("response-body")
   const [formattedView, setFormattedView] = useState<boolean>(false)
+  const [formattedBody, setFormattedBody] = useState<{ key: string; out: string } | null>(null)
+  const formatSequence = useRef(0)
 
   const activeTab = requestTab?.state.activeTab
   const request = requestTab?.state.request
@@ -112,12 +114,38 @@ export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
     }
   }, [response?.requestId])
 
+  // Clear formatted cache when raw body or language changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Dependencies intentional; invalidates formatted cache
+  React.useEffect(() => {
+    setFormattedBody(null)
+    formatSequence.current++
+  }, [httpResponse?.body, responseLanguage])
+
   // Pre-warm prettier for current language to reduce first-format delay
   React.useEffect(() => {
     if (responseLanguage !== "text") {
       warmPrettier([responseLanguage])
     }
   }, [responseLanguage])
+
+  // Format on demand when parent sets formattedView=true
+  React.useEffect(() => {
+    if (!formattedView || !httpResponse?.body) {
+      return
+    }
+    const cacheKey = `${responseLanguage}::${httpResponse.body}`
+    if (formattedBody && formattedBody.key === cacheKey) {
+      return
+    }
+    const id = ++formatSequence.current
+    ;(async () => {
+      const out = await formatWithPrettier(httpResponse.body, responseLanguage)
+      if (id !== formatSequence.current) {
+        return // stale
+      }
+      setFormattedBody({ key: cacheKey, out })
+    })()
+  }, [formattedView, httpResponse?.body, responseLanguage, formattedBody])
 
   if (!requestTab || !activeTab || !request || !requestTabsApi) {
     return null
@@ -445,9 +473,12 @@ export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
                       <CodeViewer
                         className="h-full w-full"
                         height="100%"
-                        value={httpResponse?.body ?? ""}
+                        value={
+                          formattedView && formattedBody?.key === `${responseLanguage}::${httpResponse?.body}`
+                            ? formattedBody.out
+                            : httpResponse?.body ?? ""
+                        }
                         language={responseLanguage as CodeLanguage}
-                        formatted={formattedView}
                         syntaxHighlighting={settingsState.appearance.autoHighlight}
                       />
                     )}

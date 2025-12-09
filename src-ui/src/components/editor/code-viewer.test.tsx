@@ -1,8 +1,7 @@
-import { render, waitFor } from "@testing-library/react"
+import { render } from "@testing-library/react"
 import { describe, expect, it, beforeEach, vi } from "vitest"
 
 import { CodeViewer } from "./code-viewer"
-import { formatWithPrettier } from "@/lib/prettier"
 
 type CodeEditorProps = Record<string, unknown>
 
@@ -14,10 +13,6 @@ vi.mock("./code-editor", () => ({
   CodeEditor: (props: CodeEditorProps) => codeEditorMock(props),
 }))
 
-vi.mock("@/lib/prettier", () => ({
-  formatWithPrettier: vi.fn(async (value: string, language: string) => `${language}::${value}::formatted`),
-}))
-
 describe("CodeViewer", () => {
   beforeEach(() => {
     codeEditorMock.mockClear()
@@ -26,7 +21,7 @@ describe("CodeViewer", () => {
 
   it("passes view mode props to CodeEditor", () => {
     render(
-      <CodeViewer value="raw" language="json" formatted={false} className="foo" height="50%" placeholder="hint" />,
+      <CodeViewer value="raw" language="json" className="foo" height="50%" placeholder="hint" />,
     )
 
     const props = codeEditorMock.mock.calls.at(-1)?.[0] as CodeEditorProps
@@ -39,43 +34,26 @@ describe("CodeViewer", () => {
     expect(props.placeholder).toBe("hint")
   })
 
-  it("formats value when formatted flag becomes true and caches by key", async () => {
-    const mockedPrettier = vi.mocked(formatWithPrettier)
-    const formatted = (value: string, language: string) => `${language}::${value}::fmt`
-    mockedPrettier.mockImplementation(async (value, language) => formatted(value, language))
+  it("passes value through unchanged", () => {
+    const { rerender } = render(<CodeViewer value="{}" language="json" />)
 
-    const { rerender } = render(<CodeViewer value="{}" language="json" formatted={false} />)
+    let props = codeEditorMock.mock.calls.at(-1)?.[0] as CodeEditorProps
+    expect(props.value).toBe("{}")
 
-    const beforeFormatCalls = mockedPrettier.mock.calls.length
-    rerender(<CodeViewer value="{}" language="json" formatted={true} />)
-
-    await waitFor(() => expect(mockedPrettier.mock.calls.length).toBeGreaterThan(beforeFormatCalls))
-    await waitFor(() => expect(codeEditorMock.mock.calls.at(-1)?.[0].value).toBe(formatted("{}", "json")))
-    const afterFirstFormat = mockedPrettier.mock.calls.length
-
-    rerender(<CodeViewer value="{}" language="json" formatted={true} />)
-    await Promise.resolve()
-    expect(mockedPrettier.mock.calls.length).toBe(afterFirstFormat)
-
-    rerender(<CodeViewer value="[]" language="json" formatted={true} />)
-    await waitFor(() => expect(mockedPrettier.mock.calls.length).toBeGreaterThan(afterFirstFormat))
-    await waitFor(() => expect(codeEditorMock.mock.calls.at(-1)?.[0].value).toBe(formatted("[]", "json")))
-    const afterSecondFormat = mockedPrettier.mock.calls.length
-
-    rerender(<CodeViewer value="[]" language="yaml" formatted={true} />)
-    await waitFor(() => expect(mockedPrettier.mock.calls.length).toBeGreaterThan(afterSecondFormat))
-    await waitFor(() => expect(codeEditorMock.mock.calls.at(-1)?.[0].value).toBe(formatted("[]", "yaml")))
+    rerender(<CodeViewer value="[]" language="json" />)
+    props = codeEditorMock.mock.calls.at(-1)?.[0] as CodeEditorProps
+    expect(props.value).toBe("[]")
   })
 
   it("respects syntaxHighlighting prop", () => {
-    render(<CodeViewer value="raw" language="json" formatted={false} syntaxHighlighting={false} />)
+    render(<CodeViewer value="raw" language="json" syntaxHighlighting={false} />)
 
     const props = codeEditorMock.mock.calls.at(-1)?.[0] as CodeEditorProps
     expect(props.syntaxHighlighting).toBe(false)
   })
 
   it("defaults syntaxHighlighting to true when not specified", () => {
-    render(<CodeViewer value="raw" language="json" formatted={false} />)
+    render(<CodeViewer value="raw" language="json" />)
 
     const props = codeEditorMock.mock.calls.at(-1)?.[0] as CodeEditorProps
     expect(props.syntaxHighlighting).toBe(true)
