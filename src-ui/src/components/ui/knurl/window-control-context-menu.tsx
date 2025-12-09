@@ -5,6 +5,39 @@ import { MaximizeIcon, MinusIcon, XIcon } from "lucide-react"
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { RestoreIcon } from "@/components/icons"
 
+type WindowState = {
+  isMaximized: boolean
+  isMinimized: boolean
+}
+
+function useWindowState() {
+  const [state, setState] = useState<WindowState | null>(null)
+
+  useLayoutEffect(() => {
+    const loadWindowState = async () => {
+      const window = await getCurrentWindow()
+      const [isMaximized, isMinimized] = await Promise.all([
+        window.isMaximized(),
+        window.isMinimized(),
+      ])
+      setState({ isMaximized, isMinimized })
+    }
+
+    loadWindowState()
+  }, [])
+
+  const refreshState = async () => {
+    const window = await getCurrentWindow()
+    const [isMaximized, isMinimized] = await Promise.all([
+      window.isMaximized(),
+      window.isMinimized(),
+    ])
+    setState({ isMaximized, isMinimized })
+  }
+
+  return { state, refreshState }
+}
+
 export function WindowControlDropdownMenuContent({
   align,
   alignOffset,
@@ -12,59 +45,40 @@ export function WindowControlDropdownMenuContent({
   align?: "start" | "center" | "end"
   alignOffset?: number
 }) {
-  const [isMaximized, setIsMaximized] = useState(false)
-  const [isMinimized, setIsMinimized] = useState(false)
-  const [isLoaded, setIsLoaded] = useState(false)
-
-  useLayoutEffect(() => {
-    const loadWindowState = async () => {
-      const window = await getCurrentWindow()
-      setIsMaximized(await window.isMaximized())
-      setIsMinimized(await window.isMinimized())
-      setIsLoaded(true)
-    }
-
-    loadWindowState()
-  }, [])
+  const { state, refreshState } = useWindowState()
 
   const handleRestore = async () => {
     const window = await getCurrentWindow()
-    if (isMaximized) {
+    if (state?.isMaximized) {
       await window.unmaximize()
-    } else if (isMinimized) {
+    } else if (state?.isMinimized) {
       await window.unminimize()
     }
-    // Refresh state after operation
-    setIsMaximized(await window.isMaximized())
-    setIsMinimized(await window.isMinimized())
+    await refreshState()
   }
 
   const handleMinimize = async () => {
     const window = await getCurrentWindow()
     await window.minimize()
-    // Refresh state after operation
-    setIsMaximized(await window.isMaximized())
-    setIsMinimized(await window.isMinimized())
+    await refreshState()
   }
 
   const handleMaximize = async () => {
     const window = await getCurrentWindow()
     await window.maximize()
-    // Refresh state after operation
-    setIsMaximized(await window.isMaximized())
-    setIsMinimized(await window.isMinimized())
+    await refreshState()
   }
 
   const handleClose = () => {
     getCurrentWindow().close()
   }
 
-  const canRestore = isMaximized || isMinimized
-  const canMaximize = !isMaximized
-
-  if (!isLoaded) {
+  if (!state) {
     return null
   }
+
+  const canRestore = state.isMaximized || state.isMinimized
+  const canMaximize = !state.isMaximized
 
   return (
     <DropdownMenuContent align={align} alignOffset={alignOffset} className="w-40">
