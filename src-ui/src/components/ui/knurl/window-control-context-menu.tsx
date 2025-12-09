@@ -53,6 +53,7 @@ export function WindowControlDropdownMenuContent({
   }
 
   const canRestore = isLoadedRef.current && (isMaximized || isMinimized)
+  const canMaximize = isLoadedRef.current && !isMaximized
 
   return (
     <DropdownMenuContent align={align} alignOffset={alignOffset} className="w-40">
@@ -64,7 +65,7 @@ export function WindowControlDropdownMenuContent({
         <MinusIcon className="h-4 w-4" />
         Minimize
       </DropdownMenuItem>
-      <DropdownMenuItem onClick={handleMaximize} data-action-id="maximize">
+      <DropdownMenuItem onClick={handleMaximize} disabled={!canMaximize} data-action-id="maximize">
         <MaximizeIcon className="h-4 w-4" />
         Maximize
       </DropdownMenuItem>
