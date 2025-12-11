@@ -37,7 +37,7 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
   return (
     <div>
       <Clickable
-        className="flex items-center space-x-2 rounded px-2 py-2 cursor-pointer text-sm text-muted-foreground hover:bg-muted"
+        className="flex items-center space-x-2 rounded px-2 py-2 cursor-pointer text-sm text-muted-foreground hover:bg-muted min-w-0"
         data-test-id={`collection-tree:folder-row:${folderId}`}
         data-collection-id={collectionId}
         data-folder-id={folderId}
@@ -48,10 +48,10 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
         tabIndex={0}
         onClick={handleToggle}
       >
-        <span aria-hidden className="text-primary">
+        <span aria-hidden className="text-primary shrink-0">
           {isOpen ? <FolderOpenIcon className="h-3.5 w-3.5" /> : <FolderClosedIcon className="h-3.5 w-3.5" />}
         </span>
-        <span className="pt-1 text-sm leading-none">{folder.name}</span>
+        <span className="pt-1 text-sm leading-none truncate">{folder.name}</span>
       </Clickable>
 
       {isOpen ? (

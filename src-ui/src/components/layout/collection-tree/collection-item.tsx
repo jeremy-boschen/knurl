@@ -43,17 +43,17 @@ export function CollectionItem({ collectionId, collectionName }: CollectionItemP
         size="sm"
         onClick={handleToggle}
         data-test-id={`collection-tree:expand-toggle:${collectionId}`}
-        className="group w-full justify-between"
+        className="group w-full justify-between min-w-0"
         aria-expanded={isOpen}
       >
-        <span className="flex items-center space-x-2">
-          <span aria-hidden className="text-primary">
+        <span className="flex items-center space-x-2 min-w-0">
+          <span aria-hidden className="text-primary shrink-0">
             {isOpen ? <ChevronDownIcon className="h-3 w-3" /> : <ChevronRightIcon className="h-3 w-3" />}
           </span>
-          <span aria-hidden className="text-primary">
+          <span aria-hidden className="text-primary shrink-0">
             {isOpen ? <FolderOpenIcon className="h-4 w-4" /> : <FolderClosedIcon className="h-4 w-4" />}
           </span>
-          <span>{collectionName}</span>
+          <span className="truncate">{collectionName}</span>
         </span>
       </Button>
 

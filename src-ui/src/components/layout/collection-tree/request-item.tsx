@@ -52,7 +52,9 @@ export function RequestItem({ collectionId, requestId }: RequestItemProps) {
 
   return (
     <Clickable
-      className={cn("flex items-center justify-start space-x-2 rounded px-2 py-2 cursor-pointer text-sm hover:bg-muted")}
+      className={cn(
+        "flex items-center justify-start space-x-2 rounded px-2 py-2 cursor-pointer text-sm hover:bg-muted min-w-0",
+      )}
       data-test-id={`collection-tree:request-row:${requestId}`}
       data-collection-id={collectionId}
       data-request-id={requestId}
@@ -62,10 +64,10 @@ export function RequestItem({ collectionId, requestId }: RequestItemProps) {
       tabIndex={0}
       onClick={handleRequestClick}
     >
-      <span aria-hidden className="text-primary">
+      <span aria-hidden className="text-primary shrink-0">
         <HttpBadge method={request.method} className={cn(isNotEmpty(request.patch) && "unsaved-changes")} />
       </span>
-      <span className="pt-1 text-sm leading-none">{request.name}</span>
+      <span className="pt-1 text-sm leading-none truncate">{request.name}</span>
     </Clickable>
   )
 }
