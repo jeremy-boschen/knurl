@@ -11,6 +11,10 @@ import type { StateCreator } from "zustand"
 import type { Application, CollectionsIndexEntry } from "@/types"
 import { CollectionIndexFileName, CollectionIndexStorage } from "./core"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("state/collections/index-ops")
+
 /**
  * Creates collection index operation handlers
  */
@@ -43,7 +47,7 @@ export function createIndexOps(set: ReturnType<StateCreator<Application>>, get: 
       })
 
       void CollectionIndexStorage.save(CollectionIndexFileName(), get().collectionsState.index).catch((error) => {
-        console.error("Failed to persist collections index", error)
+        logger.error("Failed to persist collections index", { error })
       })
     },
   }

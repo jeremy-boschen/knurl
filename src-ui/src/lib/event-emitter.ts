@@ -8,6 +8,10 @@
 
 import type { KnurlEvent } from "./events"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("lib/event-emitter")
+
 type EventHandler = (event: KnurlEvent) => void
 
 /**
@@ -63,7 +67,7 @@ class EventBus {
       try {
         handler(event)
       } catch (err) {
-        console.error(`Event handler error for ${event.type}:`, err)
+        logger.error(`Event handler error for ${event.type}:`, { err })
       }
     })
 

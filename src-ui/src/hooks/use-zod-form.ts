@@ -1,6 +1,10 @@
 import React from "react"
 import { ZodError, z } from "zod"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("hooks/use-zod-form")
+
 type FormErrors<T> = Partial<Record<keyof T, string>>
 
 // biome-ignore lint/suspicious/noExplicitAny: Need
@@ -44,7 +48,7 @@ export function useZodForm<S extends Schema>({ schema, initialValues, onSubmit }
       setErrors({})
       await onSubmit(result.data)
     } catch (e) {
-      console.error(e instanceof ZodError ? z.prettifyError(e) : e)
+      logger.error(`${e instanceof ZodError ? z.prettifyError(e) : e}`)
       throw e
     } finally {
       setSubmitting(false)

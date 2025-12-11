@@ -13,6 +13,10 @@ import type { Collection } from "@/types"
 import type { OAuth2Auth } from "@/types/request"
 import { type AuthType, AuthTypes } from "@/types/request"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("components/utility-sheets/collection-settings/collection-auth-panel")
+
 type Props = {
   collectionId: string
 }
@@ -99,7 +103,7 @@ const OAuth2AuthFormShared: FC<OAuth2AuthFormProps> = ({ auth, onUpdate, onDisco
             const result = await getAuthenticationResult(binding, `collection-auth-${collectionId}`)
             await credentialsCacheApi().set(cacheKey, result)
           } catch (e) {
-            console.error("Collection OAuth2 fetch failed:", e)
+            logger.error("Collection OAuth2 fetch failed:", { e })
           }
         },
         onDelete: () => {
@@ -192,7 +196,7 @@ export default function CollectionAuthPanel({ collectionId }: Props) {
         deviceAuthorizationUrl: result.deviceAuthorizationEndpoint,
       })
     } catch (err) {
-      console.error("OIDC Discovery failed:", err)
+      logger.error("OIDC Discovery failed:", { err })
     }
   }
 

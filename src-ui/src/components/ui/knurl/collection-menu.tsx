@@ -17,6 +17,10 @@ import { DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/
 import { isScratchCollection, useCollections, useOpenTabs, utilitySheetsApi } from "@/state"
 import { RootCollectionFolderId } from "@/types"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("components/ui/knurl/collection-menu")
+
 export type CollectionAction =
   | "request:new"
   | "folder:new"
@@ -90,24 +94,24 @@ export function CollectionMenuContent({
       try {
         collectionsApi().createFolder(collection.id, RootCollectionFolderId, "New Folder")
       } catch (error) {
-        console.error("Failed to create folder", error)
+        logger.error("Failed to create folder", { error })
       }
     },
     rename: () => {
-      console.error("[CollectionMenu] Rename action should be handled via onAction callback")
+      logger.error("[CollectionMenu] Rename action should be handled via onAction callback")
     },
     "manage-settings": () => {
       try {
         sheetsApi.openSheet({ type: "collection-settings", context: { collectionId: collection.id } })
       } catch (error) {
-        console.error("Failed to open collection settings", error)
+        logger.error("Failed to open collection settings", { error })
       }
     },
     export: () => {
       try {
         sheetsApi.openSheet({ type: "export", context: { collectionId: collection.id } })
       } catch (error) {
-        console.error("Failed to open export sheet", error)
+        logger.error("Failed to open export sheet", { error })
       }
     },
     "copy-json": () => {
@@ -118,7 +122,7 @@ export function CollectionMenuContent({
           void navigator.clipboard.writeText(JSON.stringify(collectionData, null, 2))
         }
       } catch (error) {
-        console.error("Failed to copy collection as JSON", error)
+        logger.error("Failed to copy collection as JSON", { error })
       }
     },
     "move-up": handleMoveUp,
@@ -127,14 +131,14 @@ export function CollectionMenuContent({
       try {
         collectionsApi().removeCollection(collection.id)
       } catch (error) {
-        console.error("Failed to remove collection", error)
+        logger.error("Failed to remove collection", { error })
       }
     },
     "clear-scratch": () => {
       try {
         collectionsApi().clearScratchCollection()
       } catch (error) {
-        console.error("Failed to clear scratch collection", error)
+        logger.error("Failed to clear scratch collection", { error })
       }
     },
   }

@@ -36,6 +36,10 @@ import { zCustomTheme } from "@/types/settings"
 import { SettingRow } from "./setting-row"
 import { ThemeSelector } from "./theme-selector"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("components/utility-sheets/settings/sections/appearance")
+
 type PresetTheme = CustomTheme & { name: string; title?: string }
 
 /**
@@ -170,7 +174,7 @@ export default function AppearanceSection() {
         pending: false,
       })
     } catch (e) {
-      console.error(`Error while fetching custom theme ${settingsState.appearance.customThemeUrl}`, e)
+      logger.error(`Error while fetching custom theme ${settingsState.appearance.customThemeUrl}`, { e })
       setFetchCustomTheme({
         pending: false,
         error: e as Error,

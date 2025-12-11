@@ -11,6 +11,10 @@ import { cn } from "@/lib"
 import { useSettings } from "@/state"
 import { zCustomTheme } from "@/types"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("components/utility-sheets/settings/sections/theme-selector")
+
 const THEME_REGISTRY_URL = "https://tweakcn.com/r/themes/registry.json"
 
 const isAbortError = (error: unknown): boolean =>
@@ -97,7 +101,7 @@ export function ThemeSelector({ onThemeSelect, disabled = false }: ThemeSelector
       if (isAbortError(error)) {
         return
       }
-      console.error("Failed to fetch theme registry:", error)
+      logger.error("Failed to fetch theme registry:", { error })
       setStatus({ pending: false, error: error as Error })
     } finally {
       if (controllerRef.current === controller) {

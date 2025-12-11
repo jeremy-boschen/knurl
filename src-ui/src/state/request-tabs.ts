@@ -18,6 +18,10 @@ import {
   runPipeline,
 } from "@/request/pipeline"
 import { isScratchCollection, saveScratchRequest, ScratchCollectionId } from "@/state/collections"
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("state/request-tabs")
+
 import {
   type Application,
   DEFAULT_LOG_LEVELS,
@@ -446,7 +450,7 @@ export const requestTabsSliceCreator: StateCreator<
           })
         },
         onError: (error) => {
-          console.error("Request pipeline failed:", error)
+          logger.error("Request pipeline failed:", { error })
           set((app) => {
             const openTab = app.requestTabsState.openTabs[tabId]
             if (openTab) {
@@ -547,7 +551,7 @@ export const requestTabsSliceCreator: StateCreator<
       try {
         await cancelHttpRequest(openTab.activeCorrelationId)
       } catch (e) {
-        console.warn("cancelHttpRequest failed", e)
+        logger.warn("cancelHttpRequest failed", { e })
       } finally {
         set((app) => {
           const t = app.requestTabsState.openTabs[tabId]
@@ -725,7 +729,7 @@ export const requestTabsSliceCreator: StateCreator<
         },
       )
     } catch (error) {
-      console.warn("Failed to set up collection subscription:", error)
+      logger.warn("Failed to set up collection subscription:", { error })
     }
   }
 
@@ -750,7 +754,9 @@ export const requestTabsSliceCreator: StateCreator<
       initialTargets.map(({ collectionId, requestId }) =>
         requestTabsApi
           .loadTab(collectionId, requestId)
-          .catch((error) => console.warn(`Failed to load request ${requestId} from collection ${collectionId}`, error)),
+          .catch((error) =>
+            logger.warn(`Failed to load request ${requestId} from collection ${collectionId}`, { error }),
+          ),
       ),
     )
 
@@ -762,7 +768,7 @@ export const requestTabsSliceCreator: StateCreator<
         .map((entry) =>
           collectionsApi
             .loadCollection(entry.id)
-            .catch((error) => console.warn(`Failed to reload collection ${entry.id} for opened tabs`, error)),
+            .catch((error) => logger.warn(`Failed to reload collection ${entry.id} for opened tabs`, { error })),
         ),
     )
 

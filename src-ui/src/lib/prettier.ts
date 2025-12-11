@@ -1,6 +1,10 @@
 import type { CodeLanguage } from "@/types"
 import PrettierWorker from "../worker/prettier.worker.ts?worker"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("lib/prettier")
+
 let worker: Worker | null = null
 let workerFailed = false
 let seq = 1
@@ -40,7 +44,7 @@ function getWorker(): Worker | null {
     }
   } catch (err) {
     // If worker cannot be created (e.g., due to CSP or path), disable formatting gracefully
-    console.error("Prettier worker failed to start:", err)
+    logger.error("Prettier worker failed to start:", { err })
     for (const [, resolve] of pending) {
       resolve("")
     }

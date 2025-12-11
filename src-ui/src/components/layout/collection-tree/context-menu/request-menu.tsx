@@ -17,6 +17,10 @@ import { RootCollectionFolderId } from "@/types"
 
 import type { ActiveMenuItem } from "./types"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("components/layout/collection-tree/context-menu/request-menu")
+
 interface RequestMenuProps {
   item: Extract<ActiveMenuItem, { kind: "request" }>
 }
@@ -107,7 +111,7 @@ export function RequestMenu({ item }: RequestMenuProps) {
       try {
         collectionsApi().moveRequestToFolder(item.collectionId, item.requestId, targetFolderId)
       } catch (error) {
-        console.error("Failed to move request", error)
+        logger.error("Failed to move request", { error })
       }
     },
     [item.collectionId, item.requestId],
@@ -137,7 +141,7 @@ export function RequestMenu({ item }: RequestMenuProps) {
     try {
       collectionsApi().duplicateRequest(item.collectionId, item.requestId)
     } catch (error) {
-      console.error(`Failed to duplicate request:${item.requestId}`, error)
+      logger.error(`Failed to duplicate request:${item.requestId}`, { error })
     }
   }, [item])
 
@@ -148,7 +152,7 @@ export function RequestMenu({ item }: RequestMenuProps) {
         void writeText(JSON.stringify(request, null, 2))
       }
     } catch (error) {
-      console.error(`Failed to copy request:${item.requestId}`, error)
+      logger.error(`Failed to copy request:${item.requestId}`, { error })
     }
   }, [item])
 

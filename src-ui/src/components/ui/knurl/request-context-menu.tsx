@@ -11,6 +11,10 @@ import {
 } from "@/components/ui/context-menu"
 import { collectionsApi, ScratchCollectionId } from "@/state"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("components/ui/knurl/request-context-menu")
+
 export type RequestContextMenuContentProps = {
   collectionId: string
   requestId: string
@@ -39,7 +43,7 @@ export function RequestContextMenuContent({
     try {
       collectionsApi().duplicateRequest(collectionId, requestId)
     } catch (error) {
-      console.error(`Failed to duplicate collectionId:${collectionId} request:${requestId}`, error)
+      logger.error(`Failed to duplicate collectionId:${collectionId} request:${requestId}`, { error })
     }
   }
 
@@ -54,7 +58,7 @@ export function RequestContextMenuContent({
         void writeText(JSON.stringify(request, null, 2))
       }
     } catch (error) {
-      console.error(`Failed to copy collectionId:${collectionId} request:${requestId}`, error)
+      logger.error(`Failed to copy collectionId:${collectionId} request:${requestId}`, { error })
     }
   }
 

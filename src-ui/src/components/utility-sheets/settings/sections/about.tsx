@@ -7,7 +7,10 @@ import { BotIcon } from "lucide-react"
 import { KnurlIcon } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { getSyncLogger } from "@/lib/logger"
 import { SettingRow } from "./setting-row"
+
+const logger = getSyncLogger("about-section")
 
 const contributors = [
   { name: "Jeremy Boschen", url: "https://github.com/jeremy-boschen" },
@@ -36,7 +39,7 @@ export default function AboutSection() {
         const [app, tauri] = await Promise.all([getVersion(), getTauriVersion()])
         setVersions({ app, tauri })
       } catch (error) {
-        console.error("Failed to fetch versions:", error)
+        logger.error("Failed to fetch versions", { error: String(error) })
         setVersions({ app: "unknown", tauri: "unknown" })
       }
     }

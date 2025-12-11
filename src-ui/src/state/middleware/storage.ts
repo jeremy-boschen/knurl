@@ -2,6 +2,10 @@ import { z } from "zod"
 
 import { deleteAppData, isAppError, loadAppData, saveAppData } from "@/bindings/knurl"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("state/middleware/storage")
+
 interface FileStorage<S> {
   load: (fileName: string) => Promise<S | null>
   save: (fileName: string, data: S) => Promise<void>
@@ -47,7 +51,7 @@ export function createStorage<Schema>(options: StorageOptions<Schema>): FileStor
     try {
       return await loadAppData(fileName)
     } catch (e) {
-      console.error(`createStorage: Failed to load file ${fileName}`, e)
+      logger.error(`createStorage: Failed to load file ${fileName}`, { e })
       if (isAppError(e, ["FileNotFound", "IoError"])) {
         // Allow zustand to use the initial state defined in the slice
         return null
@@ -68,7 +72,7 @@ export function createStorage<Schema>(options: StorageOptions<Schema>): FileStor
 
       const parsedFile = zStorageFileSchema.safeParse(fileData)
       if (!parsedFile.success) {
-        console.error(`Failed to parse file ${fileName}:`, z.prettifyError(parsedFile.error))
+        logger.error(`Failed to parse file ${fileName}:`, { value: z.prettifyError(parsedFile.error) })
         // Allow initial state
         return null
       }
@@ -77,7 +81,7 @@ export function createStorage<Schema>(options: StorageOptions<Schema>): FileStor
       let hasMigrated = false
 
       if (migrate && header.version !== version) {
-        console.log(`[storage] Migrating file ${fileName} content version ${header.version} to version ${version}`)
+        logger.info(`[storage] Migrating file ${fileName} content version ${header.version} to version ${version}`)
         try {
           content = await migrate({
             content,
@@ -85,9 +89,9 @@ export function createStorage<Schema>(options: StorageOptions<Schema>): FileStor
             fileName,
           })
           hasMigrated = true
-          console.log(`[storage] Migration completed for ${fileName}`)
+          logger.info(`[storage] Migration completed for ${fileName}`)
         } catch (e) {
-          console.error(`[storage] Migration threw for ${fileName}:`, e)
+          logger.error(`[storage] Migration threw for ${fileName}:`, { e })
           throw e
         }
       }
@@ -98,11 +102,11 @@ export function createStorage<Schema>(options: StorageOptions<Schema>): FileStor
       try {
         parsedState = schema.safeParse(content)
       } catch (e) {
-        console.error(`Schema.safeParse threw for ${fileName}:`, e)
+        logger.error(`Schema.safeParse threw for ${fileName}:`, { e })
         throw e
       }
       if (!parsedState.success) {
-        console.error(`Failed to parse file ${fileName} content:\n${z.prettifyError(parsedState.error)}`)
+        logger.error(`Failed to parse file ${fileName} content:\n${z.prettifyError(parsedState.error)}`)
         // Allow initial state
         return null
       }
@@ -110,7 +114,7 @@ export function createStorage<Schema>(options: StorageOptions<Schema>): FileStor
       // If we migrated any data, save the migrated (before parsing) data back to storage
       // This ensures Zod's parsing doesn't lose the migrated changes
       if (hasMigrated) {
-        console.debug(`Saving migrated file ${fileName} content`)
+        logger.debug(`Saving migrated file ${fileName} content`)
         // Save the migrated content directly to preserve all changes
         await api.save(fileName, content as Schema)
       }

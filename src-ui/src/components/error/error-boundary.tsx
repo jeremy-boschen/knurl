@@ -5,6 +5,10 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("components/error/error-boundary")
+
 interface Props {
   children: ReactNode
   fallback?: ReactNode | ((error: Error) => ReactNode)
@@ -31,7 +35,7 @@ class ErrorBoundary extends Component<Props, State> {
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Log the error to the console
-    console.error("Error caught by ErrorBoundary:", error, errorInfo)
+    logger.error("Error caught by ErrorBoundary:", { error, errorInfo })
 
     // Show a toast notification
     toast.error("An error occurred", {

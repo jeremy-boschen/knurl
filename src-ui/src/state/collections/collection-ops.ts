@@ -23,6 +23,10 @@ import {
 } from "@/state/collections-lib"
 import type { Application, Collection, CollectionCache, ExportedCollection } from "@/types"
 import { RootCollectionFolderId } from "@/types"
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("state/collections/collection-ops")
+
 import {
   assertCollectionLoaded,
   CollectionFileName,
@@ -48,7 +52,7 @@ export function createCollectionOps(set: ReturnType<StateCreator<Application>>, 
       assert(existsInIndex(get, cached.id), `saveCollection called with an unknown collection.id: ${cached.id}`)
 
       void CollectionStorage.save(CollectionFileName(cached.id), sanitizeCollection(cached)).catch((error) => {
-        console.error(`Failed to save collection ${cached.id}`, error)
+        logger.error(`Failed to save collection ${cached.id}`, { error })
       })
     },
 
@@ -235,7 +239,7 @@ export function createCollectionOps(set: ReturnType<StateCreator<Application>>, 
       invalidateCollectionPromise(id)
 
       void CollectionStorage.delete(CollectionFileName(id)).catch((error) => {
-        console.error(`Failed to delete collection ${id}`, error)
+        logger.error(`Failed to delete collection ${id}`, { error })
       })
     },
   }

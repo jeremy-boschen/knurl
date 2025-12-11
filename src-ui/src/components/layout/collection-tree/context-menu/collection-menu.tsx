@@ -18,6 +18,10 @@ import { collectionsApi, dialogsApi, getRequestTabsApi, utilitySheetsApi, useCol
 import { RootCollectionFolderId } from "@/types"
 import type { ActiveMenuItem } from "./types"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("components/layout/collection-tree/context-menu/collection-menu")
+
 interface CollectionMenuProps {
   item: Extract<ActiveMenuItem, { kind: "collection" }>
 }
@@ -70,7 +74,7 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
           // Open the request in a tab
           getRequestTabsApi().openRequestTab(item.collectionId, newRequest.id)
         } catch (error) {
-          console.error("Failed to create request", error)
+          logger.error("Failed to create request", { error })
         }
       },
     })
@@ -86,7 +90,7 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
 
           collectionsApi().createFolder(item.collectionId, RootCollectionFolderId, context.name)
         } catch (error) {
-          console.error("Failed to create folder", error)
+          logger.error("Failed to create folder", { error })
         }
       },
     })
@@ -108,7 +112,7 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
 
           collectionsApi().updateCollection(ctx.collectionId, { name: newName })
         } catch (error) {
-          console.error("Failed to rename collection", error)
+          logger.error("Failed to rename collection", { error })
         }
       },
     })
@@ -123,7 +127,7 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
         context: { collectionId: item.collectionId },
       })
     } catch (error) {
-      console.error("Failed to open collection settings", error)
+      logger.error("Failed to open collection settings", { error })
     }
   }, [item])
 
@@ -133,7 +137,7 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
 
       utilitySheetsApi().openSheet({ type: "export", context: { collectionId: item.collectionId } })
     } catch (error) {
-      console.error("Failed to open export sheet", error)
+      logger.error("Failed to open export sheet", { error })
     }
   }, [item])
 
@@ -147,7 +151,7 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
         void writeText(JSON.stringify(collectionData, null, 2))
       }
     } catch (error) {
-      console.error(`Failed to copy collection:${item.collectionId}`, error)
+      logger.error(`Failed to copy collection:${item.collectionId}`, { error })
     }
   }, [item])
 
@@ -166,7 +170,7 @@ export function CollectionMenu({ item }: CollectionMenuProps) {
 
           collectionsApi().removeCollection(ctx.collectionId)
         } catch (error) {
-          console.error("Failed to delete collection", error)
+          logger.error("Failed to delete collection", { error })
         }
       },
     })

@@ -9,6 +9,9 @@
  */
 
 import { writeText, readText } from "@tauri-apps/plugin-clipboard-manager"
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("e2e-bridge")
 
 /**
  * E2E bridge functions exposed to the window for test access
@@ -43,7 +46,7 @@ export const e2eBridge = {
       // Disable auto-save by setting interval to 0
       useApplication.getState().settingsState.requests.autoSave = 0
     } catch (err) {
-      console.warn("[E2E-BRIDGE] Failed to disable auto-save:", err)
+      logger.warn("Failed to disable auto-save", { err })
     }
   },
 }
@@ -57,7 +60,7 @@ if (typeof window !== "undefined") {
   document.addEventListener("keydown", (event) => {
     if (event.key === "m" || event.key === "M") {
       const timestamp = new Date().toISOString()
-      console.log(`[E2E-MANUAL] ${timestamp} UI appears ready (manually marked)`)
+      logger.info(`UI appears ready (manually marked) at ${timestamp}`)
     }
   })
 }

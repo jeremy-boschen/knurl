@@ -13,6 +13,10 @@ import {
 import { cn } from "@/lib"
 import { useCollection, useRequestTab, utilitySheetsApi } from "@/state"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("components/layout/environment-selector")
+
 type EnvironmentSelectorImplProps = {
   collectionId: string
   tabId: string
@@ -47,7 +51,7 @@ function EnvironmentSelectorImpl({ collectionId, tabId, requestTabsApi }: Enviro
       collectionsApi().setActiveEnvironment(collection.id, id)
       requestTabsApi?.selectEnvironment(tabId, id)
     } catch (error) {
-      console.error("Failed to set active environment", error)
+      logger.error("Failed to set active environment", { error })
     }
   }
 
@@ -65,7 +69,7 @@ function EnvironmentSelectorImpl({ collectionId, tabId, requestTabsApi }: Enviro
         },
       })
     } catch (error) {
-      console.error("Failed to open environment manager", error)
+      logger.error("Failed to open environment manager", { error })
     }
   }
 

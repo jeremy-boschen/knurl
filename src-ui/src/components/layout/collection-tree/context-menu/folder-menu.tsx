@@ -24,6 +24,10 @@ import { RootCollectionFolderId } from "@/types"
 
 import type { ActiveMenuItem } from "./types"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("components/layout/collection-tree/context-menu/folder-menu")
+
 interface FolderMenuProps {
   item: Extract<ActiveMenuItem, { kind: "folder" }>
 }
@@ -149,7 +153,7 @@ export function FolderMenu({ item }: FolderMenuProps) {
       try {
         collectionsApi().moveFolder(item.collectionId, item.folderId, targetParentId)
       } catch (error) {
-        console.error("Failed to move folder", error)
+        logger.error("Failed to move folder", { error })
       }
     },
     [item.collectionId, item.folderId],
@@ -185,7 +189,7 @@ export function FolderMenu({ item }: FolderMenuProps) {
             folderId: item.folderId,
           })
         } catch (error) {
-          console.error("Failed to create request", error)
+          logger.error("Failed to create request", { error })
         }
       },
     })
@@ -199,7 +203,7 @@ export function FolderMenu({ item }: FolderMenuProps) {
         try {
           collectionsApi().createFolder(context.collectionId, item.folderId, context.name)
         } catch (error) {
-          console.error("Failed to create folder", error)
+          logger.error("Failed to create folder", { error })
         }
       },
     })

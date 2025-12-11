@@ -5,6 +5,10 @@ import type { StateCreator, StoreApi, StoreMutatorIdentifier } from "zustand"
 
 import type { Application } from "@/types/application"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("types/middleware/storage-manager")
+
 /**
  * Interface for slices to provide to the StorageManager when they want to partake in
  * automatic load/save of their state from the file system
@@ -72,14 +76,14 @@ const storageManagerImpl: StorageManagerImpl = (initializer) => (set, get, store
 
   storeWithStorageManager.registerStorageProvider = <T>(provider: StorageProvider<T>) => {
     if (providers.has(provider.key)) {
-      console.warn(`[StorageManager] A provider with key "${provider.key}" is already registered.`)
+      logger.warn(`[StorageManager] A provider with key "${provider.key}" is already registered.`)
       return
     }
     providers.set(provider.key, provider)
 
     // Single-window: always set up a throttled saver and subscription
     const throttledSave = throttle(() => {
-      console.debug(`[StorageManager] Throttled save triggered for [${provider.key}]`)
+      logger.debug(`[StorageManager] Throttled save triggered for [${provider.key}]`)
       void provider.save()
     }, provider.throttleWait ?? 2000)
     throttledSavers.set(provider.key, throttledSave)
@@ -109,37 +113,37 @@ const storageManagerImpl: StorageManagerImpl = (initializer) => (set, get, store
       Array.from(providers.values()).map(async (provider) => {
         const providerStart = shouldTrace ? performance.now() : 0
         if (shouldTrace) {
-          console.info(`[startup] provider:${provider.key} load:start`)
+          logger.info(`[startup] provider:${provider.key} load:start`)
         }
         try {
           await provider.load()
         } finally {
           if (shouldTrace) {
             const duration = performance.now() - providerStart
-            console.info(`[startup] provider:${provider.key} load:complete ${duration.toFixed(1)}ms`)
+            logger.info(`[startup] provider:${provider.key} load:complete ${duration.toFixed(1)}ms`)
           }
         }
       }),
     )
     if (shouldTrace) {
       const total = performance.now() - loadStart
-      console.info(`[startup] storage load complete ${total.toFixed(1)}ms`)
+      logger.info(`[startup] storage load complete ${total.toFixed(1)}ms`)
     }
     // Run post-hydration callbacks after providers finish loading
     for (const cb of postHydrateCbs) {
       const cbStart = shouldTrace ? performance.now() : 0
       if (shouldTrace) {
-        console.info("[startup] postHydrate:start")
+        logger.info("[startup] postHydrate:start")
       }
       try {
         // eslint-disable-next-line no-await-in-loop
         await cb()
       } catch (e) {
-        console.warn("[StorageManager] postHydrate callback failed:", e)
+        logger.warn("[StorageManager] postHydrate callback failed:", { e })
       } finally {
         if (shouldTrace) {
           const duration = performance.now() - cbStart
-          console.info(`[startup] postHydrate:complete ${duration.toFixed(1)}ms`)
+          logger.info(`[startup] postHydrate:complete ${duration.toFixed(1)}ms`)
         }
       }
     }

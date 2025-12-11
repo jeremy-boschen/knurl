@@ -20,6 +20,10 @@ import {
 } from "@/types"
 import type { StorageProvider } from "@/types/middleware/storage-manager"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("state/settings")
+
 const applyTheme = (theme: Theme): void => {
   if (theme === "system") {
     theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
@@ -149,7 +153,7 @@ export const createSettingsSlice: StateCreator<
         try {
           await SettingsStorage.save(SettingsFileName, get().settingsState)
         } catch (error) {
-          console.error("settings: failed to persist default settings", error)
+          logger.error("settings: failed to persist default settings", { error })
         }
       }
     },

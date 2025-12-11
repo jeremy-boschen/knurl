@@ -12,6 +12,10 @@ import { isScratchCollection, useCollection, useCollections, useRequestTab } fro
 import type { CollectionsApi, RequestTabsApi } from "@/types"
 import { RootCollectionFolderId } from "@/types"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("components/layout/breadcrumbs")
+
 type RenameState =
   | {
       type: "request"
@@ -146,7 +150,7 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
           await requestTabsApi.loadTab(payload.collectionId, payload.requestId)
           collectionsApi().duplicateRequest(payload.collectionId, payload.requestId)
         } catch (error) {
-          console.error("Failed to duplicate request from breadcrumbs", error)
+          logger.error("Failed to duplicate request from breadcrumbs", { error })
         }
         break
       }
@@ -163,7 +167,7 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
             await navigator.clipboard.writeText(JSON.stringify(req, null, 2))
           }
         } catch (error) {
-          console.error("Failed to copy request JSON", error)
+          logger.error("Failed to copy request JSON", { error })
         }
         break
       }
@@ -189,7 +193,7 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
         collectionsApi().createFolder(state.collectionId, state.parentId ?? RootCollectionFolderId, nextName)
       }
     } catch (error) {
-      console.error("Failed to apply rename action from breadcrumbs", error)
+      logger.error("Failed to apply rename action from breadcrumbs", { error })
     }
   }
 
@@ -228,7 +232,7 @@ function BreadcrumbsContent({ tabData, collectionsApi, requestTabsApi }: Breadcr
         collectionsApi().deleteFolder(state.collectionId, state.folderId)
       }
     } catch (error) {
-      console.error("Failed to delete item from breadcrumbs", error)
+      logger.error("Failed to delete item from breadcrumbs", { error })
     }
   }
 

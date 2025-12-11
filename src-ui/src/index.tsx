@@ -11,6 +11,10 @@ import { getStartupState, setStartupState } from "@/lib/startup-state"
 import { loadApplication } from "@/state"
 import { asSuspense } from "@/state/utils"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("index")
+
 // Load test bridges (integration + E2E)
 // Integration bridge: Only loaded when VITE_INTEGRATION_ENABLED is set (for integration tests)
 // E2E bridge: Only during E2E tests (when VITE_E2E_ENABLED is set by wdio.conf.ts)
@@ -28,10 +32,9 @@ enablePatches()
 // This can be awaited as it doesn't block other module imports in the same way.
 try {
   await attachConsole()
-
-  console.log("[app] Console attached to Tauri logger and console methods redirected")
 } catch (err) {
-  console.error("[app] Failed to attach console:", err)
+  // Log attachment failure to console before logger is ready
+  logger.error("[app] Failed to attach console:", { err })
 }
 
 setStartupState(0)

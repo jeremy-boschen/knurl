@@ -10,6 +10,10 @@ import { useCollections, useCollectionFromCache, useCredentialsCacheEntry, useRe
 import type { ApiKeyAuth, AuthConfig, AuthType, BasicAuth, BearerAuth, OAuth2Auth } from "@/types/request"
 import { AuthTypes } from "@/types/request"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("components/request/editor/request-auth-panel")
+
 export type RequestAuthPanelProps = {
   tabId: string
 }
@@ -204,7 +208,7 @@ function RequestAuthPanelComponent({ tabId }: RequestAuthPanelProps) {
       })
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
-      console.error("OIDC Discovery failed:", error)
+      logger.error("OIDC Discovery failed:", { error })
       // Show error alert to user - existing fields remain unchanged
       setDiscoveryError(`Auto-discovery failed: ${errorMessage}`)
     }

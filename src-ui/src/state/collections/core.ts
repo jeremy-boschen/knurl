@@ -34,6 +34,10 @@ import { zCollection, zCollectionsIndex } from "@/types"
 import { RootCollectionFolderId } from "@/types/collections/collection"
 import type { StorageProvider } from "@/types/middleware/storage-manager"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("state/collections/core")
+
 // Constants
 export const ScratchCollectionId = "scratch"
 export const isScratchCollection = (collection: Collection | string) =>
@@ -68,7 +72,7 @@ const logMissingCollectionLoad = (collectionId: string) => {
   }
   const loaded = Array.from(loadedCollections)
   const trace = collectionLoadTraces.get(collectionId)
-  console.error("[collections] Collection accessed before load", {
+  logger.error("[collections] Collection accessed before load", {
     requestedId: collectionId,
     loadedIds: loaded.slice(0, 8),
     totalLoaded: loaded.length,

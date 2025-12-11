@@ -1,5 +1,9 @@
 import { useEffect, useRef } from "react"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("hooks/use-interval")
+
 /**
  * Calls your async callback in sequence, spacing each run by `delay` ms
  */
@@ -23,7 +27,7 @@ export function useInterval(callback: () => void | Promise<void>, delay: number)
         try {
           await saved.current()
         } catch (err) {
-          console.error("useInterval error:", err)
+          logger.error("useInterval error:", { err })
         }
       }
 

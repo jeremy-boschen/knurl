@@ -1,5 +1,9 @@
 import { type ZodType, z } from "zod"
 
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("state/utils")
+
 export function asSuspense<T>(promise: Promise<T>) {
   let status: "pending" | "success" | "error" = "pending"
   let result: T
@@ -39,7 +43,7 @@ export function zParse<T extends ZodType>(schema: T, data: z.input<T>): z.output
     return schema.parse(data)
   } catch (e) {
     if (e instanceof z.ZodError) {
-      console.error(z.prettifyError(e), e)
+      logger.error("z.prettifyError(e) e", { value: z.prettifyError(e), e })
     }
     throw e
   }

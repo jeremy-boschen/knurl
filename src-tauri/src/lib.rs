@@ -520,6 +520,13 @@ pub fn run() {
                 .target(tauri_plugin_log::Target::new(
                     tauri_plugin_log::TargetKind::Stdout,
                 ))
+                .target(tauri_plugin_log::Target::new(
+                    tauri_plugin_log::TargetKind::LogDir {
+                        file_name: Some("knurl".to_string()),
+                    },
+                ))
+                .max_file_size(50_000)
+                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepAll)
                 .format(|out, message, record| {
                     let mut visitor = KvCollector {
                         collected: String::new(),
