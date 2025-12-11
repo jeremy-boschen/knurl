@@ -186,7 +186,7 @@ const LogsListComponent = ({ logs, sending, selectedLevels, onSelectedLevelsChan
                   </span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-64" data-test-id="logs-list:levels-popover-content">
+              <PopoverContent className="w-72" data-test-id="logs-list:levels-popover-content">
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -197,20 +197,39 @@ const LogsListComponent = ({ logs, sending, selectedLevels, onSelectedLevelsChan
                     />
                     <span className={cn("text-sm", !allSelected && "text-foreground/75")}>All</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                    {ALL_LEVELS.map((lvl) => (
-                      <div key={lvl} className="flex items-center space-x-2">
-                        <Checkbox
-                          checked={selectedLevelSet.has(lvl)}
-                          onCheckedChange={(v) => handleToggleLevel(lvl, v)}
-                          aria-label={lvl}
-                          data-test-id={`logs-list:toggle-level-checkbox:${lvl}`}
-                        />
-                        <span className={cn("text-sm capitalize", !selectedLevelSet.has(lvl) && "text-foreground/75")}>
-                          {lvl}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                    {/* Left column: Info, Warning, Error */}
+                    <div className="space-y-3">
+                      {["info", "warning", "error"].map((lvl) => (
+                        <div key={lvl} className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={selectedLevelSet.has(lvl as LogLevel)}
+                            onCheckedChange={(v) => handleToggleLevel(lvl as LogLevel, v)}
+                            aria-label={lvl}
+                            data-test-id={`logs-list:toggle-level-checkbox:${lvl}`}
+                          />
+                          <span className={cn("text-sm capitalize", !selectedLevelSet.has(lvl as LogLevel) && "text-foreground/75")}>
+                            {lvl}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Right column: Debug, Trace */}
+                    <div className="space-y-3">
+                      {["debug", "trace"].map((lvl) => (
+                        <div key={lvl} className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={selectedLevelSet.has(lvl as LogLevel)}
+                            onCheckedChange={(v) => handleToggleLevel(lvl as LogLevel, v)}
+                            aria-label={lvl}
+                            data-test-id={`logs-list:toggle-level-checkbox:${lvl}`}
+                          />
+                          <span className={cn("text-sm capitalize", !selectedLevelSet.has(lvl as LogLevel) && "text-foreground/75")}>
+                            {lvl}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </PopoverContent>
