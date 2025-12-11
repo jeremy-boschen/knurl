@@ -43,9 +43,18 @@ jobs:
         run: corepack enable
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+        run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+        shell: bash
+
+      - name: Add Rust to PATH (Windows)
+        if: runner.os == 'Windows'
+        run: echo "$HOME/.cargo/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Install macOS targets
+        if: matrix.platform == 'macos-latest'
+        run: |
+          source $HOME/.cargo/env
+          rustup target add aarch64-apple-darwin x86_64-apple-darwin
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
