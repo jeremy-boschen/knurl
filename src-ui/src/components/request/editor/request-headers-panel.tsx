@@ -40,14 +40,7 @@ function RequestHeadersPanelComponent({ tabId }: RequestHeadersPanelProps) {
           </Tooltip>
         </div>
 
-        <ParamList
-          tabId={tabId}
-          kind="header"
-          items={headers}
-          original={original}
-          emptyMessage='No headers added yet. Click "Add Header" to get started.'
-          emptyStateTestId="request-headers-panel:empty-state"
-        />
+        <ParamList tabId={tabId} kind="header" items={headers} original={original} />
       </div>
     </Profiler>
   )

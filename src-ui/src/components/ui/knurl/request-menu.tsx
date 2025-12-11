@@ -19,12 +19,7 @@ export type RequestMenuMoveTarget = {
   path: string
 }
 
-export type RequestMenuActionId =
-  | "rename"
-  | "duplicate"
-  | "request:move"
-  | "copy-json"
-  | "delete"
+export type RequestMenuActionId = "rename" | "duplicate" | "request:move" | "copy-json" | "delete"
 
 export type RequestMenuPayload = {
   actionId: RequestMenuActionId
@@ -209,10 +204,7 @@ export function RequestMenuContent({
                   <DropdownMenuItem onClick={() => handleMoveToFolder(RootCollectionFolderId)}>Root</DropdownMenuItem>
                 )}
                 {availableFolders.map((folder) => (
-                  <DropdownMenuItem
-                    key={folder.folderId}
-                    onClick={() => handleMoveToFolder(folder.folderId)}
-                  >
+                  <DropdownMenuItem key={folder.folderId} onClick={() => handleMoveToFolder(folder.folderId)}>
                     {folder.path}
                   </DropdownMenuItem>
                 ))}

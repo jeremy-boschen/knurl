@@ -476,7 +476,7 @@ export default function ResponseViewer({ tabId, className }: RequestTabsProps) {
                         value={
                           formattedView && formattedBody?.key === `${responseLanguage}::${httpResponse?.body}`
                             ? formattedBody.out
-                            : httpResponse?.body ?? ""
+                            : (httpResponse?.body ?? "")
                         }
                         language={responseLanguage as CodeLanguage}
                         syntaxHighlighting={settingsState.appearance.autoHighlight}

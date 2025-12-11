@@ -208,7 +208,12 @@ const LogsListComponent = ({ logs, sending, selectedLevels, onSelectedLevelsChan
                             aria-label={lvl}
                             data-test-id={`logs-list:toggle-level-checkbox:${lvl}`}
                           />
-                          <span className={cn("text-sm capitalize", !selectedLevelSet.has(lvl as LogLevel) && "text-foreground/75")}>
+                          <span
+                            className={cn(
+                              "text-sm capitalize",
+                              !selectedLevelSet.has(lvl as LogLevel) && "text-foreground/75",
+                            )}
+                          >
                             {lvl}
                           </span>
                         </div>
@@ -224,7 +229,12 @@ const LogsListComponent = ({ logs, sending, selectedLevels, onSelectedLevelsChan
                             aria-label={lvl}
                             data-test-id={`logs-list:toggle-level-checkbox:${lvl}`}
                           />
-                          <span className={cn("text-sm capitalize", !selectedLevelSet.has(lvl as LogLevel) && "text-foreground/75")}>
+                          <span
+                            className={cn(
+                              "text-sm capitalize",
+                              !selectedLevelSet.has(lvl as LogLevel) && "text-foreground/75",
+                            )}
+                          >
                             {lvl}
                           </span>
                         </div>

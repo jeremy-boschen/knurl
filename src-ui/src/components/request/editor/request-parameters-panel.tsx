@@ -42,13 +42,7 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
             </Tooltip>
           </div>
 
-          <ParamList
-            tabId={tabId}
-            kind="path"
-            items={pathParams}
-            original={original.pathParams}
-            emptyMessage="No path parameters added yet. Path parameters replace placeholders in the URL (e.g., /users/:id)."
-          />
+          <ParamList tabId={tabId} kind="path" items={pathParams} original={original.pathParams} />
         </div>
 
         {/* Query Parameters Section */}
@@ -72,13 +66,7 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
             </Tooltip>
           </div>
 
-          <ParamList
-            tabId={tabId}
-            kind="query"
-            items={queryParams}
-            original={original.queryParams}
-            emptyMessage="No query parameters added yet. Query parameters are appended to the URL (e.g., ?name=value)."
-          />
+          <ParamList tabId={tabId} kind="query" items={queryParams} original={original.queryParams} />
         </div>
 
         {/* Cookies Section (render only when provided to keep tests deterministic) */}
@@ -103,13 +91,7 @@ function RequestParametersPanelComponent({ tabId }: RequestParametersPanelProps)
               </Tooltip>
             </div>
 
-            <ParamList
-              tabId={tabId}
-              kind="cookie"
-              items={cookieParams}
-              original={original.cookieParams}
-              emptyMessage="No cookies added yet."
-            />
+            <ParamList tabId={tabId} kind="cookie" items={cookieParams} original={original.cookieParams} />
           </div>
         )}
       </div>

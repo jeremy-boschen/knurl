@@ -1,7 +1,17 @@
 import { useCallback, useMemo } from "react"
 import type React from "react"
 
-import { ChevronDownIcon, ChevronUpIcon, CopyIcon, Edit2Icon, FolderPlusIcon, GlobeIcon, PlusIcon, Trash2Icon, UploadIcon } from "lucide-react"
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  CopyIcon,
+  Edit2Icon,
+  FolderPlusIcon,
+  GlobeIcon,
+  PlusIcon,
+  Trash2Icon,
+  UploadIcon,
+} from "lucide-react"
 
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { isScratchCollection, useCollections, useOpenTabs, utilitySheetsApi } from "@/state"
@@ -36,7 +46,12 @@ export type CollectionMenuContentProps = {
   ) => void
 }
 
-export function CollectionMenuContent({ collection, collectionsIndex, exclude = [], onAction }: CollectionMenuContentProps) {
+export function CollectionMenuContent({
+  collection,
+  collectionsIndex,
+  exclude = [],
+  onAction,
+}: CollectionMenuContentProps) {
   const {
     actions: { collectionsApi },
     state: { collectionsIndex: defaultIndex },
@@ -204,7 +219,9 @@ export function CollectionMenuContent({ collection, collectionsIndex, exclude = 
   }
 
   const hasMovement = visible.some((id) => ["move-up", "move-down"].includes(id))
-  const hasNonDestructive = visible.some((id) => ["request:new", "rename", "manage-settings", "export", "copy-json"].includes(id))
+  const hasNonDestructive = visible.some((id) =>
+    ["request:new", "rename", "manage-settings", "export", "copy-json"].includes(id),
+  )
   const hasDestructive = visible.some((id) => ["delete", "clear-scratch"].includes(id))
 
   return (
