@@ -27,9 +27,15 @@ jobs:
       options: --user 1000:1000
     steps:
       - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/cache@v4
         with:
-          workspaces: src-tauri
+          path: |
+            src-tauri/target
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - run: yarn install --immutable
       - run: yarn lint --max-warnings=0
 
@@ -41,9 +47,15 @@ jobs:
       options: --user 1000:1000
     steps:
       - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/cache@v4
         with:
-          workspaces: src-tauri
+          path: |
+            src-tauri/target
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - run: yarn install --immutable
       - name: Run unit tests
         run: yarn test:unit 2>&1 | tee /tmp/test-output.log
@@ -68,9 +80,15 @@ jobs:
       options: --user 1000:1000
     steps:
       - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/cache@v4
         with:
-          workspaces: src-tauri
+          path: |
+            src-tauri/target
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - run: yarn install --immutable
       - name: Run critical E2E tests
         run: yarn test:check 2>&1 | tee /tmp/e2e-test-output.log
@@ -97,9 +115,15 @@ jobs:
         run: yarn npm audit --audit-level moderate || true
       - name: Install Rust
         run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/cache@v4
         with:
-          workspaces: src-tauri
+          path: |
+            src-tauri/target
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - name: Run cargo audit
         run: |
           source $HOME/.cargo/env
@@ -136,9 +160,15 @@ jobs:
           source $HOME/.cargo/env 2>/dev/null || true
           rustup target add ${{ matrix.target }}
         shell: bash
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/cache@v4
         with:
-          workspaces: src-tauri
+          path: |
+            src-tauri/target
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - name: Install system dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: |

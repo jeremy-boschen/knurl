@@ -1,9 +1,9 @@
 import type React from "react"
 
-import {Clickable, HttpBadge} from "@/components/ui/knurl"
-import {useShowableIds} from "@/hooks/use-showable-ids"
-import {cn, isNotEmpty} from "@/lib"
-import {getRequestTabsApi, useCollectionFromCache, useCollectionTree} from "@/state"
+import { Clickable, HttpBadge } from "@/components/ui/knurl"
+import { useShowableIds } from "@/hooks/use-showable-ids"
+import { cn, isNotEmpty } from "@/lib"
+import { getRequestTabsApi, useCollectionFromCache, useCollectionTree } from "@/state"
 
 type RequestItemProps = {
   collectionId: string

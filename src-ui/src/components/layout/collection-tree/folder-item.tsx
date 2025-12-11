@@ -1,10 +1,10 @@
-import {FolderClosedIcon, FolderOpenIcon} from "lucide-react"
+import { FolderClosedIcon, FolderOpenIcon } from "lucide-react"
 
-import {Clickable} from "@/components/ui/knurl"
-import {useShowableIds} from "@/hooks/use-showable-ids"
-import {useCollectionFromCache, useCollectionTree} from "@/state"
-import {FolderItemList} from "./folder-item-list"
-import {RequestItemList} from "./request-item-list"
+import { Clickable } from "@/components/ui/knurl"
+import { useShowableIds } from "@/hooks/use-showable-ids"
+import { useCollectionFromCache, useCollectionTree } from "@/state"
+import { FolderItemList } from "./folder-item-list"
+import { RequestItemList } from "./request-item-list"
 
 type FolderItemProps = {
   collectionId: string
