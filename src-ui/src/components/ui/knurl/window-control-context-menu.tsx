@@ -20,7 +20,7 @@ function useWindowState() {
   }, [])
 
   useEffect(() => {
-    let unlisten: Promise<(() => void) | void> | undefined
+    let unlisten: Promise<(() => void) | undefined> | undefined
 
     const attach = async () => {
       try {

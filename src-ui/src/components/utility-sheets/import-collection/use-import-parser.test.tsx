@@ -83,3 +83,68 @@ describe("useImportParser with Postman collections", () => {
     expect(result.current.convertedData).toContain('"format": "native"')
   })
 })
+
+describe("useImportParser with legacy native exports", () => {
+  it("coerces array-based native exports and auto-detects format", async () => {
+    const legacyNative = {
+      format: "native",
+      version: "1.0.0",
+      exportedAt: new Date().toISOString(),
+      collection: {
+        id: "legacy-col",
+        name: "Legacy Native",
+        updated: new Date().toISOString(),
+        encryption: { algorithm: "aes-gcm" },
+        environments: [
+          {
+            id: "env-1",
+            name: "Local",
+            description: "",
+            variables: {},
+          },
+        ],
+        folders: {
+          root: {
+            id: "root",
+            name: "Root",
+            parentId: null,
+            order: 0,
+            childFolderIds: [],
+            requestIds: ["req-1"],
+          },
+        },
+        requests: [
+          {
+            id: "req-1",
+            folderId: "root",
+            order: 1,
+            name: "Ping",
+            collectionId: "legacy-col",
+            autoSave: false,
+            method: "GET",
+            url: "https://example.com/ping",
+            pathParams: {},
+            queryParams: {},
+            headers: {},
+            cookieParams: {},
+            body: { type: "none" },
+            authentication: { type: "none" },
+            patch: {},
+            updated: 1,
+          },
+        ],
+        authentication: { type: "none" },
+      },
+    }
+
+    const { result } = renderHook(() => useImportParser(JSON.stringify(legacyNative), "auto", {}))
+
+    await waitFor(() => {
+      expect(result.current.detectedFormat).toBe("native")
+    })
+
+    expect(result.current.collection?.collection.requests).toBeTruthy()
+    expect(result.current.collection?.collection.environments).toBeTruthy()
+    expect(result.current.issues).toBeNull()
+  })
+})

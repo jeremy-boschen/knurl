@@ -32,8 +32,51 @@ export type ValidationResult = { success: true; data: ExportedCollection } | { s
  * @param doc The document to validate.
  * @returns A result object indicating success or failure with parsed data or a Zod error.
  */
+const coerceArrayToRecord = <T extends { id?: string; name?: string }>(items: unknown[], prefix: string) => {
+  const record: Record<string, T> = {}
+  items.forEach((item, index) => {
+    if (!item || typeof item !== "object") {
+      return
+    }
+    const obj = item as T
+    const key = (obj.id && String(obj.id).trim()) || (obj.name && String(obj.name).trim())
+    record[key || `${prefix}-${index}-${generateUniqueId()}`] = obj
+  })
+  return record
+}
+
+const normalizeLegacyNativeDocument = (doc: unknown): ExportedCollection | null => {
+  if (!doc || typeof doc !== "object") {
+    return null
+  }
+
+  const normalized = JSON.parse(JSON.stringify(doc)) as ExportedCollection
+  const collection: Partial<Collection> = normalized.collection ?? {}
+  normalized.collection = collection
+
+  if (Array.isArray((collection as { requests?: unknown } | undefined)?.requests)) {
+    const requestsArray = collection.requests as unknown[]
+    collection.requests = coerceArrayToRecord<RequestState>(requestsArray, "req")
+  }
+
+  if (Array.isArray((collection as { environments?: unknown } | undefined)?.environments)) {
+    const envArray = collection.environments as unknown[]
+    collection.environments = coerceArrayToRecord<Environment>(envArray, "env")
+  }
+
+  if (Array.isArray((collection as { folders?: unknown } | undefined)?.folders)) {
+    const folderArray = collection.folders as unknown[]
+    collection.folders = coerceArrayToRecord<CollectionFolderNode>(folderArray, "folder")
+  }
+
+  collection.authentication = collection.authentication ?? { type: "none" }
+
+  return normalized
+}
+
 export const validateNativeDocument = (doc: unknown): ValidationResult => {
-  const result = zExportedCollection.safeParse(doc)
+  const normalized = normalizeLegacyNativeDocument(doc)
+  const result = zExportedCollection.safeParse(normalized ?? doc)
   if (result.success) {
     return { success: true, data: result.data }
   }
