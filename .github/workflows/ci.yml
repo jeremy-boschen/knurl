@@ -7,20 +7,8 @@ on:
     branches: [main, develop]
 
 jobs:
-  typecheck:
-    name: TypeScript Type Checking
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "yarn"
-      - run: yarn install --immutable
-      - run: yarn typecheck
-
-  lint:
-    name: Linting & Formatting
+  linux-ci:
+    name: Linux CI (Type Check, Lint, Test, Security)
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository }}:latest
@@ -36,30 +24,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
       - run: yarn install --immutable
-      - name: Run lint
+      - name: TypeScript Type Checking
+        run: yarn typecheck
+      - name: Linting & Formatting
         run: |
           . $HOME/.cargo/env
           yarn lint --max-warnings=0
         shell: bash
-
-  test:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository }}:latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
-        with:
-          path: |
-            src-tauri/target
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-      - run: yarn install --immutable
-      - name: Run unit tests
+      - name: Unit Tests
         run: |
           . $HOME/.cargo/env
           yarn test:unit 2>&1 | tee /tmp/test-output.log
@@ -76,25 +48,7 @@ jobs:
           name: test-logs
           path: /tmp/test-output.log
           if-no-files-found: ignore
-
-  test-e2e:
-    name: E2E Tests (Critical)
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository }}:latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
-        with:
-          path: |
-            src-tauri/target
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-      - run: yarn install --immutable
-      - name: Run critical E2E tests
+      - name: E2E Tests (Critical)
         run: |
           . $HOME/.cargo/env
           yarn test:check 2>&1 | tee /tmp/e2e-test-output.log
@@ -107,34 +61,13 @@ jobs:
           name: e2e-test-logs
           path: /tmp/e2e-test-output.log
           if-no-files-found: ignore
-
-  security:
-    name: Security Audits
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "yarn"
-      - run: yarn install --immutable
-      - name: Run npm audit
+      - name: Security Audits (npm)
         run: yarn npm audit --audit-level moderate || true
-      - name: Install Rust
-        run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-      - uses: actions/cache@v4
-        with:
-          path: |
-            src-tauri/target
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-      - name: Run cargo audit
+      - name: Security Audits (cargo)
         run: |
-          source $HOME/.cargo/env
+          . $HOME/.cargo/env
           cargo install cargo-audit && cargo audit --file src-tauri/Cargo.lock
+        shell: bash
 
   build:
     name: Build Check
