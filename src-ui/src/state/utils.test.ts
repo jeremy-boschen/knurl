@@ -1,5 +1,24 @@
 import { describe, expect, it, vi } from "vitest"
 import { z } from "zod"
+
+vi.mock("@/lib/logger", () => {
+  const mockLoggerInstance = {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  }
+  return {
+    getSyncLogger: vi.fn(() => mockLoggerInstance),
+    __mockLoggerInstance: mockLoggerInstance,
+  }
+})
+
+import { getSyncLogger } from "@/lib/logger"
+
+// Get the mock instance that getSyncLogger returns
+const mockLoggerInstance = getSyncLogger("test") as any
+
 import { asSuspense, zParse } from "./utils"
 
 const createDeferred = <T>() => {
@@ -34,13 +53,11 @@ describe("zParse", () => {
   })
 
   it("should log an error to the console when parsing fails", () => {
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    mockLoggerInstance.error.mockClear()
     const data = { name: 123, age: 30 }
 
     expect(() => zParse(schema, data)).toThrow()
-    expect(consoleErrorSpy).toHaveBeenCalled()
-
-    consoleErrorSpy.mockRestore()
+    expect(mockLoggerInstance.error).toHaveBeenCalled()
   })
 })
 

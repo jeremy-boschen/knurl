@@ -1,7 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
+vi.mock("@/lib/logger", () => {
+  const mockLoggerInstance = {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  }
+  return {
+    getSyncLogger: vi.fn(() => mockLoggerInstance),
+    __mockLoggerInstance: mockLoggerInstance,
+  }
+})
+
+import { getSyncLogger } from "@/lib/logger"
+
 import { eventBus } from "./event-emitter"
 import type { KnurlEvent } from "./events"
+
+// Get the mock instance that getSyncLogger returns
+const mockLoggerInstance = getSyncLogger("test") as any
 
 const createEvent = (overrides: Partial<KnurlEvent> = {}): KnurlEvent => ({
   type: "requestUi",
@@ -62,7 +80,7 @@ describe("eventBus", () => {
   })
 
   it("logs handler failures but continues notifying subsequent listeners", () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    mockLoggerInstance.error.mockClear()
     const failing = vi.fn(() => {
       throw new Error("boom")
     })
@@ -74,7 +92,6 @@ describe("eventBus", () => {
 
     expect(failing).toHaveBeenCalled()
     expect(succeeding).toHaveBeenCalled()
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Event handler error for requestUi:"), expect.any(Error))
-    errorSpy.mockRestore()
+    expect(mockLoggerInstance.error).toHaveBeenCalledWith("Event handler error for requestUi:", expect.objectContaining({ err: expect.any(Error) }))
   })
 })

@@ -1,7 +1,24 @@
 import { act, renderHook } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+vi.mock("@/lib/logger", () => {
+  const mockLoggerInstance = {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  }
+  return {
+    getSyncLogger: vi.fn(() => mockLoggerInstance),
+    __mockLoggerInstance: mockLoggerInstance,
+  }
+})
+
+import { getSyncLogger } from "@/lib/logger"
 import { useInterval } from "./use-interval"
+
+// Get the mock instance that getSyncLogger returns
+const mockLoggerInstance = getSyncLogger("test") as any
 
 describe("useInterval", () => {
   beforeEach(() => {
@@ -71,20 +88,18 @@ describe("useInterval", () => {
     const failing = vi.fn(() => {
       throw new Error("boom")
     })
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    mockLoggerInstance.error.mockClear()
 
     renderHook(() => useInterval(failing, 30))
 
     await advanceTimers(30)
 
     expect(failing).toHaveBeenCalledTimes(1)
-    expect(consoleSpy).toHaveBeenCalledWith("useInterval error:", expect.any(Error))
+    expect(mockLoggerInstance.error).toHaveBeenCalledWith("useInterval error:", expect.objectContaining({ err: expect.any(Error) }))
 
     await advanceTimers(30)
 
     expect(failing).toHaveBeenCalledTimes(2)
-    expect(consoleSpy).toHaveBeenCalledTimes(2)
-
-    consoleSpy.mockRestore()
+    expect(mockLoggerInstance.error).toHaveBeenCalledTimes(2)
   })
 })
