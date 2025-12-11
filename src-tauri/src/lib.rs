@@ -532,9 +532,11 @@ pub fn run() {
                         collected: String::new(),
                     };
                     let _ = record.key_values().visit(&mut visitor);
+                    let timestamp = chrono::Local::now().format("%Y-%m-%dT%H:%M:%S%.6f%:z");
 
                     out.finish(format_args!(
-                        "[{}] [{}] {} ({}:{}){}",
+                        "[{}] [{}] [{}] {} ({}:{}){}",
+                        timestamp,
                         record.level(),
                         record.target(),
                         message,
