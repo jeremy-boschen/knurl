@@ -1,0 +1,52 @@
+# Knurl CI Image
+# Pre-configured with all dependencies for building and testing
+FROM ubuntu:24.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive \
+    NODE_VERSION=20 \
+    RUST_BACKTRACE=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    libgtk-3-dev \
+    libwebkit2gtk-4.1-dev \
+    libsoup-3.0-dev \
+    libjavascriptcoregtk-4.1-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable && \
+    . $HOME/.cargo/env && \
+    rustup component add clippy
+
+# Set Rust environment
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install Node package manager (yarn is installed globally via npm)
+RUN npm install -g yarn
+
+# Verify installations
+RUN node --version && \
+    npm --version && \
+    yarn --version && \
+    rustc --version && \
+    cargo --version && \
+    cargo clippy --version
+
+# Set working directory
+WORKDIR /workspace
+
+# Default command
+CMD ["/bin/bash"]
