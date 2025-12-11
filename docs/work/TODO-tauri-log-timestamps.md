@@ -1,0 +1,1 @@
+- Add fine grained timestamps to all the log output on the Tauri side.
