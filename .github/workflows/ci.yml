@@ -38,8 +38,9 @@ jobs:
       - run: yarn install --immutable
       - name: Run lint
         run: |
-          source $HOME/.cargo/env
+          . $HOME/.cargo/env
           yarn lint --max-warnings=0
+        shell: bash
 
   test:
     name: Unit Tests
@@ -60,8 +61,9 @@ jobs:
       - run: yarn install --immutable
       - name: Run unit tests
         run: |
-          source $HOME/.cargo/env
+          . $HOME/.cargo/env
           yarn test:unit 2>&1 | tee /tmp/test-output.log
+        shell: bash
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         with:
@@ -94,8 +96,9 @@ jobs:
       - run: yarn install --immutable
       - name: Run critical E2E tests
         run: |
-          source $HOME/.cargo/env
+          . $HOME/.cargo/env
           yarn test:check 2>&1 | tee /tmp/e2e-test-output.log
+        shell: bash
         continue-on-error: true
       - name: Upload E2E test logs on failure
         if: failure()
