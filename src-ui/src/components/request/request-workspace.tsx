@@ -338,7 +338,7 @@ const RequestWorkspaceContent = React.memo(function RequestWorkspaceContent({
                 <div className={cn("bg-transparent", resizeHandleLineClass)} />
               </ResizeHandle>
 
-              <Panel className="overflow-auto" defaultSize="50%" minSize="110px" key="response-viewer">
+              <Panel className="overflow-hidden" defaultSize="50%" minSize="110px" key="response-viewer">
                 <ResponseViewer
                   tabId={activeTab.tabId}
                   className={cn(!isVerticalLayout && "border-l border-l-background")}

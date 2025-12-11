@@ -51,7 +51,7 @@ export default function AppLayout() {
 
           <Panel className="overflow-hidden" key="workspace">
             <div className="flex h-full flex-col bg-background">
-              <AppHeader className="bg-muted border-b mr-2" />
+              <AppHeader className="bg-muted border-b" />
               <div className="flex-1 overflow-hidden min-h-0">
                 {activeTabId ? (
                   <RequestWorkspace tabId={activeTabId} />
