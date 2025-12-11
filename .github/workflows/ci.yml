@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository }}:latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
@@ -27,15 +30,9 @@ jobs:
       - name: TypeScript Type Checking
         run: yarn typecheck
       - name: Linting & Formatting
-        run: |
-          . $HOME/.cargo/env
-          yarn lint --max-warnings=0
-        shell: bash
+        run: yarn lint --max-warnings=0
       - name: Unit Tests
-        run: |
-          . $HOME/.cargo/env
-          yarn test:unit 2>&1 | tee /tmp/test-output.log
-        shell: bash
+        run: yarn test:unit 2>&1 | tee /tmp/test-output.log
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         with:
@@ -49,10 +46,7 @@ jobs:
           path: /tmp/test-output.log
           if-no-files-found: ignore
       - name: E2E Tests (Critical)
-        run: |
-          . $HOME/.cargo/env
-          yarn test:check 2>&1 | tee /tmp/e2e-test-output.log
-        shell: bash
+        run: yarn test:check 2>&1 | tee /tmp/e2e-test-output.log
         continue-on-error: true
       - name: Upload E2E test logs on failure
         if: failure()
@@ -64,14 +58,14 @@ jobs:
       - name: Security Audits (npm)
         run: yarn npm audit --audit-level moderate || true
       - name: Security Audits (cargo)
-        run: |
-          . $HOME/.cargo/env
-          cargo install cargo-audit && cargo audit --file src-tauri/Cargo.lock
-        shell: bash
+        run: cargo install cargo-audit && cargo audit --file src-tauri/Cargo.lock
 
   build:
     name: Build Check
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     strategy:
       matrix:
         include:
