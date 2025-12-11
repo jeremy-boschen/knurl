@@ -72,6 +72,8 @@
     --log-info-foreground: var(--color-neutral-100);
     --log-debug: var(--color-gray-400);
     --log-debug-foreground: var(--color-neutral-950);
+    --log-trace: var(--color-purple-300);
+    --log-trace-foreground: var(--color-neutral-950);
     --log-error: var(--color-red-800);
     --log-error-foreground: var(--color-yellow-400);
     --log-warning: var(--color-yellow-400);
@@ -108,6 +110,10 @@
 
     --http-trace: var(--color-yellow-500);
     --http-trace-foreground: var(--color-neutral-950);
+
+    /* Logging Colors (Dark) */
+    --log-trace: var(--color-purple-500);
+    --log-trace-foreground: var(--color-neutral-100);
 }
 
 @theme {
@@ -136,6 +142,8 @@
     --color-log-info-foreground: var(--log-info-foreground);
     --color-log-debug: var(--log-debug);
     --color-log-debug-foreground: var(--log-debug-foreground);
+    --color-log-trace: var(--log-trace);
+    --color-log-trace-foreground: var(--log-trace-foreground);
     --color-log-error: var(--log-error);
     --color-log-error-foreground: var(--log-error-foreground);
     --color-log-warning: var(--log-warning);

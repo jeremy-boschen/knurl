@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 import { onProfilerRender } from "@/lib/profiler-bridge"
 import { DEFAULT_LOG_LEVELS, type LogLevel } from "@/types"
 
-const ALL_LEVELS = ["info", "debug", "warning", "error"] as const
+const ALL_LEVELS = ["info", "debug", "trace", "warning", "error"] as const
 
 const ENABLE_STRUCTURED_LOG_META = import.meta.env.VITE_ENABLE_STRUCTURED_LOG_META === "1"
 
@@ -33,6 +33,7 @@ const DEFAULT_LEVELS: LogLevel[] = [...DEFAULT_LOG_LEVELS]
 const LOG_LEVEL_CSS = {
   info: "bg-log-info text-log-info-foreground",
   debug: "bg-log-debug text-log-debug-foreground",
+  trace: "bg-log-trace text-log-trace-foreground",
   error: "bg-log-error text-log-error-foreground",
   warning: "bg-log-warning text-log-warning-foreground",
 }
