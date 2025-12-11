@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { writeText } from "@tauri-apps/plugin-clipboard-manager"
 import { revealItemInDir } from "@tauri-apps/plugin-opener"
 import { ClipboardCopyIcon, FolderOpenIcon, RotateCcwIcon, UploadIcon, XIcon } from "lucide-react"
+import yaml from "js-yaml"
 
 import { saveFile } from "@/bindings/knurl"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -14,23 +15,13 @@ import { LabeledField } from "@/components/ui/knurl"
 import { Input } from "@/components/ui/knurl/input"
 import { SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { useCollection, useCollections } from "@/state"
+import { nativeToOpenApi } from "@/components/utility-sheets/import-collection/parsers"
+import type { Collection } from "@/types"
 
 type ExportFormat = "native-json" | "openapi-json" | "openapi-yaml"
 
-const ExportFileFilters = {
-  json: [
-    {
-      name: "YAML",
-      extensions: ["yml", "yaml"],
-    },
-  ],
-  yaml: [
-    {
-      name: "JSON",
-      extensions: ["json"],
-    },
-  ],
-}
+const JsonFilter = [{ name: "JSON", extensions: ["json"] }]
+const YamlFilter = [{ name: "YAML", extensions: ["yaml", "yml"] }]
 
 interface Props {
   collectionId: string
@@ -93,25 +84,54 @@ export default function ExportCollectionSheet({ collectionId }: Props) {
       const selectedRequestIds = new Set(selectedRequests)
       const selectedEnvironmentIds = new Set(selectedEnvironments)
 
-      exported.collection.requests = Object.values(exported.collection.requests ?? {}).filter((r) =>
-        r.id ? selectedRequestIds.has(r.id) : false,
+      const filteredRequests = Object.fromEntries(
+        Object.entries(exported.collection.requests ?? {}).filter(([id]) => selectedRequestIds.has(id)),
       )
-      exported.collection.environments = Object.values(exported.collection.environments ?? {}).filter((e) =>
-        e.id ? selectedEnvironmentIds.has(e.id) : false,
+      const filteredEnvironments = Object.fromEntries(
+        Object.entries(exported.collection.environments ?? {}).filter(([id]) => selectedEnvironmentIds.has(id)),
       )
 
-      const payload = JSON.stringify(exported, null, 2)
+      const filteredExport = {
+        ...exported,
+        collection: {
+          ...exported.collection,
+          requests: filteredRequests,
+          environments: filteredEnvironments,
+        },
+      }
+
+      let payload = ""
+      let filters = JsonFilter
+      const safeName = collection.name.replace(/[^a-zA-Z0-9_-]/g, "_")
+      let defaultPath = `${safeName}_export.json`
+
+      if (format === "native-json") {
+        payload = JSON.stringify(filteredExport, null, 2)
+        filters = JsonFilter
+        defaultPath = `${safeName}_export.json`
+      } else {
+        const openApiSpec = nativeToOpenApi(filteredExport.collection as Collection)
+        if (format === "openapi-json") {
+          payload = JSON.stringify(openApiSpec, null, 2)
+          filters = JsonFilter
+          defaultPath = `${safeName}_openapi.json`
+        } else {
+          payload = yaml.dump(openApiSpec, { skipInvalid: true })
+          filters = YamlFilter
+          defaultPath = `${safeName}_openapi.yaml`
+        }
+      }
 
       const path = await saveFile(payload, {
         title: "Save exported collection",
-        defaultPath: `${collection.name.replace(/[^a-zA-Z0-9_-]/g, "_")}_export.json`,
-        filters: ExportFileFilters.json,
+        defaultPath,
+        filters,
       })
       setStatus({ kind: "success", path })
     } catch (err) {
       setStatus({ kind: "error", message: (err as Error)?.message ?? String(err) })
     }
-  }, [collectionId, selectedRequests, selectedEnvironments, collection.name, collectionsApi])
+  }, [collectionId, selectedRequests, selectedEnvironments, collection.name, collectionsApi, format])
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">

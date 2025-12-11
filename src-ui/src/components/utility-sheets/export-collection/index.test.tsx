@@ -43,11 +43,11 @@ const exportedFixture = () => ({
     name: "C",
     updated: new Date().toISOString(),
     encryption: { algorithm: "aes-gcm" },
-    environments: [{ id: "e1", name: "Env", variables: {} }],
-    requests: [
-      { id: "r1", name: "A", method: "GET", url: "/a" },
-      { id: "r2", name: "B", method: "POST", url: "/b" },
-    ],
+    environments: { e1: { id: "e1", name: "Env", variables: {} } },
+    requests: {
+      r1: { id: "r1", name: "A", method: "GET", url: "/a" },
+      r2: { id: "r2", name: "B", method: "POST", url: "/b" },
+    },
     authentication: { type: "none" },
   },
 })
@@ -193,9 +193,54 @@ describe("ExportCollectionSheet", () => {
     await user.click(exportBtn)
 
     const parsed = JSON.parse(savedPayload)
-    expect(parsed.collection.requests).toHaveLength(1)
-    expect(parsed.collection.requests[0].name).toBe("A") // from fixture after filtering
-    expect(parsed.collection.environments).toHaveLength(1)
-    expect(parsed.collection.environments[0].id).toBe("e1")
+    expect(Object.keys(parsed.collection.requests)).toHaveLength(1)
+    expect(parsed.collection.requests.r1.name).toBe("A") // from fixture after filtering
+    expect(Object.keys(parsed.collection.environments)).toHaveLength(1)
+    expect(parsed.collection.environments.e1.id).toBe("e1")
+  })
+
+  it("exports OpenAPI YAML when selected", async () => {
+    const user = userEvent.setup()
+    const collection = {
+      id: "col",
+      name: "OpenAPI Export",
+      updated: new Date().toISOString(),
+      encryption: { algorithm: "aes-gcm" },
+      environments: {
+        e1: { id: "e1", name: "Env", variables: { baseUrl: { id: "v1", name: "baseUrl", value: "https://api" } } },
+      },
+      requests: { r1: { id: "r1", name: "Ping", method: "GET", url: "{{baseUrl}}/ping" } },
+      folders: { root: { id: "root", name: "Root", parentId: null, order: 0, childFolderIds: [], requestIds: ["r1"] } },
+      authentication: { type: "none" },
+    }
+    vi.mocked(useCollection).mockReturnValue({ state: { collection }, actions: {} } as any)
+    const exportCollection = vi.fn(() => exportedFixture())
+    vi.mocked(useCollections).mockReturnValue({ actions: { collectionsApi: () => ({ exportCollection }) } } as any)
+
+    let payload = ""
+    let opts: any
+    vi.mocked(saveFile).mockImplementationOnce(async (p: string, o?: any) => {
+      payload = p
+      opts = o
+      return "/tmp/api_openapi.yaml"
+    })
+
+    render(
+      <Sheet open onOpenChange={() => {}}>
+        <SheetContent side="right">
+          <ExportCollectionSheet collectionId="col" />
+        </SheetContent>
+      </Sheet>,
+    )
+
+    await user.click(getByDataTestId("export-collection:format-trigger"))
+    await user.click(screen.getByText(/OpenAPI \(YAML\)/i))
+
+    const exportBtn = await waitFor(() => getByDataTestId("export-collection:export-button"))
+    await user.click(exportBtn)
+
+    expect(payload.includes("openapi: 3.1.0")).toBe(true)
+    expect(opts?.defaultPath?.endsWith(".yaml")).toBe(true)
+    expect(opts?.filters?.[0]?.extensions).toContain("yaml")
   })
 })

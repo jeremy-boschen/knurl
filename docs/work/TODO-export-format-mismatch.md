@@ -1,0 +1,2 @@
+- Investigate export panel format selection (native JSON, OpenAPI JSON, OpenAPI YAML) not honored; exported file always treated as native.
+- Fix export so selected format is correctly produced and detectable on import.
