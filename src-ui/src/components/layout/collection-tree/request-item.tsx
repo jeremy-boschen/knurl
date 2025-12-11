@@ -1,9 +1,9 @@
 import type React from "react"
 
-import { Clickable, HttpBadge } from "@/components/ui/knurl"
-import { cn, isNotEmpty } from "@/lib"
-import { getRequestTabsApi, useCollectionFromCache, useCollectionTree } from "@/state"
-import { useShowableIds } from "@/hooks/use-showable-ids"
+import {Clickable, HttpBadge} from "@/components/ui/knurl"
+import {useShowableIds} from "@/hooks/use-showable-ids"
+import {cn, isNotEmpty} from "@/lib"
+import {getRequestTabsApi, useCollectionFromCache, useCollectionTree} from "@/state"
 
 type RequestItemProps = {
   collectionId: string
@@ -67,7 +67,7 @@ export function RequestItem({ collectionId, requestId }: RequestItemProps) {
       <span aria-hidden className="text-primary shrink-0">
         <HttpBadge method={request.method} className={cn(isNotEmpty(request.patch) && "unsaved-changes")} />
       </span>
-      <span className="pt-1 text-sm leading-none truncate">{request.name}</span>
+      <span className="pt-1 text-sm truncate">{request.name}</span>
     </Clickable>
   )
 }

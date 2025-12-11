@@ -1,0 +1,139 @@
+{
+  "format": "native",
+  "version": "1.0.0",
+  "exportedAt": "2025-12-11T21:31:45.001Z",
+  "collection": {
+    "id": "z6Sqwalg4kkq",
+    "name": "Swagger Petstore - OpenAPI 3.0 2",
+    "description": "This is a sample Pet Store Server based on the OpenAPI 3.0 specification.  You can find out more about\nSwagger at [https://swagger.io](https://swagger.io). In the third iteration of the pet store, we've switched to the design first approach!\nYou can now help us improve the API whether it's by making changes to the definition itself or to the code.\nThat way, with time, we can improve the API in general, and expose some of the new features in OAS3.\n\nSome useful links:\n- [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)\n- [The source API definition for the Pet Store](https://github.com/swagger-api/swagger-petstore/blob/master/src/main/resources/openapi.yaml)",
+    "updated": "2025-12-11T13:59:05.756Z",
+    "encryption": {
+      "algorithm": "aes-gcm"
+    },
+    "activeEnvironmentId": "5wDF2HBsgRrD",
+    "environments": [
+      {
+        "id": "5wDF2HBsgRrD",
+        "name": "Server 1",
+        "description": "",
+        "variables": {
+          "Ye7PUDP58wEZ": {
+            "id": "Ye7PUDP58wEZ",
+            "name": "baseUrl",
+            "value": "https://petstore3.swagger.io/api/v3",
+            "secure": false
+          }
+        }
+      }
+    ],
+    "requests": [
+      {
+        "id": "2SL0ZYPMVyQG",
+        "folderId": "XPNQXADWGYFs",
+        "order": 8,
+        "name": "Uploads an image.",
+        "collectionId": "z6Sqwalg4kkq",
+        "autoSave": true,
+        "method": "POST",
+        "url": "{{baseUrl}}/pet/{{petId}}/uploadImage",
+        "pathParams": {
+          "bbgjBKozJJlO": {
+            "id": "bbgjBKozJJlO",
+            "name": "petId",
+            "value": "",
+            "enabled": true,
+            "secure": false
+          }
+        },
+        "queryParams": {
+          "0dWAROws4aZk": {
+            "id": "0dWAROws4aZk",
+            "name": "additionalMetadata",
+            "value": "",
+            "enabled": true,
+            "secure": false
+          }
+        },
+        "headers": {},
+        "cookieParams": {},
+        "body": {
+          "type": "none",
+          "content": ""
+        },
+        "authentication": {
+          "type": "none"
+        },
+        "options": {
+          "disableSsl": false
+        },
+        "patch": {},
+        "updated": 0
+      }
+    ],
+    "folders": {
+      "MAJHU5sKBJTD": {
+        "id": "MAJHU5sKBJTD",
+        "name": "store",
+        "parentId": "root",
+        "order": 2,
+        "childFolderIds": [],
+        "requestIds": [
+          "51UyygOWX8xs",
+          "UphziU2n7hAb",
+          "XExTIzYwF8xt",
+          "NixrUSIv9EfK"
+        ]
+      },
+      "XPNQXADWGYFs": {
+        "id": "XPNQXADWGYFs",
+        "name": "pet",
+        "parentId": "root",
+        "order": 1,
+        "childFolderIds": [],
+        "requestIds": [
+          "TtEtyMl2V4eE",
+          "VgEKQuqO6W8u",
+          "BWavCb4Z7xcq",
+          "DnGgDKOvkPXu",
+          "teEzxnFMAmEV",
+          "TGLzIVZzU9qD",
+          "SecY0FZVHDD3",
+          "2SL0ZYPMVyQG"
+        ]
+      },
+      "root": {
+        "id": "root",
+        "name": "Root",
+        "parentId": null,
+        "order": 0,
+        "childFolderIds": [
+          "XPNQXADWGYFs",
+          "MAJHU5sKBJTD",
+          "uUEpsFKBb5vv"
+        ],
+        "requestIds": [
+          "yHCP9xcIsC1E"
+        ]
+      },
+      "uUEpsFKBb5vv": {
+        "id": "uUEpsFKBb5vv",
+        "name": "user",
+        "parentId": "root",
+        "order": 3,
+        "childFolderIds": [],
+        "requestIds": [
+          "CKmDDGlWZpbF",
+          "E18DlCwTgnLI",
+          "QfKL72X1rhsz",
+          "DfBJ3dnOdm8N",
+          "seNAixOvoFb8",
+          "NZmDydMWIstM",
+          "aORcCGvMuIdp"
+        ]
+      }
+    },
+    "authentication": {
+      "type": "none"
+    }
+  }
+}

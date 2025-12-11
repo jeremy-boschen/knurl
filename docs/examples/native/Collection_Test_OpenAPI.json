@@ -1,0 +1,571 @@
+{
+  "format": "native",
+  "version": "1.0.0",
+  "exportedAt": "2025-12-11T21:35:58.800Z",
+  "collection": {
+    "id": "02ZTRwV0kD3D",
+    "name": "Collection #3",
+    "description": "",
+    "updated": "2025-12-10T16:55:00.961Z",
+    "encryption": {
+      "algorithm": "aes-gcm"
+    },
+    "activeEnvironmentId": "Ht0dMaYQA74F",
+    "environments": [
+      {
+        "id": "Ht0dMaYQA74F",
+        "name": "Local",
+        "description": "Environment for local development",
+        "variables": {
+          "uuFiiINF": {
+            "id": "uuFiiINF",
+            "name": "protocol",
+            "value": "https",
+            "secure": false
+          }
+        }
+      },
+      {
+        "id": "SLVmn81tsk6G",
+        "name": "Development",
+        "description": "Development environment",
+        "variables": {
+          "5RBcgUuA": {
+            "id": "5RBcgUuA",
+            "name": "protocol",
+            "value": "https",
+            "secure": false
+          }
+        }
+      }
+    ],
+    "requests": [
+      {
+        "id": "0zP9SmN4NV9Y",
+        "folderId": "root",
+        "order": 5,
+        "name": "r1",
+        "collectionId": "02ZTRwV0kD3D",
+        "autoSave": false,
+        "method": "GET",
+        "url": "",
+        "pathParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookieParams": {},
+        "body": {
+          "type": "none"
+        },
+        "authentication": {
+          "type": "none"
+        },
+        "patch": {},
+        "updated": 3
+      },
+      {
+        "id": "1OiSMSNfWp3d",
+        "folderId": "root",
+        "order": 2,
+        "name": "GET CSV",
+        "collectionId": "02ZTRwV0kD3D",
+        "autoSave": true,
+        "method": "GET",
+        "url": "https://sample-files.com/downloads/data/csv/basic-data.csv",
+        "pathParams": {
+          "5MtcUWbM": {
+            "id": "5MtcUWbM",
+            "name": "test",
+            "value": "value",
+            "enabled": false,
+            "secure": true
+          },
+          "6WQSqlg8": {
+            "id": "6WQSqlg8",
+            "name": "test2",
+            "value": "value2",
+            "enabled": false,
+            "secure": false
+          },
+          "A7FlPgKk": {
+            "id": "A7FlPgKk",
+            "name": "test3",
+            "value": "value3",
+            "enabled": false,
+            "secure": false
+          },
+          "WBDEq5RF": {
+            "id": "WBDEq5RF",
+            "name": "test4",
+            "value": "value4",
+            "enabled": false,
+            "secure": false
+          },
+          "a7Gkq3D5": {
+            "id": "a7Gkq3D5",
+            "name": "test5",
+            "value": "value5",
+            "enabled": false,
+            "secure": true
+          }
+        },
+        "queryParams": {
+          "LsuarMrT": {
+            "id": "LsuarMrT",
+            "name": "p1",
+            "value": "1",
+            "enabled": false,
+            "secure": true
+          },
+          "pj9NUdAv": {
+            "id": "pj9NUdAv",
+            "name": "p2",
+            "value": "two",
+            "enabled": false,
+            "secure": false
+          }
+        },
+        "headers": {
+          "4SglORll": {
+            "id": "4SglORll",
+            "name": "h1",
+            "value": "v1",
+            "enabled": false,
+            "secure": false
+          },
+          "dHWcbijC": {
+            "id": "dHWcbijC",
+            "name": "h2",
+            "value": "v2",
+            "enabled": false,
+            "secure": false
+          },
+          "s9QUi3D5": {
+            "id": "s9QUi3D5",
+            "name": "h3",
+            "value": "v3",
+            "enabled": false,
+            "secure": false
+          }
+        },
+        "cookieParams": {
+          "0pBuYcmc": {
+            "id": "0pBuYcmc",
+            "name": "",
+            "value": "",
+            "enabled": false,
+            "secure": false
+          },
+          "Hloo59Fg": {
+            "id": "Hloo59Fg",
+            "name": "",
+            "value": "",
+            "enabled": false,
+            "secure": false
+          }
+        },
+        "body": {
+          "type": "form",
+          "content": "",
+          "language": "xml",
+          "formData": {
+            "MuJPujmA": {
+              "id": "MuJPujmA",
+              "key": "text1",
+              "value": "value1",
+              "enabled": false,
+              "secure": true,
+              "kind": "text"
+            },
+            "NtTHr6x5": {
+              "id": "NtTHr6x5",
+              "key": "file1",
+              "value": "",
+              "enabled": false,
+              "secure": false,
+              "kind": "file",
+              "fileName": "download.mp4",
+              "contentType": "video/mp4",
+              "filePath": "C:\\Users\\NewtyCoffee\\Downloads\\download.mp4"
+            },
+            "vxUX6I9I": {
+              "id": "vxUX6I9I",
+              "key": "text2",
+              "value": "value2",
+              "enabled": false,
+              "secure": false,
+              "kind": "text"
+            }
+          },
+          "encoding": "multipart",
+          "binaryPath": "C:\\Users\\NewtyCoffee\\Downloads\\response.jpeg",
+          "binaryFileName": "response.jpeg",
+          "binaryContentType": "application/octet-stream"
+        },
+        "authentication": {
+          "type": "none"
+        },
+        "options": {
+          "disableSsl": false
+        },
+        "patch": {},
+        "updated": 365
+      },
+      {
+        "id": "85YqvUWCoASo",
+        "folderId": "root",
+        "order": 9,
+        "name": "Untitled Request",
+        "collectionId": "02ZTRwV0kD3D",
+        "autoSave": false,
+        "method": "GET",
+        "url": "https://localhost",
+        "pathParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookieParams": {},
+        "body": {
+          "type": "none"
+        },
+        "authentication": {
+          "type": "none"
+        },
+        "patch": {},
+        "updated": 40
+      },
+      {
+        "id": "Drc9eKEKInqB",
+        "folderId": "root",
+        "order": 6,
+        "name": "R1",
+        "collectionId": "02ZTRwV0kD3D",
+        "autoSave": false,
+        "method": "POST",
+        "url": "",
+        "pathParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookieParams": {},
+        "body": {
+          "type": "none"
+        },
+        "authentication": {
+          "type": "none"
+        },
+        "patch": {},
+        "updated": 7
+      },
+      {
+        "id": "JYM9fGcNCREM",
+        "folderId": "1dRuaKtPM5D9",
+        "order": 1,
+        "name": "Test 123",
+        "collectionId": "02ZTRwV0kD3D",
+        "autoSave": true,
+        "method": "PATCH",
+        "url": "",
+        "pathParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookieParams": {},
+        "body": {
+          "type": "none"
+        },
+        "authentication": {
+          "type": "none"
+        },
+        "options": {
+          "disableSsl": false
+        },
+        "patch": {},
+        "updated": 2
+      },
+      {
+        "id": "MBjIB0fq4AXL",
+        "folderId": "root",
+        "order": 7,
+        "name": "Untitled Request",
+        "collectionId": "02ZTRwV0kD3D",
+        "autoSave": false,
+        "method": "GET",
+        "url": "",
+        "pathParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookieParams": {},
+        "body": {
+          "type": "none"
+        },
+        "authentication": {
+          "type": "none"
+        },
+        "patch": {},
+        "updated": 18
+      },
+      {
+        "id": "WbXajeWDOxua",
+        "folderId": "kq0fomViB9P3",
+        "order": 1,
+        "name": "Untitled Request",
+        "collectionId": "02ZTRwV0kD3D",
+        "autoSave": true,
+        "method": "HEAD",
+        "url": "",
+        "pathParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookieParams": {},
+        "body": {
+          "type": "none"
+        },
+        "authentication": {
+          "type": "none"
+        },
+        "options": {
+          "disableSsl": false
+        },
+        "patch": {},
+        "updated": 6
+      },
+      {
+        "id": "gMyT6B0hDkkW",
+        "folderId": "EylBJ06ySYZL",
+        "order": 1,
+        "name": "GET Video",
+        "collectionId": "02ZTRwV0kD3D",
+        "autoSave": false,
+        "method": "GET",
+        "url": "https://getsamplefiles.com/download/mp4/sample-5.mp4",
+        "pathParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookieParams": {},
+        "body": {
+          "type": "none"
+        },
+        "authentication": {
+          "type": "none"
+        },
+        "options": {
+          "disableSsl": false
+        },
+        "patch": {},
+        "updated": 38
+      },
+      {
+        "id": "l9aJ4BrKm42F",
+        "folderId": "root",
+        "order": 1,
+        "name": "Bing",
+        "collectionId": "02ZTRwV0kD3D",
+        "autoSave": true,
+        "method": "GET",
+        "url": "{{protocol}}://www.bing.com{{path}}",
+        "pathParams": {
+          "iW5pwTXt": {
+            "id": "iW5pwTXt",
+            "name": "path",
+            "value": "/",
+            "enabled": true,
+            "secure": false
+          }
+        },
+        "queryParams": {
+          "uBN7rmuZ": {
+            "id": "uBN7rmuZ",
+            "name": "test",
+            "value": "1",
+            "enabled": true,
+            "secure": false
+          }
+        },
+        "headers": {
+          "SbBJFDG4": {
+            "id": "SbBJFDG4",
+            "name": "",
+            "value": "",
+            "enabled": true,
+            "secure": false
+          }
+        },
+        "cookieParams": {},
+        "body": {
+          "type": "none",
+          "content": "{\n  \"a\": \"test\"\n}",
+          "language": "json",
+          "formData": {
+            "yRZmdG8M": {
+              "id": "yRZmdG8M",
+              "key": "",
+              "value": "",
+              "enabled": false,
+              "secure": false,
+              "kind": "text"
+            }
+          },
+          "encoding": "multipart",
+          "binaryPath": "D:\\projects\\knurl\\docs\\examples\\openapi\\api.github.com.json",
+          "binaryFileName": "api.github.com.json",
+          "binaryContentType": "application/json"
+        },
+        "authentication": {
+          "type": "none"
+        },
+        "options": {
+          "disableSsl": false
+        },
+        "patch": {},
+        "updated": 545
+      },
+      {
+        "id": "ldDsGpkjTsES",
+        "folderId": "root",
+        "order": 3,
+        "name": "GET Image",
+        "collectionId": "02ZTRwV0kD3D",
+        "autoSave": true,
+        "method": "GET",
+        "url": "https://sample-files.com/downloads/images/jpg/color_test_800x600_118kb.jpg",
+        "pathParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookieParams": {},
+        "body": {
+          "type": "none"
+        },
+        "authentication": {
+          "type": "none"
+        },
+        "options": {
+          "disableSsl": true
+        },
+        "patch": {},
+        "updated": 17
+      },
+      {
+        "id": "n48hxj2jwQKK",
+        "folderId": "root",
+        "order": 8,
+        "name": "Untitled Request",
+        "collectionId": "02ZTRwV0kD3D",
+        "autoSave": false,
+        "method": "GET",
+        "url": "",
+        "pathParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookieParams": {},
+        "body": {
+          "type": "none"
+        },
+        "authentication": {
+          "type": "none"
+        },
+        "patch": {},
+        "updated": 3
+      },
+      {
+        "id": "zhjcL5lVI9O5",
+        "folderId": "root",
+        "order": 4,
+        "name": "Google",
+        "collectionId": "02ZTRwV0kD3D",
+        "autoSave": true,
+        "method": "GET",
+        "url": "https://www.google.com",
+        "pathParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookieParams": {},
+        "body": {
+          "type": "text",
+          "content": "{\n  \"name\": \"test\",\n  \"value\": 123,\n  \"enabled\": true\n}\n",
+          "language": "json",
+          "formData": {
+            "fukegPVN": {
+              "id": "fukegPVN",
+              "key": "",
+              "value": "",
+              "enabled": true,
+              "secure": false,
+              "kind": "file"
+            }
+          },
+          "encoding": "multipart"
+        },
+        "authentication": {
+          "type": "none"
+        },
+        "options": {
+          "disableSsl": false
+        },
+        "patch": {},
+        "updated": 208
+      }
+    ],
+    "folders": {
+      "1dRuaKtPM5D9": {
+        "id": "1dRuaKtPM5D9",
+        "name": "New1",
+        "parentId": "root",
+        "order": 1,
+        "childFolderIds": [
+          "EylBJ06ySYZL"
+        ],
+        "requestIds": [
+          "JYM9fGcNCREM"
+        ]
+      },
+      "EylBJ06ySYZL": {
+        "id": "EylBJ06ySYZL",
+        "name": "Test",
+        "parentId": "1dRuaKtPM5D9",
+        "order": 1,
+        "childFolderIds": [
+          "kq0fomViB9P3"
+        ],
+        "requestIds": [
+          "gMyT6B0hDkkW"
+        ]
+      },
+      "kq0fomViB9P3": {
+        "id": "kq0fomViB9P3",
+        "name": "F1",
+        "parentId": "EylBJ06ySYZL",
+        "order": 1,
+        "childFolderIds": [],
+        "requestIds": [
+          "WbXajeWDOxua"
+        ]
+      },
+      "root": {
+        "id": "root",
+        "name": "Root",
+        "parentId": null,
+        "order": 0,
+        "childFolderIds": [
+          "1dRuaKtPM5D9"
+        ],
+        "requestIds": [
+          "l9aJ4BrKm42F",
+          "1OiSMSNfWp3d",
+          "ldDsGpkjTsES",
+          "zhjcL5lVI9O5",
+          "0zP9SmN4NV9Y",
+          "Drc9eKEKInqB",
+          "MBjIB0fq4AXL",
+          "n48hxj2jwQKK",
+          "85YqvUWCoASo"
+        ]
+      }
+    },
+    "authentication": {
+      "type": "oauth2",
+      "oauth2": {
+        "grantType": "client_credentials",
+        "usePkce": true,
+        "tokenCaching": "always",
+        "clientAuth": "body"
+      }
+    }
+  }
+}

@@ -1,10 +1,10 @@
-import { FolderClosedIcon, FolderOpenIcon } from "lucide-react"
+import {FolderClosedIcon, FolderOpenIcon} from "lucide-react"
 
-import { Clickable } from "@/components/ui/knurl"
-import { useCollectionFromCache, useCollectionTree } from "@/state"
-import { useShowableIds } from "@/hooks/use-showable-ids"
-import { FolderItemList } from "./folder-item-list"
-import { RequestItemList } from "./request-item-list"
+import {Clickable} from "@/components/ui/knurl"
+import {useShowableIds} from "@/hooks/use-showable-ids"
+import {useCollectionFromCache, useCollectionTree} from "@/state"
+import {FolderItemList} from "./folder-item-list"
+import {RequestItemList} from "./request-item-list"
 
 type FolderItemProps = {
   collectionId: string
@@ -51,7 +51,7 @@ export function FolderItem({ collectionId, folderId }: FolderItemProps) {
         <span aria-hidden className="text-primary shrink-0">
           {isOpen ? <FolderOpenIcon className="h-3.5 w-3.5" /> : <FolderClosedIcon className="h-3.5 w-3.5" />}
         </span>
-        <span className="pt-1 text-sm leading-none truncate">{folder.name}</span>
+        <span className="pt-1 text-sm truncate">{folder.name}</span>
       </Clickable>
 
       {isOpen ? (
