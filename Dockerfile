@@ -27,9 +27,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable && \
-    . $HOME/.cargo/env && \
-    rustup component add clippy
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+RUN /root/.cargo/bin/rustup default stable && \
+    /root/.cargo/bin/rustup component add clippy
 
 # Set Rust environment
 ENV PATH="/root/.cargo/bin:${PATH}"
