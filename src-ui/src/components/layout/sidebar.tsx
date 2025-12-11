@@ -208,7 +208,7 @@ export default function Sidebar() {
         </header>
       )}
 
-      <div className="flex-1 overflow-y-auto bg-sidebar">
+      <div className="flex-1 overflow-y-auto bg-sidebar min-h-0">
         {isCollapsed ? <CollectionTreeCollapsed /> : <CollectionTree />}
       </div>
 

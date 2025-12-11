@@ -49,10 +49,10 @@ export default function AppLayout() {
             <div className={cn("bg-transparent cursor-col-resize")} />
           </ResizeHandle>
 
-          <Panel className="overflow-auto" key="workspace">
+          <Panel className="overflow-hidden" key="workspace">
             <div className="flex h-full flex-col bg-background">
               <AppHeader className="bg-muted border-b mr-2" />
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 overflow-hidden min-h-0">
                 {activeTabId ? (
                   <RequestWorkspace tabId={activeTabId} />
                 ) : (

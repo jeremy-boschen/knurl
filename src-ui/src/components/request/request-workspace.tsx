@@ -170,7 +170,7 @@ const RequestWorkspaceContent = React.memo(function RequestWorkspaceContent({
         />
       )}
 
-      <div className="flex h-full flex-1 flex-col overflow-auto" data-test-id="request-workspace">
+      <div className="flex h-full flex-1 flex-col overflow-hidden min-h-0" data-test-id="request-workspace">
         <PanelGroup
           key={layout}
           direction={panelGroupDirection}
