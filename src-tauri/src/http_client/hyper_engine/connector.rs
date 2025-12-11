@@ -111,7 +111,7 @@ pub(super) fn build_connector(
         .unwrap_or(HttpVersionPref::Auto);
     let connector = match preference {
         HttpVersionPref::Auto => {
-            logger.debug(
+            logger.trace(
                 "tls",
                 Some("alpn_offer"),
                 "ALPN: client will negotiate h2,http/1.1",
@@ -125,7 +125,7 @@ pub(super) fn build_connector(
                 .wrap_connector(http)
         }
         HttpVersionPref::Http1 => {
-            logger.debug(
+            logger.trace(
                 "tls",
                 Some("alpn_offer"),
                 "ALPN: client will negotiate http/1.1 only",
@@ -138,7 +138,7 @@ pub(super) fn build_connector(
                 .wrap_connector(http)
         }
         HttpVersionPref::Http2 => {
-            logger.debug(
+            logger.trace(
                 "tls",
                 Some("alpn_offer"),
                 "ALPN: client will negotiate h2 only",
@@ -289,14 +289,14 @@ impl Service<Name> for OverrideResolver {
                     );
 
                     if ipv6.is_empty() {
-                        logger.debug(
+                        logger.trace(
                             "dns",
                             Some("ipv6"),
                             "IPv6: (none)",
                             Some(json!({"host": lookup.clone()})),
                         );
                     } else {
-                        logger.debug(
+                        logger.trace(
                             "dns",
                             Some("ipv6"),
                             format!("IPv6: {}", ipv6.join(", ")),
@@ -305,14 +305,14 @@ impl Service<Name> for OverrideResolver {
                     }
 
                     if ipv4.is_empty() {
-                        logger.debug(
+                        logger.trace(
                             "dns",
                             Some("ipv4"),
                             "IPv4: (none)",
                             Some(json!({"host": lookup.clone()})),
                         );
                     } else {
-                        logger.debug(
+                        logger.trace(
                             "dns",
                             Some("ipv4"),
                             format!("IPv4: {}", ipv4.join(", ")),
@@ -618,7 +618,7 @@ fn log_tls_handshake(
     }
     if let Some(addr) = local_addr {
         details.insert("localAddr".to_string(), json!(addr.to_string()));
-        logger.debug(
+        logger.trace(
             "tls",
             Some("endpoint"),
             format!("Local address: {addr}"),
@@ -629,7 +629,7 @@ fn log_tls_handshake(
     match protocol.clone() {
         Some(proto) => {
             details.insert("protocol".to_string(), json!(proto));
-            logger.debug(
+            logger.trace(
                 "tls",
                 Some("protocol"),
                 format!("Negotiated TLS version: {proto}"),
@@ -637,7 +637,7 @@ fn log_tls_handshake(
             );
         }
         None => {
-            logger.debug(
+            logger.trace(
                 "tls",
                 Some("protocol"),
                 "Negotiated TLS version: <unknown>",
@@ -649,27 +649,27 @@ fn log_tls_handshake(
     match cipher.clone() {
         Some(cipher_suite) => {
             details.insert("cipherSuite".to_string(), json!(cipher_suite));
-            logger.debug(
+            logger.trace(
                 "tls",
                 Some("cipher"),
                 format!("Cipher suite: {cipher_suite}"),
                 Some(json!({"cipherSuite": cipher_suite})),
             );
         }
-        None => logger.debug("tls", Some("cipher"), "Cipher suite: <unknown>", None),
+        None => logger.trace("tls", Some("cipher"), "Cipher suite: <unknown>", None),
     }
 
     match alpn.clone() {
         Some(proto) => {
             details.insert("alpn".to_string(), json!(proto));
-            logger.debug(
+            logger.trace(
                 "tls",
                 Some("alpn_selected"),
                 format!("ALPN: server accepted {proto}"),
                 Some(json!({"selected": proto})),
             );
         }
-        None => logger.debug(
+        None => logger.trace(
             "tls",
             Some("alpn_selected"),
             "ALPN: no protocol negotiated",
@@ -686,7 +686,7 @@ fn log_tls_handshake(
 
         for summary in &summaries {
             let block = format_certificate_block(summary);
-            logger.debug(
+            logger.trace(
                 "tls",
                 Some("certificate"),
                 block,

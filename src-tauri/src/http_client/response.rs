@@ -111,6 +111,7 @@ pub struct LogEntry {
 pub enum LogLevel {
     Info,
     Debug,
+    Trace,
     Error,
     Warning,
 }
@@ -244,6 +245,9 @@ mod tests {
 
         let debug = serde_json::to_string(&LogLevel::Debug).unwrap();
         assert_eq!(debug, "\"debug\"");
+
+        let trace = serde_json::to_string(&LogLevel::Trace).unwrap();
+        assert_eq!(trace, "\"trace\"");
 
         let error = serde_json::to_string(&LogLevel::Error).unwrap();
         assert_eq!(error, "\"error\"");

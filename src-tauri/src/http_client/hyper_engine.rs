@@ -117,6 +117,24 @@ impl RequestLogger {
         );
     }
 
+    fn trace(
+        &self,
+        category: &str,
+        phase: Option<&str>,
+        message: impl Into<String>,
+        details: Option<Value>,
+    ) {
+        self.event(
+            LogLevel::Trace,
+            category,
+            phase,
+            message,
+            details,
+            None,
+            None,
+        );
+    }
+
     fn warn(
         &self,
         category: &str,
@@ -163,7 +181,7 @@ impl RequestLogger {
         truncated: bool,
     ) {
         self.event(
-            LogLevel::Debug,
+            LogLevel::Trace,
             category,
             Some(phase),
             message,
@@ -283,7 +301,7 @@ impl HyperEngine {
                 "length": value.as_bytes().len(),
                 "redacted": is_redacted,
             });
-            logger.debug(
+            logger.trace(
                 "http",
                 Some(phase),
                 format!("{prefix} {line}"),
@@ -1832,7 +1850,7 @@ mod tests {
         let event = &events[0];
         assert_eq!(event.bytes_logged, Some(3));
         assert_eq!(event.truncated, Some(true));
-        assert_eq!(event.level, LogLevel::Debug);
+        assert_eq!(event.level, LogLevel::Trace);
     }
 
     #[test]

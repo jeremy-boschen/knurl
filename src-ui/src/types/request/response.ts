@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-export const zLogLevel = z.enum(["info", "debug", "error", "warning"])
+export const zLogLevel = z.enum(["info", "debug", "trace", "error", "warning"])
 export type LogLevel = z.infer<typeof zLogLevel>
 export const DEFAULT_LOG_LEVELS: LogLevel[] = ["info", "debug", "warning", "error"]
 
