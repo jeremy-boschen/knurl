@@ -42,11 +42,18 @@ export function ParamList({ tabId, kind, items, original }: ParamListProps) {
         )
       })}
 
-      {order.length === 0 && (
-        <div data-test-id={emptyStateTestId}>
-          <EmptyState message={emptyMessage} />
-        </div>
-      )}
+      {order.length === 0 &&
+        (kind === "header" ? (
+          <div data-test-id="request-headers-panel:empty-state">
+            <div data-test-id={emptyStateTestId}>
+              <EmptyState message={emptyMessage} />
+            </div>
+          </div>
+        ) : (
+          <div data-test-id={emptyStateTestId}>
+            <EmptyState message={emptyMessage} />
+          </div>
+        ))}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react"
+import { useMemo } from "react"
 import type React from "react"
 
 import { CopyIcon, Edit2Icon, FolderIcon, Trash2Icon } from "lucide-react"
@@ -11,7 +11,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu"
-import { collectionsApi, useCollection } from "@/state"
+import { useCollection } from "@/state"
 import { RootCollectionFolderId } from "@/types"
 
 export type RequestMenuMoveTarget = {
@@ -145,17 +145,6 @@ export function RequestMenuContent({
     }
   }
 
-  const handleMoveToFolder = useCallback(
-    (targetFolderId: string) => {
-      try {
-        collectionsApi().moveRequestToFolder(collectionId, requestId, targetFolderId)
-      } catch (error) {
-        console.error("Failed to move request", error)
-      }
-    },
-    [collectionId, requestId],
-  )
-
   const hasMoveTargets = !isScratch && availableFolders.length > 0
 
   return (
@@ -201,10 +190,33 @@ export function RequestMenuContent({
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="!max-h-96 !overflow-y-auto w-48 p-1">
                 {currentFolderId !== RootCollectionFolderId && (
-                  <DropdownMenuItem onClick={() => handleMoveToFolder(RootCollectionFolderId)}>Root</DropdownMenuItem>
+                  <DropdownMenuItem
+                    {...createHandlers({
+                      actionId: "request:move",
+                      collectionId,
+                      requestId,
+                      name: requestName,
+                      targetFolderId: RootCollectionFolderId,
+                    })}
+                    data-action-id="request:move"
+                    data-target-folder-id={RootCollectionFolderId}
+                  >
+                    Root
+                  </DropdownMenuItem>
                 )}
                 {availableFolders.map((folder) => (
-                  <DropdownMenuItem key={folder.folderId} onClick={() => handleMoveToFolder(folder.folderId)}>
+                  <DropdownMenuItem
+                    key={folder.folderId}
+                    {...createHandlers({
+                      actionId: "request:move",
+                      collectionId,
+                      requestId,
+                      name: requestName,
+                      targetFolderId: folder.folderId,
+                    })}
+                    data-action-id="request:move"
+                    data-target-folder-id={folder.folderId}
+                  >
                     {folder.path}
                   </DropdownMenuItem>
                 ))}

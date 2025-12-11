@@ -1,7 +1,12 @@
 import React from "react"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+
+const stateRefs = vi.hoisted(() => ({
+  useCollection: vi.fn(),
+  collectionsApi: vi.fn(),
+}))
 
 vi.mock("@/components/ui/dropdown-menu", async () => {
   const actual = await vi.importActual<typeof import("@/components/ui/dropdown-menu")>("@/components/ui/dropdown-menu")
@@ -17,7 +22,13 @@ vi.mock("@/components/ui/dropdown-menu", async () => {
   }
 })
 
+vi.mock("@/state", () => ({
+  useCollection: stateRefs.useCollection,
+  collectionsApi: stateRefs.collectionsApi,
+}))
+
 import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { RootCollectionFolderId } from "@/types"
 import type { RequestMenuMoveTarget } from "./request-menu"
 import { RequestMenuContent } from "./request-menu"
 
@@ -47,6 +58,40 @@ const renderMenu = (props: Partial<Parameters<typeof RequestMenuContent>[0]> = {
 }
 
 describe("RequestMenuContent", () => {
+  beforeEach(() => {
+    const collection = {
+      id: "col-1",
+      name: "Workspace",
+      folders: {
+        [RootCollectionFolderId]: {
+          id: RootCollectionFolderId,
+          name: "Root",
+          parentId: null,
+          order: 0,
+          childFolderIds: ["folder-a"],
+          requestIds: ["req-1"],
+        },
+        "folder-a": {
+          id: "folder-a",
+          name: "Folder A",
+          parentId: RootCollectionFolderId,
+          order: 1,
+          childFolderIds: [],
+          requestIds: [],
+        },
+      },
+      requestIndex: {
+        "req-1": { folderId: RootCollectionFolderId, ancestry: [RootCollectionFolderId] },
+      },
+    }
+
+    stateRefs.useCollection.mockReturnValue({ state: { collection } })
+    stateRefs.collectionsApi.mockReturnValue({
+      moveRequestToFolder: vi.fn(),
+      getRequest: vi.fn(() => ({ id: "req-1", name: "Fetch" })),
+    })
+  })
+
   it("dispatches payloads for rename/duplicate/move/copy/delete", async () => {
     const user = userEvent.setup()
     const onAction = renderMenu()
@@ -63,7 +108,7 @@ describe("RequestMenuContent", () => {
     await user.click(screen.getByText("Duplicate"))
     expect(onAction).toHaveBeenNthCalledWith(2, expect.objectContaining({ actionId: "duplicate" }))
 
-    await user.hover(screen.getByText("Move to Folder"))
+    await user.hover(screen.getByText(/move to folder/i))
     await user.click(await screen.findByText("Root / Folder A"))
     expect(onAction).toHaveBeenCalledWith({
       actionId: "request:move",
@@ -75,7 +120,7 @@ describe("RequestMenuContent", () => {
     })
 
     await user.click(screen.getByText("Copy as JSON"))
-    expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ actionId: "copy" }))
+    expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ actionId: "copy-json" }))
 
     await user.click(screen.getByText("Delete"))
     expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ actionId: "delete" }))
@@ -103,13 +148,13 @@ describe("RequestMenuContent", () => {
 
     expect(screen.queryByText("Rename")).not.toBeInTheDocument()
     expect(screen.queryByText("Duplicate")).not.toBeInTheDocument()
-    expect(screen.queryByText("Move to Folder")).not.toBeInTheDocument()
+    expect(screen.queryByText(/move to folder/i)).not.toBeInTheDocument()
 
     await user.click(screen.getByText("Copy as JSON"))
     await user.click(screen.getByText("Delete"))
 
     expect(onAction).toHaveBeenCalledTimes(2)
-    expect(onAction).toHaveBeenNthCalledWith(1, expect.objectContaining({ actionId: "copy" }))
+    expect(onAction).toHaveBeenNthCalledWith(1, expect.objectContaining({ actionId: "copy-json" }))
     expect(onAction).toHaveBeenNthCalledWith(2, expect.objectContaining({ actionId: "delete" }))
   })
 })

@@ -198,7 +198,7 @@ describe("Breadcrumbs", () => {
 
   it("copies request JSON to the clipboard", async () => {
     render(<Breadcrumbs />)
-    await triggerRequestAction({ actionId: "copy" })
+    await triggerRequestAction({ actionId: "copy-json" })
     const clipboard = navigator.clipboard as { writeText: ReturnType<typeof vi.fn> }
     expect(clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining("Workspace Request"))
   })

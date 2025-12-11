@@ -11,7 +11,7 @@ type WindowState = {
 }
 
 function useWindowState() {
-  const [state, setState] = useState<WindowState | null>(null)
+  const [state, setState] = useState<WindowState>({ isMaximized: false, isMinimized: false })
 
   const updateState = useCallback(async () => {
     const window = await getCurrentWindow()
@@ -20,14 +20,30 @@ function useWindowState() {
   }, [])
 
   useEffect(() => {
-    updateState()
+    let unlisten: Promise<(() => void) | void> | undefined
 
-    const unlistenResized = getCurrentWindow().onResized(() => {
-      updateState()
-    })
+    const attach = async () => {
+      try {
+        await updateState()
+        const window = await getCurrentWindow()
+        if (typeof window.onResized === "function") {
+          unlisten = Promise.resolve(
+            window.onResized(() => {
+              void updateState()
+            }),
+          )
+        }
+      } catch (error) {
+        console.error("Failed to attach window resize listener", error)
+      }
+    }
+
+    void attach()
 
     return () => {
-      unlistenResized.then((unlisten) => unlisten())
+      if (unlisten) {
+        void unlisten.then((dispose) => dispose?.())
+      }
     }
   }, [updateState])
 
@@ -64,10 +80,6 @@ export function WindowControlDropdownMenuContent({
 
   const handleClose = () => {
     getCurrentWindow().close()
-  }
-
-  if (!state) {
-    return null
   }
 
   const canRestore = state.isMaximized || state.isMinimized

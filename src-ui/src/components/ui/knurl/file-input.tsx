@@ -149,6 +149,7 @@ export function FileInput({ name: _name, fileName, contentType, onFileChange, on
         size="sm"
         onClick={handleChooseFile}
         title="Choose file"
+        aria-label="Choose file"
         className="h-full px-3 rounded-none text-white"
       >
         Browse...
@@ -168,9 +169,9 @@ export function FileInput({ name: _name, fileName, contentType, onFileChange, on
         type="button"
         onClick={handleClear}
         className="flex h-full items-center justify-center text-white hover:bg-zinc-700 transition-colors disabled:pointer-events-none disabled:opacity-50"
-        title="Clear content-type"
-        aria-label="Clear content-type"
-        disabled={!contentType}
+        title="Clear file"
+        aria-label="Clear file"
+        disabled={!fileName && !contentType}
       >
         <XIcon className="w-4 h-4" />
       </button>
