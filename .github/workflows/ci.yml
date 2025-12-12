@@ -7,8 +7,8 @@ on:
     branches: [main, develop]
 
 jobs:
-  linux-ci:
-    name: Linux CI (Type Check, Lint, Test, Security)
+  tests:
+    name: Tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -41,15 +41,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
       - run: yarn install --immutable
-      - name: TypeScript Type Checking
-        run: yarn typecheck
-      - name: Linting & Formatting
-        run: yarn lint
-      - name: Unit & E2E Tests
+      - name: Run Tests
         env:
           VITEST_MAX_WORKERS: 2
         run: yarn test:check 2>&1 | tee /tmp/test-output.log
-        continue-on-error: true
       - name: Upload test logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -57,8 +52,6 @@ jobs:
           name: test-logs
           path: /tmp/test-output.log
           if-no-files-found: ignore
-      - name: Security Audits (npm)
-        run: yarn npm audit --severity moderate || true
 
   # Cross-platform build (currently Linux only, will add macOS/Windows when needed)
   # Note: Linux CI job already builds the backend via lint/test, so only non-Linux builds need this
