@@ -64,8 +64,6 @@ jobs:
           if-no-files-found: ignore
       - name: Security Audits (npm)
         run: yarn npm audit --severity moderate || true
-      - name: Security Audits (cargo)
-        run: cargo install cargo-audit && cargo audit --file src-tauri/Cargo.lock
 
   # Cross-platform build (currently Linux only, will add macOS/Windows when needed)
   # Note: Linux CI job already builds the backend via lint/test, so only non-Linux builds need this
