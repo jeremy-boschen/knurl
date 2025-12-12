@@ -130,7 +130,5 @@ jobs:
             libjavascriptcoregtk-4.1-dev \
             pkg-config
       - run: yarn install --immutable
-      - name: Build frontend
+      - name: Build (frontend + backend)
         run: yarn build
-      - name: Build Rust backend
-        run: cargo build --manifest-path src-tauri/Cargo.toml --target ${{ matrix.target }}
