@@ -45,12 +45,7 @@ jobs:
         run: yarn typecheck
       - name: Linting & Formatting
         run: yarn lint
-      - name: Build App for Testing
-        run: |
-          yarn generate:knurl-icon
-          yarn vite build
-          cd src-tauri && cargo build
-      - name: Critical Tests (Unit + E2E)
+      - name: Unit & E2E Tests
         env:
           VITEST_MAX_WORKERS: 2
         run: yarn test:check 2>&1 | tee /tmp/test-output.log
