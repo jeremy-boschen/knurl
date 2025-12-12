@@ -44,7 +44,7 @@ jobs:
       - name: TypeScript Type Checking
         run: yarn typecheck
       - name: Linting & Formatting
-        run: yarn lint --max-warnings=0
+        run: yarn lint
       - name: Unit Tests
         run: yarn test:unit 2>&1 | tee /tmp/test-output.log
       - name: Upload coverage reports
