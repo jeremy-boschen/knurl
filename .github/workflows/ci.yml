@@ -63,7 +63,7 @@ jobs:
           path: /tmp/test-output.log
           if-no-files-found: ignore
       - name: Security Audits (npm)
-        run: yarn npm audit --audit-level moderate || true
+        run: yarn npm audit --severity moderate || true
       - name: Security Audits (cargo)
         run: cargo install cargo-audit && cargo audit --file src-tauri/Cargo.lock
 
