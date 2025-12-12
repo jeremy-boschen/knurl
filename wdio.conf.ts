@@ -859,7 +859,7 @@ export const config = {
     {
       maxInstances: 1,
       "tauri:options": {
-        application: `src-tauri/target/e2e-test/knurl${process.platform === "win32" ? ".exe" : ""}`,
+        application: `src-tauri/target/debug/knurl${process.platform === "win32" ? ".exe" : ""}`,
         args: ["--window-width=1440", "--window-height=900"],
       },
     },

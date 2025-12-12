@@ -271,11 +271,11 @@ if [ "$RUN_CHECK" = true ]; then
   node scripts/test/run-vitest-groups.mjs --run
 
   echo "  2️⃣ Backend unit tests..."
-  cd src-tauri && cargo test --profile e2e-test
+  cd src-tauri && cargo test
   cd - > /dev/null
 
   # Determine the app binary path based on platform
-  APP_BINARY="src-tauri/target/e2e-test/knurl"
+  APP_BINARY="src-tauri/target/debug/knurl"
   if [ "$OSTYPE" = "msys" ] || [ "$OSTYPE" = "win32" ]; then
     APP_BINARY="${APP_BINARY}.exe"
   fi
@@ -284,7 +284,7 @@ if [ "$RUN_CHECK" = true ]; then
   if [ ! -f "$APP_BINARY" ]; then
     echo "  ⚠️  App binary not found at $APP_BINARY, building now..."
     cd src-tauri
-    cargo build --profile e2e-test
+    cargo build
     cd - > /dev/null
   fi
 

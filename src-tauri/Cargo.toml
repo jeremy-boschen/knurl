@@ -28,6 +28,9 @@ open_dev_tools = []
 incremental = true # Compile your binary in smaller steps.
 debug = true # Ensure debug symbols are included
 opt-level = 0 # No optimizations, keep all debug info
+codegen-units = 256 # Parallel compilation for faster builds
+lto = false # Disable link-time optimization
+panic = "abort" # Consistent with test/release behavior
 
 [profile.release]
 codegen-units = 1 # Allows LLVM to perform better optimization.
@@ -35,14 +38,6 @@ lto = true # Enables link-time-optimizations.
 opt-level = "z" # Prioritizes small binary size. Use `3` if you prefer speed.
 panic = "abort" # Higher performance by disabling panic handlers.
 strip = true # Ensures debug symbols are removed.
-
-[profile.e2e-test]
-# Release semantics without heavy optimizations for faster E2E test compilation
-inherits = "release"
-codegen-units = 256 # Parallel compilation, much faster than release's codegen-units = 1
-lto = false # Disable link-time optimization
-opt-level = 0 # Disable optimizations for faster compilation
-strip = false # Keep debug symbols (helpful for debugging test failures)
 
 [dependencies]
 tauri = { version = "2", features = ["default", "devtools"] }

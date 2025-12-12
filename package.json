@@ -20,7 +20,7 @@
     "typecheck": "tsc --noEmit",
     "check": "bash scripts/test/check-local.sh",
     "format": "biome format --write && cd src-tauri && cargo fmt",
-    "lint": "biome lint && cd src-tauri && cargo clippy --all-targets --profile e2e-test -- -D warnings",
+    "lint": "biome lint && cd src-tauri && cargo clippy --all-targets -- -D warnings",
     "tauri": "tauri",
     "portal:package": "node scripts/build/portal-package.mjs",
     "generate:icons": "node scripts/build/generate-icons.mjs",
