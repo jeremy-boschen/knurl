@@ -168,7 +168,7 @@ if [ "$RUN_UNIT" = true ]; then
     if [ -z "$RUST_TEST_ARGS" ]; then
       cargo llvm-cov --lib 2>&1 | grep -v "warning:" || true
     else
-      cargo llvm-cov --lib -- --test-threads=1 "$RUST_TEST_ARGS" 2>&1 | grep -v "warning:" || true
+      cargo llvm-cov --lib -- "$RUST_TEST_ARGS" 2>&1 | grep -v "warning:" || true
     fi
     # Generate both LCOV and Cobertura from collected coverage data (without re-running tests)
     cargo llvm-cov report --lcov --output-path ../coverage/rust-unit-coverage.info 2>&1 | grep -v "warning:" || true
