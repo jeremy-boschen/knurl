@@ -271,7 +271,7 @@ if [ "$RUN_CHECK" = true ]; then
   node scripts/test/run-vitest-groups.mjs --run
 
   echo "  2️⃣ Backend unit tests..."
-  cd src-tauri && cargo test
+  cd src-tauri && cargo test --profile e2e-test
   cd - > /dev/null
 
   # Determine the app binary path based on platform
