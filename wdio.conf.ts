@@ -402,7 +402,7 @@ async function handleOnPrepare() {
     RUSTFLAGS: [process.env.RUSTFLAGS].filter(Boolean).join(" ").trim(),
   }
 
-  const buildResult = spawnSync("cargo", ["build", "--manifest-path", manifestPath, "--profile", "e2e-test"], {
+  const buildResult = spawnSync("cargo", ["build", "--manifest-path", manifestPath], {
     stdio: "inherit",
     shell: true,
     env,
