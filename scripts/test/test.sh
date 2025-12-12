@@ -274,6 +274,20 @@ if [ "$RUN_CHECK" = true ]; then
   cd src-tauri && cargo test
   cd - > /dev/null
 
+  # Determine the app binary path based on platform
+  APP_BINARY="src-tauri/target/e2e-test/knurl"
+  if [ "$OSTYPE" = "msys" ] || [ "$OSTYPE" = "win32" ]; then
+    APP_BINARY="${APP_BINARY}.exe"
+  fi
+
+  # Check if app binary exists (should be pre-built by CI or user)
+  if [ ! -f "$APP_BINARY" ]; then
+    echo "  ⚠️  App binary not found at $APP_BINARY, building now..."
+    cd src-tauri
+    cargo build --profile e2e-test
+    cd - > /dev/null
+  fi
+
   echo "  3️⃣ E2E critical tests only..."
   yarn wdio run ./wdio.conf.ts --mochaOpts.grep "\[CRITICAL\]"
 
