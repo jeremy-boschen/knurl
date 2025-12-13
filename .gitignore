@@ -62,6 +62,12 @@ coverage
 .clinerules-*
 .ai/knowledgegraph.*
 .codex
+.act/.artifacts/
+.act/.cache/
+.act/secrets.env
+.act/vars.env
+.act/env.env
+.act/.secrets.*
 
 # Temp files
 tmp
