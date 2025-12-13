@@ -70,6 +70,13 @@ jobs:
       - name: Install Frontend Dependencies
         run: yarn install --immutable
 
+      - name: Run Critical Tests (Ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        env:
+          VITEST_MAX_WORKERS: 2
+        run: yarn test:check 2>&1 | tee /tmp/test-output.log
+        continue-on-error: true
+
       - name: Build and Publish with Tauri
         uses: tauri-apps/tauri-action@v0
         env:

@@ -70,6 +70,13 @@ jobs:
         # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
         run: yarn install # change this to npm or pnpm depending on which one you use.
 
+      - name: Run Critical Tests (Ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        env:
+          VITEST_MAX_WORKERS: 2
+        run: yarn test:check 2>&1 | tee /tmp/test-output.log
+        continue-on-error: true
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

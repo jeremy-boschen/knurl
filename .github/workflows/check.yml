@@ -41,6 +41,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
       - run: yarn install --immutable
+      - name: Build App
+        run: |
+          yarn generate:knurl-icon
+          yarn vite build
+          cd src-tauri && cargo build
       - name: Run Tests
         env:
           VITEST_MAX_WORKERS: 2
