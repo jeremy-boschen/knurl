@@ -33,8 +33,19 @@ forward_signal() {
   fi
 }
 
-trap 'forward_signal INT' INT
-trap 'forward_signal TERM' TERM
+handle_signal() {
+  local sig="$1"
+  forward_signal "$sig"
+  # EXIT trap will still run; this ensures immediate teardown on signals.
+  case "$sig" in
+    INT) exit 130 ;;
+    TERM) exit 143 ;;
+    *) exit 128 ;;
+  esac
+}
+
+trap 'handle_signal INT' INT
+trap 'handle_signal TERM' TERM
 
 usage() {
   cat <<'EOF'
