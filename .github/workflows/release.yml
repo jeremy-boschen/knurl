@@ -51,7 +51,7 @@ jobs:
           echo "✅ Tag version matches Cargo.toml version: $CARGO_VERSION"
 
   build-windows:
-    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build_windows == 'true')
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_windows == 'true')
     runs-on: windows-latest
     steps:
       - name: Checkout code
@@ -115,7 +115,7 @@ jobs:
           if-no-files-found: ignore
 
   build-macos-intel:
-    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build_macos_intel == 'true')
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_macos_intel == 'true')
     runs-on: macos-latest
     steps:
       - name: Checkout code
@@ -181,7 +181,7 @@ jobs:
           if-no-files-found: ignore
 
   build-macos-arm:
-    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build_macos_arm == 'true')
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_macos_arm == 'true')
     runs-on: macos-latest
     steps:
       - name: Checkout code
@@ -247,7 +247,7 @@ jobs:
           if-no-files-found: ignore
 
   build-linux:
-    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build_linux == 'true')
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_linux == 'true')
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
