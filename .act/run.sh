@@ -49,6 +49,22 @@ require_tool() {
   fi
 }
 
+assert_docker_linux() {
+  require_tool docker
+  local os_type
+  if os_type="$(docker info --format '{{.OSType}}' 2>/dev/null)"; then
+    if [[ "$os_type" != "linux" ]]; then
+      cat >&2 <<EOF
+error: Docker daemon reports OSType=$os_type (likely Windows containers).
+Switch Docker Desktop to "Use WSL 2 based engine" / "Use Linux containers" and retry.
+EOF
+      exit 1
+    fi
+  else
+    echo "warning: unable to query docker info; continuing" >&2
+  fi
+}
+
 list_workflows() {
   find "$WORKFLOW_DIR" -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) \
     -print | sed 's!.*/!!' | sort
@@ -213,6 +229,7 @@ done
 [[ -z "$workflow" ]] && { usage; exit 1; }
 
 require_tool act
+assert_docker_linux
 ensure_files
 ensure_runtime_secret_file
 
@@ -266,4 +283,5 @@ echo "using vars file: $VARS_FILE"
 echo "using env file: $ENV_FILE"
 echo "platform preset: $PLATFORM_PRESET"
 
+cd "$ROOT"
 exec "${ACT_CMD[@]}"
