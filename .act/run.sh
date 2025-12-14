@@ -19,6 +19,12 @@ workflow=""
 act_args=()
 runtime_secret=""
 
+cleanup() {
+  [[ -n "$runtime_secret" && -f "$runtime_secret" ]] && rm -f "$runtime_secret"
+}
+
+trap cleanup EXIT
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -127,7 +133,6 @@ write_var_template() {
 ensure_runtime_secret_file() {
   mkdir -p "$ACT_DIR"
   runtime_secret="$(mktemp "$ACT_DIR/.runtime.secrets.XXXXXX")"
-  trap '[[ -n "$runtime_secret" && -f "$runtime_secret" ]] && rm -f "$runtime_secret"' EXIT
 
   if [[ -f "$SECRETS_FILE" ]]; then
     cat "$SECRETS_FILE" >>"$runtime_secret"
@@ -233,7 +238,15 @@ assert_docker_linux
 ensure_files
 ensure_runtime_secret_file
 
-workflow_path="$(resolve_workflow_path "$workflow")"
+workflow_source_path="$(resolve_workflow_path "$workflow")"
+workflow_path="$workflow_source_path"
+
+for arg in "${act_args[@]}"; do
+  if [[ "$arg" == "--rm" ]]; then
+    echo "error: --rm cannot be used when --bind is enabled" >&2
+    exit 1
+  fi
+done
 
 case "$PLATFORM_PRESET" in
   full)
@@ -258,7 +271,10 @@ esac
 
 ACT_CMD=(
   act "$event"
+  -C "$ROOT"
   -W "$workflow_path"
+  --bind
+  --use-gitignore
   --pull=false
   --use-new-action-cache
   --artifact-server-path "$ARTIFACT_DIR"
@@ -284,4 +300,4 @@ echo "using env file: $ENV_FILE"
 echo "platform preset: $PLATFORM_PRESET"
 
 cd "$ROOT"
-exec "${ACT_CMD[@]}"
+"${ACT_CMD[@]}"
