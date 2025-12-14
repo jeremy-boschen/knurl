@@ -34,7 +34,7 @@ jobs:
   validate-tag:
     name: Validate Version Tag
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') && !github.act
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
