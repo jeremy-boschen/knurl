@@ -3,7 +3,6 @@ import react from "@vitejs/plugin-react-swc";
 import path from "node:path";
 import tailwindcss from '@tailwindcss/vite'
 import checker from 'vite-plugin-checker'
-import {visualizer} from "rollup-plugin-visualizer";
 import {consoleForwardPlugin} from "./scripts/build/vite-console-forward-plugin";
 import {cssVarsExportPlugin} from "./scripts/build/vite-css-vars-export-plugin";
 
@@ -103,17 +102,6 @@ export default defineConfig(({
     },
     // Roll back prior chunk optimizations: use Vite defaults
     // Remove manualChunks and special splitting; keep only input entry.
-    rollupOptions: {
-      plugins: [
-        // Enable bundle analyzer when ANALYZE=1
-        process.env.ANALYZE ? visualizer({
-          filename: "dist/stats.html",
-          template: "treemap",
-          gzipSize: true,
-          brotliSize: true,
-          open: false,
-        }) : undefined,
-      ].filter(Boolean),
-    },
+    rollupOptions: {},
   }
 }));
