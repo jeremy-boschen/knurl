@@ -5,6 +5,27 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      build_windows:
+        description: 'Build Windows x64'
+        required: false
+        type: boolean
+        default: true
+      build_macos_intel:
+        description: 'Build macOS Intel (x86_64)'
+        required: false
+        type: boolean
+        default: true
+      build_macos_arm:
+        description: 'Build macOS ARM (aarch64)'
+        required: false
+        type: boolean
+        default: true
+      build_linux:
+        description: 'Build Linux x64'
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -39,17 +60,25 @@ jobs:
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
             args: ''
+            input_check: build_windows
           - platform: macos-latest
             target: x86_64-apple-darwin
             args: '--target x86_64-apple-darwin'
+            input_check: build_macos_intel
           - platform: macos-latest
             target: aarch64-apple-darwin
             args: '--target aarch64-apple-darwin'
+            input_check: build_macos_arm
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             args: ''
+            input_check: build_linux
 
     runs-on: ${{ matrix.platform }}
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' &&
+       inputs[matrix.input_check] == 'true')
 
     steps:
       - name: Checkout code
