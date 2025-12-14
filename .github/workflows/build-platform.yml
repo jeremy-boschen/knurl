@@ -44,9 +44,6 @@ jobs:
             patchelf \
             pkg-config
 
-      - name: Prepare Corepack
-        run: corepack enable
-
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
@@ -55,10 +52,6 @@ jobs:
 
       - name: Install Rust
         run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-        shell: bash
-
-      - name: Install cargo-llvm-cov
-        run: cargo install cargo-llvm-cov --locked
         shell: bash
 
       - name: Add Rust to PATH (Windows)
@@ -88,13 +81,10 @@ jobs:
       - name: Install frontend dependencies
         run: yarn install --immutable
 
-      - name: Build frontend
-        run: yarn vite build
-
-      - name: Build app
+      - name: Build
         env:
           CARGO_NET_RETRY: 3
-        run: npm run tauri build -- ${{ inputs.args }}
+        run: yarn tauri build -- ${{ inputs.args }}
 
       - name: Prepare release files
         run: |
