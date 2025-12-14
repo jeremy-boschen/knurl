@@ -42,6 +42,9 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov --locked
+
       - name: Setup Rust cargo caching
         uses: actions/cache@v5
         with:
@@ -60,6 +63,9 @@ jobs:
 
       - name: Build Rust backend
         run: cd src-tauri && cargo build
+
+      - name: Clean debug artifacts (avoid profile conflicts with cache)
+        run: rm -rf src-tauri/target/debug/deps
 
       - name: Run tests
         env:

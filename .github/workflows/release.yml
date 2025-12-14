@@ -83,6 +83,10 @@ jobs:
         run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
         shell: bash
 
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov --locked
+        shell: bash
+
       - name: Add Rust to PATH (Windows)
         if: runner.os == 'Windows'
         run: echo "$HOME/.cargo/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
@@ -109,6 +113,10 @@ jobs:
 
       - name: Install frontend dependencies
         run: yarn install --immutable
+
+      - name: Clean debug artifacts (avoid profile conflicts with cache)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: rm -rf src-tauri/target/debug/deps
 
       - name: Run critical tests (Ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
