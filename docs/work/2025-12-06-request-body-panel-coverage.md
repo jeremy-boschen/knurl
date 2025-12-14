@@ -1,4 +1,0 @@
-- [x] Add unit tests to exercise RequestBodyPanel form add buttons (text/file) and reordering handlers
-- [x] Add unit tests to cover multipart header conflict warning and binary empty-state
-- [x] Add unit tests to expand guessContentTypeByExt coverage for remaining extensions
-- [x] Run `yarn test:unit` (coverage still below 70% threshold: lines 67.56%, statements 67.73%)

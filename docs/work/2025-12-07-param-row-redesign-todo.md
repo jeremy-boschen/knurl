@@ -1,8 +1,0 @@
-- Refactor parameter rows as requested: use FieldRow via new ParamRow (or similar) so panels pass param objects instead of many callbacks; ensure headers panel uses FieldRow consistent with parameters panel.
-- Change FieldRow usage to rely on key instead of id props; replace dataTestPrefix with dataTestIdPrefix; remove rowSuffix; ensure all call sites updated.
-- Simplify design per user direction: consider separate components for form/file rows (FormFieldRow) and keep ParamRow for path/query/cookie/header with minimal props.
-- Update request headers panel to use FieldRow/ParamRow like parameters panel and adjust data-test-id generation scheme described.
-- Update any e2e specs in src-common/e2e/specs/ impacted by selector/data-test-id changes.
-- Run yarn test:e2e --spec requests.e2e.ts and report results.
-- Commit the work after tests pass.
-- Extract shared ParamList and FormFieldList components to remove duplicate looping/render logic in panels.

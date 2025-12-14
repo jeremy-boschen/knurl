@@ -1,2 +1,0 @@
-- Investigate why importing a native collection fails (using example files like docs/examples/native/Collection_Test_Native.json and OpenAPI JSON/YAML) and fix it.
-- Ensure import type auto-detect works for native and OpenAPI formats.

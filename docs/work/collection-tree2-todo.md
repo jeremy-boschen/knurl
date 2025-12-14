@@ -1,7 +1,0 @@
-- Start new collection tree implementation in `src-ui/src/components/layout/collection-tree2`.
-- Build parent `CollectionTree2` component (expanded sidebar only for now).
-- Create subcomponents in separate files: `CollectionItem`, `FolderItemList`, `FolderItem`, `RequestItemList`, `RequestItem`.
-- `CollectionItem` accepts `collectionId` prop, tracks opened/closed and selected state; when opened, loads the collection via `Suspense`; when closed, renders only the closed collection item; when collection is available and open, render `FolderItemList` with the collection and the `folderId` to render; every collection has a special `root` folder treated as child of the collection item.
-- `FolderItemList` renders the folder item when the folder is not `root`, then renders `RequestItemList` for that folder with the collection, folder, and its request ids.
-- `RequestItemList` renders a list of `RequestItem` components.
-- `RequestItem` renders the request name.
