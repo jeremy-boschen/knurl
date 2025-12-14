@@ -24,6 +24,17 @@ cleanup() {
 }
 
 trap cleanup EXIT
+ACT_PID=""
+
+forward_signal() {
+  local sig="$1"
+  if [[ -n "$ACT_PID" ]] && kill -0 "$ACT_PID" 2>/dev/null; then
+    kill "-$sig" "$ACT_PID"
+  fi
+}
+
+trap 'forward_signal INT' INT
+trap 'forward_signal TERM' TERM
 
 usage() {
   cat <<'EOF'
@@ -300,4 +311,10 @@ echo "using env file: $ENV_FILE"
 echo "platform preset: $PLATFORM_PRESET"
 
 cd "$ROOT"
-"${ACT_CMD[@]}"
+set +e
+"${ACT_CMD[@]}" &
+ACT_PID=$!
+wait "$ACT_PID"
+status=$?
+set -e
+exit "$status"
