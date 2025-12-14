@@ -3,7 +3,7 @@
 # Clean build artifacts, coverage reports, and test outputs
 # Usage: yarn clean
 
-set -e
+set -ex
 
 echo "🧹 Cleaning build artifacts..."
 

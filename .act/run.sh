@@ -273,8 +273,8 @@ ACT_CMD=(
   act "$event"
   -C "$ROOT"
   -W "$workflow_path"
-  --bind
   --use-gitignore
+  --reuse
   --pull=false
   --use-new-action-cache
   --artifact-server-path "$ARTIFACT_DIR"
