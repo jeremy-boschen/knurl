@@ -17,6 +17,7 @@
     "generate:knurl-icon": "node scripts/build/generate-knurl-icon.mjs",
     "build": "yarn generate:knurl-icon && tsc && vite build && cd src-tauri && cargo build --release",
     "analyze": "cross-env ANALYZE=1 vite build",
+    "clean": "bash scripts/clean.sh",
     "typecheck": "tsc --noEmit",
     "check": "bash scripts/test/check-local.sh",
     "format": "biome format --write && cd src-tauri && cargo fmt",
