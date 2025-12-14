@@ -49,13 +49,16 @@ jobs:
             ${{ runner.os }}-cargo-
       - run: yarn install --immutable
       - name: Build App
+        env:
+          CARGO_NET_RETRY: 3
         run: |
           yarn generate:knurl-icon
           yarn vite build
-          cd src-tauri && cargo build
+          cd src-tauri && cargo build --release
       - name: Run Tests
         env:
           VITEST_MAX_WORKERS: 2
+          CARGO_INCREMENTAL: 1
         run: yarn test:check 2>&1 | tee /tmp/test-output.log
       - name: Upload test logs on failure
         if: failure()
