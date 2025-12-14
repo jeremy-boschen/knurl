@@ -1,5 +1,0 @@
-- Fix failing unit tests (pipeline mock ordering).
-- Address utility-sheet-host warning if feasible.
-- Run `yarn test:unit` to confirm pass.
-- Commit updated tests.
-- Identify next high-impact areas to raise coverage (export deferred).

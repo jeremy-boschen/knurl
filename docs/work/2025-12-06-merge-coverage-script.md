@@ -1,4 +1,0 @@
-- [ ] Inspect `scripts/test/merge-coverage.mjs` to understand how it combines coverage outputs.
-- [ ] Review existing coverage artifacts in `/mnt/d/projects/knurl/coverage/` without modifying or deleting anything.
-- [ ] Determine whether the script is actually combining coverage amounts for the full (unit + e2e) suite and explain the current lower numbers.
-- [ ] Summarize findings and next steps for the user.
