@@ -5,12 +5,10 @@
   "version": "0.1.7",
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "test:unit": "bash scripts/test/test.sh --mode unit",
     "test:e2e": "bash scripts/test/test.sh --mode e2e",
     "test": "bash scripts/test/test.sh",
     "test:check": "bash scripts/test/test.sh --mode check",
-    "build": "tsc && vite build && cd src-tauri && cargo build --release",
     "clean": "bash scripts/build/clean.sh",
     "typecheck": "tsc --noEmit",
     "check": "bash scripts/test/check-local.sh",
