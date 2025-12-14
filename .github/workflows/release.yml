@@ -50,42 +50,214 @@ jobs:
           fi
           echo "✅ Tag version matches Cargo.toml version: $CARGO_VERSION"
 
-  build-and-release:
+  build-windows:
     needs: validate-tag
-    if: always() && (needs.validate-tag.result == 'success' || github.event_name == 'workflow_dispatch')
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: windows-latest
-            target: x86_64-pc-windows-msvc
-            args: ''
-            input_check: build_windows
-          - platform: macos-latest
-            target: x86_64-apple-darwin
-            args: '--target x86_64-apple-darwin'
-            input_check: build_macos_intel
-          - platform: macos-latest
-            target: aarch64-apple-darwin
-            args: '--target aarch64-apple-darwin'
-            input_check: build_macos_arm
-          - platform: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
-            args: ''
-            input_check: build_linux
-
-    runs-on: ${{ matrix.platform }}
-    if: |
-      github.event_name == 'push' ||
-      (github.event_name == 'workflow_dispatch' &&
-       inputs[matrix.input_check] == 'true')
-
+    if: always() && (needs.validate-tag.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.build_windows == 'true'))
+    runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Install dependencies (Ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
+      - name: Prepare Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "yarn"
+
+      - name: Install Rust
+        run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+        shell: bash
+
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov --locked
+        shell: bash
+
+      - name: Add Rust to PATH
+        run: echo "$HOME/.cargo/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-x86_64-pc-windows-msvc-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-x86_64-pc-windows-msvc-
+            ${{ runner.os }}-cargo-
+
+      - name: Install frontend dependencies
+        run: yarn install --immutable
+
+      - name: Build frontend
+        run: yarn vite build
+
+      - name: Build app
+        env:
+          CARGO_NET_RETRY: 3
+        run: npm run tauri build
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release-files
+          bash scripts/release/rename-artifacts.sh "${{ github.ref_name }}" x86_64-pc-windows-msvc
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-x86_64-pc-windows-msvc
+          path: release-files/
+          if-no-files-found: ignore
+
+  build-macos-intel:
+    needs: validate-tag
+    if: always() && (needs.validate-tag.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.build_macos_intel == 'true'))
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Prepare Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "yarn"
+
+      - name: Install Rust
+        run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+        shell: bash
+
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov --locked
+        shell: bash
+
+      - name: Install macOS targets
+        run: |
+          source $HOME/.cargo/env
+          rustup target add x86_64-apple-darwin
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-x86_64-apple-darwin-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-x86_64-apple-darwin-
+            ${{ runner.os }}-cargo-
+
+      - name: Install frontend dependencies
+        run: yarn install --immutable
+
+      - name: Build frontend
+        run: yarn vite build
+
+      - name: Build app
+        env:
+          CARGO_NET_RETRY: 3
+        run: npm run tauri build -- --target x86_64-apple-darwin
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release-files
+          bash scripts/release/rename-artifacts.sh "${{ github.ref_name }}" x86_64-apple-darwin
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-x86_64-apple-darwin
+          path: release-files/
+          if-no-files-found: ignore
+
+  build-macos-arm:
+    needs: validate-tag
+    if: always() && (needs.validate-tag.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.build_macos_arm == 'true'))
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Prepare Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "yarn"
+
+      - name: Install Rust
+        run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+        shell: bash
+
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov --locked
+        shell: bash
+
+      - name: Install macOS targets
+        run: |
+          source $HOME/.cargo/env
+          rustup target add aarch64-apple-darwin
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-aarch64-apple-darwin-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-aarch64-apple-darwin-
+            ${{ runner.os }}-cargo-
+
+      - name: Install frontend dependencies
+        run: yarn install --immutable
+
+      - name: Build frontend
+        run: yarn vite build
+
+      - name: Build app
+        env:
+          CARGO_NET_RETRY: 3
+        run: npm run tauri build -- --target aarch64-apple-darwin
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release-files
+          bash scripts/release/rename-artifacts.sh "${{ github.ref_name }}" aarch64-apple-darwin
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-aarch64-apple-darwin
+          path: release-files/
+          if-no-files-found: ignore
+
+  build-linux:
+    needs: validate-tag
+    if: always() && (needs.validate-tag.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.build_linux == 'true'))
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -116,16 +288,6 @@ jobs:
         run: cargo install cargo-llvm-cov --locked
         shell: bash
 
-      - name: Add Rust to PATH (Windows)
-        if: runner.os == 'Windows'
-        run: echo "$HOME/.cargo/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-      - name: Install macOS targets
-        if: matrix.platform == 'macos-latest'
-        run: |
-          source $HOME/.cargo/env
-          rustup target add aarch64-apple-darwin x86_64-apple-darwin
-
       - name: Cache Rust dependencies
         uses: actions/cache@v5
         with:
@@ -135,9 +297,9 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             src-tauri/target
-          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-x86_64-unknown-linux-gnu-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-${{ matrix.target }}-
+            ${{ runner.os }}-cargo-x86_64-unknown-linux-gnu-
             ${{ runner.os }}-cargo-
 
       - name: Install frontend dependencies
@@ -149,22 +311,22 @@ jobs:
       - name: Build app
         env:
           CARGO_NET_RETRY: 3
-        run: npm run tauri build -- ${{ matrix.args }}
+        run: npm run tauri build
 
       - name: Prepare release files
         run: |
           mkdir -p release-files
-          bash scripts/release/rename-artifacts.sh "${{ github.ref_name }}" "${{ matrix.target }}"
+          bash scripts/release/rename-artifacts.sh "${{ github.ref_name }}" x86_64-unknown-linux-gnu
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
         with:
-          name: release-${{ matrix.target }}
+          name: release-x86_64-unknown-linux-gnu
           path: release-files/
           if-no-files-found: ignore
 
   create-release:
-    needs: build-and-release
+    needs: [build-windows, build-macos-intel, build-macos-arm, build-linux]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
