@@ -64,7 +64,7 @@ jobs:
       - name: Run tests
         env:
           VITEST_MAX_WORKERS: 2
-        run: yarn test:quick 2>&1 | tee /tmp/test-output.log
+        run: yarn test:unit 2>&1 | tee /tmp/test-output.log
 
       - name: Upload test logs on failure
         if: failure()
