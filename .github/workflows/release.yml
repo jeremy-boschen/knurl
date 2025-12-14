@@ -34,7 +34,7 @@ jobs:
   validate-tag:
     name: Validate Version Tag
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') && !github.act
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -51,8 +51,7 @@ jobs:
           echo "✅ Tag version matches Cargo.toml version: $CARGO_VERSION"
 
   build-windows:
-    needs: validate-tag
-    if: always() && (needs.validate-tag.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.build_windows == 'true'))
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build_windows == 'true')
     runs-on: windows-latest
     steps:
       - name: Checkout code
@@ -116,8 +115,7 @@ jobs:
           if-no-files-found: ignore
 
   build-macos-intel:
-    needs: validate-tag
-    if: always() && (needs.validate-tag.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.build_macos_intel == 'true'))
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build_macos_intel == 'true')
     runs-on: macos-latest
     steps:
       - name: Checkout code
@@ -183,8 +181,7 @@ jobs:
           if-no-files-found: ignore
 
   build-macos-arm:
-    needs: validate-tag
-    if: always() && (needs.validate-tag.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.build_macos_arm == 'true'))
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build_macos_arm == 'true')
     runs-on: macos-latest
     steps:
       - name: Checkout code
@@ -250,8 +247,7 @@ jobs:
           if-no-files-found: ignore
 
   build-linux:
-    needs: validate-tag
-    if: always() && (needs.validate-tag.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.build_linux == 'true'))
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build_linux == 'true')
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
