@@ -50,6 +50,7 @@ yarn test:unit        # All unit tests with coverage (frontend + backend)
 yarn test:e2e         # All E2E tests (WebDriver.io)
 yarn test             # Full test suite with coverage (unit + E2E)
 yarn test:check       # Quick test check: unit + E2E [CRITICAL] only
+yarn clean            # Remove build artifacts, coverage, and test output
 yarn portal:package   # Distribution bundle
 yarn security         # gitleaks, cargo-deny, cargo-audit
 ```
