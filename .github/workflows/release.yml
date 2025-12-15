@@ -58,6 +58,8 @@ jobs:
             libwebkit2gtk-4.1-dev \
             libappindicator3-dev \
             librsvg2-dev \
+            librsvg2-bin \
+            dpkg \
             patchelf \
             xdg-utils
 
@@ -103,8 +105,8 @@ jobs:
         env:
           CARGO_NET_RETRY: 3
         run: |
-          ARGS=""
-          [[ "${{ matrix.target }}" == *apple-darwin ]] && ARGS="--target ${{ matrix.target }}"
+          ARGS="--bundle all"
+          [[ "${{ matrix.target }}" == *apple-darwin ]] && ARGS="--bundle all --target ${{ matrix.target }}"
           yarn tauri build -- $ARGS
 
       - name: Prepare release files
