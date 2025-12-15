@@ -31,6 +31,32 @@ permissions:
   contents: write
 
 jobs:
+  configure:
+    name: Configure Build Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Build matrix for tag push
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "MATRIX={\"include\":[{\"platform\":\"windows-latest\",\"target\":\"x86_64-pc-windows-msvc\",\"args\":\"\",\"install_linux_deps\":false,\"install_macos_targets\":false},{\"platform\":\"macos-latest\",\"target\":\"x86_64-apple-darwin\",\"args\":\"--target x86_64-apple-darwin\",\"install_linux_deps\":false,\"install_macos_targets\":true},{\"platform\":\"macos-latest\",\"target\":\"aarch64-apple-darwin\",\"args\":\"--target aarch64-apple-darwin\",\"install_linux_deps\":false,\"install_macos_targets\":true},{\"platform\":\"ubuntu-22.04\",\"target\":\"x86_64-unknown-linux-gnu\",\"args\":\"\",\"install_linux_deps\":true,\"install_macos_targets\":false}]}" >> $GITHUB_ENV
+
+      - name: Build matrix for workflow_dispatch
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          PLATFORMS=()
+          [ "${{ github.event.inputs.build_windows }}" = "true" ] && PLATFORMS+=("{\"platform\":\"windows-latest\",\"target\":\"x86_64-pc-windows-msvc\",\"args\":\"\",\"install_linux_deps\":false,\"install_macos_targets\":false}")
+          [ "${{ github.event.inputs.build_macos_intel }}" = "true" ] && PLATFORMS+=("{\"platform\":\"macos-latest\",\"target\":\"x86_64-apple-darwin\",\"args\":\"--target x86_64-apple-darwin\",\"install_linux_deps\":false,\"install_macos_targets\":true}")
+          [ "${{ github.event.inputs.build_macos_arm }}" = "true" ] && PLATFORMS+=("{\"platform\":\"macos-latest\",\"target\":\"aarch64-apple-darwin\",\"args\":\"--target aarch64-apple-darwin\",\"install_linux_deps\":false,\"install_macos_targets\":true}")
+          [ "${{ github.event.inputs.build_linux }}" = "true" ] && PLATFORMS+=("{\"platform\":\"ubuntu-22.04\",\"target\":\"x86_64-unknown-linux-gnu\",\"args\":\"\",\"install_linux_deps\":true,\"install_macos_targets\":false}")
+
+          INCLUDE=$(IFS=,; echo "${PLATFORMS[*]}")
+          echo "MATRIX={\"include\":[$INCLUDE]}" >> $GITHUB_ENV
+
+      - id: set-matrix
+        run: echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+
   validate-tag:
     name: Validate Version Tag
     runs-on: ubuntu-latest
@@ -50,43 +76,84 @@ jobs:
           fi
           echo "✅ Tag version matches Cargo.toml version: $CARGO_VERSION"
 
-  build-windows:
-    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_windows == 'true')
-    uses: ./.github/workflows/build-platform.yml
-    with:
-      platform: windows-latest
-      target: x86_64-pc-windows-msvc
-      args: ''
+  build:
+    name: Build ${{ matrix.target }}
+    needs: configure
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.configure.outputs.matrix) }}
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-  build-macos-intel:
-    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_macos_intel == 'true')
-    uses: ./.github/workflows/build-platform.yml
-    with:
-      platform: macos-latest
-      target: x86_64-apple-darwin
-      args: '--target x86_64-apple-darwin'
-      install_macos_targets: true
+      - name: Install dependencies (Ubuntu only)
+        if: matrix.install_linux_deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
 
-  build-macos-arm:
-    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_macos_arm == 'true')
-    uses: ./.github/workflows/build-platform.yml
-    with:
-      platform: macos-latest
-      target: aarch64-apple-darwin
-      args: '--target aarch64-apple-darwin'
-      install_macos_targets: true
+      - name: Prepare Corepack
+        run: corepack enable
 
-  build-linux:
-    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_linux == 'true')
-    uses: ./.github/workflows/build-platform.yml
-    with:
-      platform: ubuntu-22.04
-      target: x86_64-unknown-linux-gnu
-      args: ''
-      install_linux_deps: true
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "yarn"
+
+      - name: Install Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+        shell: bash
+
+      - name: Install macOS targets
+        if: matrix.install_macos_targets
+        run: |
+          source $HOME/.cargo/env
+          rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ matrix.target }}-
+            ${{ runner.os }}-cargo-
+
+      - name: Install frontend dependencies
+        run: yarn install --immutable
+
+      - name: Build
+        env:
+          CARGO_NET_RETRY: 3
+        run: yarn tauri build -- ${{ matrix.args }}
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release-files
+          bash scripts/release/rename-artifacts.sh "${{ github.ref_name }}" "${{ matrix.target }}"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-${{ matrix.target }}
+          path: release-files/
+          if-no-files-found: ignore
 
   create-release:
-    needs: [build-windows, build-macos-intel, build-macos-arm, build-linux]
+    needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
