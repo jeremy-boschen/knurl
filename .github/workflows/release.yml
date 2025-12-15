@@ -39,82 +39,56 @@ jobs:
     steps:
       - id: matrix
         run: |
+          MATRIX=$(cat <<'EOF'
+          {
+            "include": [
+              {
+                "id": "windows",
+                "platform": "windows-latest",
+                "target": "x86_64-pc-windows-msvc",
+                "args": "",
+                "install_linux_deps": false,
+                "install_macos_targets": false
+              },
+              {
+                "id": "macos_intel",
+                "platform": "macos-latest",
+                "target": "x86_64-apple-darwin",
+                "args": "--target x86_64-apple-darwin",
+                "install_linux_deps": false,
+                "install_macos_targets": true
+              },
+              {
+                "id": "macos_arm",
+                "platform": "macos-latest",
+                "target": "aarch64-apple-darwin",
+                "args": "--target aarch64-apple-darwin",
+                "install_linux_deps": false,
+                "install_macos_targets": true
+              },
+              {
+                "id": "linux",
+                "platform": "ubuntu-22.04",
+                "target": "x86_64-unknown-linux-gnu",
+                "args": "",
+                "install_linux_deps": true,
+                "install_macos_targets": false
+              }
+            ]
+          }
+          EOF
+          )
+
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            cat >> $GITHUB_OUTPUT << 'EOF'
-          result={"include":[
-            {
-              "platform": "windows-latest",
-              "target": "x86_64-pc-windows-msvc",
-              "args": "",
-              "install_linux_deps": false,
-              "install_macos_targets": false
-            },
-            {
-              "platform": "macos-latest",
-              "target": "x86_64-apple-darwin",
-              "args": "--target x86_64-apple-darwin",
-              "install_linux_deps": false,
-              "install_macos_targets": true
-            },
-            {
-              "platform": "macos-latest",
-              "target": "aarch64-apple-darwin",
-              "args": "--target aarch64-apple-darwin",
-              "install_linux_deps": false,
-              "install_macos_targets": true
-            },
-            {
-              "platform": "ubuntu-22.04",
-              "target": "x86_64-unknown-linux-gnu",
-              "args": "",
-              "install_linux_deps": true,
-              "install_macos_targets": false
-            }
-          ]}
-          EOF
+            echo "result=$(echo "$MATRIX" | jq -c)" >> $GITHUB_OUTPUT
           else
-            cat >> $GITHUB_OUTPUT << 'EOF'
-          result={"include":[
-          EOF
-            [[ "${{ github.event.inputs.build_windows }}" == "true" ]] && cat >> $GITHUB_OUTPUT << 'EOF'
-            {
-              "platform": "windows-latest",
-              "target": "x86_64-pc-windows-msvc",
-              "args": "",
-              "install_linux_deps": false,
-              "install_macos_targets": false
-            },
-          EOF
-            [[ "${{ github.event.inputs.build_macos_intel }}" == "true" ]] && cat >> $GITHUB_OUTPUT << 'EOF'
-            {
-              "platform": "macos-latest",
-              "target": "x86_64-apple-darwin",
-              "args": "--target x86_64-apple-darwin",
-              "install_linux_deps": false,
-              "install_macos_targets": true
-            },
-          EOF
-            [[ "${{ github.event.inputs.build_macos_arm }}" == "true" ]] && cat >> $GITHUB_OUTPUT << 'EOF'
-            {
-              "platform": "macos-latest",
-              "target": "aarch64-apple-darwin",
-              "args": "--target aarch64-apple-darwin",
-              "install_linux_deps": false,
-              "install_macos_targets": true
-            },
-          EOF
-            [[ "${{ github.event.inputs.build_linux }}" == "true" ]] && cat >> $GITHUB_OUTPUT << 'EOF'
-            {
-              "platform": "ubuntu-22.04",
-              "target": "x86_64-unknown-linux-gnu",
-              "args": "",
-              "install_linux_deps": true,
-              "install_macos_targets": false
-            }
-          EOF
-            cat >> $GITHUB_OUTPUT << 'EOF'
-          ]}
-          EOF
+            SELECTED=""
+            [[ "${{ github.event.inputs.build_windows }}" == "true" ]] && SELECTED+=' or .id == "windows"'
+            [[ "${{ github.event.inputs.build_macos_intel }}" == "true" ]] && SELECTED+=' or .id == "macos_intel"'
+            [[ "${{ github.event.inputs.build_macos_arm }}" == "true" ]] && SELECTED+=' or .id == "macos_arm"'
+            [[ "${{ github.event.inputs.build_linux }}" == "true" ]] && SELECTED+=' or .id == "linux"'
+            FILTER="${SELECTED# or }"
+            echo "result=$(echo "$MATRIX" | jq -c ".include |= map(select($FILTER))")" >> $GITHUB_OUTPUT
           fi
 
   validate-tag:
