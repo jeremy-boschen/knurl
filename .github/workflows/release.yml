@@ -54,13 +54,12 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             echo "result=$(echo "$MATRIX" | jq -c)" >> $GITHUB_OUTPUT
           else
-            SELECTED=""
-            [[ "${{ github.event.inputs.build_windows }}" == "true" ]] && SELECTED+=' or .id == "windows"'
-            [[ "${{ github.event.inputs.build_macos_intel }}" == "true" ]] && SELECTED+=' or .id == "macos_intel"'
-            [[ "${{ github.event.inputs.build_macos_arm }}" == "true" ]] && SELECTED+=' or .id == "macos_arm"'
-            [[ "${{ github.event.inputs.build_linux }}" == "true" ]] && SELECTED+=' or .id == "linux"'
-            FILTER="${SELECTED# or }"
-            echo "result=$(echo "$MATRIX" | jq -c ".include |= map(select($FILTER))")" >> $GITHUB_OUTPUT
+            SELECTED='[]'
+            [[ "${{ github.event.inputs.build_windows }}" == "true" ]] && SELECTED=$(echo "$SELECTED" | jq -c '. += ["windows"]')
+            [[ "${{ github.event.inputs.build_macos_intel }}" == "true" ]] && SELECTED=$(echo "$SELECTED" | jq -c '. += ["macos_intel"]')
+            [[ "${{ github.event.inputs.build_macos_arm }}" == "true" ]] && SELECTED=$(echo "$SELECTED" | jq -c '. += ["macos_arm"]')
+            [[ "${{ github.event.inputs.build_linux }}" == "true" ]] && SELECTED=$(echo "$SELECTED" | jq -c '. += ["linux"]')
+            echo "result=$(echo "$MATRIX" | jq -c --argjson ids "$SELECTED" '.include |= map(select(.id | IN($ids[])))')" >> $GITHUB_OUTPUT
           fi
 
   validate-tag:
