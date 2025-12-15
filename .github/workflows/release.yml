@@ -42,22 +42,79 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             cat >> $GITHUB_OUTPUT << 'EOF'
           result={"include":[
-            {"platform":"windows-latest","target":"x86_64-pc-windows-msvc","args":"","install_linux_deps":false,"install_macos_targets":false},
-            {"platform":"macos-latest","target":"x86_64-apple-darwin","args":"--target x86_64-apple-darwin","install_linux_deps":false,"install_macos_targets":true},
-            {"platform":"macos-latest","target":"aarch64-apple-darwin","args":"--target aarch64-apple-darwin","install_linux_deps":false,"install_macos_targets":true},
-            {"platform":"ubuntu-22.04","target":"x86_64-unknown-linux-gnu","args":"","install_linux_deps":true,"install_macos_targets":false}
+            {
+              "platform": "windows-latest",
+              "target": "x86_64-pc-windows-msvc",
+              "args": "",
+              "install_linux_deps": false,
+              "install_macos_targets": false
+            },
+            {
+              "platform": "macos-latest",
+              "target": "x86_64-apple-darwin",
+              "args": "--target x86_64-apple-darwin",
+              "install_linux_deps": false,
+              "install_macos_targets": true
+            },
+            {
+              "platform": "macos-latest",
+              "target": "aarch64-apple-darwin",
+              "args": "--target aarch64-apple-darwin",
+              "install_linux_deps": false,
+              "install_macos_targets": true
+            },
+            {
+              "platform": "ubuntu-22.04",
+              "target": "x86_64-unknown-linux-gnu",
+              "args": "",
+              "install_linux_deps": true,
+              "install_macos_targets": false
+            }
           ]}
           EOF
           else
-            BUILDS=()
-            [[ "${{ github.event.inputs.build_windows }}" == "true" ]] && BUILDS+=('{"platform":"windows-latest","target":"x86_64-pc-windows-msvc","args":"","install_linux_deps":false,"install_macos_targets":false}')
-            [[ "${{ github.event.inputs.build_macos_intel }}" == "true" ]] && BUILDS+=('{"platform":"macos-latest","target":"x86_64-apple-darwin","args":"--target x86_64-apple-darwin","install_linux_deps":false,"install_macos_targets":true}')
-            [[ "${{ github.event.inputs.build_macos_arm }}" == "true" ]] && BUILDS+=('{"platform":"macos-latest","target":"aarch64-apple-darwin","args":"--target aarch64-apple-darwin","install_linux_deps":false,"install_macos_targets":true}')
-            [[ "${{ github.event.inputs.build_linux }}" == "true" ]] && BUILDS+=('{"platform":"ubuntu-22.04","target":"x86_64-unknown-linux-gnu","args":"","install_linux_deps":true,"install_macos_targets":false}')
-
-            printf 'result={"include":[' >> $GITHUB_OUTPUT
-            printf '%s\n' "${BUILDS[@]}" | paste -sd, - >> $GITHUB_OUTPUT
-            printf ']}' >> $GITHUB_OUTPUT
+            cat >> $GITHUB_OUTPUT << 'EOF'
+          result={"include":[
+          EOF
+            [[ "${{ github.event.inputs.build_windows }}" == "true" ]] && cat >> $GITHUB_OUTPUT << 'EOF'
+            {
+              "platform": "windows-latest",
+              "target": "x86_64-pc-windows-msvc",
+              "args": "",
+              "install_linux_deps": false,
+              "install_macos_targets": false
+            },
+          EOF
+            [[ "${{ github.event.inputs.build_macos_intel }}" == "true" ]] && cat >> $GITHUB_OUTPUT << 'EOF'
+            {
+              "platform": "macos-latest",
+              "target": "x86_64-apple-darwin",
+              "args": "--target x86_64-apple-darwin",
+              "install_linux_deps": false,
+              "install_macos_targets": true
+            },
+          EOF
+            [[ "${{ github.event.inputs.build_macos_arm }}" == "true" ]] && cat >> $GITHUB_OUTPUT << 'EOF'
+            {
+              "platform": "macos-latest",
+              "target": "aarch64-apple-darwin",
+              "args": "--target aarch64-apple-darwin",
+              "install_linux_deps": false,
+              "install_macos_targets": true
+            },
+          EOF
+            [[ "${{ github.event.inputs.build_linux }}" == "true" ]] && cat >> $GITHUB_OUTPUT << 'EOF'
+            {
+              "platform": "ubuntu-22.04",
+              "target": "x86_64-unknown-linux-gnu",
+              "args": "",
+              "install_linux_deps": true,
+              "install_macos_targets": false
+            }
+          EOF
+            cat >> $GITHUB_OUTPUT << 'EOF'
+          ]}
+          EOF
           fi
 
   validate-tag:
