@@ -24,15 +24,24 @@ jobs:
       - name: Extract version
         id: version
         run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref name: ${{ github.ref_name }}"
+
           if [[ "${{ github.event_name }}" == "push" ]]; then
             VERSION="${{ github.ref_name }}"
+            echo "Using tag from push event: $VERSION"
           else
+            echo "Fetching latest tag..."
+            git fetch --tags --force 2>&1 || true
             VERSION=$(git tag -l 'v*' --sort=-version:refname | head -1)
             if [[ -z "$VERSION" ]]; then
               echo "⚠️ No tags found, using version from package.json"
               VERSION="v$(grep '"version"' package.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')"
             fi
+            echo "Using tag from git: $VERSION"
           fi
+
+          echo "Final version: $VERSION"
           echo "result=$VERSION" >> $GITHUB_OUTPUT
 
   build:
