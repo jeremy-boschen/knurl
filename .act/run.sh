@@ -16,11 +16,28 @@ PLATFORM_PRESET="${PLATFORM_PRESET:-default}"
 
 event="push"
 workflow=""
+ref=""
 act_args=()
 runtime_secret=""
+event_file=""
 
 cleanup() {
   [[ -n "$runtime_secret" && -f "$runtime_secret" ]] && rm -f "$runtime_secret"
+  [[ -n "$event_file" && -f "$event_file" ]] && rm -f "$event_file"
+}
+
+generate_push_event() {
+  local ref="$1"
+  event_file="$(mktemp "$ACT_DIR/.event.XXXXXX.json")"
+  cat >"$event_file" <<EOF
+{
+  "ref": "$ref",
+  "repository": {
+    "name": "knurl"
+  }
+}
+EOF
+  echo "$event_file"
 }
 
 trap cleanup EXIT
@@ -39,7 +56,7 @@ trap 'forward_signal TERM' TERM
 usage() {
   cat <<'EOF'
 Usage:
-  .act/run.sh [--event EVENT] WORKFLOW_NAME [-- ACT_ARGS...]
+  .act/run.sh [--event EVENT] [--ref REF] WORKFLOW_NAME [-- ACT_ARGS...]
   .act/run.sh --list
   .act/run.sh --secrets-template
   .act/run.sh --vars-template
@@ -49,6 +66,7 @@ Use ACT_ARGS after -- to pass directly to act (e.g., -j job-name).
 
 Helper flags:
   --list              List available workflow files.
+  --ref REF           Generate push event for ref (e.g., refs/tags/v0.1.7).
   --secrets-template  Write .act/secrets.env template from repo secret names (preserves existing values).
   --vars-template     Write .act/vars.env template from gh variable list (names only).
   --preset NAME       Runner image preset: default | full. Default uses act-latest images;
@@ -222,6 +240,12 @@ while [[ $# -gt 0 ]]; do
       event="$1"
       shift
       ;;
+    --ref)
+      shift
+      [[ $# -gt 0 ]] || { echo "error: --ref requires value" >&2; exit 1; }
+      ref="$1"
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -280,6 +304,11 @@ case "$PLATFORM_PRESET" in
     ;;
 esac
 
+# Generate event file if --ref was provided
+if [[ -n "$ref" ]]; then
+  event_file="$(generate_push_event "$ref")"
+fi
+
 ACT_CMD=(
   act "$event"
   -C "$ROOT"
@@ -295,6 +324,11 @@ ACT_CMD=(
   --env-file "$ENV_FILE"
 )
 
+# Add event file if generated
+if [[ -n "$event_file" ]]; then
+  ACT_CMD+=(--eventpath "$event_file")
+fi
+
 ACT_CMD+=("${PLATFORM_ARGS[@]}")
 
 if [[ ${#act_args[@]} -gt 0 ]]; then
@@ -303,6 +337,7 @@ fi
 
 echo "workflow: $workflow_path"
 echo "event: $event"
+[[ -n "$ref" ]] && echo "ref: $ref"
 echo "artifacts -> $ARTIFACT_DIR"
 echo "cache -> $CACHE_DIR"
 echo "using secrets file (runtime copy): $runtime_secret"
