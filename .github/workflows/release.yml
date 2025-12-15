@@ -35,27 +35,33 @@ jobs:
     name: Configure Build Matrix
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix: ${{ steps.matrix.outputs.result }}
     steps:
-      - name: Build matrix for tag push
-        if: startsWith(github.ref, 'refs/tags/')
+      - id: matrix
         run: |
-          echo "MATRIX={\"include\":[{\"platform\":\"windows-latest\",\"target\":\"x86_64-pc-windows-msvc\",\"args\":\"\",\"install_linux_deps\":false,\"install_macos_targets\":false},{\"platform\":\"macos-latest\",\"target\":\"x86_64-apple-darwin\",\"args\":\"--target x86_64-apple-darwin\",\"install_linux_deps\":false,\"install_macos_targets\":true},{\"platform\":\"macos-latest\",\"target\":\"aarch64-apple-darwin\",\"args\":\"--target aarch64-apple-darwin\",\"install_linux_deps\":false,\"install_macos_targets\":true},{\"platform\":\"ubuntu-22.04\",\"target\":\"x86_64-unknown-linux-gnu\",\"args\":\"\",\"install_linux_deps\":true,\"install_macos_targets\":false}]}" >> $GITHUB_ENV
+          MATRIX=$(cat <<'EOF'
+          {
+            "include": [
+              { "id": "windows",     "platform": "windows-latest", "target": "x86_64-pc-windows-msvc" },
+              { "id": "macos_intel", "platform": "macos-latest",   "target": "x86_64-apple-darwin" },
+              { "id": "macos_arm",   "platform": "macos-latest",   "target": "aarch64-apple-darwin" },
+              { "id": "linux",       "platform": "ubuntu-22.04",   "target": "x86_64-unknown-linux-gnu" }
+            ]
+          }
+          EOF
+          )
 
-      - name: Build matrix for workflow_dispatch
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          PLATFORMS=()
-          [ "${{ github.event.inputs.build_windows }}" = "true" ] && PLATFORMS+=("{\"platform\":\"windows-latest\",\"target\":\"x86_64-pc-windows-msvc\",\"args\":\"\",\"install_linux_deps\":false,\"install_macos_targets\":false}")
-          [ "${{ github.event.inputs.build_macos_intel }}" = "true" ] && PLATFORMS+=("{\"platform\":\"macos-latest\",\"target\":\"x86_64-apple-darwin\",\"args\":\"--target x86_64-apple-darwin\",\"install_linux_deps\":false,\"install_macos_targets\":true}")
-          [ "${{ github.event.inputs.build_macos_arm }}" = "true" ] && PLATFORMS+=("{\"platform\":\"macos-latest\",\"target\":\"aarch64-apple-darwin\",\"args\":\"--target aarch64-apple-darwin\",\"install_linux_deps\":false,\"install_macos_targets\":true}")
-          [ "${{ github.event.inputs.build_linux }}" = "true" ] && PLATFORMS+=("{\"platform\":\"ubuntu-22.04\",\"target\":\"x86_64-unknown-linux-gnu\",\"args\":\"\",\"install_linux_deps\":true,\"install_macos_targets\":false}")
-
-          INCLUDE=$(IFS=,; echo "${PLATFORMS[*]}")
-          echo "MATRIX={\"include\":[$INCLUDE]}" >> $GITHUB_ENV
-
-      - id: set-matrix
-        run: echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "result=$(echo "$MATRIX" | jq -c)" >> $GITHUB_OUTPUT
+          else
+            SELECTED=""
+            [[ "${{ github.event.inputs.build_windows }}" == "true" ]] && SELECTED+=' or .id == "windows"'
+            [[ "${{ github.event.inputs.build_macos_intel }}" == "true" ]] && SELECTED+=' or .id == "macos_intel"'
+            [[ "${{ github.event.inputs.build_macos_arm }}" == "true" ]] && SELECTED+=' or .id == "macos_arm"'
+            [[ "${{ github.event.inputs.build_linux }}" == "true" ]] && SELECTED+=' or .id == "linux"'
+            FILTER="${SELECTED# or }"
+            echo "result=$(echo "$MATRIX" | jq -c ".include |= map(select($FILTER))")" >> $GITHUB_OUTPUT
+          fi
 
   validate-tag:
     name: Validate Version Tag
@@ -88,7 +94,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install dependencies (Ubuntu only)
-        if: matrix.install_linux_deps
+        if: contains(matrix.target, 'linux')
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -113,7 +119,7 @@ jobs:
         shell: bash
 
       - name: Install macOS targets
-        if: matrix.install_macos_targets
+        if: contains(matrix.target, 'apple-darwin')
         run: |
           source $HOME/.cargo/env
           rustup target add aarch64-apple-darwin x86_64-apple-darwin
@@ -138,7 +144,10 @@ jobs:
       - name: Build
         env:
           CARGO_NET_RETRY: 3
-        run: yarn tauri build -- ${{ matrix.args }}
+        run: |
+          ARGS=""
+          [[ "${{ matrix.target }}" == *apple-darwin ]] && ARGS="--target ${{ matrix.target }}"
+          yarn tauri build -- $ARGS
 
       - name: Prepare release files
         run: |
