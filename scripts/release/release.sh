@@ -11,6 +11,22 @@ fi
 
 VERSION="$1"
 
+# Helper: convert Windows path to WSL path
+# e.g., C:\Users\name\repo -> /mnt/c/Users/name/repo
+windows_to_wsl_path() {
+  local win_path="$1"
+  # Convert backslashes to forward slashes
+  local unix_path="${win_path//\\/\/}"
+  # Extract drive letter and rest (e.g., C:/Users/... -> C and /Users/...)
+  local drive="${unix_path:0:1}"
+  local rest="${unix_path:2}"
+  # Convert to /mnt/X/path format with lowercase drive letter
+  echo "/mnt/${drive,,}${rest}"
+}
+
+# Get current directory
+CURRENT_DIR="$(pwd)"
+
 # Validate version format
 if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "❌ Invalid version format: $VERSION"
@@ -78,10 +94,10 @@ yarn clean
 echo "🪟 Building for Windows..."
 yarn tauri build
 
-# Build for Linux (WSL only)
+# Build for Linux
 echo "🐧 Building for Linux..."
 if grep -qi microsoft /proc/version &> /dev/null; then
-  # In WSL - rebuild native modules for Linux platform
+  # Already in WSL - rebuild native modules for Linux platform
   echo "Rebuilding native modules for Linux..."
 
   # Ensure Rust is installed in WSL
@@ -94,9 +110,28 @@ if grep -qi microsoft /proc/version &> /dev/null; then
   rm -rf node_modules
   yarn install --immutable
   yarn tauri build
+elif command -v wsl.exe &> /dev/null; then
+  # Running on Windows, invoke WSL with converted path
+  WSL_PATH="$(windows_to_wsl_path "$CURRENT_DIR")"
+  wsl.exe bash -c "
+    set -euo pipefail
+    cd '$WSL_PATH'
+
+    # Ensure Rust is installed in WSL
+    if ! command -v cargo &> /dev/null; then
+      echo 'Installing Rust...'
+      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      source \$HOME/.cargo/env
+    fi
+
+    echo 'Rebuilding native modules for Linux...'
+    rm -rf node_modules
+    yarn install --immutable
+    yarn tauri build
+  "
 else
-  echo "⚠️  Not in WSL. Skipping Linux build."
-  echo "Run this script from WSL to build Linux, or manually upload Linux artifacts."
+  echo "⚠️  Not on Windows/WSL. Skipping Linux build."
+  echo "Build on Windows or WSL, or manually upload Linux artifacts."
 fi
 
 echo ""
