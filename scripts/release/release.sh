@@ -171,11 +171,10 @@ echo "PHASE 6: Restore node_modules and commit version changes"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-# Reinstall node_modules (was deleted for Linux build)
-if ! [[ -d "node_modules" ]]; then
-  echo "Reinstalling node_modules..."
-  yarn install --immutable
-fi
+# Clean reinstall node_modules (ensure Windows bindings for git hooks)
+echo "Reinstalling node_modules for Windows..."
+rm -rf node_modules
+yarn install --immutable
 
 if [[ "$CURRENT_VERSION" != "$VERSION_NUM" ]]; then
   echo "Staging version files..."
