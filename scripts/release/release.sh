@@ -160,13 +160,19 @@ else
 fi
 
 # ============================================================================
-# PHASE 6: Commit version changes (only if builds succeeded)
+# PHASE 6: Restore node_modules and commit version changes
 # ============================================================================
 echo ""
 echo "════════════════════════════════════════════════════════════════════════════════"
-echo "PHASE 6: Commit version changes"
+echo "PHASE 6: Restore node_modules and commit version changes"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
+
+# Reinstall node_modules (was deleted for Linux build)
+if ! [[ -d "node_modules" ]]; then
+  echo "Reinstalling node_modules..."
+  yarn install --immutable
+fi
 
 if [[ "$CURRENT_VERSION" != "$VERSION_NUM" ]]; then
   echo "Staging version files..."
