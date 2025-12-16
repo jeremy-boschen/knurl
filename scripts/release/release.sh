@@ -203,18 +203,36 @@ echo "PHASE 7: Collect and upload artifacts"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-echo "Collecting artifacts..."
+echo "Collecting raw artifacts..."
 mkdir -p release-artifacts
+
+# Copy raw artifacts
 find src-tauri/target/release/bundle -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.appimage" -o -name "*.deb" -o -name "*.dmg" \) -exec cp {} release-artifacts/ \;
 
+# Create zipped versions
+echo "Creating zipped artifacts..."
+for file in release-artifacts/*; do
+  if [[ -f "$file" ]]; then
+    base=$(basename "$file")
+    echo "  Zipping $base..."
+    zip -j "release-artifacts/${base}.zip" "$file" > /dev/null
+  fi
+done
+
 echo ""
-echo "Artifacts:"
+echo "Artifacts to upload:"
 ls -lh release-artifacts/
 
 echo ""
 echo "Creating GitHub Release: $VERSION"
-gh release create "$VERSION" \
-  release-artifacts/* \
+
+# Build list of files to upload
+artifact_files=()
+for file in release-artifacts/*; do
+  artifact_files+=("$file")
+done
+
+gh release create "$VERSION" "${artifact_files[@]}" \
   --draft \
   --title "$VERSION" \
   --notes "See the assets to download this version and install."
