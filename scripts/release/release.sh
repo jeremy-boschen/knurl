@@ -22,8 +22,6 @@ cleanup_on_failure() {
 
 trap cleanup_on_failure ERR
 
-CURRENT_DIR="$(pwd)"
-
 # ============================================================================
 # PHASE 1: Validation
 # ============================================================================
@@ -114,7 +112,10 @@ if grep -qi microsoft /proc/version &> /dev/null; then
     source $HOME/.cargo/env
   fi
 
-  rm -rf node_modules
+  rm -rf node_modules 2>/dev/null || {
+    echo "⚠️  Cleaning node_modules failed, retrying with sudo..."
+    sudo rm -rf node_modules
+  }
   yarn install --immutable
   yarn tauri build
 
@@ -130,10 +131,19 @@ elif command -v wsl.exe &> /dev/null; then
       source \$HOME/.cargo/env
     fi
 
-    rm -rf node_modules
+    # Clean node_modules (may fail due to Windows lock, try sudo if needed)
+    rm -rf node_modules 2>/dev/null || {
+      echo '⚠️  Cleaning node_modules failed, retrying with sudo...'
+      sudo rm -rf node_modules || true
+    }
+
     yarn install --immutable
     yarn tauri build
-  "
+  " || return_code=$?
+
+  if [[ ${return_code:-0} -ne 0 ]]; then
+    exit $return_code
+  fi
 
 else
   echo "⚠️  Not on Windows/WSL. Skipping Linux build."
