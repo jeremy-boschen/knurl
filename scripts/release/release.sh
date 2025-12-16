@@ -206,17 +206,24 @@ echo ""
 echo "Collecting artifacts..."
 mkdir -p release-artifacts
 
-# Copy bundled installers/packages
-find src-tauri/target/release/bundle -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.appimage" -o -name "*.deb" -o -name "*.dmg" \) -exec cp {} release-artifacts/ \;
-
-# Copy portable binaries
+# Portable binaries
 echo "Collecting portable binaries..."
-if [[ -f "src-tauri/target/release/knurl.exe" ]]; then
-  cp "src-tauri/target/release/knurl.exe" "release-artifacts/knurl-portable.exe"
-fi
-if [[ -f "src-tauri/target/release/knurl" ]]; then
-  cp "src-tauri/target/release/knurl" "release-artifacts/knurl-portable"
-fi
+[[ -f "src-tauri/target/release/knurl.exe" ]] && cp "src-tauri/target/release/knurl.exe" "release-artifacts/knurl-portable.exe"
+[[ -f "src-tauri/target/release/knurl" ]] && cp "src-tauri/target/release/knurl" "release-artifacts/knurl-portable"
+
+# Windows installers
+echo "Collecting Windows installers..."
+[[ -f "src-tauri/target/release/bundle/nsis"/*.exe ]] && cp "src-tauri/target/release/bundle/nsis"/*.exe release-artifacts/
+[[ -f "src-tauri/target/release/bundle/msi"/*.msi ]] && cp "src-tauri/target/release/bundle/msi"/*.msi release-artifacts/
+
+# Linux packages
+echo "Collecting Linux packages..."
+[[ -f "src-tauri/target/release/bundle/appimage"/*.AppImage ]] && cp "src-tauri/target/release/bundle/appimage"/*.AppImage release-artifacts/
+[[ -f "src-tauri/target/release/bundle/deb"/*.deb ]] && cp "src-tauri/target/release/bundle/deb"/*.deb release-artifacts/
+
+# macOS (if built)
+echo "Collecting macOS packages..."
+[[ -f "src-tauri/target/release/bundle/dmg"/*.dmg ]] && cp "src-tauri/target/release/bundle/dmg"/*.dmg release-artifacts/
 
 # Create zipped versions
 echo "Creating zipped artifacts..."
