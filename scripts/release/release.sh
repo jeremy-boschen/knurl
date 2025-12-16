@@ -1,29 +1,42 @@
 #!/bin/bash
 set -euo pipefail
 
-# Release script - builds Windows + Linux locally, uploads to GitHub
+# Release script - bumps version, tags repo, builds Windows + Linux, uploads to GitHub
 
 if [[ $# -ne 1 ]]; then
-  echo "Usage: bash scripts/release.sh <version>"
-  echo "Example: bash scripts/release.sh v0.1.8"
+  echo "Usage: bash scripts/release/release.sh <major|minor|patch>"
+  echo "Example: bash scripts/release/release.sh patch"
   exit 1
 fi
 
-VERSION="$1"
+RELEASE_TYPE="$1"
 
-# Validate version format
-if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "❌ Invalid version format: $VERSION"
-  echo "Expected format: v0.1.8"
+# Validate release type
+if ! [[ "$RELEASE_TYPE" =~ ^(major|minor|patch)$ ]]; then
+  echo "❌ Invalid release type: $RELEASE_TYPE"
+  echo "Expected one of: major, minor, patch"
   exit 1
 fi
 
-echo "📦 Building release: $VERSION"
+echo "📦 Preparing $RELEASE_TYPE release"
 echo ""
 
-# Clean previous builds
-echo "🧹 Cleaning previous builds..."
-yarn build:clean
+# Update version and commit
+echo "🔢 Updating version..."
+node scripts/release/update-version.mjs "$RELEASE_TYPE"
+
+# Get the new version from package.json
+VERSION="v$(grep '"version"' package.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')"
+echo "New version: $VERSION"
+echo ""
+
+# Create git tag
+echo "🏷️  Creating tag: $VERSION"
+git tag "$VERSION"
+
+echo ""
+echo "🧹 Cleaning build artifacts..."
+yarn clean
 
 # Build for Windows
 echo "🪟 Building for Windows..."
@@ -33,10 +46,34 @@ yarn tauri build
 echo "🐧 Building for Linux..."
 if command -v wsl.exe &> /dev/null; then
   # Running on Windows, invoke WSL
-  wsl.exe bash -c "cd '$PWD' && rm -rf node_modules && yarn install --immutable && yarn tauri build"
+  wsl.exe bash -c "
+    set -euo pipefail
+    cd '$PWD'
+
+    # Ensure Rust is installed in WSL
+    if ! command -v cargo &> /dev/null; then
+      echo 'Installing Rust...'
+      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      source \$HOME/.cargo/env
+    fi
+
+    # Rebuild native modules for Linux platform
+    echo 'Rebuilding native modules for Linux...'
+    rm -rf node_modules
+    yarn install --immutable
+    yarn tauri build
+  "
 elif grep -qi microsoft /proc/version &> /dev/null; then
   # Already in WSL - rebuild native modules for Linux platform
   echo "Rebuilding native modules for Linux..."
+
+  # Ensure Rust is installed in WSL
+  if ! command -v cargo &> /dev/null; then
+    echo "Installing Rust..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    source \$HOME/.cargo/env
+  fi
+
   rm -rf node_modules
   yarn install --immutable
   yarn tauri build
