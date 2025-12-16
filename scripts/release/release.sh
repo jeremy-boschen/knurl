@@ -12,16 +12,6 @@ fi
 
 VERSION="$1"
 
-# Helper: convert Windows path to WSL path
-# e.g., C:\Users\name\repo -> /mnt/c/Users/name/repo
-windows_to_wsl_path() {
-  local win_path="$1"
-  local unix_path="${win_path//\\/\/}"
-  local drive="${unix_path:0:1}"
-  local rest="${unix_path:2}"
-  echo "/mnt/${drive,,}${rest}"
-}
-
 # Cleanup on failure: restore git state
 cleanup_on_failure() {
   echo ""
@@ -92,7 +82,7 @@ echo "PHASE 3: Clean build artifacts"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-yarn clean
+yarn build:clean
 
 # ============================================================================
 # PHASE 4: Build for Windows
@@ -131,10 +121,8 @@ if grep -qi microsoft /proc/version &> /dev/null; then
 elif command -v wsl.exe &> /dev/null; then
   # Running on Windows, invoke WSL
   echo "Invoking WSL..."
-  WSL_PATH="$(windows_to_wsl_path "$CURRENT_DIR")"
   wsl.exe bash -c "
     set -euo pipefail
-    cd '$WSL_PATH'
 
     if ! command -v cargo &> /dev/null; then
       echo 'Installing Rust...'
