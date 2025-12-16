@@ -108,6 +108,7 @@ echo "PHASE 4: Build for Windows"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
+yarn install --immutable
 yarn tauri build
 
 echo "Collecting Windows artifacts..."
