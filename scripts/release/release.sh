@@ -99,7 +99,7 @@ yarn tauri build
 echo "Collecting Windows artifacts..."
 mkdir -p dist
 cp "src-tauri/target/release/knurl.exe" "dist/knurl-${VERSION_NUM}-x64.exe"
-cp "src-tauri/target/release/bundle/nsis/Knurl_${VERSION_NUM}_x64-setup.exe" "dist/"
+cp "src-tauri/target/release/bundle/nsis/knurl_${VERSION_NUM}_x64-setup.exe" "dist/"
 
 # ============================================================================
 # PHASE 5: Build for Linux
