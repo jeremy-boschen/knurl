@@ -98,7 +98,7 @@ yarn tauri build
 
 echo "Collecting Windows artifacts..."
 mkdir -p dist
-cp "src-tauri/target/release/knurl.exe" "dist/knurl-portable-${VERSION_NUM}-x64.exe"
+cp "src-tauri/target/release/knurl.exe" "dist/knurl-${VERSION_NUM}-x64.exe"
 cp "src-tauri/target/release/bundle/nsis/Knurl_${VERSION_NUM}_x64-setup.exe" "dist/"
 
 # ============================================================================
@@ -133,7 +133,7 @@ if grep -qi microsoft /proc/version &> /dev/null; then
   yarn tauri build
 
   echo "Collecting Linux artifacts..."
-  cp "src-tauri/target/release/knurl" "dist/knurl-portable-${VERSION_NUM}-x64"
+  cp "src-tauri/target/release/knurl" "dist/knurl-${VERSION_NUM}-x64"
   cp "src-tauri/target/release/bundle/appimage/knurl_${VERSION_NUM}_x64.AppImage" "dist/"
   cp "src-tauri/target/release/bundle/deb/knurl_${VERSION_NUM}_amd64.deb" "dist/"
 
@@ -169,7 +169,7 @@ elif command -v wsl.exe &> /dev/null; then
   fi
 
   echo "Collecting Linux artifacts..."
-  cp "src-tauri/target/release/knurl" "dist/knurl-portable-${VERSION_NUM}-x64"
+  cp "src-tauri/target/release/knurl" "dist/knurl-${VERSION_NUM}-x64"
   cp "src-tauri/target/release/bundle/appimage/knurl_${VERSION_NUM}_x64.AppImage" "dist/"
   cp "src-tauri/target/release/bundle/deb/knurl_${VERSION_NUM}_amd64.deb" "dist/"
 
