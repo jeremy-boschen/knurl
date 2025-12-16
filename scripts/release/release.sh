@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-# Release script - sets version, tags repo, builds Windows + Linux, uploads to GitHub
+# Release script - sets version, builds Windows + Linux, uploads to GitHub
+# Version changes are atomic: either fully committed or fully reverted
 
 if [[ $# -ne 1 ]]; then
   echo "Usage: bash scripts/release/release.sh <version>"
@@ -15,92 +16,108 @@ VERSION="$1"
 # e.g., C:\Users\name\repo -> /mnt/c/Users/name/repo
 windows_to_wsl_path() {
   local win_path="$1"
-  # Convert backslashes to forward slashes
   local unix_path="${win_path//\\/\/}"
-  # Extract drive letter and rest (e.g., C:/Users/... -> C and /Users/...)
   local drive="${unix_path:0:1}"
   local rest="${unix_path:2}"
-  # Convert to /mnt/X/path format with lowercase drive letter
   echo "/mnt/${drive,,}${rest}"
 }
 
-# Get current directory
+# Cleanup on failure: restore git state
+cleanup_on_failure() {
+  echo ""
+  echo "❌ Release failed. Restoring git state..."
+  git checkout package.json src-tauri/Cargo.toml 2>/dev/null || true
+  exit 1
+}
+
+trap cleanup_on_failure ERR
+
 CURRENT_DIR="$(pwd)"
 
-# Validate version format
+# ============================================================================
+# PHASE 1: Validation
+# ============================================================================
+echo ""
+echo "════════════════════════════════════════════════════════════════════════════════"
+echo "PHASE 1: Validation"
+echo "════════════════════════════════════════════════════════════════════════════════"
+echo ""
+
 if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "❌ Invalid version format: $VERSION"
   echo "Expected format: vX.Y.Z (e.g., v0.1.8)"
   exit 1
 fi
 
-# Extract version without 'v' prefix
 VERSION_NUM="${VERSION#v}"
-
-# Get current version
 CURRENT_VERSION="$(grep '"version"' package.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')"
 
-echo "📦 Release version confirmation"
-echo ""
-echo "Current: $CURRENT_VERSION"
-echo "New:     $VERSION_NUM"
+echo "Current version: $CURRENT_VERSION"
+echo "New version:     $VERSION_NUM"
 echo ""
 
-# Prompt for confirmation
 read -p "Continue with this release? (y/n) " -n 1 -r
 echo ""
 
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
   echo "Release cancelled."
-  exit 1
+  exit 0
 fi
 
+# ============================================================================
+# PHASE 2: Update version files (not committed yet)
+# ============================================================================
+echo ""
+echo "════════════════════════════════════════════════════════════════════════════════"
+echo "PHASE 2: Update version files"
+echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-# Check if version is already set
 if [[ "$CURRENT_VERSION" == "$VERSION_NUM" ]]; then
-  echo "ℹ️  Version is already $VERSION_NUM. Skipping version update."
+  echo "ℹ️  Version is already $VERSION_NUM"
 else
-  echo "🔢 Updating version..."
-
-  # Update package.json
+  echo "Updating package.json..."
   sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION_NUM\"/" package.json
 
-  # Update Cargo.toml
+  echo "Updating Cargo.toml..."
   sed -i "s/^version = \"[^\"]*\"/version = \"$VERSION_NUM\"/" src-tauri/Cargo.toml
-
-  # Commit version changes
-  git add package.json src-tauri/Cargo.toml
-  git commit -m "chore(release): bump version to $VERSION_NUM"
-
-  echo "Version updated: $VERSION_NUM"
 fi
 
+# ============================================================================
+# PHASE 3: Clean build artifacts
+# ============================================================================
+echo ""
+echo "════════════════════════════════════════════════════════════════════════════════"
+echo "PHASE 3: Clean build artifacts"
+echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-# Create git tag
-echo "🏷️  Creating tag: $VERSION"
-if git rev-parse "$VERSION" &>/dev/null; then
-  echo "⚠️  Tag $VERSION already exists. Skipping tag creation."
-else
-  git tag "$VERSION"
-fi
-
-echo ""
-echo "🧹 Cleaning build artifacts..."
 yarn clean
 
-# Build for Windows
-echo "🪟 Building for Windows..."
+# ============================================================================
+# PHASE 4: Build for Windows
+# ============================================================================
+echo ""
+echo "════════════════════════════════════════════════════════════════════════════════"
+echo "PHASE 4: Build for Windows"
+echo "════════════════════════════════════════════════════════════════════════════════"
+echo ""
+
 yarn tauri build
 
-# Build for Linux
-echo "🐧 Building for Linux..."
-if grep -qi microsoft /proc/version &> /dev/null; then
-  # Already in WSL - rebuild native modules for Linux platform
-  echo "Rebuilding native modules for Linux..."
+# ============================================================================
+# PHASE 5: Build for Linux
+# ============================================================================
+echo ""
+echo "════════════════════════════════════════════════════════════════════════════════"
+echo "PHASE 5: Build for Linux"
+echo "════════════════════════════════════════════════════════════════════════════════"
+echo ""
 
-  # Ensure Rust is installed in WSL
+if grep -qi microsoft /proc/version &> /dev/null; then
+  # Already in WSL
+  echo "Building in WSL..."
+
   if ! command -v cargo &> /dev/null; then
     echo "Installing Rust..."
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -110,51 +127,92 @@ if grep -qi microsoft /proc/version &> /dev/null; then
   rm -rf node_modules
   yarn install --immutable
   yarn tauri build
+
 elif command -v wsl.exe &> /dev/null; then
-  # Running on Windows, invoke WSL with converted path
+  # Running on Windows, invoke WSL
+  echo "Invoking WSL..."
   WSL_PATH="$(windows_to_wsl_path "$CURRENT_DIR")"
   wsl.exe bash -c "
     set -euo pipefail
     cd '$WSL_PATH'
 
-    # Ensure Rust is installed in WSL
     if ! command -v cargo &> /dev/null; then
       echo 'Installing Rust...'
       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
       source \$HOME/.cargo/env
     fi
 
-    echo 'Rebuilding native modules for Linux...'
     rm -rf node_modules
     yarn install --immutable
     yarn tauri build
   "
+
 else
   echo "⚠️  Not on Windows/WSL. Skipping Linux build."
-  echo "Build on Windows or WSL, or manually upload Linux artifacts."
 fi
 
+# ============================================================================
+# PHASE 6: Commit version changes (only if builds succeeded)
+# ============================================================================
 echo ""
-echo "📂 Collecting artifacts..."
+echo "════════════════════════════════════════════════════════════════════════════════"
+echo "PHASE 6: Commit version changes"
+echo "════════════════════════════════════════════════════════════════════════════════"
+echo ""
+
+if [[ "$CURRENT_VERSION" != "$VERSION_NUM" ]]; then
+  echo "Staging version files..."
+  git add package.json src-tauri/Cargo.toml
+
+  echo "Committing version change..."
+  git commit -m "chore(release): bump version to $VERSION_NUM"
+fi
+
+echo "Creating git tag: $VERSION"
+if git rev-parse "$VERSION" &>/dev/null; then
+  echo "⚠️  Tag $VERSION already exists. Skipping tag creation."
+else
+  git tag "$VERSION"
+fi
+
+# ============================================================================
+# PHASE 7: Collect and upload artifacts
+# ============================================================================
+echo ""
+echo "════════════════════════════════════════════════════════════════════════════════"
+echo "PHASE 7: Collect and upload artifacts"
+echo "════════════════════════════════════════════════════════════════════════════════"
+echo ""
+
+echo "Collecting artifacts..."
 mkdir -p release-artifacts
 find src-tauri/target/release/bundle -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.appimage" -o -name "*.deb" -o -name "*.dmg" \) -exec cp {} release-artifacts/ \;
 
 echo ""
-echo "📋 Artifacts collected:"
+echo "Artifacts:"
 ls -lh release-artifacts/
 
 echo ""
-echo "🚀 Creating GitHub Release: $VERSION"
+echo "Creating GitHub Release: $VERSION"
 gh release create "$VERSION" \
   release-artifacts/* \
   --draft \
   --title "$VERSION" \
   --notes "See the assets to download this version and install."
 
+# ============================================================================
+# PHASE 8: Cleanup
+# ============================================================================
 echo ""
-echo "✅ Release created as draft: $VERSION"
-echo "Review at: https://github.com/jeremy-boschen/knurl/releases/tag/$VERSION"
-echo "Publish when ready."
+echo "════════════════════════════════════════════════════════════════════════════════"
+echo "PHASE 8: Cleanup"
+echo "════════════════════════════════════════════════════════════════════════════════"
+echo ""
 
-# Cleanup
 rm -rf release-artifacts
+
+echo ""
+echo "✅ Release complete: $VERSION"
+echo "Review at: https://github.com/jeremy-boschen/knurl/releases/tag/$VERSION"
+echo "Publish the draft release when ready."
+echo ""
