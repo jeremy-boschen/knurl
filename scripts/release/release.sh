@@ -72,15 +72,18 @@ else
 fi
 
 # ============================================================================
-# PHASE 3: Clean build artifacts
+# PHASE 3: Clean and reinstall
 # ============================================================================
 echo ""
 echo "════════════════════════════════════════════════════════════════════════════════"
-echo "PHASE 3: Clean build artifacts"
+echo "PHASE 3: Clean and reinstall"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
 yarn build:clean
+
+echo "Reinstalling dependencies for Windows..."
+yarn install --immutable
 
 # ============================================================================
 # PHASE 4: Build for Windows
