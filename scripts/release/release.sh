@@ -106,6 +106,11 @@ if grep -qi microsoft /proc/version &> /dev/null; then
   # Already in WSL
   echo "Building in WSL..."
 
+  # Source cargo env if it exists, then check for rust
+  if [[ -f "$HOME/.cargo/env" ]]; then
+    source "$HOME/.cargo/env"
+  fi
+
   if ! command -v cargo &> /dev/null; then
     echo "Installing Rust..."
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -124,6 +129,11 @@ elif command -v wsl.exe &> /dev/null; then
   echo "Invoking WSL..."
   wsl.exe bash -c "
     set -euo pipefail
+
+    # Source cargo env if it exists, then check for rust
+    if [[ -f \"\$HOME/.cargo/env\" ]]; then
+      source \"\$HOME/.cargo/env\"
+    fi
 
     if ! command -v cargo &> /dev/null; then
       echo 'Installing Rust...'
