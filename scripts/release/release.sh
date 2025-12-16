@@ -78,44 +78,25 @@ yarn clean
 echo "🪟 Building for Windows..."
 yarn tauri build
 
-# Build for Linux (in WSL)
+# Build for Linux (WSL only)
 echo "🐧 Building for Linux..."
-if command -v wsl.exe &> /dev/null; then
-  # Running on Windows, invoke WSL
-  wsl.exe bash -c "
-    set -euo pipefail
-    cd '$PWD'
-
-    # Ensure Rust is installed in WSL
-    if ! command -v cargo &> /dev/null; then
-      echo 'Installing Rust...'
-      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-      source \$HOME/.cargo/env
-    fi
-
-    # Rebuild native modules for Linux platform
-    echo 'Rebuilding native modules for Linux...'
-    rm -rf node_modules
-    yarn install --immutable
-    yarn tauri build
-  "
-elif grep -qi microsoft /proc/version &> /dev/null; then
-  # Already in WSL - rebuild native modules for Linux platform
+if grep -qi microsoft /proc/version &> /dev/null; then
+  # In WSL - rebuild native modules for Linux platform
   echo "Rebuilding native modules for Linux..."
 
   # Ensure Rust is installed in WSL
   if ! command -v cargo &> /dev/null; then
     echo "Installing Rust..."
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    source \$HOME/.cargo/env
+    source $HOME/.cargo/env
   fi
 
   rm -rf node_modules
   yarn install --immutable
   yarn tauri build
 else
-  echo "⚠️  Not on Windows/WSL. Skipping Linux build."
-  echo "Build on WSL and re-run this script, or manually upload Linux artifacts."
+  echo "⚠️  Not in WSL. Skipping Linux build."
+  echo "Run this script from WSL to build Linux, or manually upload Linux artifacts."
 fi
 
 echo ""
