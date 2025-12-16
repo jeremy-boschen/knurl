@@ -61,23 +61,17 @@ echo "PHASE 2: Update version files"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-if [[ "$CURRENT_VERSION" == "$VERSION_NUM" ]]; then
-  echo "ℹ️  Version is already $VERSION_NUM"
-else
-  echo "Updating package.json..."
-  sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION_NUM\"/" package.json
+echo "Setting version to $VERSION_NUM..."
+sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION_NUM\"/" package.json
+sed -i "s/^version = \"[^\"]*\"/version = \"$VERSION_NUM\"/" src-tauri/Cargo.toml
 
-  echo "Updating Cargo.toml..."
-  sed -i "s/^version = \"[^\"]*\"/version = \"$VERSION_NUM\"/" src-tauri/Cargo.toml
-
-  # Verify the update worked
-  CARGO_VERSION=$(grep "^version" src-tauri/Cargo.toml | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
-  if [[ "$CARGO_VERSION" != "$VERSION_NUM" ]]; then
-    echo "❌ Failed to update Cargo.toml version. Expected $VERSION_NUM, got $CARGO_VERSION"
-    exit 1
-  fi
-  echo "✓ Version updated to $VERSION_NUM"
+# Verify the update worked
+CARGO_VERSION=$(grep "^version" src-tauri/Cargo.toml | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+if [[ "$CARGO_VERSION" != "$VERSION_NUM" ]]; then
+  echo "❌ Failed to update Cargo.toml version. Expected $VERSION_NUM, got $CARGO_VERSION"
+  exit 1
 fi
+echo "✓ Version set to $VERSION_NUM"
 
 # ============================================================================
 # PHASE 3: Clean and reinstall
@@ -224,13 +218,11 @@ echo "Reinstalling node_modules for Windows..."
 rm -rf node_modules
 yarn install --immutable
 
-if [[ "$CURRENT_VERSION" != "$VERSION_NUM" ]]; then
-  echo "Staging version files..."
-  git add package.json src-tauri/Cargo.toml
+echo "Staging version files..."
+git add package.json src-tauri/Cargo.toml
 
-  echo "Committing version change..."
-  git commit -m "chore(release): bump version to $VERSION_NUM"
-fi
+echo "Committing version change..."
+git commit -m "chore(release): bump version to $VERSION_NUM"
 
 echo "Creating git tag: $VERSION"
 if git rev-parse "$VERSION" &>/dev/null; then
