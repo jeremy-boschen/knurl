@@ -1,11 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
-# Release script - builds Windows + Linux locally, uploads to GitHub
+# Release script - sets version, tags repo, builds Windows + Linux, uploads to GitHub
 
 if [[ $# -ne 1 ]]; then
-  echo "Usage: bash scripts/release.sh <version>"
-  echo "Example: bash scripts/release.sh v0.1.8"
+  echo "Usage: bash scripts/release/release.sh <version>"
+  echo "Example: bash scripts/release/release.sh v0.1.8"
   exit 1
 fi
 
@@ -14,35 +14,89 @@ VERSION="$1"
 # Validate version format
 if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "❌ Invalid version format: $VERSION"
-  echo "Expected format: v0.1.8"
+  echo "Expected format: vX.Y.Z (e.g., v0.1.8)"
   exit 1
 fi
 
-echo "📦 Building release: $VERSION"
+# Extract version without 'v' prefix
+VERSION_NUM="${VERSION#v}"
+
+# Get current version
+CURRENT_VERSION="$(grep '"version"' package.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')"
+
+echo "📦 Release version confirmation"
+echo ""
+echo "Current: $CURRENT_VERSION"
+echo "New:     $VERSION_NUM"
 echo ""
 
-# Clean previous builds
-echo "🧹 Cleaning previous builds..."
-yarn build:clean
+# Prompt for confirmation
+read -p "Continue with this release? (y/n) " -n 1 -r
+echo ""
+
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+  echo "Release cancelled."
+  exit 1
+fi
+
+echo ""
+
+# Check if version is already set
+if [[ "$CURRENT_VERSION" == "$VERSION_NUM" ]]; then
+  echo "ℹ️  Version is already $VERSION_NUM. Skipping version update."
+else
+  echo "🔢 Updating version..."
+
+  # Update package.json
+  sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION_NUM\"/" package.json
+
+  # Update Cargo.toml
+  sed -i "s/^version = \"[^\"]*\"/version = \"$VERSION_NUM\"/" src-tauri/Cargo.toml
+
+  # Commit version changes
+  git add package.json src-tauri/Cargo.toml
+  git commit -m "chore(release): bump version to $VERSION_NUM"
+
+  echo "Version updated: $VERSION_NUM"
+fi
+
+echo ""
+
+# Create git tag
+echo "🏷️  Creating tag: $VERSION"
+if git rev-parse "$VERSION" &>/dev/null; then
+  echo "⚠️  Tag $VERSION already exists. Skipping tag creation."
+else
+  git tag "$VERSION"
+fi
+
+echo ""
+echo "🧹 Cleaning build artifacts..."
+yarn clean
 
 # Build for Windows
 echo "🪟 Building for Windows..."
 yarn tauri build
 
-# Build for Linux (in WSL)
+# Build for Linux (WSL only)
 echo "🐧 Building for Linux..."
-if command -v wsl.exe &> /dev/null; then
-  # Running on Windows, invoke WSL
-  wsl.exe bash -c "cd '$PWD' && rm -rf node_modules && yarn install --immutable && yarn tauri build"
-elif grep -qi microsoft /proc/version &> /dev/null; then
-  # Already in WSL - rebuild native modules for Linux platform
+if grep -qi microsoft /proc/version &> /dev/null; then
+  # In WSL - rebuild native modules for Linux platform
   echo "Rebuilding native modules for Linux..."
+
+  # Ensure Rust is installed in WSL
+  if ! command -v cargo &> /dev/null; then
+    echo "Installing Rust..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    source $HOME/.cargo/env
+  fi
+
   rm -rf node_modules
   yarn install --immutable
   yarn tauri build
 else
-  echo "⚠️  Not on Windows/WSL. Skipping Linux build."
-  echo "Build on WSL and re-run this script, or manually upload Linux artifacts."
+  echo "⚠️  Not in WSL. Skipping Linux build."
+  echo "Run this script from WSL to build Linux, or manually upload Linux artifacts."
 fi
 
 echo ""
