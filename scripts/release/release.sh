@@ -1,38 +1,74 @@
 #!/bin/bash
 set -euo pipefail
 
-# Release script - bumps version, tags repo, builds Windows + Linux, uploads to GitHub
+# Release script - sets version, tags repo, builds Windows + Linux, uploads to GitHub
 
 if [[ $# -ne 1 ]]; then
-  echo "Usage: bash scripts/release/release.sh <major|minor|patch>"
-  echo "Example: bash scripts/release/release.sh patch"
+  echo "Usage: bash scripts/release/release.sh <version>"
+  echo "Example: bash scripts/release/release.sh v0.1.8"
   exit 1
 fi
 
-RELEASE_TYPE="$1"
+VERSION="$1"
 
-# Validate release type
-if ! [[ "$RELEASE_TYPE" =~ ^(major|minor|patch)$ ]]; then
-  echo "❌ Invalid release type: $RELEASE_TYPE"
-  echo "Expected one of: major, minor, patch"
+# Validate version format
+if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "❌ Invalid version format: $VERSION"
+  echo "Expected format: vX.Y.Z (e.g., v0.1.8)"
   exit 1
 fi
 
-echo "📦 Preparing $RELEASE_TYPE release"
+# Extract version without 'v' prefix
+VERSION_NUM="${VERSION#v}"
+
+# Get current version
+CURRENT_VERSION="$(grep '"version"' package.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')"
+
+echo "📦 Release version confirmation"
+echo ""
+echo "Current: $CURRENT_VERSION"
+echo "New:     $VERSION_NUM"
 echo ""
 
-# Update version and commit
-echo "🔢 Updating version..."
-node scripts/release/update-version.mjs "$RELEASE_TYPE"
+# Prompt for confirmation
+read -p "Continue with this release? (y/n) " -n 1 -r
+echo ""
 
-# Get the new version from package.json
-VERSION="v$(grep '"version"' package.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')"
-echo "New version: $VERSION"
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+  echo "Release cancelled."
+  exit 1
+fi
+
+echo ""
+
+# Check if version is already set
+if [[ "$CURRENT_VERSION" == "$VERSION_NUM" ]]; then
+  echo "ℹ️  Version is already $VERSION_NUM. Skipping version update."
+else
+  echo "🔢 Updating version..."
+
+  # Update package.json
+  sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION_NUM\"/" package.json
+
+  # Update Cargo.toml
+  sed -i "s/^version = \"[^\"]*\"/version = \"$VERSION_NUM\"/" src-tauri/Cargo.toml
+
+  # Commit version changes
+  git add package.json src-tauri/Cargo.toml
+  git commit -m "chore(release): bump version to $VERSION_NUM"
+
+  echo "Version updated: $VERSION_NUM"
+fi
+
 echo ""
 
 # Create git tag
 echo "🏷️  Creating tag: $VERSION"
-git tag "$VERSION"
+if git rev-parse "$VERSION" &>/dev/null; then
+  echo "⚠️  Tag $VERSION already exists. Skipping tag creation."
+else
+  git tag "$VERSION"
+fi
 
 echo ""
 echo "🧹 Cleaning build artifacts..."
