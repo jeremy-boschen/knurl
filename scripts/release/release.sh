@@ -86,10 +86,15 @@ echo "PHASE 3: Clean and reinstall"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-yarn build:clean
+echo "Cleaning build artifacts..."
+rm -rf dist dist-ssr
+rm -rf target src-tauri/target
+rm -rf coverage .nyc_output .wdio test-results
+rm -rf .eslintcache .prettierrc.cache scripts/build/.compiled
+rm -rf documentation/.astro documentation/dist
 
-echo "Clearing yarn cache..."
-rm -rf .yarn/cache
+echo "Clearing yarn cache and state..."
+rm -rf .yarn/cache .yarn/install-state.gz node_modules
 
 echo "Reinstalling dependencies for Windows..."
 yarn install --immutable
