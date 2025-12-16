@@ -78,25 +78,15 @@ fi
 echo "✓ Version set to $VERSION_NUM"
 
 # ============================================================================
-# PHASE 3: Clean and reinstall
+# PHASE 3: Install dependencies
 # ============================================================================
 echo ""
 echo "════════════════════════════════════════════════════════════════════════════════"
-echo "PHASE 3: Clean and reinstall"
+echo "PHASE 3: Install dependencies"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-echo "Cleaning build artifacts..."
-rm -rf dist dist-ssr
-rm -rf target src-tauri/target
-rm -rf coverage .nyc_output .wdio test-results
-rm -rf .eslintcache .prettierrc.cache scripts/build/.compiled
-rm -rf documentation/.astro documentation/dist
-
-echo "Clearing yarn cache and state..."
-rm -rf .yarn/cache .yarn/install-state.gz node_modules
-
-echo "Reinstalling dependencies for Windows..."
+echo "Installing dependencies..."
 yarn install --immutable
 
 # ============================================================================
@@ -107,6 +97,12 @@ echo "════════════════════════�
 echo "PHASE 4: Build for Windows"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
+
+echo "Cleaning Windows output directories..."
+rm -rf dist dist-ssr
+rm -rf target src-tauri/target
+rm -rf coverage .nyc_output .wdio test-results
+rm -rf .eslintcache .prettierrc.cache scripts/build/.compiled
 
 yarn install --immutable
 yarn tauri build
@@ -147,10 +143,11 @@ if grep -qi microsoft /proc/version &> /dev/null; then
     source $HOME/.cargo/env
   fi
 
-  rm -rf node_modules 2>/dev/null || {
-    echo "⚠️  Cleaning node_modules failed, retrying with sudo..."
-    sudo rm -rf node_modules
-  }
+  echo "Cleaning Linux output directories..."
+  rm -rf dist dist-ssr
+  rm -rf target src-tauri/target
+  rm -rf coverage .nyc_output .wdio test-results
+
   yarn install --immutable
   yarn tauri build
 
@@ -185,11 +182,10 @@ elif command -v wsl.exe &> /dev/null; then
       source \$HOME/.cargo/env
     fi
 
-    # Clean node_modules (may fail due to Windows lock, try sudo if needed)
-    rm -rf node_modules 2>/dev/null || {
-      echo '⚠️  Cleaning node_modules failed, retrying with sudo...'
-      sudo rm -rf node_modules || true
-    }
+    echo 'Cleaning Linux output directories...'
+    rm -rf dist dist-ssr
+    rm -rf target src-tauri/target
+    rm -rf coverage .nyc_output .wdio test-results
 
     yarn install --immutable
     yarn tauri build
