@@ -203,11 +203,20 @@ echo "PHASE 7: Collect and upload artifacts"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-echo "Collecting raw artifacts..."
+echo "Collecting artifacts..."
 mkdir -p release-artifacts
 
-# Copy raw artifacts
+# Copy bundled installers/packages
 find src-tauri/target/release/bundle -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.appimage" -o -name "*.deb" -o -name "*.dmg" \) -exec cp {} release-artifacts/ \;
+
+# Copy portable binaries
+echo "Collecting portable binaries..."
+if [[ -f "src-tauri/target/release/knurl.exe" ]]; then
+  cp "src-tauri/target/release/knurl.exe" "release-artifacts/knurl-portable.exe"
+fi
+if [[ -f "src-tauri/target/release/knurl" ]]; then
+  cp "src-tauri/target/release/knurl" "release-artifacts/knurl-portable"
+fi
 
 # Create zipped versions
 echo "Creating zipped artifacts..."
@@ -224,18 +233,28 @@ echo "Artifacts to upload:"
 ls -lh release-artifacts/
 
 echo ""
-echo "Creating GitHub Release: $VERSION"
 
-# Build list of files to upload
-artifact_files=()
-for file in release-artifacts/*; do
-  artifact_files+=("$file")
-done
-
-gh release create "$VERSION" "${artifact_files[@]}" \
-  --draft \
-  --title "$VERSION" \
-  --notes "See the assets to download this version and install."
+# Check if release already exists
+if gh release view "$VERSION" &>/dev/null; then
+  echo "Release $VERSION already exists. Uploading artifacts..."
+  # Build list of files to upload
+  artifact_files=()
+  for file in release-artifacts/*; do
+    artifact_files+=("$file")
+  done
+  gh release upload "$VERSION" "${artifact_files[@]}" --clobber
+else
+  echo "Creating GitHub Release: $VERSION"
+  # Build list of files to upload
+  artifact_files=()
+  for file in release-artifacts/*; do
+    artifact_files+=("$file")
+  done
+  gh release create "$VERSION" "${artifact_files[@]}" \
+    --draft \
+    --title "$VERSION" \
+    --notes "See the assets to download this version and install."
+fi
 
 # ============================================================================
 # PHASE 8: Cleanup
