@@ -69,6 +69,14 @@ else
 
   echo "Updating Cargo.toml..."
   sed -i "s/^version = \"[^\"]*\"/version = \"$VERSION_NUM\"/" src-tauri/Cargo.toml
+
+  # Verify the update worked
+  CARGO_VERSION=$(grep "^version" src-tauri/Cargo.toml | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+  if [[ "$CARGO_VERSION" != "$VERSION_NUM" ]]; then
+    echo "❌ Failed to update Cargo.toml version. Expected $VERSION_NUM, got $CARGO_VERSION"
+    exit 1
+  fi
+  echo "✓ Version updated to $VERSION_NUM"
 fi
 
 # ============================================================================
@@ -99,7 +107,14 @@ yarn tauri build
 echo "Collecting Windows artifacts..."
 mkdir -p dist
 cp "src-tauri/target/release/knurl.exe" "dist/knurl-${VERSION_NUM}-x64.exe"
-cp "src-tauri/target/release/bundle/nsis/knurl_${VERSION_NUM}_x64-setup.exe" "dist/"
+
+# Find the actual setup.exe that was built (version might differ)
+SETUP_EXE=$(ls -1 "src-tauri/target/release/bundle/nsis"/*_x64-setup.exe 2>/dev/null | head -1)
+if [[ -z "$SETUP_EXE" ]]; then
+  echo "❌ Could not find Windows installer (setup.exe)"
+  exit 1
+fi
+cp "$SETUP_EXE" "dist/"
 
 # ============================================================================
 # PHASE 5: Build for Linux
@@ -134,8 +149,17 @@ if grep -qi microsoft /proc/version &> /dev/null; then
 
   echo "Collecting Linux artifacts..."
   cp "src-tauri/target/release/knurl" "dist/knurl-${VERSION_NUM}-x64"
-  cp "src-tauri/target/release/bundle/appimage/knurl_${VERSION_NUM}_x64.AppImage" "dist/"
-  cp "src-tauri/target/release/bundle/deb/knurl_${VERSION_NUM}_amd64.deb" "dist/"
+
+  # Find actual appimage and deb files (version might differ)
+  APPIMAGE=$(ls -1 "src-tauri/target/release/bundle/appimage"/*.AppImage 2>/dev/null | head -1)
+  if [[ -n "$APPIMAGE" ]]; then
+    cp "$APPIMAGE" "dist/"
+  fi
+
+  DEB=$(ls -1 "src-tauri/target/release/bundle/deb"/*.deb 2>/dev/null | head -1)
+  if [[ -n "$DEB" ]]; then
+    cp "$DEB" "dist/"
+  fi
 
 elif command -v wsl.exe &> /dev/null; then
   # Running on Windows, invoke WSL
@@ -170,8 +194,17 @@ elif command -v wsl.exe &> /dev/null; then
 
   echo "Collecting Linux artifacts..."
   cp "src-tauri/target/release/knurl" "dist/knurl-${VERSION_NUM}-x64"
-  cp "src-tauri/target/release/bundle/appimage/knurl_${VERSION_NUM}_x64.AppImage" "dist/"
-  cp "src-tauri/target/release/bundle/deb/knurl_${VERSION_NUM}_amd64.deb" "dist/"
+
+  # Find actual appimage and deb files (version might differ)
+  APPIMAGE=$(ls -1 "src-tauri/target/release/bundle/appimage"/*.AppImage 2>/dev/null | head -1)
+  if [[ -n "$APPIMAGE" ]]; then
+    cp "$APPIMAGE" "dist/"
+  fi
+
+  DEB=$(ls -1 "src-tauri/target/release/bundle/deb"/*.deb 2>/dev/null | head -1)
+  if [[ -n "$DEB" ]]; then
+    cp "$DEB" "dist/"
+  fi
 
 else
   echo "⚠️  Not on Windows/WSL. Skipping Linux build."
