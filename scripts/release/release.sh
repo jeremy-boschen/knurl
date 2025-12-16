@@ -40,15 +40,9 @@ fi
 VERSION_NUM="${VERSION#v}"
 CURRENT_VERSION="$(grep '"version"' package.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')"
 
-echo "Current version in files: $CURRENT_VERSION"
-echo "Target version to set:    $VERSION_NUM"
+echo "Current version: $CURRENT_VERSION"
+echo "New version:     $VERSION_NUM"
 echo ""
-
-if [[ "$CURRENT_VERSION" == "$VERSION_NUM" ]]; then
-  echo "⚠️  NOTE: Current version already matches target version"
-  echo "         Script will re-set version to ensure consistency"
-  echo ""
-fi
 
 read -p "Continue with this release? (y/n) " -n 1 -r
 echo ""
@@ -68,66 +62,20 @@ echo "════════════════════════�
 echo ""
 
 echo "Setting version to $VERSION_NUM..."
-echo ""
-echo "DEBUG: Before update:"
-echo "  package.json version line:"
-grep '"version"' package.json | head -1
-echo "  Cargo.toml version line:"
-grep '^version' src-tauri/Cargo.toml | head -1
-echo "  tauri.conf.json version line:"
-grep '"version"' src-tauri/tauri.conf.json | head -1
-echo ""
-
-# Update package.json
-echo "DEBUG: Running sed for package.json..."
 sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION_NUM\"/" package.json
-
-# Update Cargo.toml
-echo "DEBUG: Running sed for Cargo.toml..."
 sed -i "s/^version = \"[^\"]*\"/version = \"$VERSION_NUM\"/" src-tauri/Cargo.toml
-
-# Update tauri.conf.json (critical for bundled installers)
-echo "DEBUG: Running sed for tauri.conf.json..."
 sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION_NUM\"/" src-tauri/tauri.conf.json
-
-echo ""
-echo "DEBUG: After update:"
-echo "  package.json version line:"
-grep '"version"' package.json | head -1
-echo "  Cargo.toml version line:"
-grep '^version' src-tauri/Cargo.toml | head -1
-echo "  tauri.conf.json version line:"
-grep '"version"' src-tauri/tauri.conf.json | head -1
-echo ""
 
 # Verify the updates worked
 PKG_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
 CARGO_VERSION=$(grep "^version" src-tauri/Cargo.toml | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
 TAURI_VERSION=$(grep '"version"' src-tauri/tauri.conf.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
 
-echo "DEBUG: Verification:"
-echo "  Expected version: $VERSION_NUM"
-echo "  package.json version: $PKG_VERSION"
-echo "  Cargo.toml version: $CARGO_VERSION"
-echo "  tauri.conf.json version: $TAURI_VERSION"
-echo ""
-
-if [[ "$PKG_VERSION" != "$VERSION_NUM" ]]; then
-  echo "❌ Failed to update package.json version. Expected $VERSION_NUM, got $PKG_VERSION"
+if [[ "$PKG_VERSION" != "$VERSION_NUM" ]] || [[ "$CARGO_VERSION" != "$VERSION_NUM" ]] || [[ "$TAURI_VERSION" != "$VERSION_NUM" ]]; then
+  echo "❌ Failed to update version files"
   exit 1
 fi
-
-if [[ "$CARGO_VERSION" != "$VERSION_NUM" ]]; then
-  echo "❌ Failed to update Cargo.toml version. Expected $VERSION_NUM, got $CARGO_VERSION"
-  exit 1
-fi
-
-if [[ "$TAURI_VERSION" != "$VERSION_NUM" ]]; then
-  echo "❌ Failed to update tauri.conf.json version. Expected $VERSION_NUM, got $TAURI_VERSION"
-  exit 1
-fi
-
-echo "✓ All version files updated to $VERSION_NUM"
+echo "✓ Version set to $VERSION_NUM"
 
 # ============================================================================
 # PHASE 3: Clean and reinstall
@@ -139,6 +87,9 @@ echo "════════════════════════�
 echo ""
 
 yarn build:clean
+
+echo "Clearing yarn cache..."
+rm -rf .yarn/cache
 
 echo "Reinstalling dependencies for Windows..."
 yarn install --immutable
@@ -156,15 +107,6 @@ yarn tauri build
 
 echo "Collecting Windows artifacts..."
 mkdir -p dist
-
-echo "DEBUG: Built executable version info:"
-if [[ -f "src-tauri/target/release/knurl.exe" ]]; then
-  ls -lh "src-tauri/target/release/knurl.exe"
-fi
-
-echo "DEBUG: Looking for installer in: src-tauri/target/release/bundle/nsis/"
-ls -lh "src-tauri/target/release/bundle/nsis/"*.exe 2>/dev/null || echo "  (no files found)"
-
 cp "src-tauri/target/release/knurl.exe" "dist/knurl-${VERSION_NUM}-x64.exe"
 
 # Find the actual setup.exe that was built (version might differ)
@@ -173,8 +115,6 @@ if [[ -z "$SETUP_EXE" ]]; then
   echo "❌ Could not find Windows installer (setup.exe)"
   exit 1
 fi
-
-echo "DEBUG: Found installer: $(basename "$SETUP_EXE")"
 cp "$SETUP_EXE" "dist/"
 
 # ============================================================================
