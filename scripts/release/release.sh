@@ -33,9 +33,12 @@ yarn tauri build
 echo "🐧 Building for Linux..."
 if command -v wsl.exe &> /dev/null; then
   # Running on Windows, invoke WSL
-  wsl.exe bash -c "cd '$PWD' && yarn tauri build"
+  wsl.exe bash -c "cd '$PWD' && rm -rf node_modules && yarn install --immutable && yarn tauri build"
 elif grep -qi microsoft /proc/version &> /dev/null; then
-  # Already in WSL
+  # Already in WSL - rebuild native modules for Linux platform
+  echo "Rebuilding native modules for Linux..."
+  rm -rf node_modules
+  yarn install --immutable
   yarn tauri build
 else
   echo "⚠️  Not on Windows/WSL. Skipping Linux build."
