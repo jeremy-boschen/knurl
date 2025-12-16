@@ -96,6 +96,11 @@ echo ""
 
 yarn tauri build
 
+echo "Collecting Windows artifacts..."
+mkdir -p dist
+cp "src-tauri/target/release/knurl.exe" "dist/knurl-portable.exe"
+cp "src-tauri/target/release/bundle/nsis/Knurl_${VERSION_NUM}_x64-setup.exe" "dist/"
+
 # ============================================================================
 # PHASE 5: Build for Linux
 # ============================================================================
@@ -127,6 +132,11 @@ if grep -qi microsoft /proc/version &> /dev/null; then
   yarn install --immutable
   yarn tauri build
 
+  echo "Collecting Linux artifacts..."
+  cp "src-tauri/target/release/knurl" "dist/knurl-portable"
+  cp "src-tauri/target/release/bundle/appimage/knurl_${VERSION_NUM}_x64.AppImage" "dist/"
+  cp "src-tauri/target/release/bundle/deb/knurl_${VERSION_NUM}_amd64.deb" "dist/"
+
 elif command -v wsl.exe &> /dev/null; then
   # Running on Windows, invoke WSL
   echo "Invoking WSL..."
@@ -157,6 +167,11 @@ elif command -v wsl.exe &> /dev/null; then
   if [[ ${return_code:-0} -ne 0 ]]; then
     exit $return_code
   fi
+
+  echo "Collecting Linux artifacts..."
+  cp "src-tauri/target/release/knurl" "dist/knurl-portable"
+  cp "src-tauri/target/release/bundle/appimage/knurl_${VERSION_NUM}_x64.AppImage" "dist/"
+  cp "src-tauri/target/release/bundle/deb/knurl_${VERSION_NUM}_amd64.deb" "dist/"
 
 else
   echo "⚠️  Not on Windows/WSL. Skipping Linux build."
@@ -203,41 +218,19 @@ echo "PHASE 7: Collect and upload artifacts"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-echo "Collecting artifacts..."
-mkdir -p release-artifacts
-
-# Portable binaries
-echo "Collecting portable binaries..."
-[[ -f "src-tauri/target/release/knurl.exe" ]] && cp "src-tauri/target/release/knurl.exe" "release-artifacts/knurl-portable.exe"
-[[ -f "src-tauri/target/release/knurl" ]] && cp "src-tauri/target/release/knurl" "release-artifacts/knurl-portable"
-
-# Windows installers
-echo "Collecting Windows installers..."
-[[ -f "src-tauri/target/release/bundle/nsis"/*.exe ]] && cp "src-tauri/target/release/bundle/nsis"/*.exe release-artifacts/
-[[ -f "src-tauri/target/release/bundle/msi"/*.msi ]] && cp "src-tauri/target/release/bundle/msi"/*.msi release-artifacts/
-
-# Linux packages
-echo "Collecting Linux packages..."
-[[ -f "src-tauri/target/release/bundle/appimage"/*.AppImage ]] && cp "src-tauri/target/release/bundle/appimage"/*.AppImage release-artifacts/
-[[ -f "src-tauri/target/release/bundle/deb"/*.deb ]] && cp "src-tauri/target/release/bundle/deb"/*.deb release-artifacts/
-
-# macOS (if built)
-echo "Collecting macOS packages..."
-[[ -f "src-tauri/target/release/bundle/dmg"/*.dmg ]] && cp "src-tauri/target/release/bundle/dmg"/*.dmg release-artifacts/
-
-# Create zipped versions
+# Create zipped versions of artifacts
 echo "Creating zipped artifacts..."
-for file in release-artifacts/*; do
+for file in dist/*; do
   if [[ -f "$file" ]]; then
     base=$(basename "$file")
     echo "  Zipping $base..."
-    zip -j "release-artifacts/${base}.zip" "$file" > /dev/null
+    zip -j "dist/${base}.zip" "$file" > /dev/null
   fi
 done
 
 echo ""
 echo "Artifacts to upload:"
-ls -lh release-artifacts/
+ls -lh dist/
 
 echo ""
 
@@ -246,7 +239,7 @@ if gh release view "$VERSION" &>/dev/null; then
   echo "Release $VERSION already exists. Uploading artifacts..."
   # Build list of files to upload
   artifact_files=()
-  for file in release-artifacts/*; do
+  for file in dist/*; do
     artifact_files+=("$file")
   done
   gh release upload "$VERSION" "${artifact_files[@]}" --clobber
@@ -254,7 +247,7 @@ else
   echo "Creating GitHub Release: $VERSION"
   # Build list of files to upload
   artifact_files=()
-  for file in release-artifacts/*; do
+  for file in dist/*; do
     artifact_files+=("$file")
   done
   gh release create "$VERSION" "${artifact_files[@]}" \
@@ -272,7 +265,7 @@ echo "PHASE 8: Cleanup"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-rm -rf release-artifacts
+rm -rf dist
 
 echo ""
 echo "✅ Release complete: $VERSION"
