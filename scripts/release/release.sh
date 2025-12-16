@@ -184,10 +184,13 @@ fi
 
 echo "Creating git tag: $VERSION"
 if git rev-parse "$VERSION" &>/dev/null; then
-  echo "⚠️  Tag $VERSION already exists. Skipping tag creation."
+  echo "⚠️  Tag $VERSION already exists locally."
 else
   git tag "$VERSION"
 fi
+
+echo "Pushing tag to remote..."
+git push origin "$VERSION"
 
 # ============================================================================
 # PHASE 7: Collect and upload artifacts
