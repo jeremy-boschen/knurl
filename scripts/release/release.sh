@@ -204,43 +204,54 @@ elif command -v wsl.exe &> /dev/null; then
   # Running on Windows, invoke WSL to build
   echo "Invoking WSL to build for Linux..."
 
-  wsl.exe bash -c "
-    set -euo pipefail
-    cd '$MAIN_DIR'
+  # Create a temporary build script for WSL
+  BUILD_SCRIPT=$(mktemp)
+  cat > "$BUILD_SCRIPT" << 'WSLSCRIPT'
+#!/bin/bash
+set -euo pipefail
 
-    LINUX_WORKTREE='$BUILD_TEMP/linux-wsl'
-    git worktree add \"\$LINUX_WORKTREE\" HEAD
-    cd \"\$LINUX_WORKTREE\"
+MAIN_DIR="$1"
+BUILD_TEMP="$2"
+VERSION_NUM="$3"
 
-    # Install Rust if needed
-    if [[ -f \"\$HOME/.cargo/env\" ]]; then
-      source \"\$HOME/.cargo/env\"
-    fi
+cd "$MAIN_DIR"
 
-    if ! command -v cargo &> /dev/null; then
-      echo 'Installing Rust...'
-      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-      source \$HOME/.cargo/env
-    fi
+LINUX_WORKTREE="$BUILD_TEMP/linux-wsl"
+git worktree add "$LINUX_WORKTREE" HEAD
+cd "$LINUX_WORKTREE"
 
-    echo 'Installing dependencies...'
-    yarn install --immutable
+# Install Rust if needed
+if [[ -f "$HOME/.cargo/env" ]]; then
+  source "$HOME/.cargo/env"
+fi
 
-    echo 'Building for Linux...'
-    yarn tauri build
+if ! command -v cargo &> /dev/null; then
+  echo "Installing Rust..."
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  source $HOME/.cargo/env
+fi
 
-    echo 'Collecting Linux artifacts...'
-    cp 'src-tauri/target/release/knurl' '$MAIN_DIR/dist/knurl-${VERSION_NUM}-x64'
+echo "Installing dependencies..."
+yarn install --immutable
 
-    APPIMAGE=\$(ls -1 'src-tauri/target/release/bundle/appimage'/*.AppImage 2>/dev/null | head -1)
-    [[ -n \"\$APPIMAGE\" ]] && cp \"\$APPIMAGE\" '$MAIN_DIR/dist/'
+echo "Building for Linux..."
+yarn tauri build
 
-    DEB=\$(ls -1 'src-tauri/target/release/bundle/deb'/*.deb 2>/dev/null | head -1)
-    [[ -n \"\$DEB\" ]] && cp \"\$DEB\" '$MAIN_DIR/dist/'
+echo "Collecting Linux artifacts..."
+cp "src-tauri/target/release/knurl" "$MAIN_DIR/dist/knurl-${VERSION_NUM}-x64"
 
-    cd '$MAIN_DIR'
-    git worktree remove \"\$LINUX_WORKTREE\"
-  " || return_code=$?
+APPIMAGE=$(ls -1 "src-tauri/target/release/bundle/appimage"/*.AppImage 2>/dev/null | head -1)
+[[ -n "$APPIMAGE" ]] && cp "$APPIMAGE" "$MAIN_DIR/dist/"
+
+DEB=$(ls -1 "src-tauri/target/release/bundle/deb"/*.deb 2>/dev/null | head -1)
+[[ -n "$DEB" ]] && cp "$DEB" "$MAIN_DIR/dist/"
+
+cd "$MAIN_DIR"
+git worktree remove "$LINUX_WORKTREE"
+WSLSCRIPT
+
+  wsl.exe bash "$BUILD_SCRIPT" "$MAIN_DIR" "$BUILD_TEMP" "$VERSION_NUM" || return_code=$?
+  rm -f "$BUILD_SCRIPT"
 
   if [[ ${return_code:-0} -ne 0 ]]; then
     exit $return_code
