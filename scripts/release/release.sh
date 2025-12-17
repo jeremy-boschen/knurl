@@ -98,7 +98,7 @@ echo "✓ Version set to $VERSION_NUM"
 
 build_windows() {
   local version_num="$1"
-  local build_temp=$(mktemp -d)
+  local build_temp=$(mktemp -d knurlb.XXXXXX)
 
   echo ""
   echo "════════════════════════════════════════════════════════════════════════════════"
@@ -140,7 +140,7 @@ build_windows() {
 
 build_linux() {
   local version_num="$1"
-  local build_temp=$(mktemp -d)
+  local build_temp=$(mktemp -d knurlb.XXXXXX)
 
   echo ""
   echo "════════════════════════════════════════════════════════════════════════════════"
