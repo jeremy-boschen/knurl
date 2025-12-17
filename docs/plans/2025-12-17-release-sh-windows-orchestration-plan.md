@@ -10,3 +10,7 @@
 - [x] If run as `vX.Y.Z windows`: bump+commit (if required), build Windows, then push/update artifacts.
 - [x] If run without a target: do the above + build Linux via WSL, copy Linux artifacts, then continue on Windows.
 - [x] Do not run git commands from inside WSL.
+
+## Notes
+
+- WSL invocation relies on inheriting the Windows current working directory (repo root); no explicit path translation.

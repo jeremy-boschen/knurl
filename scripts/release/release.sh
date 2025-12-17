@@ -84,22 +84,9 @@ invoke_wsl_linux_build() {
     return 1
   fi
 
-  local main_dir_win="$MAIN_DIR"
-  if command -v cygpath &> /dev/null; then
-    main_dir_win="$(cygpath -w "$MAIN_DIR")"
-  fi
-
-  local main_dir_wsl
-  main_dir_wsl="$(wsl.exe wslpath -a "$main_dir_win" 2>/dev/null | tr -d '\r' | head -n 1 || true)"
-  if [[ -z "$main_dir_wsl" ]]; then
-    echo "❌ Failed to translate repo path for WSL."
-    echo "  MAIN_DIR: $MAIN_DIR"
-    echo "  WIN_DIR:  $main_dir_win"
-    return 1
-  fi
-
   echo "Invoking WSL to build for Linux..."
-  wsl.exe bash -lc "cd '$main_dir_wsl' && bash scripts/release/release.sh '$VERSION' linux --skip-version-check"
+  # Rely on WSL inheriting the Windows working directory (repo root).
+  wsl.exe bash -lc "bash scripts/release/release.sh '$VERSION' linux --skip-version-check"
 }
 
 # ============================================================================

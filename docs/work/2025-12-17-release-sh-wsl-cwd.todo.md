@@ -1,0 +1,2 @@
+- [x] Remove WSL path translation logic from `scripts/release/release.sh` and rely on WSL inheriting the current working directory (repo root) when invoked from Windows.
+- [x] Keep temp build directories platform-local (Windows builds create Windows temp dirs; WSL Linux builds create WSL temp dirs).
