@@ -3,15 +3,44 @@ set -euo pipefail
 
 # Release script - sets version, builds Windows + Linux, uploads to GitHub
 
-if [[ $# -lt 1 ]]; then
-  echo "Usage: bash scripts/release/release.sh <version> [target]"
+usage() {
+  echo "Usage: bash scripts/release/release.sh <version> [target] [--skip-version-check]"
   echo "Example: bash scripts/release/release.sh v0.1.8"
   echo "Targets: windows, linux, both (default: both)"
+}
+
+if [[ $# -lt 1 ]]; then
+  usage
   exit 1
 fi
 
 VERSION="$1"
-TARGET="${2:-both}"
+shift
+
+TARGET="both"
+SKIP_VERSION_CHECK=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    windows|linux|both)
+      TARGET="$1"
+      shift
+      ;;
+    --skip-version-check)
+      SKIP_VERSION_CHECK=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "❌ Unknown argument: $1"
+      usage
+      exit 1
+      ;;
+  esac
+done
 
 if [[ ! "$TARGET" =~ ^(windows|linux|both)$ ]]; then
   echo "❌ Invalid target: $TARGET"
@@ -60,12 +89,16 @@ echo "Current version: $CURRENT_VERSION"
 echo "New version:     $VERSION_NUM"
 echo ""
 
-read -p "Continue with this release? (y/n) " -n 1 -r
-echo ""
+if [[ "$SKIP_VERSION_CHECK" -eq 0 ]]; then
+  read -p "Continue with this release? (y/n) " -n 1 -r
+  echo ""
 
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-  echo "Release cancelled."
-  exit 0
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Release cancelled."
+    exit 0
+  fi
+else
+  echo "Skipping version confirmation prompt (--skip-version-check)"
 fi
 
 # ============================================================================
@@ -223,7 +256,7 @@ if [[ "$TARGET" == "linux" || "$TARGET" == "both" ]]; then
   elif command -v wsl.exe &> /dev/null; then
     # Running on Windows, invoke WSL
     echo "Invoking WSL to build for Linux..."
-    wsl.exe bash -c "cd '$MAIN_DIR' && bash scripts/release/release.sh '$VERSION' linux"
+    wsl.exe bash -c "cd '$MAIN_DIR' && bash scripts/release/release.sh '$VERSION' linux --skip-version-check"
   else
     echo "⚠️  Not on Windows/WSL. Skipping Linux build."
   fi

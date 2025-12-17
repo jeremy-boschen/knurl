@@ -1,0 +1,2 @@
+- [x] Add a parameter to `scripts/release/release.sh` to skip the version check when invoked recursively.
+- [x] Pass that parameter when `scripts/release/release.sh` launches itself (e.g., Linux build via WSL).
