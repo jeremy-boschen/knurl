@@ -130,8 +130,8 @@ build_windows() {
   yarn tauri build
 
   echo "Collecting Windows artifacts..."
-  mkdir -p "$MAIN_DIR/dist"
-  cp "src-tauri/target/release/knurl.exe" "$MAIN_DIR/dist/knurl-${version_num}-x64.exe"
+  mkdir -p "$MAIN_DIR/release-artifacts"
+  cp "src-tauri/target/release/knurl.exe" "$MAIN_DIR/release-artifacts/knurl-${version_num}-x64.exe"
 
   local setup_exe=$(ls -1 "src-tauri/target/release/bundle/nsis"/*_x64-setup.exe 2>/dev/null | head -1)
   if [[ -z "$setup_exe" ]]; then
@@ -141,7 +141,7 @@ build_windows() {
     rm -rf "$build_temp"
     return 1
   fi
-  cp "$setup_exe" "$MAIN_DIR/dist/"
+  cp "$setup_exe" "$MAIN_DIR/release-artifacts/"
 
   cd "$MAIN_DIR"
   git worktree remove --force "$worktree"
@@ -183,14 +183,14 @@ build_linux() {
   yarn tauri build
 
   echo "Collecting Linux artifacts..."
-  mkdir -p "$MAIN_DIR/dist"
-  cp "src-tauri/target/release/knurl" "$MAIN_DIR/dist/knurl-${version_num}-x64"
+  mkdir -p "$MAIN_DIR/release-artifacts"
+  cp "src-tauri/target/release/knurl" "$MAIN_DIR/release-artifacts/knurl-${version_num}-x64"
 
   local appimage=$(ls -1 "src-tauri/target/release/bundle/appimage"/*.AppImage 2>/dev/null | head -1)
-  [[ -n "$appimage" ]] && cp "$appimage" "$MAIN_DIR/dist/"
+  [[ -n "$appimage" ]] && cp "$appimage" "$MAIN_DIR/release-artifacts/"
 
   local deb=$(ls -1 "src-tauri/target/release/bundle/deb"/*.deb 2>/dev/null | head -1)
-  [[ -n "$deb" ]] && cp "$deb" "$MAIN_DIR/dist/"
+  [[ -n "$deb" ]] && cp "$deb" "$MAIN_DIR/release-artifacts/"
 
   cd "$MAIN_DIR"
   git worktree remove --force "$worktree"
@@ -208,7 +208,7 @@ echo "PHASE 3: Build"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-mkdir -p "$MAIN_DIR/dist"
+mkdir -p "$MAIN_DIR/release-artifacts"
 
 cd "$MAIN_DIR"
 
@@ -271,7 +271,7 @@ echo ""
 echo "Collecting application artifacts..."
 # Collect all files (only binaries/installers should be in dist from build phases)
 ARTIFACTS=()
-for file in "$MAIN_DIR/dist"/*; do
+for file in "$MAIN_DIR/release-artifacts"/*; do
   if [[ -f "$file" ]]; then
     ARTIFACTS+=("$file")
     echo "  Found: $(basename "$file")"
@@ -285,7 +285,7 @@ fi
 
 echo ""
 echo "Artifacts to upload:"
-ls -lh "$MAIN_DIR/dist"/*
+ls -lh "$MAIN_DIR/release-artifacts"/*
 
 echo ""
 
@@ -310,7 +310,7 @@ echo "PHASE 6: Cleanup"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-rm -rf "$MAIN_DIR/dist"
+rm -rf "$MAIN_DIR/release-artifacts"
 
 echo ""
 echo "✅ Release complete: $VERSION"
