@@ -1,0 +1,2 @@
+- [x] Make `scripts/release/release.sh` handle rerunning the same version explicitly (no-op version bump commit should not fail).
+- [x] Make `scripts/release/release.sh` handle existing tags/releases so reruns can update artifacts without failing.

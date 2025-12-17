@@ -279,18 +279,47 @@ yarn install --immutable
 echo "Staging version files..."
 git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json src-tauri/Cargo.lock
 
-echo "Committing version change..."
-git commit -m "chore(release): bump version to $VERSION_NUM" --no-verify
-
-echo "Creating git tag: $VERSION"
-if git rev-parse "$VERSION" &>/dev/null; then
-  echo "⚠️  Tag $VERSION already exists locally."
+if git diff --cached --quiet; then
+  echo "No version changes to commit (already at $VERSION_NUM). Skipping commit."
 else
-  git tag "$VERSION"
+  echo "Committing version change..."
+  git commit -m "chore(release): bump version to $VERSION_NUM" --no-verify
 fi
 
-echo "Pushing tag to remote..."
-git push origin "$VERSION"
+REMOTE_TAG_SHA="$(git ls-remote --tags origin "refs/tags/$VERSION^{}" | awk '{print $1}' | head -n 1)"
+if [[ -z "$REMOTE_TAG_SHA" ]]; then
+  REMOTE_TAG_SHA="$(git ls-remote --tags origin "refs/tags/$VERSION" | awk '{print $1}' | head -n 1)"
+fi
+
+if [[ -n "$REMOTE_TAG_SHA" ]]; then
+  HEAD_SHA="$(git rev-parse HEAD)"
+  if [[ "$REMOTE_TAG_SHA" != "$HEAD_SHA" ]]; then
+    echo "❌ Tag $VERSION already exists on origin but points to a different commit."
+    echo "  origin: $REMOTE_TAG_SHA"
+    echo "  HEAD:   $HEAD_SHA"
+    echo "Checkout the tagged commit before re-uploading artifacts for $VERSION."
+    exit 1
+  fi
+  echo "Tag $VERSION already exists on origin. Skipping tag creation/push."
+else
+  echo "Creating git tag: $VERSION"
+  if git rev-parse "$VERSION" &>/dev/null; then
+    LOCAL_TAG_SHA="$(git rev-list -n 1 "$VERSION")"
+    HEAD_SHA="$(git rev-parse HEAD)"
+    if [[ "$LOCAL_TAG_SHA" != "$HEAD_SHA" ]]; then
+      echo "❌ Local tag $VERSION already exists but does not point to HEAD."
+      echo "  tag:  $LOCAL_TAG_SHA"
+      echo "  HEAD: $HEAD_SHA"
+      exit 1
+    fi
+    echo "⚠️  Tag $VERSION already exists locally."
+  else
+    git tag "$VERSION"
+  fi
+
+  echo "Pushing tag to remote..."
+  git push origin "$VERSION"
+fi
 
 # ============================================================================
 # PHASE 5: Collect and upload artifacts
