@@ -228,6 +228,9 @@ echo ""
 
 cd "$MAIN_DIR"
 
+echo "Installing dependencies..."
+yarn install --immutable
+
 echo "Staging version files..."
 git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json
 
