@@ -14,3 +14,4 @@
 ## Notes
 
 - WSL invocation relies on inheriting the Windows current working directory (repo root); no explicit path translation.
+- Linux build inside WSL uses `git worktree` (local-only); no remote git commands run in WSL.

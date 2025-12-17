@@ -242,21 +242,10 @@ build_linux() {
   echo "════════════════════════════════════════════════════════════════════════════════"
   echo ""
 
-  local build_dir="$build_temp/src"
-  mkdir -p "$build_dir"
+  local worktree="$build_temp/linux"
+  git worktree add "$worktree" HEAD
 
-  echo "Copying source into build dir (no git)..."
-  tar -C "$MAIN_DIR" \
-    --exclude=".git" \
-    --exclude="node_modules" \
-    --exclude="dist" \
-    --exclude="coverage" \
-    --exclude="test-results" \
-    --exclude="release-artifacts" \
-    --exclude="src-tauri/target" \
-    -cf - . | tar -C "$build_dir" -xf -
-
-  cd "$build_dir"
+  cd "$worktree"
 
   # Install Rust if needed
   if [[ -f "$HOME/.cargo/env" ]]; then
@@ -286,6 +275,7 @@ build_linux() {
   [[ -n "$deb" ]] && cp "$deb" "$MAIN_DIR/release-artifacts/"
 
   cd "$MAIN_DIR"
+  git worktree remove --force "$worktree"
   rm -rf "$build_temp"
 
   echo "✓ Linux build complete"

@@ -1,0 +1,2 @@
+- [x] Use `git worktree` for the Linux build inside WSL (do not copy the repo).
+- [x] Ensure WSL does not run remote git commands (push/ls-remote/fetch).
