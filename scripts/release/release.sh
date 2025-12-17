@@ -79,14 +79,14 @@ echo ""
 
 echo "Setting version to $VERSION_NUM..."
 
-# Update package.json - handle various whitespace patterns
-sed -i "s/\"version\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/\"version\": \"$VERSION_NUM\"/g" package.json
+# Update package.json - match semver version pattern
+sed -i "s/\"version\": \"[0-9.]*\"/\"version\": \"$VERSION_NUM\"/g" package.json
 
-# Update Cargo.toml - match version at start of line with optional whitespace
-sed -i "s/^version[[:space:]]*=[[:space:]]*\"[^\"]*\"/version = \"$VERSION_NUM\"/g" src-tauri/Cargo.toml
+# Update Cargo.toml - match version at start of line with =
+sed -i "s/^version = \"[0-9.]*\"/version = \"$VERSION_NUM\"/g" src-tauri/Cargo.toml
 
-# Update tauri.conf.json - handle various whitespace patterns
-sed -i "s/\"version\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/\"version\": \"$VERSION_NUM\"/g" src-tauri/tauri.conf.json
+# Update tauri.conf.json - match version
+sed -i "s/\"version\": \"[0-9.]*\"/\"version\": \"$VERSION_NUM\"/g" src-tauri/tauri.conf.json
 
 echo "Verifying version changes..."
 PKG_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
@@ -244,7 +244,7 @@ echo "Installing dependencies..."
 yarn install --immutable
 
 echo "Staging version files..."
-git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json
+git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json src-tauri/Cargo.lock
 
 echo "Committing version change..."
 git commit -m "chore(release): bump version to $VERSION_NUM"

@@ -339,7 +339,10 @@ fn parse_token_response_body(body: &[u8]) -> Result<TokenResponseWire, AppError>
         "[AUTH] Attempting to parse token response. Body size: {} bytes, content: {}",
         body.len(),
         if body.len() > 200 {
-            format!("{}... (truncated)", &as_str.chars().take(200).collect::<String>())
+            format!(
+                "{}... (truncated)",
+                &as_str.chars().take(200).collect::<String>()
+            )
         } else {
             as_str.to_string()
         }
@@ -582,7 +585,9 @@ pub async fn discover_oidc(app: AppHandle, url: String) -> Result<OidcDiscovery,
         "[AUTH] OIDC discovery parsed successfully. Endpoints: auth={}, token={}, device={}",
         wire.authorization_endpoint.as_deref().unwrap_or("none"),
         wire.token_endpoint.as_deref().unwrap_or("none"),
-        wire.device_authorization_endpoint.as_deref().unwrap_or("none")
+        wire.device_authorization_endpoint
+            .as_deref()
+            .unwrap_or("none")
     );
 
     let discovery = OidcDiscovery {
@@ -978,11 +983,16 @@ pub async fn get_authentication_result(
 
                     // client authentication placement (policy: Basic or body)
                     let chosen_auth = client_auth.unwrap_or(ClientAuth::Body);
-                    log::debug!("[AUTH] Client credentials flow: client_auth method = {:?}", chosen_auth);
+                    log::debug!(
+                        "[AUTH] Client credentials flow: client_auth method = {:?}",
+                        chosen_auth
+                    );
                     let mut headers = HashMap::new();
                     match chosen_auth {
                         ClientAuth::Basic => {
-                            log::debug!("[AUTH] Using HTTP Basic authentication for client credentials");
+                            log::debug!(
+                                "[AUTH] Using HTTP Basic authentication for client credentials"
+                            );
                             if !client_id.is_empty() && !client_secret.is_empty() {
                                 let raw = format!("{client_id}:{client_secret}");
                                 let b64 = general_purpose::STANDARD.encode(raw);
@@ -1056,13 +1066,17 @@ pub async fn get_authentication_result(
                     );
 
                     let engine = preferred_engine();
-                    let response_data = engine
-                        .execute(request, emitter.clone())
-                        .await
-                        .map_err(|e| {
-                            log::error!("[AUTH] client_credentials: HTTP request failed: {}", e);
-                            AppError::new(ErrorKind::HttpError, e.to_string())
-                        })?;
+                    let response_data =
+                        engine
+                            .execute(request, emitter.clone())
+                            .await
+                            .map_err(|e| {
+                                log::error!(
+                                    "[AUTH] client_credentials: HTTP request failed: {}",
+                                    e
+                                );
+                                AppError::new(ErrorKind::HttpError, e.to_string())
+                            })?;
 
                     log::debug!(
                         "[AUTH] client_credentials: Response received. Status: {}, Size: {} bytes, Duration: {}ms",
@@ -1201,7 +1215,10 @@ pub async fn get_authentication_result(
                     }
 
                     let chosen_auth = client_auth.unwrap_or(ClientAuth::Body);
-                    log::debug!("[AUTH] refresh_token flow: client_auth method = {:?}", chosen_auth);
+                    log::debug!(
+                        "[AUTH] refresh_token flow: client_auth method = {:?}",
+                        chosen_auth
+                    );
                     let mut headers = HashMap::new();
                     match chosen_auth {
                         ClientAuth::Basic => {
@@ -1219,14 +1236,19 @@ pub async fn get_authentication_result(
                             }
                         }
                         ClientAuth::Body => {
-                            log::debug!("[AUTH] Placing client credentials in request body for refresh_token");
+                            log::debug!(
+                                "[AUTH] Placing client credentials in request body for refresh_token"
+                            );
                             params.push(("client_id", &client_id));
                             params.push(("client_secret", &client_secret));
                         }
                     }
 
                     if let Some(extra) = &token_extra_params {
-                        log::debug!("[AUTH] Adding {} extra parameters to refresh_token request", extra.len());
+                        log::debug!(
+                            "[AUTH] Adding {} extra parameters to refresh_token request",
+                            extra.len()
+                        );
                         for (k, v) in extra {
                             params.push((k.as_str(), v.as_str()));
                         }
@@ -1276,13 +1298,14 @@ pub async fn get_authentication_result(
                     );
 
                     let engine = preferred_engine();
-                    let response_data = engine
-                        .execute(request, emitter.clone())
-                        .await
-                        .map_err(|e| {
-                            log::error!("[AUTH] refresh_token: HTTP request failed: {}", e);
-                            AppError::new(ErrorKind::HttpError, e.to_string())
-                        })?;
+                    let response_data =
+                        engine
+                            .execute(request, emitter.clone())
+                            .await
+                            .map_err(|e| {
+                                log::error!("[AUTH] refresh_token: HTTP request failed: {}", e);
+                                AppError::new(ErrorKind::HttpError, e.to_string())
+                            })?;
 
                     log::debug!(
                         "[AUTH] refresh_token: Response received. Status: {}, Size: {} bytes, Duration: {}ms",
@@ -1787,7 +1810,10 @@ async fn handle_device_code(
         "Token URL is required".to_string(),
     ))?;
 
-    log::debug!("[AUTH] device_code: Initiating device authorization request to {}", device_endpoint);
+    log::debug!(
+        "[AUTH] device_code: Initiating device authorization request to {}",
+        device_endpoint
+    );
     log::debug!("[AUTH] device_code: client_auth method = {:?}", client_auth);
 
     let mut params: Vec<(String, String)> = vec![("client_id".to_string(), client_id.clone())];
@@ -1857,7 +1883,10 @@ async fn handle_device_code(
         .execute(device_request, emitter.clone())
         .await
         .map_err(|e| {
-            log::error!("[AUTH] device_code: Device authorization request failed: {}", e);
+            log::error!(
+                "[AUTH] device_code: Device authorization request failed: {}",
+                e
+            );
             AppError::new(ErrorKind::HttpError, e.to_string())
         })?;
 
@@ -1955,17 +1984,28 @@ async fn handle_device_code(
     let mut poll_attempt = 0;
     loop {
         if chrono::Utc::now().timestamp() > expires_at {
-            log::error!("[AUTH] device_code: Device authorization expired after {} polling attempts", poll_attempt);
+            log::error!(
+                "[AUTH] device_code: Device authorization expired after {} polling attempts",
+                poll_attempt
+            );
             return Err(AppError::new(
                 ErrorKind::Timeout,
                 "Device authorization expired before completion".to_string(),
             ));
         }
 
-        log::debug!("[AUTH] device_code: Sleeping for {}s before poll attempt {}", interval, poll_attempt + 1);
+        log::debug!(
+            "[AUTH] device_code: Sleeping for {}s before poll attempt {}",
+            interval,
+            poll_attempt + 1
+        );
         sleep(Duration::from_secs(interval)).await;
         poll_attempt += 1;
-        log::debug!("[AUTH] device_code: Starting poll attempt {} (interval: {}s)", poll_attempt, interval);
+        log::debug!(
+            "[AUTH] device_code: Starting poll attempt {} (interval: {}s)",
+            poll_attempt,
+            interval
+        );
 
         let token_params = token_params_base.clone();
         let params_preview = token_params.clone();
@@ -2005,7 +2045,11 @@ async fn handle_device_code(
             .execute(poll_request, emitter.clone())
             .await
             .map_err(|e| {
-                log::error!("[AUTH] device_code: Poll attempt {} HTTP request failed: {}", poll_attempt, e);
+                log::error!(
+                    "[AUTH] device_code: Poll attempt {} HTTP request failed: {}",
+                    poll_attempt,
+                    e
+                );
                 AppError::new(ErrorKind::HttpError, e.to_string())
             })?;
 
