@@ -1,5 +1,5 @@
 no_tty: true
-colors: true
+colors: false
 
 pre-commit:
   parallel: true
