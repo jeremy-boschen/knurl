@@ -128,6 +128,7 @@
     "knip": "^5.73.3",
     "lefthook": "^2.0.9",
     "nyc": "^17.1.0",
+    "oauth2-mock-server": "^8.2.0",
     "playwright": "^1.57.0",
     "shadcn": "^3.5.2",
     "tailwindcss": "^4.1.17",
