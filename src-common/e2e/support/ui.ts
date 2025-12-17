@@ -1399,3 +1399,24 @@ export async function waitForSelectorToBeVisible(selector: string, timeout = DEF
   await element.waitForExist({ timeout })
   await element.waitForDisplayed({ timeout })
 }
+
+/**
+ * Enable all log levels in the response viewer logs tab
+ * Useful for tests that need to see debug/trace level logs
+ */
+export async function enableAllLogLevels(): Promise<void> {
+  const levelsTrigger = await getElementByTestId("logs-list:levels-popover-trigger", 2000)
+  await levelsTrigger.click()
+  await browser.pause(300)
+
+  // Click the "All" checkbox to show all levels (info, debug, trace, warning, error)
+  const toggleAllCheckbox = await getElementByTestId("logs-list:toggle-all-levels-checkbox", 1000)
+  if (toggleAllCheckbox) {
+    await toggleAllCheckbox.click()
+    await browser.pause(300)
+  }
+
+  // Close the popover
+  await browser.keys("Escape")
+  await browser.pause(300)
+}

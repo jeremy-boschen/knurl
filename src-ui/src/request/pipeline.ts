@@ -4,6 +4,7 @@ import { HttpEngine } from "@/request/http/engine"
 import { WebSocketEngine } from "@/request/ws/engine"
 import type { Application, AuthResult, Environment, LogEntry, RequestState, ResponseState } from "@/types"
 import type { StoreApi } from "zustand"
+import { logger } from "@/lib/logger"
 
 /**
  * A mutable context object that is passed through the request pipeline.
@@ -56,7 +57,9 @@ export const createAuthPhase = (
     const collection = state.collectionsApi.getCollection(request.collectionId)
 
     if (request.authentication.type === "inherit" && !collection) {
-      throw new Error(`Cannot inherit authentication: collection "${request.collectionId}" not found`)
+      const msg = `Cannot inherit authentication: collection "${request.collectionId}" not found`
+      logger.error(`[AUTH] ${msg}`)
+      throw new Error(msg)
     }
 
     const effectiveAuth =
@@ -159,7 +162,9 @@ export const protocolDispatchPhase: RequestPhase = async (context) => {
   const engine = engineRegistry[protocol]
 
   if (!engine) {
-    throw new Error(`Unsupported protocol: ${protocol}`)
+    const msg = `Unsupported protocol: ${protocol}`
+    logger.error(`[PIPELINE] ${msg}`)
+    throw new Error(msg)
   }
 
   context.response = await engine.execute(context)
@@ -182,6 +187,8 @@ export const runPipeline = async (
     }
     notifier.onSuccess(context.response as ResponseState)
   } catch (error) {
-    notifier.onError(error as Error)
+    const err = error as Error
+    logger.error(`[PIPELINE] Pipeline error: ${err.message}${err.stack ? `\nStack: ${err.stack}` : ""}`)
+    notifier.onError(err)
   }
 }
