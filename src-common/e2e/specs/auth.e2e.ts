@@ -1094,3 +1094,182 @@ describe("[CRITICAL] Collection Auth Inheritance", () => {
 
   console.log("✅ Collection auth inheritance tests completed")
 })
+
+describe("[CRITICAL] Auth Flow Logging", () => {
+  before(async () => {
+    await ensureWorkspaceReady()
+    await resetOverlays()
+  })
+
+  it("displays auth flow logs in response viewer for Basic auth", async () => {
+    await openNewRequestViaUI()
+    await waitForRequestEditor()
+
+    const mockUrl = `http://127.0.0.1:3000/mock/get`
+    await setInputText("request-workspace:url-input", mockUrl)
+
+    // Configure Basic auth
+    await selectAuthType("basic")
+    await setInputText("request-auth-panel:basic-auth-username-input", "testuser")
+    await setInputText("request-auth-panel:basic-auth-password-input", "testpass")
+
+    // Send request
+    await clickByTestId("request-workspace:send-button")
+
+    // Wait for response to arrive
+    await browser.waitUntil(
+      async () => {
+        const heading = await getTextBySelector('[data-test-id="response-viewer:heading"]')
+        return heading && heading.length > 0 ? heading : null
+      },
+      { timeout: 10000 },
+    )
+
+    // Click on Logs tab
+    const logsTab = await getElementByTestId("response-viewer:tab-logs", 5000)
+    await expect(logsTab).toBeDefined()
+    await logsTab.click()
+
+    // Wait for logs container to appear (either with logs or empty state)
+    const logsContainer = await browser.waitUntil(
+      async () => {
+        const container = await getElementByTestId("logs-list", 2000)
+        return container ? container : null
+      },
+      { timeout: 5000, timeoutMsg: "Logs container did not appear" },
+    )
+
+    await expect(logsContainer).toBeDefined()
+
+    // Check for log entries
+    const logRows = await browser.execute(() => {
+      const rows = document.querySelectorAll('[data-test-id^="logs-list:log-row:"]')
+      return Array.from(rows).map((row) => ({
+        text: row.textContent ?? "",
+        html: row.innerHTML,
+      }))
+    })
+
+    // Verify logs were captured
+    await expect(logRows.length).toBeGreaterThan(
+      0,
+      "Auth logs should be present in response viewer - check that emit_auth_log() is being called",
+    )
+  })
+
+  it("displays auth flow logs for Bearer auth with custom scheme", async () => {
+    await openNewRequestViaUI()
+    await waitForRequestEditor()
+
+    const mockUrl = `http://127.0.0.1:3000/mock/get`
+    await setInputText("request-workspace:url-input", mockUrl)
+
+    // Configure Bearer auth with custom scheme
+    await selectAuthType("bearer")
+    await selectOptionByTestId(
+      "request-auth-panel:bearer-auth-scheme-select",
+      "request-auth-panel:bearer-auth-scheme-custom",
+    )
+    await setInputText("request-auth-panel:bearer-auth-custom-scheme-input", "CustomScheme")
+    await setInputText("request-auth-panel:bearer-auth-token-input", "test-token-value")
+
+    // Send request
+    await clickByTestId("request-workspace:send-button")
+
+    // Wait for response
+    await browser.waitUntil(
+      async () => {
+        const heading = await getTextBySelector('[data-test-id="response-viewer:heading"]')
+        return heading && heading.length > 0 ? heading : null
+      },
+      { timeout: 10000 },
+    )
+
+    // Click on Logs tab
+    const logsTab = await getElementByTestId("response-viewer:tab-logs", 5000)
+    await logsTab.click()
+
+    // Wait for logs container
+    const logsContainer = await browser.waitUntil(
+      async () => {
+        const container = await getElementByTestId("logs-list", 2000)
+        return container ? container : null
+      },
+      { timeout: 5000 },
+    )
+
+    await expect(logsContainer).toBeDefined()
+
+    // Verify logs exist
+    const logRows = await browser.execute(() => {
+      const rows = document.querySelectorAll('[data-test-id^="logs-list:log-row:"]')
+      return Array.from(rows).map((row) => row.textContent ?? "")
+    })
+
+    await expect(logRows.length).toBeGreaterThan(0, "Bearer auth logs should be present in response viewer")
+  })
+
+  it("displays auth flow logs for OAuth2 client credentials", async () => {
+    await openNewRequestViaUI()
+    await waitForRequestEditor()
+
+    const mockUrl = `http://127.0.0.1:3000/mock/json`
+    await setInputText("request-workspace:url-input", mockUrl)
+
+    // Configure OAuth2
+    await clickByTestId("request-editor:auth-tab")
+    await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+    await clickByTestId("request-editor:auth-menu:type-oauth2")
+
+    // Set grant type
+    await getElementByTestId("oauth2-editor:grant-type-select", 5000)
+    await selectOptionByTestId("oauth2-editor:grant-type-select", "oauth2-editor:grant-type-option:client_credentials")
+
+    // Configure OAuth2 fields
+    await setInputText("oauth2-editor:token-url-input", "http://127.0.0.1:3000/token")
+    await setInputText("oauth2-editor:client-id-input", "test-client")
+    await setInputText("oauth2-editor:client-secret-input", "test-secret")
+    await selectOptionByTestId(
+      "oauth2-editor:client-authentication-select",
+      "oauth2-editor:client-authentication-option:body",
+    )
+
+    // Send request
+    await clickByTestId("request-workspace:send-button")
+
+    // Wait for response
+    await browser.waitUntil(
+      async () => {
+        const heading = await getTextBySelector('[data-test-id="response-viewer:heading"]')
+        return heading && heading.length > 0 ? heading : null
+      },
+      { timeout: 10000 },
+    )
+
+    // Click on Logs tab
+    const logsTab = await getElementByTestId("response-viewer:tab-logs", 5000)
+    await logsTab.click()
+
+    // Wait for logs container
+    const logsContainer = await browser.waitUntil(
+      async () => {
+        const container = await getElementByTestId("logs-list", 2000)
+        return container ? container : null
+      },
+      { timeout: 5000 },
+    )
+
+    await expect(logsContainer).toBeDefined()
+
+    // Verify OAuth2 logs exist
+    const logRows = await browser.execute(() => {
+      const rows = document.querySelectorAll('[data-test-id^="logs-list:log-row:"]')
+      return Array.from(rows).map((row) => row.textContent ?? "")
+    })
+
+    // Should contain OAuth2 authentication related logs
+    await expect(logRows.length).toBeGreaterThan(0, "OAuth2 auth logs should be present in response viewer")
+  })
+
+  console.log("✅ Auth flow logging tests completed")
+})
