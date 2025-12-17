@@ -247,7 +247,7 @@ echo "Staging version files..."
 git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json src-tauri/Cargo.lock
 
 echo "Committing version change..."
-LEFTHOOK=0 git commit -m "chore(release): bump version to $VERSION_NUM"
+git commit -m "chore(release): bump version to $VERSION_NUM"
 
 echo "Creating git tag: $VERSION"
 if git rev-parse "$VERSION" &>/dev/null; then
