@@ -58,7 +58,7 @@ export const createAuthPhase = (
 
     if (request.authentication.type === "inherit" && !collection) {
       const msg = `Cannot inherit authentication: collection "${request.collectionId}" not found`
-      logger.error("[AUTH] " + msg)
+      logger.error(`[AUTH] ${msg}`)
       throw new Error(msg)
     }
 
@@ -163,7 +163,7 @@ export const protocolDispatchPhase: RequestPhase = async (context) => {
 
   if (!engine) {
     const msg = `Unsupported protocol: ${protocol}`
-    logger.error("[PIPELINE] " + msg)
+    logger.error(`[PIPELINE] ${msg}`)
     throw new Error(msg)
   }
 

@@ -292,14 +292,14 @@ fn stubbed_oauth_result(
                 ErrorKind::BadRequest,
                 "unsupported_grant_type: ROPC not supported by Knurl".to_string(),
             ))
-        },
+        }
         other => {
             log::error!("[AUTH] Unsupported OAuth2 grant type: {other}");
             Err(AppError::new(
                 ErrorKind::BadRequest,
                 format!("Unsupported OAuth2 grant type: {other}"),
             ))
-        },
+        }
     }
 }
 
@@ -786,7 +786,7 @@ pub async fn get_authentication_result(
                         ErrorKind::BadRequest,
                         "Unsupported placement type".to_string(),
                     ))
-                },
+                }
             }
         }
         AuthConfig::ApiKey {
@@ -915,7 +915,7 @@ pub async fn get_authentication_result(
                         ErrorKind::BadRequest,
                         "Unsupported placement type".to_string(),
                     ))
-                },
+                }
             }
         }
         AuthConfig::Oauth2 {
@@ -977,17 +977,11 @@ pub async fn get_authentication_result(
                     .await?;
                     let token_url = endpoints.token.clone().ok_or_else(|| {
                         log::error!("[AUTH] client_credentials: Token URL is required");
-                        AppError::new(
-                            ErrorKind::BadRequest,
-                            "Token URL is required".to_string(),
-                        )
+                        AppError::new(ErrorKind::BadRequest, "Token URL is required".to_string())
                     })?;
                     let client_id = client_id.clone().ok_or_else(|| {
                         log::error!("[AUTH] client_credentials: Client ID is required");
-                        AppError::new(
-                            ErrorKind::BadRequest,
-                            "Client ID is required".to_string(),
-                        )
+                        AppError::new(ErrorKind::BadRequest, "Client ID is required".to_string())
                     })?;
                     let client_secret = client_secret.clone().ok_or_else(|| {
                         log::error!("[AUTH] client_credentials: Client Secret is required");
@@ -1206,17 +1200,11 @@ pub async fn get_authentication_result(
                     .await?;
                     let token_url = endpoints.token.clone().ok_or_else(|| {
                         log::error!("[AUTH] refresh_token: Token URL is required");
-                        AppError::new(
-                            ErrorKind::BadRequest,
-                            "Token URL is required".to_string(),
-                        )
+                        AppError::new(ErrorKind::BadRequest, "Token URL is required".to_string())
                     })?;
                     let client_id = client_id.clone().ok_or_else(|| {
                         log::error!("[AUTH] refresh_token: Client ID is required");
-                        AppError::new(
-                            ErrorKind::BadRequest,
-                            "Client ID is required".to_string(),
-                        )
+                        AppError::new(ErrorKind::BadRequest, "Client ID is required".to_string())
                     })?;
                     let client_secret = client_secret.clone().ok_or_else(|| {
                         log::error!("[AUTH] refresh_token: Client Secret is required");
@@ -1542,10 +1530,7 @@ async fn perform_headless_authorization(
                 response.status, body_str
             );
             log::error!("[AUTH] {}", error_msg);
-            AppError::new(
-                ErrorKind::BadRequest,
-                error_msg,
-            )
+            AppError::new(ErrorKind::BadRequest, error_msg)
         })?;
 
     let callback_url = Url::parse(&location).map_err(|e| {
@@ -1622,7 +1607,9 @@ async fn handle_authorization_code(
     );
 
     if !is_headless_mode() {
-        log::error!("[AUTH] authorization_code: Interactive authorization_code flow is not yet available");
+        log::error!(
+            "[AUTH] authorization_code: Interactive authorization_code flow is not yet available"
+        );
         return Err(AppError::new(
             ErrorKind::NotImplemented,
             "Interactive authorization_code flow is not yet available; set KNURL_OAUTH_HEADLESS=1 for mock testing"
@@ -1639,16 +1626,12 @@ async fn handle_authorization_code(
     })?;
     let token_endpoint = endpoints.token.clone().ok_or_else(|| {
         log::error!("[AUTH] authorization_code: Token URL is required");
-        AppError::new(
-            ErrorKind::BadRequest,
-            "Token URL is required".to_string(),
-        )
+        AppError::new(ErrorKind::BadRequest, "Token URL is required".to_string())
     })?;
-    let redirect_url = Url::parse(&redirect_uri)
-        .map_err(|e| {
-            log::error!("[AUTH] authorization_code: Invalid redirect URI: {}", e);
-            AppError::new(ErrorKind::BadRequest, format!("Invalid redirect URI: {e}"))
-        })?;
+    let redirect_url = Url::parse(&redirect_uri).map_err(|e| {
+        log::error!("[AUTH] authorization_code: Invalid redirect URI: {}", e);
+        AppError::new(ErrorKind::BadRequest, format!("Invalid redirect URI: {e}"))
+    })?;
 
     let code_verifier = use_pkce.then(generate_pkce_verifier);
     let code_challenge = code_verifier
@@ -1658,7 +1641,10 @@ async fn handle_authorization_code(
     let state = generate_state();
 
     let mut authorization_url = Url::parse(&authorization_endpoint).map_err(|e| {
-        log::error!("[AUTH] authorization_code: Invalid authorization URL: {}", e);
+        log::error!(
+            "[AUTH] authorization_code: Invalid authorization URL: {}",
+            e
+        );
         AppError::new(
             ErrorKind::BadRequest,
             format!("Invalid authorization URL: {e}"),
@@ -1684,7 +1670,11 @@ async fn handle_authorization_code(
     if let Some(returned_state) = callback.state.as_ref()
         && returned_state != &state
     {
-        log::error!("[AUTH] authorization_code: State mismatch. Expected: {}, Got: {}", state, returned_state);
+        log::error!(
+            "[AUTH] authorization_code: State mismatch. Expected: {}, Got: {}",
+            state,
+            returned_state
+        );
         return Err(AppError::new(
             ErrorKind::BadRequest,
             "State mismatch in authorization response".to_string(),
@@ -1868,10 +1858,7 @@ async fn handle_device_code(
 
     let token_endpoint = endpoints.token.clone().ok_or_else(|| {
         log::error!("[AUTH] device_code: Token URL is required");
-        AppError::new(
-            ErrorKind::BadRequest,
-            "Token URL is required".to_string(),
-        )
+        AppError::new(ErrorKind::BadRequest, "Token URL is required".to_string())
     })?;
 
     log::debug!("[AUTH] device_code: Initiating device authorization request to {device_endpoint}");
