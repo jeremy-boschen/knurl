@@ -357,7 +357,9 @@ fn parse_token_response_body(body: &[u8]) -> Result<TokenResponseWire, AppError>
                 .get("error_description")
                 .and_then(|v| v.as_str())
                 .unwrap_or("");
-            log::warn!("[AUTH] OAuth token error from server. Error: '{err}', Description: '{desc}'");
+            log::warn!(
+                "[AUTH] OAuth token error from server. Error: '{err}', Description: '{desc}'"
+            );
             return Err(AppError::new(
                 ErrorKind::BadRequest,
                 format!(
@@ -979,7 +981,9 @@ pub async fn get_authentication_result(
 
                     // client authentication placement (policy: Basic or body)
                     let chosen_auth = client_auth.unwrap_or(ClientAuth::Body);
-                    log::debug!("[AUTH] Client credentials flow: client_auth method = {chosen_auth:?}");
+                    log::debug!(
+                        "[AUTH] Client credentials flow: client_auth method = {chosen_auth:?}"
+                    );
                     let mut headers = HashMap::new();
                     match chosen_auth {
                         ClientAuth::Basic => {
@@ -1892,7 +1896,9 @@ async fn handle_device_code(
     let device_payload: DeviceCodeResponse = serde_json::from_slice(&device_response.body)
         .map_err(|e| {
             let body_str = String::from_utf8_lossy(&device_response.body);
-            log::error!("[AUTH] device_code: Failed to parse device code response: {e}. Body: {body_str}");
+            log::error!(
+                "[AUTH] device_code: Failed to parse device code response: {e}. Body: {body_str}"
+            );
             AppError::new(
                 ErrorKind::JsonError,
                 format!("Failed to parse device code response: {e}"),
@@ -1964,7 +1970,9 @@ async fn handle_device_code(
     let mut poll_attempt = 0;
     loop {
         if chrono::Utc::now().timestamp() > expires_at {
-            log::error!("[AUTH] device_code: Device authorization expired after {poll_attempt} polling attempts");
+            log::error!(
+                "[AUTH] device_code: Device authorization expired after {poll_attempt} polling attempts"
+            );
             return Err(AppError::new(
                 ErrorKind::Timeout,
                 "Device authorization expired before completion".to_string(),
@@ -1978,7 +1986,9 @@ async fn handle_device_code(
         );
         sleep(Duration::from_secs(interval)).await;
         poll_attempt += 1;
-        log::debug!("[AUTH] device_code: Starting poll attempt {poll_attempt} (interval: {interval}s)");
+        log::debug!(
+            "[AUTH] device_code: Starting poll attempt {poll_attempt} (interval: {interval}s)"
+        );
 
         let token_params = token_params_base.clone();
         let params_preview = token_params.clone();
@@ -2018,7 +2028,9 @@ async fn handle_device_code(
             .execute(poll_request, emitter.clone())
             .await
             .map_err(|e| {
-                log::error!("[AUTH] device_code: Poll attempt {poll_attempt} HTTP request failed: {e}");
+                log::error!(
+                    "[AUTH] device_code: Poll attempt {poll_attempt} HTTP request failed: {e}"
+                );
                 AppError::new(ErrorKind::HttpError, e.to_string())
             })?;
 
@@ -2120,7 +2132,9 @@ async fn handle_device_code(
                     ));
                 }
                 other => {
-                    log::error!("[AUTH] device_code: Poll attempt {poll_attempt} - unexpected error: {other}{detail}");
+                    log::error!(
+                        "[AUTH] device_code: Poll attempt {poll_attempt} - unexpected error: {other}{detail}"
+                    );
                     return Err(AppError::new(
                         ErrorKind::BadRequest,
                         format!("Device authorization error: {other}{detail}"),
