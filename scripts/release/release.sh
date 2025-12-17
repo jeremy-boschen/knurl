@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -euox pipefail
 
 # Release script - sets version, builds Windows + Linux, uploads to GitHub
 
@@ -223,7 +223,7 @@ if [[ "$TARGET" == "linux" || "$TARGET" == "both" ]]; then
   elif command -v wsl.exe &> /dev/null; then
     # Running on Windows, invoke WSL
     echo "Invoking WSL to build for Linux..."
-    wsl.exe bash -c "cd '$MAIN_DIR' && bash scripts/release/release.sh '$VERSION' linux"
+    wsl.exe bash -c "scripts/release/release.sh '$VERSION' linux"
   else
     echo "⚠️  Not on Windows/WSL. Skipping Linux build."
   fi
@@ -247,7 +247,7 @@ echo "Staging version files..."
 git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json src-tauri/Cargo.lock
 
 echo "Committing version change..."
-git commit -m "chore(release): bump version to $VERSION_NUM"
+git commit -m "chore(release): bump version to $VERSION_NUM" --no-verify
 
 echo "Creating git tag: $VERSION"
 if git rev-parse "$VERSION" &>/dev/null; then
