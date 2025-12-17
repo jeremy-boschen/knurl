@@ -130,12 +130,12 @@ export const createAuthPhase = (
       let authResult: AuthResult | undefined
       if (caching === "never") {
         // Always refresh: fetch a new token and also update the cache
-        authResult = await getAuthenticationResult(toBindingAuth(effectiveAuth), "auth-req")
+        authResult = await getAuthenticationResult(toBindingAuth(effectiveAuth), context.correlationId)
         await credentialsCacheApi.set(cacheKey, authResult)
       } else {
         authResult = await credentialsCacheApi.get(cacheKey)
         if (!authResult) {
-          authResult = await getAuthenticationResult(toBindingAuth(effectiveAuth), "auth-req")
+          authResult = await getAuthenticationResult(toBindingAuth(effectiveAuth), context.correlationId)
           await credentialsCacheApi.set(cacheKey, authResult)
         }
       }

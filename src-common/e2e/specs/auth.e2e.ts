@@ -1141,6 +1141,28 @@ describe("[CRITICAL] Auth Flow Logging", () => {
 
     await expect(logsContainer).toBeDefined()
 
+    // Enable all log levels to ensure auth logs are visible
+    const levelsTrigger = await getElementByTestId("logs-list:levels-popover-trigger", 2000)
+    await levelsTrigger.click()
+    await browser.pause(300)
+
+    // Check all level checkboxes to show debug/trace logs
+    const allCheckboxes = await browser.execute(() => {
+      const checkboxes = document.querySelectorAll('[data-test-id^="logs-list:toggle-level-checkbox:"]')
+      return checkboxes.length
+    })
+
+    // Click the "All" checkbox if available
+    const toggleAllCheckbox = await getElementByTestId("logs-list:toggle-all-levels-checkbox", 1000)
+    if (toggleAllCheckbox) {
+      await toggleAllCheckbox.click()
+      await browser.pause(300)
+    }
+
+    // Close the popover
+    await browser.keys("Escape")
+    await browser.pause(300)
+
     // Check for log entries
     const logRows = await browser.execute(() => {
       const rows = document.querySelectorAll('[data-test-id^="logs-list:log-row:"]')
@@ -1154,6 +1176,20 @@ describe("[CRITICAL] Auth Flow Logging", () => {
     await expect(logRows.length).toBeGreaterThan(
       0,
       "Auth logs should be present in response viewer - check that emit_auth_log() is being called",
+    )
+
+    // Verify auth-related log messages are present
+    const authLogsContent = await browser.execute(() => {
+      const rows = document.querySelectorAll('[data-test-id^="logs-list:log-row:"]')
+      return Array.from(rows)
+        .map((row) => row.textContent ?? "")
+        .join(" ")
+        .toLowerCase()
+    })
+
+    await expect(authLogsContent).toMatch(
+      /auth|basic|credential|starting authentication/i,
+      "Log content should contain auth-related keywords",
     )
   })
 
