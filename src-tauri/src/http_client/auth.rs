@@ -490,11 +490,17 @@ fn log_token_request_preview(
 ) {
     // Log HTTP details for debugging
     log::debug!("[AUTH] OAuth2 token request: {method} {url}");
-    log::debug!("[AUTH] Request headers ({count} total):", count = headers.len());
+    log::debug!(
+        "[AUTH] Request headers ({count} total):",
+        count = headers.len()
+    );
     for (name, value) in headers {
         log::debug!("[AUTH]   {name}: {value}");
     }
-    log::debug!("[AUTH] Request form fields ({count} total):", count = form_fields.len());
+    log::debug!(
+        "[AUTH] Request form fields ({count} total):",
+        count = form_fields.len()
+    );
     for (name, value) in form_fields {
         log::debug!("[AUTH]   {name}: {value}");
     }
@@ -1016,7 +1022,10 @@ pub async fn get_authentication_result(
 
                     // extra provider params
                     if let Some(extra) = &token_extra_params {
-                        log::debug!("[AUTH] Adding {count} extra OAuth2 parameters", count = extra.len());
+                        log::debug!(
+                            "[AUTH] Adding {count} extra OAuth2 parameters",
+                            count = extra.len()
+                        );
                         for (k, v) in extra {
                             params.push((k.as_str(), v.as_str()));
                         }
@@ -2110,7 +2119,9 @@ async fn handle_device_code(
                 .unwrap_or_default();
             match err.error.as_str() {
                 "authorization_pending" => {
-                    log::debug!("[AUTH] device_code: Poll attempt {poll_attempt} - authorization still pending");
+                    log::debug!(
+                        "[AUTH] device_code: Poll attempt {poll_attempt} - authorization still pending"
+                    );
                     emit_auth_log(
                         &*emitter,
                         &req_id,
@@ -2123,7 +2134,9 @@ async fn handle_device_code(
                 }
                 "slow_down" => {
                     interval += 5;
-                    log::debug!("[AUTH] device_code: Poll attempt {poll_attempt} - server requested slow down. New interval: {interval}s");
+                    log::debug!(
+                        "[AUTH] device_code: Poll attempt {poll_attempt} - server requested slow down. New interval: {interval}s"
+                    );
                     emit_auth_log(
                         &*emitter,
                         &req_id,
