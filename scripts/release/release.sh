@@ -78,16 +78,28 @@ echo "════════════════════════�
 echo ""
 
 echo "Setting version to $VERSION_NUM..."
-sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION_NUM\"/" package.json
-sed -i "s/^version = \"[^\"]*\"/version = \"$VERSION_NUM\"/" src-tauri/Cargo.toml
-sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION_NUM\"/" src-tauri/tauri.conf.json
 
+# Update package.json - handle various whitespace patterns
+sed -i "s/\"version\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/\"version\": \"$VERSION_NUM\"/g" package.json
+
+# Update Cargo.toml - match version at start of line with optional whitespace
+sed -i "s/^version[[:space:]]*=[[:space:]]*\"[^\"]*\"/version = \"$VERSION_NUM\"/g" src-tauri/Cargo.toml
+
+# Update tauri.conf.json - handle various whitespace patterns
+sed -i "s/\"version\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/\"version\": \"$VERSION_NUM\"/g" src-tauri/tauri.conf.json
+
+echo "Verifying version changes..."
 PKG_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
 CARGO_VERSION=$(grep "^version" src-tauri/Cargo.toml | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
 TAURI_VERSION=$(grep '"version"' src-tauri/tauri.conf.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
 
+echo "  package.json version: $PKG_VERSION"
+echo "  Cargo.toml version: $CARGO_VERSION"
+echo "  tauri.conf.json version: $TAURI_VERSION"
+
 if [[ "$PKG_VERSION" != "$VERSION_NUM" ]] || [[ "$CARGO_VERSION" != "$VERSION_NUM" ]] || [[ "$TAURI_VERSION" != "$VERSION_NUM" ]]; then
   echo "❌ Failed to update version files"
+  echo "  Expected: $VERSION_NUM"
   exit 1
 fi
 echo "✓ Version set to $VERSION_NUM"
