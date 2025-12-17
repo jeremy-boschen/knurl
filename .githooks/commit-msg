@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MSG_FILE="${1:-}"
+if [[ -z "${MSG_FILE}" ]]; then
+  echo "commit-msg: missing commit message file path argument" >&2
+  exit 1
+fi
+
+node node_modules/@commitlint/cli/cli.js --edit "${MSG_FILE}"
+
