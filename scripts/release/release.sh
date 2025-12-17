@@ -12,15 +12,27 @@ fi
 
 VERSION="$1"
 
-# Cleanup on failure: restore git state
+# These will be set in Phase 3
+BUILD_TEMP=""
+
+# Cleanup temp directory on any exit
+cleanup_temp() {
+  if [[ -n "$BUILD_TEMP" && -d "$BUILD_TEMP" ]]; then
+    rm -rf "$BUILD_TEMP"
+  fi
+}
+
+# Cleanup on failure: restore git state and temp
 cleanup_on_failure() {
   echo ""
   echo "❌ Release failed. Restoring git state..."
   git checkout package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json 2>/dev/null || true
+  cleanup_temp
   exit 1
 }
 
 trap cleanup_on_failure ERR
+trap cleanup_temp EXIT
 
 # ============================================================================
 # PHASE 1: Validation
@@ -78,16 +90,19 @@ fi
 echo "✓ Version set to $VERSION_NUM"
 
 # ============================================================================
-# PHASE 3: Install dependencies
+# PHASE 3: Setup build environment
 # ============================================================================
 echo ""
 echo "════════════════════════════════════════════════════════════════════════════════"
-echo "PHASE 3: Install dependencies"
+echo "PHASE 3: Setup build environment"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-echo "Installing dependencies..."
-yarn install --immutable
+MAIN_DIR="$(pwd)"
+BUILD_TEMP=$(mktemp -d)
+echo "Build directory: $BUILD_TEMP"
+
+mkdir -p "$MAIN_DIR/dist"
 
 # ============================================================================
 # PHASE 4: Build for Windows
@@ -98,26 +113,31 @@ echo "PHASE 4: Build for Windows"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-echo "Cleaning Windows output directories..."
-rm -rf dist dist-ssr
-rm -rf target src-tauri/target
-rm -rf coverage .nyc_output .wdio test-results
-rm -rf .eslintcache .prettierrc.cache scripts/build/.compiled
+WINDOWS_WORKTREE="$BUILD_TEMP/windows"
+echo "Creating Windows worktree at $WINDOWS_WORKTREE..."
+git worktree add "$WINDOWS_WORKTREE" HEAD
 
+cd "$WINDOWS_WORKTREE"
+
+echo "Installing dependencies..."
 yarn install --immutable
+
+echo "Building for Windows..."
 yarn tauri build
 
 echo "Collecting Windows artifacts..."
-mkdir -p dist
-cp "src-tauri/target/release/knurl.exe" "dist/knurl-${VERSION_NUM}-x64.exe"
+cp "src-tauri/target/release/knurl.exe" "$MAIN_DIR/dist/knurl-${VERSION_NUM}-x64.exe"
 
-# Find the actual setup.exe that was built (version might differ)
+# Find the actual setup.exe that was built
 SETUP_EXE=$(ls -1 "src-tauri/target/release/bundle/nsis"/*_x64-setup.exe 2>/dev/null | head -1)
 if [[ -z "$SETUP_EXE" ]]; then
   echo "❌ Could not find Windows installer (setup.exe)"
   exit 1
 fi
-cp "$SETUP_EXE" "dist/"
+cp "$SETUP_EXE" "$MAIN_DIR/dist/"
+
+cd "$MAIN_DIR"
+git worktree remove "$WINDOWS_WORKTREE"
 
 # ============================================================================
 # PHASE 5: Build for Linux
@@ -132,6 +152,10 @@ if grep -qi microsoft /proc/version &> /dev/null; then
   # Already in WSL
   echo "Building in WSL..."
 
+  LINUX_WORKTREE="$BUILD_TEMP/linux"
+  echo "Creating Linux worktree at $LINUX_WORKTREE..."
+  git worktree add "$LINUX_WORKTREE" HEAD
+
   # Source cargo env if it exists, then check for rust
   if [[ -f "$HOME/.cargo/env" ]]; then
     source "$HOME/.cargo/env"
@@ -143,33 +167,46 @@ if grep -qi microsoft /proc/version &> /dev/null; then
     source $HOME/.cargo/env
   fi
 
-  echo "Cleaning Linux output directories..."
-  rm -rf dist dist-ssr
-  rm -rf target src-tauri/target
-  rm -rf coverage .nyc_output .wdio test-results
+  cd "$LINUX_WORKTREE"
 
+  echo "Installing dependencies..."
   yarn install --immutable
+
+  echo "Building for Linux..."
   yarn tauri build
 
   echo "Collecting Linux artifacts..."
-  cp "src-tauri/target/release/knurl" "dist/knurl-${VERSION_NUM}-x64"
+  cp "src-tauri/target/release/knurl" "$MAIN_DIR/dist/knurl-${VERSION_NUM}-x64"
 
-  # Find actual appimage and deb files (version might differ)
+  # Find actual appimage and deb files
   APPIMAGE=$(ls -1 "src-tauri/target/release/bundle/appimage"/*.AppImage 2>/dev/null | head -1)
   if [[ -n "$APPIMAGE" ]]; then
-    cp "$APPIMAGE" "dist/"
+    cp "$APPIMAGE" "$MAIN_DIR/dist/"
   fi
 
   DEB=$(ls -1 "src-tauri/target/release/bundle/deb"/*.deb 2>/dev/null | head -1)
   if [[ -n "$DEB" ]]; then
-    cp "$DEB" "dist/"
+    cp "$DEB" "$MAIN_DIR/dist/"
   fi
 
+  cd "$MAIN_DIR"
+  git worktree remove "$LINUX_WORKTREE"
+
 elif command -v wsl.exe &> /dev/null; then
-  # Running on Windows, invoke WSL
-  echo "Invoking WSL..."
+  # Running on Windows, invoke WSL to build
+  echo "Invoking WSL to build for Linux..."
+
+  LINUX_WORKTREE_NAME="linux-$(date +%s)"
   wsl.exe bash -c "
     set -euo pipefail
+
+    MAIN_DIR='$MAIN_DIR'
+    BUILD_TEMP='$BUILD_TEMP'
+    LINUX_WORKTREE=\"\$BUILD_TEMP/$LINUX_WORKTREE_NAME\"
+
+    echo \"Creating Linux worktree at \$LINUX_WORKTREE...\"
+    cd \"\$MAIN_DIR\"
+    git worktree add \"\$LINUX_WORKTREE\" HEAD
 
     # Source cargo env if it exists, then check for rust
     if [[ -f \"\$HOME/.cargo/env\" ]]; then
@@ -182,31 +219,34 @@ elif command -v wsl.exe &> /dev/null; then
       source \$HOME/.cargo/env
     fi
 
-    echo 'Cleaning Linux output directories...'
-    rm -rf dist dist-ssr
-    rm -rf target src-tauri/target
-    rm -rf coverage .nyc_output .wdio test-results
+    cd \"\$LINUX_WORKTREE\"
 
+    echo 'Installing dependencies...'
     yarn install --immutable
+
+    echo 'Building for Linux...'
     yarn tauri build
+
+    echo 'Collecting Linux artifacts...'
+    cp \"src-tauri/target/release/knurl\" \"\$MAIN_DIR/dist/knurl-${VERSION_NUM}-x64\"
+
+    # Find actual appimage and deb files
+    APPIMAGE=\$(ls -1 \"src-tauri/target/release/bundle/appimage\"/*.AppImage 2>/dev/null | head -1)
+    if [[ -n \"\$APPIMAGE\" ]]; then
+      cp \"\$APPIMAGE\" \"\$MAIN_DIR/dist/\"
+    fi
+
+    DEB=\$(ls -1 \"src-tauri/target/release/bundle/deb\"/*.deb 2>/dev/null | head -1)
+    if [[ -n \"\$DEB\" ]]; then
+      cp \"\$DEB\" \"\$MAIN_DIR/dist/\"
+    fi
+
+    cd \"\$MAIN_DIR\"
+    git worktree remove \"\$LINUX_WORKTREE\"
   " || return_code=$?
 
   if [[ ${return_code:-0} -ne 0 ]]; then
     exit $return_code
-  fi
-
-  echo "Collecting Linux artifacts..."
-  cp "src-tauri/target/release/knurl" "dist/knurl-${VERSION_NUM}-x64"
-
-  # Find actual appimage and deb files (version might differ)
-  APPIMAGE=$(ls -1 "src-tauri/target/release/bundle/appimage"/*.AppImage 2>/dev/null | head -1)
-  if [[ -n "$APPIMAGE" ]]; then
-    cp "$APPIMAGE" "dist/"
-  fi
-
-  DEB=$(ls -1 "src-tauri/target/release/bundle/deb"/*.deb 2>/dev/null | head -1)
-  if [[ -n "$DEB" ]]; then
-    cp "$DEB" "dist/"
   fi
 
 else
@@ -214,18 +254,13 @@ else
 fi
 
 # ============================================================================
-# PHASE 6: Restore node_modules and commit version changes
+# PHASE 6: Commit version changes
 # ============================================================================
 echo ""
 echo "════════════════════════════════════════════════════════════════════════════════"
-echo "PHASE 6: Restore node_modules and commit version changes"
+echo "PHASE 6: Commit version changes"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
-
-# Clean reinstall node_modules (ensure Windows bindings for git hooks)
-echo "Reinstalling node_modules for Windows..."
-rm -rf node_modules
-yarn install --immutable
 
 echo "Staging version files..."
 git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json
