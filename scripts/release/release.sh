@@ -4,13 +4,22 @@ set -euo pipefail
 # Release script - sets version, builds Windows + Linux, uploads to GitHub
 # Version changes are atomic: either fully committed or fully reverted
 
-if [[ $# -ne 1 ]]; then
-  echo "Usage: bash scripts/release/release.sh <version>"
-  echo "Example: bash scripts/release/release.sh v0.1.8"
+if [[ $# -lt 1 ]]; then
+  echo "Usage: bash scripts/release/release.sh <version> [target]"
+  echo "Example: bash scripts/release/release.sh v0.1.8 windows"
+  echo "Targets: windows, linux, both (default: both)"
   exit 1
 fi
 
 VERSION="$1"
+TARGET="${2:-both}"
+
+# Validate target
+if [[ ! "$TARGET" =~ ^(windows|linux|both)$ ]]; then
+  echo "❌ Invalid target: $TARGET"
+  echo "Valid targets: windows, linux, both"
+  exit 1
+fi
 
 # These will be set in Phase 3
 BUILD_TEMP=""
@@ -113,31 +122,35 @@ echo "PHASE 4: Build for Windows"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-WINDOWS_WORKTREE="$BUILD_TEMP/windows"
-echo "Creating Windows worktree at $WINDOWS_WORKTREE..."
-git worktree add "$WINDOWS_WORKTREE" HEAD
+if [[ "$TARGET" == "linux" ]]; then
+  echo "⏭️  Skipping Windows build (target: linux)"
+else
+  WINDOWS_WORKTREE="$BUILD_TEMP/windows"
+  echo "Creating Windows worktree at $WINDOWS_WORKTREE..."
+  git worktree add "$WINDOWS_WORKTREE" HEAD
 
-cd "$WINDOWS_WORKTREE"
+  cd "$WINDOWS_WORKTREE"
 
-echo "Installing dependencies..."
-yarn install --immutable
+  echo "Installing dependencies..."
+  yarn install --immutable
 
-echo "Building for Windows..."
-yarn tauri build
+  echo "Building for Windows..."
+  yarn tauri build
 
-echo "Collecting Windows artifacts..."
-cp "src-tauri/target/release/knurl.exe" "$MAIN_DIR/dist/knurl-${VERSION_NUM}-x64.exe"
+  echo "Collecting Windows artifacts..."
+  cp "src-tauri/target/release/knurl.exe" "$MAIN_DIR/dist/knurl-${VERSION_NUM}-x64.exe"
 
-# Find the actual setup.exe that was built
-SETUP_EXE=$(ls -1 "src-tauri/target/release/bundle/nsis"/*_x64-setup.exe 2>/dev/null | head -1)
-if [[ -z "$SETUP_EXE" ]]; then
-  echo "❌ Could not find Windows installer (setup.exe)"
-  exit 1
+  # Find the actual setup.exe that was built
+  SETUP_EXE=$(ls -1 "src-tauri/target/release/bundle/nsis"/*_x64-setup.exe 2>/dev/null | head -1)
+  if [[ -z "$SETUP_EXE" ]]; then
+    echo "❌ Could not find Windows installer (setup.exe)"
+    exit 1
+  fi
+  cp "$SETUP_EXE" "$MAIN_DIR/dist/"
+
+  cd "$MAIN_DIR"
+  git worktree remove "$WINDOWS_WORKTREE"
 fi
-cp "$SETUP_EXE" "$MAIN_DIR/dist/"
-
-cd "$MAIN_DIR"
-git worktree remove "$WINDOWS_WORKTREE"
 
 # ============================================================================
 # PHASE 5: Build for Linux
@@ -148,15 +161,17 @@ echo "PHASE 5: Build for Linux"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-if grep -qi microsoft /proc/version &> /dev/null; then
+if [[ "$TARGET" == "windows" ]]; then
+  echo "⏭️  Skipping Linux build (target: windows)"
+elif grep -qi microsoft /proc/version &> /dev/null; then
   # Already in WSL
   echo "Building in WSL..."
 
   LINUX_WORKTREE="$BUILD_TEMP/linux"
-  echo "Creating Linux worktree at $LINUX_WORKTREE..."
   git worktree add "$LINUX_WORKTREE" HEAD
+  cd "$LINUX_WORKTREE"
 
-  # Source cargo env if it exists, then check for rust
+  # Install Rust if needed
   if [[ -f "$HOME/.cargo/env" ]]; then
     source "$HOME/.cargo/env"
   fi
@@ -167,8 +182,6 @@ if grep -qi microsoft /proc/version &> /dev/null; then
     source $HOME/.cargo/env
   fi
 
-  cd "$LINUX_WORKTREE"
-
   echo "Installing dependencies..."
   yarn install --immutable
 
@@ -178,16 +191,11 @@ if grep -qi microsoft /proc/version &> /dev/null; then
   echo "Collecting Linux artifacts..."
   cp "src-tauri/target/release/knurl" "$MAIN_DIR/dist/knurl-${VERSION_NUM}-x64"
 
-  # Find actual appimage and deb files
   APPIMAGE=$(ls -1 "src-tauri/target/release/bundle/appimage"/*.AppImage 2>/dev/null | head -1)
-  if [[ -n "$APPIMAGE" ]]; then
-    cp "$APPIMAGE" "$MAIN_DIR/dist/"
-  fi
+  [[ -n "$APPIMAGE" ]] && cp "$APPIMAGE" "$MAIN_DIR/dist/"
 
   DEB=$(ls -1 "src-tauri/target/release/bundle/deb"/*.deb 2>/dev/null | head -1)
-  if [[ -n "$DEB" ]]; then
-    cp "$DEB" "$MAIN_DIR/dist/"
-  fi
+  [[ -n "$DEB" ]] && cp "$DEB" "$MAIN_DIR/dist/"
 
   cd "$MAIN_DIR"
   git worktree remove "$LINUX_WORKTREE"
@@ -198,18 +206,13 @@ elif command -v wsl.exe &> /dev/null; then
 
   wsl.exe bash -c "
     set -euo pipefail
+    cd '$MAIN_DIR'
 
-    MAIN_DIR='$MAIN_DIR'
-    BUILD_TEMP_WINDOWS='$BUILD_TEMP'
-    # Convert Windows path to WSL path
-    BUILD_TEMP=\$(wslpath \"\$BUILD_TEMP_WINDOWS\")
-    LINUX_WORKTREE=\"\$BUILD_TEMP/linux\"
-
-    echo \"Creating Linux worktree at \$LINUX_WORKTREE...\"
-    cd \"\$MAIN_DIR\"
+    LINUX_WORKTREE='$BUILD_TEMP/linux-wsl'
     git worktree add \"\$LINUX_WORKTREE\" HEAD
+    cd \"\$LINUX_WORKTREE\"
 
-    # Source cargo env if it exists, then check for rust
+    # Install Rust if needed
     if [[ -f \"\$HOME/.cargo/env\" ]]; then
       source \"\$HOME/.cargo/env\"
     fi
@@ -220,8 +223,6 @@ elif command -v wsl.exe &> /dev/null; then
       source \$HOME/.cargo/env
     fi
 
-    cd \"\$LINUX_WORKTREE\"
-
     echo 'Installing dependencies...'
     yarn install --immutable
 
@@ -229,20 +230,15 @@ elif command -v wsl.exe &> /dev/null; then
     yarn tauri build
 
     echo 'Collecting Linux artifacts...'
-    cp \"src-tauri/target/release/knurl\" \"\$MAIN_DIR/dist/knurl-${VERSION_NUM}-x64\"
+    cp 'src-tauri/target/release/knurl' '$MAIN_DIR/dist/knurl-${VERSION_NUM}-x64'
 
-    # Find actual appimage and deb files
-    APPIMAGE=\$(ls -1 \"src-tauri/target/release/bundle/appimage\"/*.AppImage 2>/dev/null | head -1)
-    if [[ -n \"\$APPIMAGE\" ]]; then
-      cp \"\$APPIMAGE\" \"\$MAIN_DIR/dist/\"
-    fi
+    APPIMAGE=\$(ls -1 'src-tauri/target/release/bundle/appimage'/*.AppImage 2>/dev/null | head -1)
+    [[ -n \"\$APPIMAGE\" ]] && cp \"\$APPIMAGE\" '$MAIN_DIR/dist/'
 
-    DEB=\$(ls -1 \"src-tauri/target/release/bundle/deb\"/*.deb 2>/dev/null | head -1)
-    if [[ -n \"\$DEB\" ]]; then
-      cp \"\$DEB\" \"\$MAIN_DIR/dist/\"
-    fi
+    DEB=\$(ls -1 'src-tauri/target/release/bundle/deb'/*.deb 2>/dev/null | head -1)
+    [[ -n \"\$DEB\" ]] && cp \"\$DEB\" '$MAIN_DIR/dist/'
 
-    cd \"\$MAIN_DIR\"
+    cd '$MAIN_DIR'
     git worktree remove \"\$LINUX_WORKTREE\"
   " || return_code=$?
 
