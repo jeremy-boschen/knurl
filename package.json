@@ -114,6 +114,7 @@
     "@wdio/mocha-framework": "^9.21.0",
     "@wdio/spec-reporter": "^9.20.0",
     "babel-plugin-react-compiler": "^1.0.0",
+    "basic-auth": "^2.0.1",
     "cross-env": "^10.1.0",
     "esbuild": "^0.27.1",
     "eslint": "^9.39.1",
