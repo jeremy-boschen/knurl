@@ -1,10 +1,12 @@
 import { sendHttpRequest } from "@/bindings/knurl"
 import { prepareHttpRequest } from "@/lib/request/prepared-http"
 import { generateUniqueId } from "@/lib/utils"
-import { logger } from "@/lib/logger"
+import { getSyncLogger } from "@/lib/logger"
 import { useApplication } from "@/state/application"
 import type { RequestContext, RequestEngine } from "@/request/pipeline"
 import { type HttpResponseData, type ResponseState, zHttpResponseData, zResponseState } from "@/types"
+
+const logger = getSyncLogger("HttpEngine")
 
 export const HttpEngine: RequestEngine = {
   async execute(context: RequestContext): Promise<ResponseState> {

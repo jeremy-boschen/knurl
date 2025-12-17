@@ -6,7 +6,7 @@ const wsEngineMock = vi.hoisted(() => ({ execute: vi.fn(async () => ({ status: 1
 
 vi.mock("@/request/http/engine", () => ({ HttpEngine: httpEngineMock }))
 vi.mock("@/request/ws/engine", () => ({ WebSocketEngine: wsEngineMock }))
-vi.mock("@/lib/logger", () => ({ logger: loggerMock }))
+vi.mock("@/lib/logger", () => ({ getSyncLogger: () => loggerMock }))
 
 import { createAuthPhase, protocolDispatchPhase, resolveVariablesPhase, runPipeline } from "./pipeline"
 
