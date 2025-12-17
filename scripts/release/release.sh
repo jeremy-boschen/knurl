@@ -125,14 +125,14 @@ build_windows() {
   if [[ -z "$setup_exe" ]]; then
     echo "❌ Could not find Windows installer"
     cd "$MAIN_DIR"
-    git worktree remove "$worktree"
+    git worktree remove --force "$worktree"
     rm -rf "$build_temp"
     return 1
   fi
   cp "$setup_exe" "$MAIN_DIR/dist/"
 
   cd "$MAIN_DIR"
-  git worktree remove "$worktree"
+  git worktree remove --force "$worktree"
   rm -rf "$build_temp"
 
   echo "✓ Windows build complete"
@@ -181,7 +181,7 @@ build_linux() {
   [[ -n "$deb" ]] && cp "$deb" "$MAIN_DIR/dist/"
 
   cd "$MAIN_DIR"
-  git worktree remove "$worktree"
+  git worktree remove --force "$worktree"
   rm -rf "$build_temp"
 
   echo "✓ Linux build complete"
