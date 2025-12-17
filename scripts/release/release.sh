@@ -269,39 +269,33 @@ echo "════════════════════════�
 echo ""
 
 echo "Collecting application artifacts..."
-# Only include actual application binaries/installers, skip web assets and directories
-APPLICATION_FILES=()
+# Collect all files (only binaries/installers should be in dist from build phases)
+ARTIFACTS=()
 for file in "$MAIN_DIR/dist"/*; do
   if [[ -f "$file" ]]; then
-    base=$(basename "$file")
-    # Only include application binaries and installers
-    if [[ "$base" =~ \.(exe|AppImage|deb|dmg)$ ]]; then
-      APPLICATION_FILES+=("$file")
-      echo "  Found: $base"
-    fi
+    ARTIFACTS+=("$file")
+    echo "  Found: $(basename "$file")"
   fi
 done
 
-if [[ ${#APPLICATION_FILES[@]} -eq 0 ]]; then
-  echo "❌ No application artifacts found in dist/"
+if [[ ${#ARTIFACTS[@]} -eq 0 ]]; then
+  echo "❌ No artifacts found in dist/"
   cleanup_on_failure
 fi
 
 echo ""
 echo "Artifacts to upload:"
-for file in "${APPLICATION_FILES[@]}"; do
-  ls -lh "$file"
-done
+ls -lh "$MAIN_DIR/dist"/*
 
 echo ""
 
 # Check if release already exists
 if gh release view "$VERSION" &>/dev/null; then
   echo "Release $VERSION already exists. Uploading artifacts..."
-  gh release upload "$VERSION" "${APPLICATION_FILES[@]}" --clobber
+  gh release upload "$VERSION" "${ARTIFACTS[@]}" --clobber
 else
   echo "Creating GitHub Release: $VERSION"
-  gh release create "$VERSION" "${APPLICATION_FILES[@]}" \
+  gh release create "$VERSION" "${ARTIFACTS[@]}" \
     --draft \
     --title "$VERSION" \
     --notes "See the assets to download this version and install."
