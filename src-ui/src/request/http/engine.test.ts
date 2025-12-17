@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 
 const loggerMock = vi.hoisted(() => ({ error: vi.fn(), warn: vi.fn(), debug: vi.fn(), info: vi.fn() }))
-vi.mock("@/lib/logger", () => ({ logger: loggerMock }))
+vi.mock("@/lib/logger", () => ({ getSyncLogger: () => loggerMock }))
 
 import { HttpEngine } from "./engine"
 

@@ -4,7 +4,9 @@ import { HttpEngine } from "@/request/http/engine"
 import { WebSocketEngine } from "@/request/ws/engine"
 import type { Application, AuthResult, Environment, LogEntry, RequestState, ResponseState } from "@/types"
 import type { StoreApi } from "zustand"
-import { logger } from "@/lib/logger"
+import { getSyncLogger } from "@/lib/logger"
+
+const logger = getSyncLogger("Pipeline")
 
 /**
  * A mutable context object that is passed through the request pipeline.
