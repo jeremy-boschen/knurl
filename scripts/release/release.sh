@@ -2,11 +2,10 @@
 set -euo pipefail
 
 # Release script - sets version, builds Windows + Linux, uploads to GitHub
-# Version changes are atomic: either fully committed or fully reverted
 
 if [[ $# -lt 1 ]]; then
   echo "Usage: bash scripts/release/release.sh <version> [target]"
-  echo "Example: bash scripts/release/release.sh v0.1.8 windows"
+  echo "Example: bash scripts/release/release.sh v0.1.8"
   echo "Targets: windows, linux, both (default: both)"
   exit 1
 fi
@@ -14,34 +13,30 @@ fi
 VERSION="$1"
 TARGET="${2:-both}"
 
-# Validate target
 if [[ ! "$TARGET" =~ ^(windows|linux|both)$ ]]; then
   echo "❌ Invalid target: $TARGET"
-  echo "Valid targets: windows, linux, both"
   exit 1
 fi
 
-# These will be set in Phase 3
-BUILD_TEMP=""
+MAIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd ../.. && pwd)"
+WORKTREES_DIR=".git/worktrees-build"
 
-# Cleanup temp directory on any exit
-cleanup_temp() {
-  if [[ -n "$BUILD_TEMP" && -d "$BUILD_TEMP" ]]; then
-    rm -rf "$BUILD_TEMP"
+cleanup_worktrees() {
+  if [[ -d "$MAIN_DIR/$WORKTREES_DIR" ]]; then
+    rm -rf "$MAIN_DIR/$WORKTREES_DIR"
   fi
 }
 
-# Cleanup on failure: restore git state and temp
 cleanup_on_failure() {
   echo ""
   echo "❌ Release failed. Restoring git state..."
   git checkout package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json 2>/dev/null || true
-  cleanup_temp
+  cleanup_worktrees
   exit 1
 }
 
 trap cleanup_on_failure ERR
-trap cleanup_temp EXIT
+trap cleanup_worktrees EXIT
 
 # ============================================================================
 # PHASE 1: Validation
@@ -74,7 +69,7 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 # ============================================================================
-# PHASE 2: Update version files (not committed yet)
+# PHASE 2: Update version files
 # ============================================================================
 echo ""
 echo "════════════════════════════════════════════════════════════════════════════════"
@@ -87,7 +82,6 @@ sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION_NUM\"/" package.json
 sed -i "s/^version = \"[^\"]*\"/version = \"$VERSION_NUM\"/" src-tauri/Cargo.toml
 sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION_NUM\"/" src-tauri/tauri.conf.json
 
-# Verify the updates worked
 PKG_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
 CARGO_VERSION=$(grep "^version" src-tauri/Cargo.toml | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
 TAURI_VERSION=$(grep '"version"' src-tauri/tauri.conf.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
@@ -99,37 +93,23 @@ fi
 echo "✓ Version set to $VERSION_NUM"
 
 # ============================================================================
-# PHASE 3: Setup build environment
+# Build functions
 # ============================================================================
-echo ""
-echo "════════════════════════════════════════════════════════════════════════════════"
-echo "PHASE 3: Setup build environment"
-echo "════════════════════════════════════════════════════════════════════════════════"
-echo ""
 
-MAIN_DIR="$(pwd)"
-BUILD_TEMP=$(mktemp -d)
-echo "Build directory: $BUILD_TEMP"
+build_windows() {
+  local version_num="$1"
 
-mkdir -p "$MAIN_DIR/dist"
+  echo ""
+  echo "════════════════════════════════════════════════════════════════════════════════"
+  echo "Building for Windows"
+  echo "════════════════════════════════════════════════════════════════════════════════"
+  echo ""
 
-# ============================================================================
-# PHASE 4: Build for Windows
-# ============================================================================
-echo ""
-echo "════════════════════════════════════════════════════════════════════════════════"
-echo "PHASE 4: Build for Windows"
-echo "════════════════════════════════════════════════════════════════════════════════"
-echo ""
+  local worktree="$MAIN_DIR/$WORKTREES_DIR/windows"
+  mkdir -p "$(dirname "$worktree")"
+  git worktree add "$worktree" HEAD
 
-if [[ "$TARGET" == "linux" ]]; then
-  echo "⏭️  Skipping Windows build (target: linux)"
-else
-  WINDOWS_WORKTREE="$BUILD_TEMP/windows"
-  echo "Creating Windows worktree at $WINDOWS_WORKTREE..."
-  git worktree add "$WINDOWS_WORKTREE" HEAD
-
-  cd "$WINDOWS_WORKTREE"
+  cd "$worktree"
 
   echo "Installing dependencies..."
   yarn install --immutable
@@ -138,38 +118,36 @@ else
   yarn tauri build
 
   echo "Collecting Windows artifacts..."
-  cp "src-tauri/target/release/knurl.exe" "$MAIN_DIR/dist/knurl-${VERSION_NUM}-x64.exe"
+  mkdir -p "$MAIN_DIR/dist"
+  cp "src-tauri/target/release/knurl.exe" "$MAIN_DIR/dist/knurl-${version_num}-x64.exe"
 
-  # Find the actual setup.exe that was built
-  SETUP_EXE=$(ls -1 "src-tauri/target/release/bundle/nsis"/*_x64-setup.exe 2>/dev/null | head -1)
-  if [[ -z "$SETUP_EXE" ]]; then
-    echo "❌ Could not find Windows installer (setup.exe)"
-    exit 1
+  local setup_exe=$(ls -1 "src-tauri/target/release/bundle/nsis"/*_x64-setup.exe 2>/dev/null | head -1)
+  if [[ -z "$setup_exe" ]]; then
+    echo "❌ Could not find Windows installer"
+    return 1
   fi
-  cp "$SETUP_EXE" "$MAIN_DIR/dist/"
+  cp "$setup_exe" "$MAIN_DIR/dist/"
 
   cd "$MAIN_DIR"
-  git worktree remove "$WINDOWS_WORKTREE"
-fi
+  git worktree remove "$worktree"
 
-# ============================================================================
-# PHASE 5: Build for Linux
-# ============================================================================
-echo ""
-echo "════════════════════════════════════════════════════════════════════════════════"
-echo "PHASE 5: Build for Linux"
-echo "════════════════════════════════════════════════════════════════════════════════"
-echo ""
+  echo "✓ Windows build complete"
+}
 
-if [[ "$TARGET" == "windows" ]]; then
-  echo "⏭️  Skipping Linux build (target: windows)"
-elif grep -qi microsoft /proc/version &> /dev/null; then
-  # Already in WSL
-  echo "Building in WSL..."
+build_linux() {
+  local version_num="$1"
 
-  LINUX_WORKTREE="$BUILD_TEMP/linux"
-  git worktree add "$LINUX_WORKTREE" HEAD
-  cd "$LINUX_WORKTREE"
+  echo ""
+  echo "════════════════════════════════════════════════════════════════════════════════"
+  echo "Building for Linux"
+  echo "════════════════════════════════════════════════════════════════════════════════"
+  echo ""
+
+  local worktree="$MAIN_DIR/$WORKTREES_DIR/linux"
+  mkdir -p "$(dirname "$worktree")"
+  git worktree add "$worktree" HEAD
+
+  cd "$worktree"
 
   # Install Rust if needed
   if [[ -f "$HOME/.cargo/env" ]]; then
@@ -179,7 +157,7 @@ elif grep -qi microsoft /proc/version &> /dev/null; then
   if ! command -v cargo &> /dev/null; then
     echo "Installing Rust..."
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    source $HOME/.cargo/env
+    source "$HOME/.cargo/env"
   fi
 
   echo "Installing dependencies..."
@@ -189,86 +167,61 @@ elif grep -qi microsoft /proc/version &> /dev/null; then
   yarn tauri build
 
   echo "Collecting Linux artifacts..."
-  cp "src-tauri/target/release/knurl" "$MAIN_DIR/dist/knurl-${VERSION_NUM}-x64"
+  mkdir -p "$MAIN_DIR/dist"
+  cp "src-tauri/target/release/knurl" "$MAIN_DIR/dist/knurl-${version_num}-x64"
 
-  APPIMAGE=$(ls -1 "src-tauri/target/release/bundle/appimage"/*.AppImage 2>/dev/null | head -1)
-  [[ -n "$APPIMAGE" ]] && cp "$APPIMAGE" "$MAIN_DIR/dist/"
+  local appimage=$(ls -1 "src-tauri/target/release/bundle/appimage"/*.AppImage 2>/dev/null | head -1)
+  [[ -n "$appimage" ]] && cp "$appimage" "$MAIN_DIR/dist/"
 
-  DEB=$(ls -1 "src-tauri/target/release/bundle/deb"/*.deb 2>/dev/null | head -1)
-  [[ -n "$DEB" ]] && cp "$DEB" "$MAIN_DIR/dist/"
+  local deb=$(ls -1 "src-tauri/target/release/bundle/deb"/*.deb 2>/dev/null | head -1)
+  [[ -n "$deb" ]] && cp "$deb" "$MAIN_DIR/dist/"
 
   cd "$MAIN_DIR"
-  git worktree remove "$LINUX_WORKTREE"
+  git worktree remove "$worktree"
 
-elif command -v wsl.exe &> /dev/null; then
-  # Running on Windows, invoke WSL to build
-  echo "Invoking WSL to build for Linux..."
+  echo "✓ Linux build complete"
+}
 
-  # Create a temporary build script for WSL
-  BUILD_SCRIPT=$(mktemp)
-  cat > "$BUILD_SCRIPT" << 'WSLSCRIPT'
-#!/bin/bash
-set -euo pipefail
+# ============================================================================
+# PHASE 3: Setup and Build
+# ============================================================================
+echo ""
+echo "════════════════════════════════════════════════════════════════════════════════"
+echo "PHASE 3: Setup and Build"
+echo "════════════════════════════════════════════════════════════════════════════════"
+echo ""
 
-MAIN_DIR="$1"
-BUILD_TEMP="$2"
-VERSION_NUM="$3"
-
-cd "$MAIN_DIR"
-
-LINUX_WORKTREE="$BUILD_TEMP/linux-wsl"
-git worktree add "$LINUX_WORKTREE" HEAD
-cd "$LINUX_WORKTREE"
-
-# Install Rust if needed
-if [[ -f "$HOME/.cargo/env" ]]; then
-  source "$HOME/.cargo/env"
-fi
-
-if ! command -v cargo &> /dev/null; then
-  echo "Installing Rust..."
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-  source $HOME/.cargo/env
-fi
-
-echo "Installing dependencies..."
-yarn install --immutable
-
-echo "Building for Linux..."
-yarn tauri build
-
-echo "Collecting Linux artifacts..."
-cp "src-tauri/target/release/knurl" "$MAIN_DIR/dist/knurl-${VERSION_NUM}-x64"
-
-APPIMAGE=$(ls -1 "src-tauri/target/release/bundle/appimage"/*.AppImage 2>/dev/null | head -1)
-[[ -n "$APPIMAGE" ]] && cp "$APPIMAGE" "$MAIN_DIR/dist/"
-
-DEB=$(ls -1 "src-tauri/target/release/bundle/deb"/*.deb 2>/dev/null | head -1)
-[[ -n "$DEB" ]] && cp "$DEB" "$MAIN_DIR/dist/"
+mkdir -p "$MAIN_DIR/dist"
 
 cd "$MAIN_DIR"
-git worktree remove "$LINUX_WORKTREE"
-WSLSCRIPT
 
-  wsl.exe bash "$BUILD_SCRIPT" "$MAIN_DIR" "$BUILD_TEMP" "$VERSION_NUM" || return_code=$?
-  rm -f "$BUILD_SCRIPT"
+if [[ "$TARGET" == "windows" || "$TARGET" == "both" ]]; then
+  build_windows "$VERSION_NUM"
+fi
 
-  if [[ ${return_code:-0} -ne 0 ]]; then
-    exit $return_code
+if [[ "$TARGET" == "linux" || "$TARGET" == "both" ]]; then
+  if grep -qi microsoft /proc/version 2>/dev/null; then
+    # Running in WSL
+    build_linux "$VERSION_NUM"
+  elif command -v wsl.exe &> /dev/null; then
+    # Running on Windows, invoke WSL
+    echo "Invoking WSL to build for Linux..."
+    wsl.exe bash -c "cd '$MAIN_DIR' && bash scripts/release/release.sh '$VERSION' linux"
+  else
+    echo "⚠️  Not on Windows/WSL. Skipping Linux build."
   fi
-
-else
-  echo "⚠️  Not on Windows/WSL. Skipping Linux build."
 fi
 
 # ============================================================================
-# PHASE 6: Commit version changes
+# PHASE 4: Commit version changes
 # ============================================================================
 echo ""
 echo "════════════════════════════════════════════════════════════════════════════════"
-echo "PHASE 6: Commit version changes"
+echo "PHASE 4: Commit version changes"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
+
+cd "$MAIN_DIR"
 
 echo "Staging version files..."
 git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json
@@ -287,62 +240,51 @@ echo "Pushing tag to remote..."
 git push origin "$VERSION"
 
 # ============================================================================
-# PHASE 7: Collect and upload artifacts
+# PHASE 5: Collect and upload artifacts
 # ============================================================================
 echo ""
 echo "════════════════════════════════════════════════════════════════════════════════"
-echo "PHASE 7: Collect and upload artifacts"
+echo "PHASE 5: Collect and upload artifacts"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-# Create zipped versions of artifacts
 echo "Creating zipped artifacts..."
-for file in dist/*; do
+for file in "$MAIN_DIR/dist"/*; do
   if [[ -f "$file" ]]; then
     base=$(basename "$file")
     echo "  Zipping $base..."
-    zip -j "dist/${base}.zip" "$file" > /dev/null
+    zip -j "$MAIN_DIR/dist/${base}.zip" "$file" > /dev/null
   fi
 done
 
 echo ""
 echo "Artifacts to upload:"
-ls -lh dist/
+ls -lh "$MAIN_DIR/dist/"
 
 echo ""
 
 # Check if release already exists
 if gh release view "$VERSION" &>/dev/null; then
   echo "Release $VERSION already exists. Uploading artifacts..."
-  # Build list of files to upload
-  artifact_files=()
-  for file in dist/*; do
-    artifact_files+=("$file")
-  done
-  gh release upload "$VERSION" "${artifact_files[@]}" --clobber
+  gh release upload "$VERSION" "$MAIN_DIR/dist"/* --clobber
 else
   echo "Creating GitHub Release: $VERSION"
-  # Build list of files to upload
-  artifact_files=()
-  for file in dist/*; do
-    artifact_files+=("$file")
-  done
-  gh release create "$VERSION" "${artifact_files[@]}" \
+  gh release create "$VERSION" "$MAIN_DIR/dist"/* \
     --draft \
     --title "$VERSION" \
     --notes "See the assets to download this version and install."
 fi
 
 # ============================================================================
-# PHASE 8: Cleanup
+# PHASE 6: Cleanup
 # ============================================================================
 echo ""
 echo "════════════════════════════════════════════════════════════════════════════════"
-echo "PHASE 8: Cleanup"
+echo "PHASE 6: Cleanup"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-rm -rf dist
+rm -rf "$MAIN_DIR/dist"
 
 echo ""
 echo "✅ Release complete: $VERSION"
