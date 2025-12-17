@@ -1,91 +1,21 @@
-name: Release (Tauri)
+name: Release
 
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
-  publish-tauri:
-    permissions:
-      contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: windows-latest
-            args: ''
-          - platform: ubuntu-22.04
-            args: ''
-          - platform: macos-latest
-            args: '--target x86_64-apple-darwin'
-          - platform: macos-latest
-            args: '--target aarch64-apple-darwin'
-    runs-on: ${{ matrix.platform }}
+  notify:
+    name: Release workflow
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install dependencies (Ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
+      - name: Releases built locally
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: yarn
-          cache-dependency-path: yarn.lock
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Install Rust
-        run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-        shell: bash
-
-      - name: Add Rust to PATH (Windows)
-        if: runner.os == 'Windows'
-        run: echo "$HOME/.cargo/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-      - name: Install macOS targets
-        if: matrix.platform == 'macos-latest'
-        run: |
-          source $HOME/.cargo/env
-          rustup target add aarch64-apple-darwin x86_64-apple-darwin
-
-      - name: Rust Cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            src-tauri/target
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
-      - name: Install Frontend Dependencies
-        run: yarn install --immutable
-
-      - name: Run Critical Tests (Ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
-        env:
-          VITEST_MAX_WORKERS: 2
-        run: yarn test:check 2>&1 | tee /tmp/test-output.log
-        continue-on-error: true
-
-      - name: Build and Publish with Tauri
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: ${{ github.ref_name }}
-          releaseBody: 'See the assets to download this version and install.'
-          releaseDraft: true
-          prerelease: false
-          includeDebug: false
-          args: ${{ matrix.args }}
+          echo "Releases are built locally and uploaded manually."
+          echo "See scripts/release.sh for the release process."
+          exit 0

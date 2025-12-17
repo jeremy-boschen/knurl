@@ -335,13 +335,31 @@ struct DeviceCodeParams {
 fn parse_token_response_body(body: &[u8]) -> Result<TokenResponseWire, AppError> {
     // First try JSON (accept both snake_case and camelCase keys)
     let as_str = std::str::from_utf8(body).unwrap_or("");
+    let body_preview = if body.len() > 200 {
+        format!(
+            "{}... (truncated)",
+            &as_str.chars().take(200).collect::<String>()
+        )
+    } else {
+        as_str.to_string()
+    };
+    log::debug!(
+        "[AUTH] Attempting to parse token response. Body size: {size} bytes, content: {preview}",
+        size = body.len(),
+        preview = body_preview
+    );
+
     if let Ok(value) = serde_json::from_slice::<serde_json::Value>(body) {
+        log::debug!("[AUTH] Token response parsed as JSON");
         // Error shape from RFC: {"error":"...","error_description":"..."}
         if let Some(err) = value.get("error").and_then(|v| v.as_str()) {
             let desc = value
                 .get("error_description")
                 .and_then(|v| v.as_str())
                 .unwrap_or("");
+            log::warn!(
+                "[AUTH] OAuth token error from server. Error: '{err}', Description: '{desc}'"
+            );
             return Err(AppError::new(
                 ErrorKind::BadRequest,
                 format!(
@@ -371,19 +389,31 @@ fn parse_token_response_body(body: &[u8]) -> Result<TokenResponseWire, AppError>
                     .or_else(|| v.as_str().and_then(|s| s.parse::<u64>().ok()))
             });
         if let (Some(access_token), Some(token_type)) = (at, tt) {
+            log::debug!(
+                "[AUTH] Token response validated. Token type: '{token_type}', expires_in: {ei:?} seconds"
+            );
             return Ok(TokenResponseWire {
                 access_token: access_token.to_string(),
                 token_type: token_type.to_string(),
                 expires_in: ei,
             });
         }
+        log::debug!(
+            "[AUTH] JSON parsed but missing required fields (access_token or token_type). Trying form-encoded format."
+        );
         // If JSON parsed but required fields missing, fall through to urlencoded parser
+    } else {
+        log::debug!("[AUTH] Failed to parse token response as JSON, attempting form-urlencoded");
     }
 
     // Try application/x-www-form-urlencoded
     if let Ok(form_map) =
         serde_urlencoded::from_bytes::<std::collections::HashMap<String, String>>(body)
     {
+        log::debug!(
+            "[AUTH] Token response parsed as form-urlencoded with {} fields",
+            form_map.len()
+        );
         let at = form_map
             .get("access_token")
             .or_else(|| form_map.get("accessToken"))
@@ -397,22 +427,28 @@ fn parse_token_response_body(body: &[u8]) -> Result<TokenResponseWire, AppError>
             .or_else(|| form_map.get("expiresIn"))
             .and_then(|s| s.parse::<u64>().ok());
         if let (Some(access_token), Some(token_type)) = (at, tt) {
+            log::debug!(
+                "[AUTH] Form-encoded token response validated. Token type: '{token_type}', expires_in: {ei:?} seconds"
+            );
             return Ok(TokenResponseWire {
                 access_token,
                 token_type,
                 expires_in: ei,
             });
         }
+        log::debug!(
+            "[AUTH] Form-encoded response parsed but missing required fields. Found fields: {:?}",
+            form_map.keys().collect::<Vec<_>>()
+        );
     }
 
-    Err(AppError::new(
-        ErrorKind::JsonError,
-        format!(
-            "Failed to parse token response: missing fields. Body ({} bytes) begins: {}",
-            body.len(),
-            &as_str.chars().take(120).collect::<String>()
-        ),
-    ))
+    let error_msg = format!(
+        "Failed to parse token response: missing fields. Body ({} bytes) begins: {}",
+        body.len(),
+        &as_str.chars().take(200).collect::<String>()
+    );
+    log::error!("[AUTH] {error_msg}");
+    Err(AppError::new(ErrorKind::JsonError, error_msg))
 }
 
 fn log_token_response_metadata(emitter: &dyn LogEmitter, request_id: &str, resp: &ResponseData) {
@@ -446,6 +482,23 @@ fn log_token_request_preview(
     headers: &HashMap<String, String>,
     form_fields: &[(String, String)],
 ) {
+    // Log HTTP details for debugging
+    log::debug!("[AUTH] OAuth2 token request: {method} {url}");
+    log::debug!(
+        "[AUTH] Request headers ({count} total):",
+        count = headers.len()
+    );
+    for (name, value) in headers {
+        log::debug!("[AUTH]   {name}: {value}");
+    }
+    log::debug!(
+        "[AUTH] Request form fields ({count} total):",
+        count = form_fields.len()
+    );
+    for (name, value) in form_fields {
+        log::debug!("[AUTH]   {name}: {value}");
+    }
+
     let header_entries: Vec<serde_json::Value> = headers
         .iter()
         .map(|(name, value)| serde_json::json!({ "name": name, "value": value }))
@@ -483,9 +536,11 @@ pub async fn discover_oidc(app: AppHandle, url: String) -> Result<OidcDiscovery,
         None,
     );
 
+    log::debug!("[AUTH] OIDC discovery request to: {url}");
+
     let request = Request {
         request_id: request_id.clone(),
-        url,
+        url: url.clone(),
         method: "GET".to_string(),
         ..Default::default()
     };
@@ -494,14 +549,44 @@ pub async fn discover_oidc(app: AppHandle, url: String) -> Result<OidcDiscovery,
     let response_data = engine
         .execute(request, emitter.clone())
         .await
-        .map_err(|e| AppError::new(ErrorKind::HttpError, e.to_string()))?;
+        .map_err(|e| {
+            log::error!("[AUTH] OIDC discovery HTTP error: {e}");
+            AppError::new(ErrorKind::HttpError, e.to_string())
+        })?;
+
+    log::debug!(
+        "[AUTH] OIDC discovery response received. Status: {}, Body size: {} bytes",
+        response_data.status,
+        response_data.body.len()
+    );
+
+    if response_data.status != 200 {
+        let body_str = String::from_utf8_lossy(&response_data.body);
+        log::warn!(
+            "[AUTH] OIDC discovery returned non-200 status {}. Response: {}",
+            response_data.status,
+            body_str
+        );
+    }
 
     let wire: OidcDiscoveryWire = serde_json::from_slice(&response_data.body).map_err(|e| {
+        let body_str = String::from_utf8_lossy(&response_data.body);
+        log::error!("[AUTH] Failed to parse OIDC discovery response: {e}. Body: {body_str}");
         AppError::new(
             ErrorKind::JsonError,
             format!("Failed to parse OIDC discovery response: {e}"),
         )
     })?;
+
+    let auth_ep = wire.authorization_endpoint.as_deref().unwrap_or("none");
+    let token_ep = wire.token_endpoint.as_deref().unwrap_or("none");
+    let device_ep = wire
+        .device_authorization_endpoint
+        .as_deref()
+        .unwrap_or("none");
+    log::debug!(
+        "[AUTH] OIDC discovery parsed successfully. Endpoints: auth={auth_ep}, token={token_ep}, device={device_ep}"
+    );
 
     let discovery = OidcDiscovery {
         authorization_endpoint: wire.authorization_endpoint,
@@ -896,9 +981,15 @@ pub async fn get_authentication_result(
 
                     // client authentication placement (policy: Basic or body)
                     let chosen_auth = client_auth.unwrap_or(ClientAuth::Body);
+                    log::debug!(
+                        "[AUTH] Client credentials flow: client_auth method = {chosen_auth:?}"
+                    );
                     let mut headers = HashMap::new();
                     match chosen_auth {
                         ClientAuth::Basic => {
+                            log::debug!(
+                                "[AUTH] Using HTTP Basic authentication for client credentials"
+                            );
                             if !client_id.is_empty() && !client_secret.is_empty() {
                                 let raw = format!("{client_id}:{client_secret}");
                                 let b64 = general_purpose::STANDARD.encode(raw);
@@ -912,6 +1003,7 @@ pub async fn get_authentication_result(
                             }
                         }
                         ClientAuth::Body => {
+                            log::debug!("[AUTH] Placing client credentials in request body");
                             params.push(("client_id", &client_id));
                             params.push(("client_secret", &client_secret));
                         }
@@ -919,9 +1011,15 @@ pub async fn get_authentication_result(
 
                     // extra provider params
                     if let Some(extra) = &token_extra_params {
+                        log::debug!(
+                            "[AUTH] Adding {count} extra OAuth2 parameters",
+                            count = extra.len()
+                        );
                         for (k, v) in extra {
                             params.push((k.as_str(), v.as_str()));
                         }
+                    } else {
+                        log::debug!("[AUTH] No extra OAuth2 parameters");
                     }
 
                     let params_preview: Vec<(String, String)> = params
@@ -968,10 +1066,28 @@ pub async fn get_authentication_result(
                     );
 
                     let engine = preferred_engine();
-                    let response_data = engine
-                        .execute(request, emitter.clone())
-                        .await
-                        .map_err(|e| AppError::new(ErrorKind::HttpError, e.to_string()))?;
+                    let response_data =
+                        engine
+                            .execute(request, emitter.clone())
+                            .await
+                            .map_err(|e| {
+                                log::error!("[AUTH] client_credentials: HTTP request failed: {e}");
+                                AppError::new(ErrorKind::HttpError, e.to_string())
+                            })?;
+
+                    log::debug!(
+                        "[AUTH] client_credentials: Response received. Status: {}, Size: {} bytes, Duration: {}ms",
+                        response_data.status,
+                        response_data.body.len(),
+                        response_data.duration
+                    );
+
+                    if response_data.status != 200 {
+                        log::warn!(
+                            "[AUTH] client_credentials: Non-200 response status {}",
+                            response_data.status
+                        );
+                    }
 
                     log_token_response_metadata(&*emitter, &req_id, &response_data);
                     let token_response = parse_token_response_body(&response_data.body)?;
@@ -1096,9 +1212,11 @@ pub async fn get_authentication_result(
                     }
 
                     let chosen_auth = client_auth.unwrap_or(ClientAuth::Body);
+                    log::debug!("[AUTH] refresh_token flow: client_auth method = {chosen_auth:?}");
                     let mut headers = HashMap::new();
                     match chosen_auth {
                         ClientAuth::Basic => {
+                            log::debug!("[AUTH] Using HTTP Basic authentication for refresh_token");
                             if !client_id.is_empty() && !client_secret.is_empty() {
                                 let raw = format!("{client_id}:{client_secret}");
                                 let b64 = general_purpose::STANDARD.encode(raw);
@@ -1112,12 +1230,19 @@ pub async fn get_authentication_result(
                             }
                         }
                         ClientAuth::Body => {
+                            log::debug!(
+                                "[AUTH] Placing client credentials in request body for refresh_token"
+                            );
                             params.push(("client_id", &client_id));
                             params.push(("client_secret", &client_secret));
                         }
                     }
 
                     if let Some(extra) = &token_extra_params {
+                        log::debug!(
+                            "[AUTH] Adding {} extra parameters to refresh_token request",
+                            extra.len()
+                        );
                         for (k, v) in extra {
                             params.push((k.as_str(), v.as_str()));
                         }
@@ -1167,10 +1292,29 @@ pub async fn get_authentication_result(
                     );
 
                     let engine = preferred_engine();
-                    let response_data = engine
-                        .execute(request, emitter.clone())
-                        .await
-                        .map_err(|e| AppError::new(ErrorKind::HttpError, e.to_string()))?;
+                    let response_data =
+                        engine
+                            .execute(request, emitter.clone())
+                            .await
+                            .map_err(|e| {
+                                log::error!("[AUTH] refresh_token: HTTP request failed: {e}");
+                                AppError::new(ErrorKind::HttpError, e.to_string())
+                            })?;
+
+                    log::debug!(
+                        "[AUTH] refresh_token: Response received. Status: {}, Size: {} bytes, Duration: {}ms",
+                        response_data.status,
+                        response_data.body.len(),
+                        response_data.duration
+                    );
+
+                    if response_data.status != 200 {
+                        log::warn!(
+                            "[AUTH] refresh_token: Non-200 response status {}",
+                            response_data.status
+                        );
+                    }
+
                     log_token_response_metadata(&*emitter, &req_id, &response_data);
                     let token_response = parse_token_response_body(&response_data.body)?;
 
@@ -1660,13 +1804,18 @@ async fn handle_device_code(
         "Token URL is required".to_string(),
     ))?;
 
+    log::debug!("[AUTH] device_code: Initiating device authorization request to {device_endpoint}");
+    log::debug!("[AUTH] device_code: client_auth method = {client_auth:?}");
+
     let mut params: Vec<(String, String)> = vec![("client_id".to_string(), client_id.clone())];
     if let Some(scope_val) = scope.as_ref().filter(|s| !s.trim().is_empty()) {
+        log::debug!("[AUTH] device_code: Adding scope: {scope_val}");
         params.push(("scope".to_string(), scope_val.clone()));
     }
 
     let mut headers = HashMap::new();
     if matches!(client_auth, ClientAuth::Basic) {
+        log::debug!("[AUTH] device_code: Using HTTP Basic authentication");
         if let Some(secret) = client_secret.as_ref() {
             let raw = format!("{client_id}:{secret}");
             let b64 = general_purpose::STANDARD.encode(raw);
@@ -1724,15 +1873,44 @@ async fn handle_device_code(
     let device_response = engine
         .execute(device_request, emitter.clone())
         .await
-        .map_err(|e| AppError::new(ErrorKind::HttpError, e.to_string()))?;
+        .map_err(|e| {
+            log::error!("[AUTH] device_code: Device authorization request failed: {e}");
+            AppError::new(ErrorKind::HttpError, e.to_string())
+        })?;
+
+    log::debug!(
+        "[AUTH] device_code: Device authorization response received. Status: {}, Size: {} bytes",
+        device_response.status,
+        device_response.body.len()
+    );
+
+    if device_response.status != 200 {
+        let body_str = String::from_utf8_lossy(&device_response.body);
+        log::warn!(
+            "[AUTH] device_code: Non-200 response status {}. Body: {}",
+            device_response.status,
+            body_str
+        );
+    }
 
     let device_payload: DeviceCodeResponse = serde_json::from_slice(&device_response.body)
         .map_err(|e| {
+            let body_str = String::from_utf8_lossy(&device_response.body);
+            log::error!(
+                "[AUTH] device_code: Failed to parse device code response: {e}. Body: {body_str}"
+            );
             AppError::new(
                 ErrorKind::JsonError,
                 format!("Failed to parse device code response: {e}"),
             )
         })?;
+
+    log::debug!(
+        "[AUTH] device_code: Device code response parsed. User code: {}, Expires: {:?}s, Poll interval: {:?}s",
+        device_payload.user_code,
+        device_payload.expires_in,
+        device_payload.interval
+    );
 
     emit_auth_log(
         &*emitter,
@@ -1789,15 +1967,28 @@ async fn handle_device_code(
         }
     }
 
+    let mut poll_attempt = 0;
     loop {
         if chrono::Utc::now().timestamp() > expires_at {
+            log::error!(
+                "[AUTH] device_code: Device authorization expired after {poll_attempt} polling attempts"
+            );
             return Err(AppError::new(
                 ErrorKind::Timeout,
                 "Device authorization expired before completion".to_string(),
             ));
         }
 
+        log::debug!(
+            "[AUTH] device_code: Sleeping for {}s before poll attempt {}",
+            interval,
+            poll_attempt + 1
+        );
         sleep(Duration::from_secs(interval)).await;
+        poll_attempt += 1;
+        log::debug!(
+            "[AUTH] device_code: Starting poll attempt {poll_attempt} (interval: {interval}s)"
+        );
 
         let token_params = token_params_base.clone();
         let params_preview = token_params.clone();
@@ -1836,7 +2027,18 @@ async fn handle_device_code(
         let response = engine
             .execute(poll_request, emitter.clone())
             .await
-            .map_err(|e| AppError::new(ErrorKind::HttpError, e.to_string()))?;
+            .map_err(|e| {
+                log::error!(
+                    "[AUTH] device_code: Poll attempt {poll_attempt} HTTP request failed: {e}"
+                );
+                AppError::new(ErrorKind::HttpError, e.to_string())
+            })?;
+
+        log::debug!(
+            "[AUTH] device_code: Poll attempt {poll_attempt} response received. Status: {status}, Size: {size} bytes",
+            status = response.status,
+            size = response.body.len()
+        );
 
         if response.status == 200 {
             log_token_response_metadata(&*emitter, &req_id, &response);
@@ -1890,6 +2092,9 @@ async fn handle_device_code(
                 .unwrap_or_default();
             match err.error.as_str() {
                 "authorization_pending" => {
+                    log::debug!(
+                        "[AUTH] device_code: Poll attempt {poll_attempt} - authorization still pending"
+                    );
                     emit_auth_log(
                         &*emitter,
                         &req_id,
@@ -1902,6 +2107,9 @@ async fn handle_device_code(
                 }
                 "slow_down" => {
                     interval += 5;
+                    log::debug!(
+                        "[AUTH] device_code: Poll attempt {poll_attempt} - server requested slow down. New interval: {interval}s"
+                    );
                     emit_auth_log(
                         &*emitter,
                         &req_id,
@@ -1913,12 +2121,20 @@ async fn handle_device_code(
                     continue;
                 }
                 "expired_token" | "access_denied" => {
+                    log::error!(
+                        "[AUTH] device_code: Poll attempt {poll_attempt} - authorization failed: {error}{detail}",
+                        error = err.error,
+                        detail = detail
+                    );
                     return Err(AppError::new(
                         ErrorKind::BadRequest,
                         format!("Device authorization failed: {}{detail}", err.error),
                     ));
                 }
                 other => {
+                    log::error!(
+                        "[AUTH] device_code: Poll attempt {poll_attempt} - unexpected error: {other}{detail}"
+                    );
                     return Err(AppError::new(
                         ErrorKind::BadRequest,
                         format!("Device authorization error: {other}{detail}"),
@@ -1926,6 +2142,12 @@ async fn handle_device_code(
                 }
             }
         } else {
+            let body_str = String::from_utf8_lossy(&response.body);
+            log::error!(
+                "[AUTH] device_code: Poll attempt {poll_attempt} - unexpected response format (status {status}). Body: {body}",
+                status = response.status,
+                body = body_str
+            );
             return Err(AppError::new(
                 ErrorKind::BadRequest,
                 "Unexpected response from token endpoint during device polling".to_string(),

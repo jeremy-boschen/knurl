@@ -1,12 +1,12 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "knurl",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "identifier": "org.newtco.knurl",
   "build": {
     "beforeDevCommand": "yarn dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "yarn build",
+    "beforeBuildCommand": "yarn vite build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -28,7 +28,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "nsis",
+    "targets": ["nsis", "appimage", "deb"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

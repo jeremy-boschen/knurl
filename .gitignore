@@ -18,6 +18,7 @@ dist-ssr
 out/
 /src-tauri/gen
 scripts/build/.compiled
+release-artifacts
 
 # Environment variables
 *.local
