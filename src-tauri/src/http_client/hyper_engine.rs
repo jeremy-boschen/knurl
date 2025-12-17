@@ -200,7 +200,11 @@ impl HyperEngine {
     fn build_uri(req: &Request) -> Result<Uri, AppError> {
         req.url
             .parse::<Uri>()
-            .map_err(|e| AppError::new(ErrorKind::BadRequest, format!("Invalid URL: {e}")))
+            .map_err(|e| {
+                let msg = format!("Invalid URL: '{}' - {}", req.url, e);
+                log::error!("[HTTP] {}", msg);
+                AppError::new(ErrorKind::BadRequest, msg)
+            })
     }
 
     fn parse_method(req: &Request) -> Result<Method, AppError> {

@@ -1,6 +1,7 @@
 import { sendHttpRequest } from "@/bindings/knurl"
 import { prepareHttpRequest } from "@/lib/request/prepared-http"
 import { generateUniqueId } from "@/lib/utils"
+import { logger } from "@/lib/logger"
 import { useApplication } from "@/state/application"
 import type { RequestContext, RequestEngine } from "@/request/pipeline"
 import { type HttpResponseData, type ResponseState, zHttpResponseData, zResponseState } from "@/types"
@@ -78,7 +79,8 @@ export const HttpEngine: RequestEngine = {
     const sanitizedTimestamp = (() => {
       try {
         return new Date(response.timestamp).toISOString()
-      } catch {
+      } catch (e) {
+        logger.warn(`[HTTP_ENGINE] Failed to parse response timestamp "${response.timestamp}": ${e}`)
         return response.timestamp
       }
     })()
@@ -89,31 +91,43 @@ export const HttpEngine: RequestEngine = {
       try {
         // Unconditionally parse and convert to ISO string
         return { ...cookie, expires: new Date(cookie.expires).toISOString() }
-      } catch (_e) {
+      } catch (e) {
         // If parsing fails for any reason, treat it as undefined
+        logger.warn(`[HTTP_ENGINE] Failed to parse cookie expiry date "${cookie.expires}": ${e}`)
         return { ...cookie, expires: undefined }
       }
     })
 
-    const httpResponseData: HttpResponseData = zHttpResponseData.parse({
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers ?? []),
-      cookies: sanitizedCookies,
-      body: responseBody,
-      bodyBase64: responseBodyBase64,
-      filePath: (response as unknown as { filePath?: string }).filePath,
-    })
+    let httpResponseData: HttpResponseData
+    try {
+      httpResponseData = zHttpResponseData.parse({
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers ?? []),
+        cookies: sanitizedCookies,
+        body: responseBody,
+        bodyBase64: responseBodyBase64,
+        filePath: (response as unknown as { filePath?: string }).filePath,
+      })
+    } catch (e) {
+      logger.error(`[HTTP_ENGINE] Failed to parse HTTP response data: ${e}`)
+      throw e
+    }
 
-    return zResponseState.parse({
-      requestId: response.requestId,
-      responseTime: response.duration,
-      responseSize: response.size,
-      timestamp: sanitizedTimestamp,
-      data: {
-        type: "http",
-        data: httpResponseData,
-      },
-    })
+    try {
+      return zResponseState.parse({
+        requestId: response.requestId,
+        responseTime: response.duration,
+        responseSize: response.size,
+        timestamp: sanitizedTimestamp,
+        data: {
+          type: "http",
+          data: httpResponseData,
+        },
+      })
+    } catch (e) {
+      logger.error(`[HTTP_ENGINE] Failed to parse response state: ${e}`)
+      throw e
+    }
   },
 }

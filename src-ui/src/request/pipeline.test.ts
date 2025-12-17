@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
+const loggerMock = vi.hoisted(() => ({ error: vi.fn(), warn: vi.fn(), debug: vi.fn(), info: vi.fn() }))
 const httpEngineMock = vi.hoisted(() => ({ execute: vi.fn(async () => ({ body: undefined, status: 200, headers: [] })) }))
 const wsEngineMock = vi.hoisted(() => ({ execute: vi.fn(async () => ({ status: 101 })) }))
 
 vi.mock("@/request/http/engine", () => ({ HttpEngine: httpEngineMock }))
 vi.mock("@/request/ws/engine", () => ({ WebSocketEngine: wsEngineMock }))
+vi.mock("@/lib/logger", () => ({ logger: loggerMock }))
 
 import { createAuthPhase, protocolDispatchPhase, resolveVariablesPhase, runPipeline } from "./pipeline"
 
@@ -128,5 +130,44 @@ describe("request pipeline", () => {
 
     expect(getAuthResult).toHaveBeenCalled()
     expect(credentialsSet).toHaveBeenCalled()
+  })
+
+  it("logs error when inheriting auth without collection", async () => {
+    const get = () =>
+      ({
+        collectionsApi: { getCollection: () => undefined },
+      }) as any
+    const phase = createAuthPhase(get, vi.fn())
+    await expect(
+      phase({ request: { ...baseRequest, authentication: { type: "inherit" } }, response: {} } as any)
+    ).rejects.toThrow()
+    expect(loggerMock.error).toHaveBeenCalled()
+    expect(loggerMock.error).toHaveBeenCalledWith(expect.stringContaining("[AUTH]"))
+  })
+
+  it("logs error when protocol is unsupported", async () => {
+    loggerMock.error.mockClear()
+    await expect(
+      protocolDispatchPhase({ request: { ...baseRequest, url: "ftp://example.com" }, response: {} } as any)
+    ).rejects.toThrow()
+    expect(loggerMock.error).toHaveBeenCalled()
+    expect(loggerMock.error).toHaveBeenCalledWith(expect.stringContaining("[PIPELINE]"))
+  })
+
+  it("logs pipeline errors with full error message and stack", async () => {
+    const notifier = { onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn(), onLog: vi.fn() }
+    const errorMessage = "test pipeline error"
+    const phases = [
+      async () => {
+        throw new Error(errorMessage)
+      },
+    ]
+    loggerMock.error.mockClear()
+    await runPipeline(phases, { request: baseRequest, response: {} } as any, notifier)
+    expect(loggerMock.error).toHaveBeenCalled()
+    const errorCall = loggerMock.error.mock.calls[0][0]
+    expect(errorCall).toContain("[PIPELINE]")
+    expect(errorCall).toContain("Pipeline error")
+    expect(errorCall).toContain(errorMessage)
   })
 })

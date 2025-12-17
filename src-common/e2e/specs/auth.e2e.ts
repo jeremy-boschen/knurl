@@ -3,6 +3,7 @@ import { expect } from "@wdio/globals"
 import {
   clickByTestId,
   createCollection,
+  enableAllLogLevels,
   ensureWorkspaceReady,
   getElementByTestId,
   getInputValueBySelector,
@@ -1142,26 +1143,7 @@ describe("[CRITICAL] Auth Flow Logging", () => {
     await expect(logsContainer).toBeDefined()
 
     // Enable all log levels to ensure auth logs are visible
-    const levelsTrigger = await getElementByTestId("logs-list:levels-popover-trigger", 2000)
-    await levelsTrigger.click()
-    await browser.pause(300)
-
-    // Ensure log levels are available before toggling
-    await browser.execute(() => {
-      const checkboxes = document.querySelectorAll('[data-test-id^="logs-list:toggle-level-checkbox:"]')
-      return checkboxes.length
-    })
-
-    // Click the "All" checkbox if available
-    const toggleAllCheckbox = await getElementByTestId("logs-list:toggle-all-levels-checkbox", 1000)
-    if (toggleAllCheckbox) {
-      await toggleAllCheckbox.click()
-      await browser.pause(300)
-    }
-
-    // Close the popover
-    await browser.keys("Escape")
-    await browser.pause(300)
+    await enableAllLogLevels()
 
     // Check for log entries
     const logRows = await browser.execute(() => {
@@ -1236,13 +1218,37 @@ describe("[CRITICAL] Auth Flow Logging", () => {
 
     await expect(logsContainer).toBeDefined()
 
-    // Verify logs exist
+    // Enable all log levels to ensure auth logs are visible
+    await enableAllLogLevels()
+
+    // Check for log entries
     const logRows = await browser.execute(() => {
       const rows = document.querySelectorAll('[data-test-id^="logs-list:log-row:"]')
-      return Array.from(rows).map((row) => row.textContent ?? "")
+      return Array.from(rows).map((row) => ({
+        text: row.textContent ?? "",
+        html: row.innerHTML,
+      }))
     })
 
-    await expect(logRows.length).toBeGreaterThan(0, "Bearer auth logs should be present in response viewer")
+    // Verify logs were captured
+    await expect(logRows.length).toBeGreaterThan(
+      0,
+      "Bearer auth logs should be present in response viewer - check that emit_auth_log() is being called",
+    )
+
+    // Verify auth-related log messages are present
+    const authLogsContent = await browser.execute(() => {
+      const rows = document.querySelectorAll('[data-test-id^="logs-list:log-row:"]')
+      return Array.from(rows)
+        .map((row) => row.textContent ?? "")
+        .join(" ")
+        .toLowerCase()
+    })
+
+    await expect(authLogsContent).toMatch(
+      /auth|bearer|token|header/i,
+      "Log content should contain bearer auth-related keywords",
+    )
   })
 
   it("displays auth flow logs for OAuth2 client credentials", async () => {
@@ -1297,14 +1303,37 @@ describe("[CRITICAL] Auth Flow Logging", () => {
 
     await expect(logsContainer).toBeDefined()
 
-    // Verify OAuth2 logs exist
+    // Enable all log levels to ensure auth logs are visible
+    await enableAllLogLevels()
+
+    // Check for log entries
     const logRows = await browser.execute(() => {
       const rows = document.querySelectorAll('[data-test-id^="logs-list:log-row:"]')
-      return Array.from(rows).map((row) => row.textContent ?? "")
+      return Array.from(rows).map((row) => ({
+        text: row.textContent ?? "",
+        html: row.innerHTML,
+      }))
     })
 
-    // Should contain OAuth2 authentication related logs
-    await expect(logRows.length).toBeGreaterThan(0, "OAuth2 auth logs should be present in response viewer")
+    // Verify logs were captured
+    await expect(logRows.length).toBeGreaterThan(
+      0,
+      "OAuth2 auth logs should be present in response viewer - check that emit_auth_log() is being called",
+    )
+
+    // Verify OAuth2-related log messages are present
+    const authLogsContent = await browser.execute(() => {
+      const rows = document.querySelectorAll('[data-test-id^="logs-list:log-row:"]')
+      return Array.from(rows)
+        .map((row) => row.textContent ?? "")
+        .join(" ")
+        .toLowerCase()
+    })
+
+    await expect(authLogsContent).toMatch(
+      /client_credentials|token|credential|bearer|authorization/i,
+      "Log content should contain OAuth2 auth-related keywords",
+    )
   })
 
   console.log("✅ Auth flow logging tests completed")

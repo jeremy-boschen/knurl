@@ -147,10 +147,12 @@ fn is_stub_oauth_enabled() -> bool {
 
 fn require_value<'a>(value: Option<&'a String>, message: &str) -> Result<&'a str, AppError> {
     let Some(raw) = value else {
+        log::error!("[AUTH] {}", message);
         return Err(AppError::new(ErrorKind::BadRequest, message.to_string()));
     };
     let trimmed = raw.trim();
     if trimmed.is_empty() {
+        log::error!("[AUTH] {}", message);
         Err(AppError::new(ErrorKind::BadRequest, message.to_string()))
     } else {
         Ok(trimmed)
@@ -284,14 +286,20 @@ fn stubbed_oauth_result(
             let token = require_value(refresh_token, "Refresh token is required")?;
             Ok(build_result(token))
         }
-        "password" => Err(AppError::new(
-            ErrorKind::BadRequest,
-            "unsupported_grant_type: ROPC not supported by Knurl".to_string(),
-        )),
-        other => Err(AppError::new(
-            ErrorKind::BadRequest,
-            format!("Unsupported OAuth2 grant type: {other}"),
-        )),
+        "password" => {
+            log::error!("[AUTH] unsupported_grant_type: ROPC not supported by Knurl");
+            Err(AppError::new(
+                ErrorKind::BadRequest,
+                "unsupported_grant_type: ROPC not supported by Knurl".to_string(),
+            ))
+        },
+        other => {
+            log::error!("[AUTH] Unsupported OAuth2 grant type: {other}");
+            Err(AppError::new(
+                ErrorKind::BadRequest,
+                format!("Unsupported OAuth2 grant type: {other}"),
+            ))
+        },
     }
 }
 
@@ -550,32 +558,32 @@ pub async fn discover_oidc(app: AppHandle, url: String) -> Result<OidcDiscovery,
         .execute(request, emitter.clone())
         .await
         .map_err(|e| {
-            log::error!("[AUTH] OIDC discovery HTTP error: {e}");
-            AppError::new(ErrorKind::HttpError, e.to_string())
+            let error_msg = format!("[AUTH] OIDC discovery HTTP error at URL '{}': {}", url, e);
+            log::error!("{}", error_msg);
+            AppError::new(ErrorKind::HttpError, error_msg)
         })?;
 
+    let body_str = String::from_utf8_lossy(&response_data.body);
     log::debug!(
-        "[AUTH] OIDC discovery response received. Status: {}, Body size: {} bytes",
+        "[AUTH] OIDC discovery response received. Status: {}, Body size: {} bytes, Content: {}",
         response_data.status,
-        response_data.body.len()
+        response_data.body.len(),
+        body_str
     );
-
-    if response_data.status != 200 {
-        let body_str = String::from_utf8_lossy(&response_data.body);
-        log::warn!(
-            "[AUTH] OIDC discovery returned non-200 status {}. Response: {}",
-            response_data.status,
-            body_str
-        );
-    }
 
     let wire: OidcDiscoveryWire = serde_json::from_slice(&response_data.body).map_err(|e| {
         let body_str = String::from_utf8_lossy(&response_data.body);
-        log::error!("[AUTH] Failed to parse OIDC discovery response: {e}. Body: {body_str}");
-        AppError::new(
-            ErrorKind::JsonError,
-            format!("Failed to parse OIDC discovery response: {e}"),
-        )
+        let error_msg = format!(
+            "Failed to parse OIDC discovery response: {}. Response body (first 1000 bytes): {}",
+            e,
+            if body_str.len() > 1000 {
+                format!("{}...(truncated)", &body_str[..1000])
+            } else {
+                body_str.to_string()
+            }
+        );
+        log::error!("[AUTH] {}", error_msg);
+        AppError::new(ErrorKind::JsonError, error_msg)
     })?;
 
     let auth_ep = wire.authorization_endpoint.as_deref().unwrap_or("none");
@@ -772,10 +780,13 @@ pub async fn get_authentication_result(
                         ..Default::default()
                     })
                 }
-                _ => Err(AppError::new(
-                    ErrorKind::BadRequest,
-                    "Unsupported placement type".to_string(),
-                )),
+                _ => {
+                    log::error!("[AUTH] Unsupported placement type for Basic auth");
+                    Err(AppError::new(
+                        ErrorKind::BadRequest,
+                        "Unsupported placement type".to_string(),
+                    ))
+                },
             }
         }
         AuthConfig::ApiKey {
@@ -898,10 +909,13 @@ pub async fn get_authentication_result(
                         ..Default::default()
                     })
                 }
-                _ => Err(AppError::new(
-                    ErrorKind::BadRequest,
-                    "Unsupported placement type".to_string(),
-                )),
+                _ => {
+                    log::error!("[AUTH] Unsupported placement type for API Key auth");
+                    Err(AppError::new(
+                        ErrorKind::BadRequest,
+                        "Unsupported placement type".to_string(),
+                    ))
+                },
             }
         }
         AuthConfig::Oauth2 {
@@ -961,18 +975,27 @@ pub async fn get_authentication_result(
                         &discovery_url,
                     )
                     .await?;
-                    let token_url = endpoints.token.ok_or(AppError::new(
-                        ErrorKind::BadRequest,
-                        "Token URL is required".to_string(),
-                    ))?;
-                    let client_id = client_id.ok_or(AppError::new(
-                        ErrorKind::BadRequest,
-                        "Client ID is required".to_string(),
-                    ))?;
-                    let client_secret = client_secret.ok_or(AppError::new(
-                        ErrorKind::BadRequest,
-                        "Client Secret is required".to_string(),
-                    ))?;
+                    let token_url = endpoints.token.clone().ok_or_else(|| {
+                        log::error!("[AUTH] client_credentials: Token URL is required");
+                        AppError::new(
+                            ErrorKind::BadRequest,
+                            "Token URL is required".to_string(),
+                        )
+                    })?;
+                    let client_id = client_id.clone().ok_or_else(|| {
+                        log::error!("[AUTH] client_credentials: Client ID is required");
+                        AppError::new(
+                            ErrorKind::BadRequest,
+                            "Client ID is required".to_string(),
+                        )
+                    })?;
+                    let client_secret = client_secret.clone().ok_or_else(|| {
+                        log::error!("[AUTH] client_credentials: Client Secret is required");
+                        AppError::new(
+                            ErrorKind::BadRequest,
+                            "Client Secret is required".to_string(),
+                        )
+                    })?;
 
                     let mut params = vec![("grant_type", "client_credentials")];
                     if let Some(s) = &scope {
@@ -1075,19 +1098,14 @@ pub async fn get_authentication_result(
                                 AppError::new(ErrorKind::HttpError, e.to_string())
                             })?;
 
+                    let body_str = String::from_utf8_lossy(&response_data.body);
                     log::debug!(
-                        "[AUTH] client_credentials: Response received. Status: {}, Size: {} bytes, Duration: {}ms",
+                        "[AUTH] client_credentials: Response received. Status: {}, Size: {} bytes, Duration: {}ms, Body: {}",
                         response_data.status,
                         response_data.body.len(),
-                        response_data.duration
+                        response_data.duration,
+                        body_str
                     );
-
-                    if response_data.status != 200 {
-                        log::warn!(
-                            "[AUTH] client_credentials: Non-200 response status {}",
-                            response_data.status
-                        );
-                    }
 
                     log_token_response_metadata(&*emitter, &req_id, &response_data);
                     let token_response = parse_token_response_body(&response_data.body)?;
@@ -1186,22 +1204,34 @@ pub async fn get_authentication_result(
                         &discovery_url,
                     )
                     .await?;
-                    let token_url = endpoints.token.ok_or(AppError::new(
-                        ErrorKind::BadRequest,
-                        "Token URL is required".to_string(),
-                    ))?;
-                    let client_id = client_id.ok_or(AppError::new(
-                        ErrorKind::BadRequest,
-                        "Client ID is required".to_string(),
-                    ))?;
-                    let client_secret = client_secret.ok_or(AppError::new(
-                        ErrorKind::BadRequest,
-                        "Client Secret is required".to_string(),
-                    ))?;
-                    let refresh_token = refresh_token.ok_or(AppError::new(
-                        ErrorKind::BadRequest,
-                        "Refresh token is required".to_string(),
-                    ))?;
+                    let token_url = endpoints.token.clone().ok_or_else(|| {
+                        log::error!("[AUTH] refresh_token: Token URL is required");
+                        AppError::new(
+                            ErrorKind::BadRequest,
+                            "Token URL is required".to_string(),
+                        )
+                    })?;
+                    let client_id = client_id.clone().ok_or_else(|| {
+                        log::error!("[AUTH] refresh_token: Client ID is required");
+                        AppError::new(
+                            ErrorKind::BadRequest,
+                            "Client ID is required".to_string(),
+                        )
+                    })?;
+                    let client_secret = client_secret.clone().ok_or_else(|| {
+                        log::error!("[AUTH] refresh_token: Client Secret is required");
+                        AppError::new(
+                            ErrorKind::BadRequest,
+                            "Client Secret is required".to_string(),
+                        )
+                    })?;
+                    let refresh_token = refresh_token.clone().ok_or_else(|| {
+                        log::error!("[AUTH] refresh_token: Refresh token is required");
+                        AppError::new(
+                            ErrorKind::BadRequest,
+                            "Refresh token is required".to_string(),
+                        )
+                    })?;
 
                     let mut params = vec![
                         ("grant_type", "refresh_token"),
@@ -1301,19 +1331,14 @@ pub async fn get_authentication_result(
                                 AppError::new(ErrorKind::HttpError, e.to_string())
                             })?;
 
+                    let body_str = String::from_utf8_lossy(&response_data.body);
                     log::debug!(
-                        "[AUTH] refresh_token: Response received. Status: {}, Size: {} bytes, Duration: {}ms",
+                        "[AUTH] refresh_token: Response received. Status: {}, Size: {} bytes, Duration: {}ms, Body: {}",
                         response_data.status,
                         response_data.body.len(),
-                        response_data.duration
+                        response_data.duration,
+                        body_str
                     );
-
-                    if response_data.status != 200 {
-                        log::warn!(
-                            "[AUTH] refresh_token: Non-200 response status {}",
-                            response_data.status
-                        );
-                    }
 
                     log_token_response_metadata(&*emitter, &req_id, &response_data);
                     let token_response = parse_token_response_body(&response_data.body)?;
@@ -1493,7 +1518,17 @@ async fn perform_headless_authorization(
     let response = engine
         .execute(auth_request, emitter.clone())
         .await
-        .map_err(|e| AppError::new(ErrorKind::HttpError, e.to_string()))?;
+        .map_err(|e| {
+            log::error!("[AUTH] authorization_code: Authorization request failed: {e}");
+            AppError::new(ErrorKind::HttpError, e.to_string())
+        })?;
+
+    let body_str = String::from_utf8_lossy(&response.body);
+    log::debug!(
+        "[AUTH] authorization_code: Authorization response received. Status: {}, Body: {}",
+        response.status,
+        body_str
+    );
 
     let location = response
         .headers
@@ -1501,9 +1536,15 @@ async fn perform_headless_authorization(
         .find(|(name, _)| name.eq_ignore_ascii_case("location"))
         .map(|(_, value)| value.clone())
         .ok_or_else(|| {
+            let body_str = String::from_utf8_lossy(&response.body);
+            let error_msg = format!(
+                "Authorization endpoint did not provide redirect location. Status: {}, Body: {}",
+                response.status, body_str
+            );
+            log::error!("[AUTH] {}", error_msg);
             AppError::new(
                 ErrorKind::BadRequest,
-                "Authorization endpoint did not provide redirect location".to_string(),
+                error_msg,
             )
         })?;
 
@@ -1581,6 +1622,7 @@ async fn handle_authorization_code(
     );
 
     if !is_headless_mode() {
+        log::error!("[AUTH] authorization_code: Interactive authorization_code flow is not yet available");
         return Err(AppError::new(
             ErrorKind::NotImplemented,
             "Interactive authorization_code flow is not yet available; set KNURL_OAUTH_HEADLESS=1 for mock testing"
@@ -1588,16 +1630,25 @@ async fn handle_authorization_code(
         ));
     }
 
-    let authorization_endpoint = endpoints.authorization.ok_or(AppError::new(
-        ErrorKind::BadRequest,
-        "Authorization URL is required".to_string(),
-    ))?;
-    let token_endpoint = endpoints.token.ok_or(AppError::new(
-        ErrorKind::BadRequest,
-        "Token URL is required".to_string(),
-    ))?;
+    let authorization_endpoint = endpoints.authorization.clone().ok_or_else(|| {
+        log::error!("[AUTH] authorization_code: Authorization URL is required");
+        AppError::new(
+            ErrorKind::BadRequest,
+            "Authorization URL is required".to_string(),
+        )
+    })?;
+    let token_endpoint = endpoints.token.clone().ok_or_else(|| {
+        log::error!("[AUTH] authorization_code: Token URL is required");
+        AppError::new(
+            ErrorKind::BadRequest,
+            "Token URL is required".to_string(),
+        )
+    })?;
     let redirect_url = Url::parse(&redirect_uri)
-        .map_err(|e| AppError::new(ErrorKind::BadRequest, format!("Invalid redirect URI: {e}")))?;
+        .map_err(|e| {
+            log::error!("[AUTH] authorization_code: Invalid redirect URI: {}", e);
+            AppError::new(ErrorKind::BadRequest, format!("Invalid redirect URI: {e}"))
+        })?;
 
     let code_verifier = use_pkce.then(generate_pkce_verifier);
     let code_challenge = code_verifier
@@ -1607,6 +1658,7 @@ async fn handle_authorization_code(
     let state = generate_state();
 
     let mut authorization_url = Url::parse(&authorization_endpoint).map_err(|e| {
+        log::error!("[AUTH] authorization_code: Invalid authorization URL: {}", e);
         AppError::new(
             ErrorKind::BadRequest,
             format!("Invalid authorization URL: {e}"),
@@ -1632,6 +1684,7 @@ async fn handle_authorization_code(
     if let Some(returned_state) = callback.state.as_ref()
         && returned_state != &state
     {
+        log::error!("[AUTH] authorization_code: State mismatch. Expected: {}, Got: {}", state, returned_state);
         return Err(AppError::new(
             ErrorKind::BadRequest,
             "State mismatch in authorization response".to_string(),
@@ -1726,7 +1779,18 @@ async fn handle_authorization_code(
     let response = engine
         .execute(request, emitter.clone())
         .await
-        .map_err(|e| AppError::new(ErrorKind::HttpError, e.to_string()))?;
+        .map_err(|e| {
+            log::error!("[AUTH] authorization_code: Token exchange HTTP request failed: {e}");
+            AppError::new(ErrorKind::HttpError, e.to_string())
+        })?;
+
+    let body_str = String::from_utf8_lossy(&response.body);
+    log::debug!(
+        "[AUTH] authorization_code: Response received. Status: {}, Size: {} bytes, Body: {}",
+        response.status,
+        response.body.len(),
+        body_str
+    );
 
     log_token_response_metadata(&*emitter, &req_id, &response);
     let token_response = parse_token_response_body(&response.body)?;
@@ -1794,15 +1858,21 @@ async fn handle_device_code(
         None,
     );
 
-    let device_endpoint = endpoints.device.ok_or(AppError::new(
-        ErrorKind::BadRequest,
-        "Device authorization URL is required".to_string(),
-    ))?;
+    let device_endpoint = endpoints.device.clone().ok_or_else(|| {
+        log::error!("[AUTH] device_code: Device authorization URL is required");
+        AppError::new(
+            ErrorKind::BadRequest,
+            "Device authorization URL is required".to_string(),
+        )
+    })?;
 
-    let token_endpoint = endpoints.token.ok_or(AppError::new(
-        ErrorKind::BadRequest,
-        "Token URL is required".to_string(),
-    ))?;
+    let token_endpoint = endpoints.token.clone().ok_or_else(|| {
+        log::error!("[AUTH] device_code: Token URL is required");
+        AppError::new(
+            ErrorKind::BadRequest,
+            "Token URL is required".to_string(),
+        )
+    })?;
 
     log::debug!("[AUTH] device_code: Initiating device authorization request to {device_endpoint}");
     log::debug!("[AUTH] device_code: client_auth method = {client_auth:?}");
@@ -1878,20 +1948,13 @@ async fn handle_device_code(
             AppError::new(ErrorKind::HttpError, e.to_string())
         })?;
 
+    let body_str = String::from_utf8_lossy(&device_response.body);
     log::debug!(
-        "[AUTH] device_code: Device authorization response received. Status: {}, Size: {} bytes",
+        "[AUTH] device_code: Device authorization response received. Status: {}, Size: {} bytes, Body: {}",
         device_response.status,
-        device_response.body.len()
+        device_response.body.len(),
+        body_str
     );
-
-    if device_response.status != 200 {
-        let body_str = String::from_utf8_lossy(&device_response.body);
-        log::warn!(
-            "[AUTH] device_code: Non-200 response status {}. Body: {}",
-            device_response.status,
-            body_str
-        );
-    }
 
     let device_payload: DeviceCodeResponse = serde_json::from_slice(&device_response.body)
         .map_err(|e| {
@@ -2034,8 +2097,10 @@ async fn handle_device_code(
                 AppError::new(ErrorKind::HttpError, e.to_string())
             })?;
 
+        let body_str = String::from_utf8_lossy(&response.body);
         log::debug!(
-            "[AUTH] device_code: Poll attempt {poll_attempt} response received. Status: {status}, Size: {size} bytes",
+            "[AUTH] device_code: Poll attempt {poll_attempt} response received. Status: {status}, Size: {size} bytes, Body: {body}",
+            body = body_str,
             status = response.status,
             size = response.body.len()
         );
@@ -2177,8 +2242,23 @@ async fn auto_complete_device(
         ..Default::default()
     };
 
-    let _ = engine.execute(request, emitter.clone()).await;
-    Ok(())
+    match engine.execute(request, emitter.clone()).await {
+        Ok(response) => {
+            let body_str = String::from_utf8_lossy(&response.body);
+            log::debug!(
+                "[AUTH] device_code: Auto-completion response received. Status: {}, Size: {} bytes, Body: {}",
+                response.status,
+                response.body.len(),
+                body_str
+            );
+            Ok(())
+        }
+        Err(e) => {
+            log::error!("[AUTH] device_code: Auto-completion request failed: {e}");
+            // Log the error but don't fail - auto-completion is best-effort
+            Ok(())
+        }
+    }
 }
 
 fn emit_auth_log(
@@ -3109,5 +3189,48 @@ mod tests {
         let verifier = generate_pkce_verifier();
         assert_eq!(state.len(), 32);
         assert_eq!(verifier.len(), 64);
+    }
+
+    // ========== Error logging tests ==========
+
+    #[test]
+    fn require_value_logs_missing_value_errors() {
+        // Verify that require_value properly rejects missing values and returns appropriate errors
+        let result = require_value(None, "test field is required");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::BadRequest);
+        assert_eq!(err.message, "test field is required");
+    }
+
+    #[test]
+    fn require_value_logs_empty_string_errors() {
+        // Verify that require_value properly rejects empty strings
+        let empty = "".to_string();
+        let result = require_value(Some(&empty), "cannot be empty");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::BadRequest);
+        assert_eq!(err.message, "cannot be empty");
+    }
+
+    #[test]
+    fn pkce_invalid_method_logs_error() {
+        // Verify that unsupported PKCE methods return proper errors with logging
+        let result = compute_pkce_challenge("test_verifier", "invalid_method");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::BadRequest);
+        assert!(err.message.contains("Unsupported PKCE method"));
+    }
+
+    #[test]
+    fn pkce_s256_method_succeeds() {
+        // Verify that valid PKCE S256 method works
+        let result = compute_pkce_challenge("test_verifier_1234567890", "S256");
+        assert!(result.is_ok());
+        let challenge = result.unwrap();
+        assert!(!challenge.is_empty());
+        assert_ne!(challenge, "test_verifier_1234567890");
     }
 }
