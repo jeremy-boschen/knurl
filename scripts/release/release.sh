@@ -196,13 +196,14 @@ elif command -v wsl.exe &> /dev/null; then
   # Running on Windows, invoke WSL to build
   echo "Invoking WSL to build for Linux..."
 
-  LINUX_WORKTREE_NAME="linux-$(date +%s)"
   wsl.exe bash -c "
     set -euo pipefail
 
     MAIN_DIR='$MAIN_DIR'
-    BUILD_TEMP='$BUILD_TEMP'
-    LINUX_WORKTREE=\"\$BUILD_TEMP/$LINUX_WORKTREE_NAME\"
+    BUILD_TEMP_WINDOWS='$BUILD_TEMP'
+    # Convert Windows path to WSL path
+    BUILD_TEMP=\$(wslpath \"\$BUILD_TEMP_WINDOWS\")
+    LINUX_WORKTREE=\"\$BUILD_TEMP/linux\"
 
     echo \"Creating Linux worktree at \$LINUX_WORKTREE...\"
     cd \"\$MAIN_DIR\"
