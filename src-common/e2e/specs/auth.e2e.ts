@@ -1146,8 +1146,8 @@ describe("[CRITICAL] Auth Flow Logging", () => {
     await levelsTrigger.click()
     await browser.pause(300)
 
-    // Check all level checkboxes to show debug/trace logs
-    const allCheckboxes = await browser.execute(() => {
+    // Ensure log levels are available before toggling
+    await browser.execute(() => {
       const checkboxes = document.querySelectorAll('[data-test-id^="logs-list:toggle-level-checkbox:"]')
       return checkboxes.length
     })
