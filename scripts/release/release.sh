@@ -47,8 +47,17 @@ if [[ ! "$TARGET" =~ ^(windows|linux|both)$ ]]; then
   exit 1
 fi
 
+IS_WSL=0
+if [[ -n "${WSL_DISTRO_NAME:-}" ]]; then
+  IS_WSL=1
+elif [[ -r /proc/version ]] && grep -qi microsoft /proc/version 2>/dev/null; then
+  IS_WSL=1
+fi
+
 MAIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd ../.. && pwd)"
 BUILD_TEMP=""
+
+cd "$MAIN_DIR"
 
 cleanup_temp() {
   if [[ -n "$BUILD_TEMP" && -d "$BUILD_TEMP" ]]; then
@@ -59,13 +68,39 @@ cleanup_temp() {
 cleanup_on_failure() {
   echo ""
   echo "❌ Release failed. Restoring git state..."
-  git checkout package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json 2>/dev/null || true
+  if [[ "$IS_WSL" -eq 0 ]]; then
+    git checkout package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json 2>/dev/null || true
+  fi
   cleanup_temp
   exit 1
 }
 
 trap cleanup_on_failure ERR
 trap cleanup_temp EXIT
+
+invoke_wsl_linux_build() {
+  if ! command -v wsl.exe &> /dev/null; then
+    echo "❌ wsl.exe not found. Cannot build Linux from Windows."
+    return 1
+  fi
+
+  local main_dir_win="$MAIN_DIR"
+  if command -v cygpath &> /dev/null; then
+    main_dir_win="$(cygpath -w "$MAIN_DIR")"
+  fi
+
+  local main_dir_wsl
+  main_dir_wsl="$(wsl.exe wslpath -a "$main_dir_win" 2>/dev/null | tr -d '\r' | head -n 1 || true)"
+  if [[ -z "$main_dir_wsl" ]]; then
+    echo "❌ Failed to translate repo path for WSL."
+    echo "  MAIN_DIR: $MAIN_DIR"
+    echo "  WIN_DIR:  $main_dir_win"
+    return 1
+  fi
+
+  echo "Invoking WSL to build for Linux..."
+  wsl.exe bash -lc "cd '$main_dir_wsl' && bash scripts/release/release.sh '$VERSION' linux --skip-version-check"
+}
 
 # ============================================================================
 # PHASE 1: Validation
@@ -89,6 +124,16 @@ echo "Current version: $CURRENT_VERSION"
 echo "New version:     $VERSION_NUM"
 echo ""
 
+if [[ "$IS_WSL" -eq 1 ]]; then
+  if [[ "$TARGET" != "linux" ]]; then
+    echo "❌ This script must be launched from Windows for target: $TARGET"
+    echo "Linux builds run inside WSL (invoked from Windows)."
+    exit 1
+  fi
+  echo "Running inside WSL (Linux build only)."
+  SKIP_VERSION_CHECK=1
+fi
+
 if [[ "$SKIP_VERSION_CHECK" -eq 0 ]]; then
   read -p "Continue with this release? (y/n) " -n 1 -r
   echo ""
@@ -102,40 +147,56 @@ else
 fi
 
 # ============================================================================
-# PHASE 2: Update version files
+# PHASE 2: Update + commit version files (Windows only)
 # ============================================================================
 echo ""
 echo "════════════════════════════════════════════════════════════════════════════════"
-echo "PHASE 2: Update version files"
+echo "PHASE 2: Update + commit version files"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
-echo "Setting version to $VERSION_NUM..."
+cd "$MAIN_DIR"
 
-# Update package.json - match semver version pattern
-sed -i "s/\"version\": \"[0-9.]*\"/\"version\": \"$VERSION_NUM\"/g" package.json
+if [[ "$IS_WSL" -eq 1 ]]; then
+  echo "Skipping version update/commit (WSL build only)."
+else
+  echo "Setting version to $VERSION_NUM..."
 
-# Update Cargo.toml - match version at start of line with =
-sed -i "s/^version = \"[0-9.]*\"/version = \"$VERSION_NUM\"/g" src-tauri/Cargo.toml
+  # Update package.json - match semver version pattern
+  sed -i "s/\"version\": \"[0-9.]*\"/\"version\": \"$VERSION_NUM\"/g" package.json
 
-# Update tauri.conf.json - match version
-sed -i "s/\"version\": \"[0-9.]*\"/\"version\": \"$VERSION_NUM\"/g" src-tauri/tauri.conf.json
+  # Update Cargo.toml - match version at start of line with =
+  sed -i "s/^version = \"[0-9.]*\"/version = \"$VERSION_NUM\"/g" src-tauri/Cargo.toml
 
-echo "Verifying version changes..."
-PKG_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
-CARGO_VERSION=$(grep "^version" src-tauri/Cargo.toml | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
-TAURI_VERSION=$(grep '"version"' src-tauri/tauri.conf.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+  # Update tauri.conf.json - match version
+  sed -i "s/\"version\": \"[0-9.]*\"/\"version\": \"$VERSION_NUM\"/g" src-tauri/tauri.conf.json
 
-echo "  package.json version: $PKG_VERSION"
-echo "  Cargo.toml version: $CARGO_VERSION"
-echo "  tauri.conf.json version: $TAURI_VERSION"
+  echo "Verifying version changes..."
+  PKG_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+  CARGO_VERSION=$(grep "^version" src-tauri/Cargo.toml | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+  TAURI_VERSION=$(grep '"version"' src-tauri/tauri.conf.json | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
 
-if [[ "$PKG_VERSION" != "$VERSION_NUM" ]] || [[ "$CARGO_VERSION" != "$VERSION_NUM" ]] || [[ "$TAURI_VERSION" != "$VERSION_NUM" ]]; then
-  echo "❌ Failed to update version files"
-  echo "  Expected: $VERSION_NUM"
-  exit 1
+  echo "  package.json version: $PKG_VERSION"
+  echo "  Cargo.toml version: $CARGO_VERSION"
+  echo "  tauri.conf.json version: $TAURI_VERSION"
+
+  if [[ "$PKG_VERSION" != "$VERSION_NUM" ]] || [[ "$CARGO_VERSION" != "$VERSION_NUM" ]] || [[ "$TAURI_VERSION" != "$VERSION_NUM" ]]; then
+    echo "❌ Failed to update version files"
+    echo "  Expected: $VERSION_NUM"
+    exit 1
+  fi
+  echo "✓ Version set to $VERSION_NUM"
+
+  echo "Staging version files..."
+  git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json src-tauri/Cargo.lock
+
+  if git diff --cached --quiet; then
+    echo "No version changes to commit (already at $VERSION_NUM)."
+  else
+    echo "Committing version change..."
+    git commit -m "chore(release): bump version to $VERSION_NUM" --no-verify
+  fi
 fi
-echo "✓ Version set to $VERSION_NUM"
 
 # ============================================================================
 # Build functions
@@ -185,7 +246,8 @@ build_windows() {
 
 build_linux() {
   local version_num="$1"
-  local build_temp=$(mktemp -d -t knurlb.XXXXXX)
+  local build_temp
+  build_temp="$(mktemp -d -t knurl-linux.XXXXXX)"
 
   echo ""
   echo "════════════════════════════════════════════════════════════════════════════════"
@@ -193,10 +255,21 @@ build_linux() {
   echo "════════════════════════════════════════════════════════════════════════════════"
   echo ""
 
-  local worktree="$build_temp/linux"
-  git worktree add "$worktree" HEAD
+  local build_dir="$build_temp/src"
+  mkdir -p "$build_dir"
 
-  cd "$worktree"
+  echo "Copying source into build dir (no git)..."
+  tar -C "$MAIN_DIR" \
+    --exclude=".git" \
+    --exclude="node_modules" \
+    --exclude="dist" \
+    --exclude="coverage" \
+    --exclude="test-results" \
+    --exclude="release-artifacts" \
+    --exclude="src-tauri/target" \
+    -cf - . | tar -C "$build_dir" -xf -
+
+  cd "$build_dir"
 
   # Install Rust if needed
   if [[ -f "$HOME/.cargo/env" ]]; then
@@ -226,14 +299,13 @@ build_linux() {
   [[ -n "$deb" ]] && cp "$deb" "$MAIN_DIR/release-artifacts/"
 
   cd "$MAIN_DIR"
-  git worktree remove --force "$worktree"
   rm -rf "$build_temp"
 
   echo "✓ Linux build complete"
 }
 
 # ============================================================================
-# PHASE 3: Build
+# PHASE 3: Build (Windows orchestrates, WSL builds Linux)
 # ============================================================================
 echo ""
 echo "════════════════════════════════════════════════════════════════════════════════"
@@ -245,81 +317,47 @@ mkdir -p "$MAIN_DIR/release-artifacts"
 
 cd "$MAIN_DIR"
 
+if [[ "$IS_WSL" -eq 1 ]]; then
+  build_linux "$VERSION_NUM"
+  exit 0
+fi
+
 if [[ "$TARGET" == "windows" || "$TARGET" == "both" ]]; then
   build_windows "$VERSION_NUM"
 fi
 
 if [[ "$TARGET" == "linux" || "$TARGET" == "both" ]]; then
-  if grep -qi microsoft /proc/version 2>/dev/null; then
-    # Running in WSL
-    build_linux "$VERSION_NUM"
-  elif command -v wsl.exe &> /dev/null; then
-    # Running on Windows, invoke WSL
-    echo "Invoking WSL to build for Linux..."
-    wsl.exe bash -c "scripts/release/release.sh '$VERSION' linux --skip-version-check"
-  else
-    echo "⚠️  Not on Windows/WSL. Skipping Linux build."
-  fi
+  invoke_wsl_linux_build
 fi
 
 # ============================================================================
-# PHASE 4: Commit version changes
+# PHASE 4: Push + release artifacts (Windows only)
 # ============================================================================
 echo ""
 echo "════════════════════════════════════════════════════════════════════════════════"
-echo "PHASE 4: Commit version changes"
+echo "PHASE 4: Push + release artifacts"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
 cd "$MAIN_DIR"
 
-echo "Installing dependencies..."
-yarn install --immutable
-
-echo "Staging version files..."
-git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json src-tauri/Cargo.lock
-
-if git diff --cached --quiet; then
-  echo "No version changes to commit (already at $VERSION_NUM). Skipping commit."
-else
-  echo "Committing version change..."
-  git commit -m "chore(release): bump version to $VERSION_NUM" --no-verify
-fi
-
-REMOTE_TAG_SHA="$(git ls-remote --tags origin "refs/tags/$VERSION^{}" | awk '{print $1}' | head -n 1)"
-if [[ -z "$REMOTE_TAG_SHA" ]]; then
-  REMOTE_TAG_SHA="$(git ls-remote --tags origin "refs/tags/$VERSION" | awk '{print $1}' | head -n 1)"
-fi
-
-if [[ -n "$REMOTE_TAG_SHA" ]]; then
+echo "Creating git tag: $VERSION"
+if git rev-parse "$VERSION" &>/dev/null; then
+  LOCAL_TAG_SHA="$(git rev-list -n 1 "$VERSION")"
   HEAD_SHA="$(git rev-parse HEAD)"
-  if [[ "$REMOTE_TAG_SHA" != "$HEAD_SHA" ]]; then
-    echo "❌ Tag $VERSION already exists on origin but points to a different commit."
-    echo "  origin: $REMOTE_TAG_SHA"
-    echo "  HEAD:   $HEAD_SHA"
-    echo "Checkout the tagged commit before re-uploading artifacts for $VERSION."
+  if [[ "$LOCAL_TAG_SHA" != "$HEAD_SHA" ]]; then
+    echo "❌ Local tag $VERSION already exists but does not point to HEAD."
+    echo "  tag:  $LOCAL_TAG_SHA"
+    echo "  HEAD: $HEAD_SHA"
     exit 1
   fi
-  echo "Tag $VERSION already exists on origin. Skipping tag creation/push."
+  echo "⚠️  Tag $VERSION already exists locally."
 else
-  echo "Creating git tag: $VERSION"
-  if git rev-parse "$VERSION" &>/dev/null; then
-    LOCAL_TAG_SHA="$(git rev-list -n 1 "$VERSION")"
-    HEAD_SHA="$(git rev-parse HEAD)"
-    if [[ "$LOCAL_TAG_SHA" != "$HEAD_SHA" ]]; then
-      echo "❌ Local tag $VERSION already exists but does not point to HEAD."
-      echo "  tag:  $LOCAL_TAG_SHA"
-      echo "  HEAD: $HEAD_SHA"
-      exit 1
-    fi
-    echo "⚠️  Tag $VERSION already exists locally."
-  else
-    git tag "$VERSION"
-  fi
-
-  echo "Pushing tag to remote..."
-  git push origin "$VERSION"
+  git tag "$VERSION"
 fi
+
+echo "Pushing tag to remote..."
+git push origin "$VERSION"
 
 # ============================================================================
 # PHASE 5: Collect and upload artifacts
