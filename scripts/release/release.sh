@@ -19,11 +19,11 @@ if [[ ! "$TARGET" =~ ^(windows|linux|both)$ ]]; then
 fi
 
 MAIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd ../.. && pwd)"
-WORKTREES_DIR=".git/worktrees-build"
+BUILD_TEMP=""
 
-cleanup_worktrees() {
-  if [[ -d "$MAIN_DIR/$WORKTREES_DIR" ]]; then
-    rm -rf "$MAIN_DIR/$WORKTREES_DIR"
+cleanup_temp() {
+  if [[ -n "$BUILD_TEMP" && -d "$BUILD_TEMP" ]]; then
+    rm -rf "$BUILD_TEMP"
   fi
 }
 
@@ -31,12 +31,12 @@ cleanup_on_failure() {
   echo ""
   echo "❌ Release failed. Restoring git state..."
   git checkout package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json 2>/dev/null || true
-  cleanup_worktrees
+  cleanup_temp
   exit 1
 }
 
 trap cleanup_on_failure ERR
-trap cleanup_worktrees EXIT
+trap cleanup_temp EXIT
 
 # ============================================================================
 # PHASE 1: Validation
@@ -98,6 +98,7 @@ echo "✓ Version set to $VERSION_NUM"
 
 build_windows() {
   local version_num="$1"
+  local build_temp=$(mktemp -d)
 
   echo ""
   echo "════════════════════════════════════════════════════════════════════════════════"
@@ -105,8 +106,7 @@ build_windows() {
   echo "════════════════════════════════════════════════════════════════════════════════"
   echo ""
 
-  local worktree="$MAIN_DIR/$WORKTREES_DIR/windows"
-  mkdir -p "$(dirname "$worktree")"
+  local worktree="$build_temp/windows"
   git worktree add "$worktree" HEAD
 
   cd "$worktree"
@@ -124,18 +124,23 @@ build_windows() {
   local setup_exe=$(ls -1 "src-tauri/target/release/bundle/nsis"/*_x64-setup.exe 2>/dev/null | head -1)
   if [[ -z "$setup_exe" ]]; then
     echo "❌ Could not find Windows installer"
+    cd "$MAIN_DIR"
+    git worktree remove "$worktree"
+    rm -rf "$build_temp"
     return 1
   fi
   cp "$setup_exe" "$MAIN_DIR/dist/"
 
   cd "$MAIN_DIR"
   git worktree remove "$worktree"
+  rm -rf "$build_temp"
 
   echo "✓ Windows build complete"
 }
 
 build_linux() {
   local version_num="$1"
+  local build_temp=$(mktemp -d)
 
   echo ""
   echo "════════════════════════════════════════════════════════════════════════════════"
@@ -143,8 +148,7 @@ build_linux() {
   echo "════════════════════════════════════════════════════════════════════════════════"
   echo ""
 
-  local worktree="$MAIN_DIR/$WORKTREES_DIR/linux"
-  mkdir -p "$(dirname "$worktree")"
+  local worktree="$build_temp/linux"
   git worktree add "$worktree" HEAD
 
   cd "$worktree"
@@ -178,16 +182,17 @@ build_linux() {
 
   cd "$MAIN_DIR"
   git worktree remove "$worktree"
+  rm -rf "$build_temp"
 
   echo "✓ Linux build complete"
 }
 
 # ============================================================================
-# PHASE 3: Setup and Build
+# PHASE 3: Build
 # ============================================================================
 echo ""
 echo "════════════════════════════════════════════════════════════════════════════════"
-echo "PHASE 3: Setup and Build"
+echo "PHASE 3: Build"
 echo "════════════════════════════════════════════════════════════════════════════════"
 echo ""
 
