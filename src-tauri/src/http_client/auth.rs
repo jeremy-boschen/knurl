@@ -7,12 +7,21 @@ use base64::{Engine as _, engine::general_purpose};
 use chrono::{SecondsFormat, Utc};
 use rand::distr::{Alphanumeric, SampleString};
 use rand::rng;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Deserializer};
 use sha2::{Digest, Sha256};
 use std::{collections::HashMap, env};
 use tauri::AppHandle;
 use tokio::time::{Duration, sleep};
 use url::Url;
+
+// Helper function to deserialize empty strings as None
+fn deserialize_empty_string_as_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = <Option<String>>::deserialize(deserializer)?;
+    Ok(s.and_then(|s| if s.is_empty() { None } else { Some(s) }))
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
@@ -37,11 +46,15 @@ pub enum AuthConfig {
     #[serde(rename_all = "camelCase")]
     Oauth2 {
         grant_type: String,
+        #[serde(deserialize_with = "deserialize_empty_string_as_none")]
         auth_url: Option<String>,
+        #[serde(deserialize_with = "deserialize_empty_string_as_none")]
         token_url: Option<String>,
+        #[serde(deserialize_with = "deserialize_empty_string_as_none")]
         device_authorization_url: Option<String>,
         client_id: Option<String>,
         client_secret: Option<String>,
+        #[serde(deserialize_with = "deserialize_empty_string_as_none")]
         scope: Option<String>,
         refresh_token: Option<String>,
         redirect_uri: Option<String>,
@@ -49,6 +62,7 @@ pub enum AuthConfig {
         token_caching: Option<TokenCachingPolicy>,
         client_auth: Option<ClientAuth>,
         token_extra_params: Option<HashMap<String, String>>,
+        #[serde(deserialize_with = "deserialize_empty_string_as_none")]
         discovery_url: Option<String>,
     },
 }
@@ -2629,6 +2643,43 @@ mod tests {
         let json = serde_json::to_string(&config).unwrap();
         // camelCase rename_all converts Oauth2 -> oauth2
         assert!(json.contains("\"type\":\"oauth2\""));
+    }
+
+    #[test]
+    fn auth_config_oauth2_empty_strings_deserialize_as_none() {
+        // Test that empty strings in OAuth2 URLs are deserialized as None
+        let json = r#"{
+            "type": "oauth2",
+            "grantType": "client_credentials",
+            "authUrl": "",
+            "tokenUrl": "https://token.example.com",
+            "deviceAuthorizationUrl": "",
+            "clientId": "client123",
+            "clientSecret": "secret",
+            "scope": "",
+            "discoveryUrl": ""
+        }"#;
+
+        let config: AuthConfig = serde_json::from_str(json).unwrap();
+
+        match config {
+            AuthConfig::Oauth2 {
+                auth_url,
+                token_url,
+                device_authorization_url,
+                scope,
+                discovery_url,
+                ..
+            } => {
+                // Empty strings should be deserialized as None
+                assert_eq!(auth_url, None, "auth_url should be None for empty string");
+                assert_eq!(token_url, Some("https://token.example.com".to_string()), "token_url should be preserved");
+                assert_eq!(device_authorization_url, None, "device_authorization_url should be None for empty string");
+                assert_eq!(scope, None, "scope should be None for empty string");
+                assert_eq!(discovery_url, None, "discovery_url should be None for empty string");
+            }
+            _ => panic!("Expected Oauth2 variant"),
+        }
     }
 
     // ========== is_stub_oauth_enabled tests ==========
