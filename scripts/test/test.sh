@@ -195,15 +195,9 @@ fi
 # -----------------------------------------------------------------------------
 if [ "$RUN_E2E" = true ]; then
   echo ""
-  echo "3️⃣  Building Rust with coverage instrumentation..."
+  echo "3️⃣  Building Rust application..."
   cd src-tauri
-  if cargo llvm-cov --version &> /dev/null 2>&1; then
-    # Build with coverage instrumentation (but don't run tests yet)
-    LLVM_PROFILE_FILE="coverage/e2e-%p.profraw" cargo llvm-cov build --no-report 2>&1 | grep -v "warning:" || true
-  else
-    echo "  (cargo-llvm-cov not installed, E2E Rust coverage skipped)"
-    cargo build || true
-  fi
+  cargo build 2>&1 | grep -v "warning:" || true
   cd - > /dev/null
 
   echo ""
