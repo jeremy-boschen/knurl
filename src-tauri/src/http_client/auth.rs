@@ -7,21 +7,12 @@ use base64::{Engine as _, engine::general_purpose};
 use chrono::{SecondsFormat, Utc};
 use rand::distr::{Alphanumeric, SampleString};
 use rand::rng;
-use serde::{Deserialize, Serialize, Deserializer};
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{collections::HashMap, env};
 use tauri::AppHandle;
 use tokio::time::{Duration, sleep};
 use url::Url;
-
-// Helper function to deserialize empty strings as None
-fn deserialize_empty_string_as_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s = <Option<String>>::deserialize(deserializer)?;
-    Ok(s.and_then(|s| if s.is_empty() { None } else { Some(s) }))
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
@@ -46,23 +37,31 @@ pub enum AuthConfig {
     #[serde(rename_all = "camelCase")]
     Oauth2 {
         grant_type: String,
-        #[serde(deserialize_with = "deserialize_empty_string_as_none")]
+        #[serde(default)]
         auth_url: Option<String>,
-        #[serde(deserialize_with = "deserialize_empty_string_as_none")]
+        #[serde(default)]
         token_url: Option<String>,
-        #[serde(deserialize_with = "deserialize_empty_string_as_none")]
+        #[serde(default)]
         device_authorization_url: Option<String>,
+        #[serde(default)]
         client_id: Option<String>,
+        #[serde(default)]
         client_secret: Option<String>,
-        #[serde(deserialize_with = "deserialize_empty_string_as_none")]
+        #[serde(default)]
         scope: Option<String>,
+        #[serde(default)]
         refresh_token: Option<String>,
+        #[serde(default)]
         redirect_uri: Option<String>,
+        #[serde(default)]
         use_pkce: Option<bool>,
+        #[serde(default)]
         token_caching: Option<TokenCachingPolicy>,
+        #[serde(default)]
         client_auth: Option<ClientAuth>,
+        #[serde(default)]
         token_extra_params: Option<HashMap<String, String>>,
-        #[serde(deserialize_with = "deserialize_empty_string_as_none")]
+        #[serde(default)]
         discovery_url: Option<String>,
     },
 }
@@ -2646,18 +2645,14 @@ mod tests {
     }
 
     #[test]
-    fn auth_config_oauth2_empty_strings_deserialize_as_none() {
-        // Test that empty strings in OAuth2 URLs are deserialized as None
+    fn auth_config_oauth2_missing_optional_fields_deserialize_as_none() {
+        // Test that missing optional OAuth2 fields deserialize as None
         let json = r#"{
             "type": "oauth2",
             "grantType": "client_credentials",
-            "authUrl": "",
             "tokenUrl": "https://token.example.com",
-            "deviceAuthorizationUrl": "",
             "clientId": "client123",
-            "clientSecret": "secret",
-            "scope": "",
-            "discoveryUrl": ""
+            "clientSecret": "secret"
         }"#;
 
         let config: AuthConfig = serde_json::from_str(json).unwrap();
@@ -2671,12 +2666,22 @@ mod tests {
                 discovery_url,
                 ..
             } => {
-                // Empty strings should be deserialized as None
-                assert_eq!(auth_url, None, "auth_url should be None for empty string");
-                assert_eq!(token_url, Some("https://token.example.com".to_string()), "token_url should be preserved");
-                assert_eq!(device_authorization_url, None, "device_authorization_url should be None for empty string");
-                assert_eq!(scope, None, "scope should be None for empty string");
-                assert_eq!(discovery_url, None, "discovery_url should be None for empty string");
+                // Missing fields should deserialize as None
+                assert_eq!(auth_url, None, "auth_url should be None when missing");
+                assert_eq!(
+                    token_url,
+                    Some("https://token.example.com".to_string()),
+                    "token_url should be preserved"
+                );
+                assert_eq!(
+                    device_authorization_url, None,
+                    "device_authorization_url should be None when missing"
+                );
+                assert_eq!(scope, None, "scope should be None when missing");
+                assert_eq!(
+                    discovery_url, None,
+                    "discovery_url should be None when missing"
+                );
             }
             _ => panic!("Expected Oauth2 variant"),
         }
