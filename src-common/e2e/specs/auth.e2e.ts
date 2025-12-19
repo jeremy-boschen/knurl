@@ -645,11 +645,8 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
     // Set scope
     await setInputText("oauth2-editor:scope-input", "openid profile")
 
-    // Set client authentication to body
-    await selectOptionByTestId(
-      "oauth2-editor:client-authentication-select",
-      "oauth2-editor:client-authentication-option:body",
-    )
+    // Note: Client Authentication field is NOT shown for device_code grant
+    // (device_code is a public client flow with no client secret)
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
@@ -698,37 +695,22 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
     // Set grant type to refresh_token
     await selectOptionByTestId("oauth2-editor:grant-type-select", "oauth2-editor:grant-type-option:refresh_token")
 
-    // Set Token URL
+    // Set Token URL (required for refresh_token flow)
     await getElementByTestId("oauth2-editor:token-url-input", 5000)
     await setInputText("oauth2-editor:token-url-input", baseAuthConfig.tokenUrl)
 
-    // Set Client ID
-    await getElementByTestId("oauth2-editor:client-id-input", 5000)
-    await setInputText("oauth2-editor:client-id-input", clientId)
+    // Note: Client ID, Client Secret, and Client Authentication fields are NOT shown
+    // for refresh_token grant type (not required by this flow)
 
-    // Set Client Secret (required for refresh token with body auth)
-    await getElementByTestId("oauth2-editor:client-secret-input", 5000)
-    await setInputText("oauth2-editor:client-secret-input", clientSecret)
-
-    // Set a valid refresh token - first create a client credentials token to get a valid refresh token
-    // For now, use a mock refresh token value that the mock server will handle
+    // Set a valid refresh token
+    // For mock server testing, use a UUID-like format that the mock server recognizes
     await getElementByTestId("oauth2-editor:refresh-token-input", 5000)
-    // Use a UUID-like format that the mock server recognizes
     const mockRefreshToken = "550e8400-e29b-41d4-a716-446655440000"
     await setInputText("oauth2-editor:refresh-token-input", mockRefreshToken)
-
-    // Set client authentication to body
-    await selectOptionByTestId(
-      "oauth2-editor:client-authentication-select",
-      "oauth2-editor:client-authentication-option:body",
-    )
 
     // Verify the configuration is set correctly by checking field values
     const tokenUrlValue = await getInputValueBySelector('[data-test-id="oauth2-editor:token-url-input"]')
     await expect(tokenUrlValue).toContain("token")
-
-    const clientIdValue = await getInputValueBySelector('[data-test-id="oauth2-editor:client-id-input"]')
-    await expect(clientIdValue).toEqual(clientId)
 
     const refreshTokenValue = await getInputValueBySelector('[data-test-id="oauth2-editor:refresh-token-input"]')
     await expect(refreshTokenValue).toEqual(mockRefreshToken)
