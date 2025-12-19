@@ -45,6 +45,7 @@ function Router() {
 export function MainWindow() {
   const {
     state: { requests },
+    actions: { settingsApi },
   } = useSettings()
   const interval = requests.autoSave
 
@@ -77,6 +78,55 @@ export function MainWindow() {
       unlisten.then((f) => f())
     }
   }, [])
+
+  // Track window geometry/state for persistence
+  React.useEffect(() => {
+    const winPromise = getCurrentWindow()
+    let unlistenMove: Promise<() => void> | null = null
+    let unlistenResize: Promise<() => void> | null = null
+
+    const syncState = async () => {
+      try {
+        const win = await winPromise
+        const [isMinimized, isMaximized, position, size] = await Promise.all([
+          win.isMinimized(),
+          win.isMaximized(),
+          win.outerPosition(),
+          win.outerSize(),
+        ])
+
+        if (isMinimized) {
+          return
+        }
+
+        settingsApi().setWindowState("main", {
+          x: position.x,
+          y: position.y,
+          width: size.width,
+          height: size.height,
+          isMaximized,
+        })
+      } catch (error) {
+        console.error("Failed to record window state", error)
+      }
+    }
+
+    void (async () => {
+      await syncState()
+      const win = await winPromise
+      unlistenMove = win.onMoved(syncState)
+      unlistenResize = win.onResized(syncState)
+    })()
+
+    return () => {
+      if (unlistenMove) {
+        unlistenMove.then((fn) => fn())
+      }
+      if (unlistenResize) {
+        unlistenResize.then((fn) => fn())
+      }
+    }
+  }, [settingsApi])
 
   // Ensure all state is saved before page unload (e.g., browser.refresh(), navigation, closing tab, etc.)
   React.useEffect(() => {

@@ -6,12 +6,26 @@ const deleteFileMock = vi.fn()
 vi.mock("@/bindings/knurl", () => ({ deleteFile: deleteFileMock }))
 
 const closeHandlers: Array<() => Promise<void> | void> = []
+const moveHandlers: Array<() => Promise<void> | void> = []
+const resizeHandlers: Array<() => Promise<void> | void> = []
 vi.mock("@tauri-apps/api/window", () => ({
   getCurrentWindow: () => ({
     onCloseRequested: (handler: () => Promise<void> | void) => {
       closeHandlers.push(handler)
       return Promise.resolve(() => {})
     },
+    onMoved: (handler: () => Promise<void> | void) => {
+      moveHandlers.push(handler)
+      return Promise.resolve(() => {})
+    },
+    onResized: (handler: () => Promise<void> | void) => {
+      resizeHandlers.push(handler)
+      return Promise.resolve(() => {})
+    },
+    isMinimized: vi.fn().mockResolvedValue(false),
+    isMaximized: vi.fn().mockResolvedValue(false),
+    outerPosition: vi.fn().mockResolvedValue({ x: 10, y: 20 }),
+    outerSize: vi.fn().mockResolvedValue({ width: 1234, height: 900 }),
   }),
 }))
 
@@ -29,6 +43,7 @@ const getStateMock = vi.fn()
 const appState = {
   settingsState: { requests: { autoSave: 30 } },
 }
+const setWindowStateMock = vi.fn()
 
 const useApplicationMock: any = Object.assign(
   (selector?: (state: typeof appState) => unknown) => (selector ? selector(appState as any) : appState),
@@ -43,7 +58,7 @@ vi.mock("@/state", () => ({
   useApplication: useApplicationMock,
   useSettings: () => ({
     state: appState.settingsState,
-    actions: { settingsApi: () => ({}) },
+    actions: { settingsApi: () => ({ setWindowState: setWindowStateMock }) },
   }),
 }))
 
@@ -81,10 +96,13 @@ afterAll(() => {
 
 beforeEach(() => {
   closeHandlers.length = 0
+  moveHandlers.length = 0
+  resizeHandlers.length = 0
   intervalCallback = null
   intervalMock.mockClear()
   deleteFileMock.mockReset()
   saveAllMock.mockClear()
+  setWindowStateMock.mockClear()
   getStateMock.mockReturnValue({
     requestTabsState: {
       openTabs: {
@@ -118,5 +136,26 @@ describe("MainWindow", () => {
     expect(deleteFileMock).toHaveBeenCalledWith("/tmp/response.bin")
     expect(saveAllMock).toHaveBeenCalledTimes(1)
     expect(screen.getByTestId("toaster")).toBeInTheDocument()
+  })
+
+  it("records window geometry on move/resize events", async () => {
+    render(<MainWindow />)
+
+    await Promise.resolve()
+    await Promise.resolve()
+
+    // Initial sync + handlers
+    expect(setWindowStateMock).toHaveBeenCalledWith("main", {
+      x: 10,
+      y: 20,
+      width: 1234,
+      height: 900,
+      isMaximized: false,
+    })
+
+    await moveHandlers[0]?.()
+    await resizeHandlers[0]?.()
+
+    expect(setWindowStateMock).toHaveBeenCalledTimes(3)
   })
 })

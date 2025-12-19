@@ -16,6 +16,7 @@ import {
   type SettingsSlice,
   type Theme,
   type ThemeSource,
+  type WindowState,
   zSettings,
 } from "@/types"
 import type { StorageProvider } from "@/types/middleware/storage-manager"
@@ -69,19 +70,15 @@ const applyFontSize = (sizePx: number): void => {
 }
 
 const SettingsStorage = createStorage<Settings>({
-  version: 1,
+  version: 2,
   schema: zSettings,
   migrate: async (context: MigrateContext) => {
     const content = (context.content as Partial<Settings>) ?? {}
-    // Add migration logic here
-    //
-    // Example:
-    // if (context.version < 2) {
-    //   // Migrate from version 1 to 2
-    // }
-    // if (context.version < 3) {
-    //   // Migrate from version 2 to 3
-    // }
+
+    if (context.version < 2) {
+      // Add windows map with no entries
+      ;(content as Partial<Settings> & { windows?: Record<string, unknown> }).windows ??= {}
+    }
 
     return content as Settings
   },
@@ -247,6 +244,12 @@ export const createSettingsSlice: StateCreator<
         app.settingsState.advanced.devMode = enabled
       })
     },
+
+    setWindowState(windowName: string, state: WindowState) {
+      set((app) => {
+        app.settingsState.windows[windowName] = state
+      })
+    },
   }
 
   return {
@@ -275,6 +278,7 @@ export const createSettingsSlice: StateCreator<
       data: {
         appDataDir: "",
       },
+      windows: {},
     },
     settingsApi,
   }

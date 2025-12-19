@@ -14,14 +14,15 @@
       {
         "title": "KNURL",
         "width": 1000,
-        "height": 900,
-        "backgroundColor": "#18181BFF",
-        "zoomHotkeysEnabled": true,
-        "browserExtensionsEnabled": true,
-        "center": true,
-        "decorations": false
-      }
-    ],
+      "height": 900,
+      "backgroundColor": "#18181BFF",
+      "zoomHotkeysEnabled": true,
+      "browserExtensionsEnabled": true,
+      "center": true,
+      "decorations": false,
+      "visible": false
+    }
+  ],
     "security": {
       "csp": null
     }

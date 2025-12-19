@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core"
 
+import type { WindowState } from "@/types"
+
 /**
  * Well-defined error kinds for the application.
  * Serialized as camelCase strings.
@@ -707,6 +709,17 @@ export async function discoverOidc(url: string): Promise<OidcDiscovery> {
 export async function cancelHttpRequest(requestId: string): Promise<void> {
   try {
     await invoke<void>("cancel_http_request", { requestId })
+  } catch (err) {
+    normalizeInvokeError(err)
+  }
+}
+
+/**
+ * Apply saved window geometry/state and show the window.
+ */
+export async function applyWindowState(window: string, state?: WindowState): Promise<void> {
+  try {
+    await invoke<void>("apply_window_state", { window, state })
   } catch (err) {
     normalizeInvokeError(err)
   }
