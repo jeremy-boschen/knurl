@@ -645,11 +645,8 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
     // Set scope
     await setInputText("oauth2-editor:scope-input", "openid profile")
 
-    // Set client authentication to body
-    await selectOptionByTestId(
-      "oauth2-editor:client-authentication-select",
-      "oauth2-editor:client-authentication-option:body",
-    )
+    // Note: Client Authentication field is NOT shown for device_code grant
+    // (device_code is a public client flow with no client secret)
 
     // Verify Send button is visible before clicking
     const sendBtn = await getElementByTestId("request-workspace:send-button")
