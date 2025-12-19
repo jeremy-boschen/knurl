@@ -1,0 +1,3 @@
+- [x] Update src-ui/src/types/settings.ts to add a windows map that stores x, y, width, height, and the last maximized/restored state for the main window.
+- [x] Persist the main window's size, position, and last maximized/restored state on exit.
+- [x] Start the main window hidden and, before the splash renders, call a Tauri command to restore the saved geometry/state (never minimized) and then show the window.
