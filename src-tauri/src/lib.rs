@@ -22,10 +22,10 @@ use std::panic::Location;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use std::{fs, io, path::PathBuf};
-#[cfg(desktop)]
-use tauri::PhysicalSize;
 use tauri::path::BaseDirectory;
 use tauri::{Manager, Size};
+#[cfg(desktop)]
+use tauri::{PhysicalPosition, PhysicalSize, Position};
 use tauri_plugin_cli::CliExt;
 use tauri_plugin_dialog::DialogExt;
 
@@ -237,6 +237,16 @@ struct OpenedFile {
     file_path: String,
     content: String,
     mime_type: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct WindowStatePayload {
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+    is_maximized: bool,
 }
 
 #[tauri::command(async)]
@@ -459,6 +469,78 @@ async fn get_authentication_result(
     auth::get_authentication_result(app, config, parent_request_id).await
 }
 
+#[tauri::command(async)]
+async fn apply_window_state(
+    app: tauri::AppHandle,
+    window: String,
+    state: Option<WindowStatePayload>,
+) -> Result<(), AppError> {
+    #[cfg(not(desktop))]
+    {
+        let _ = (app, window, state);
+        return Ok(());
+    }
+
+    #[cfg(desktop)]
+    {
+        const MIN_WIDTH: u32 = 1100;
+        const MIN_HEIGHT: u32 = 780;
+
+        let Some(win) = app.get_webview_window(&window) else {
+            return Err(AppError::new(
+                ErrorKind::BadRequest,
+                format!("Unknown window '{window}'"),
+            ));
+        };
+
+        let _ = win.hide();
+
+        let apply_geometry =
+            |w: &tauri::WebviewWindow, s: &WindowStatePayload| -> Result<(), AppError> {
+                let width = s.width.max(MIN_WIDTH);
+                let height = s.height.max(MIN_HEIGHT);
+
+                w.set_size(Size::Physical(PhysicalSize::new(width, height)))
+                    .map_err(|e| {
+                        AppError::from_error(ErrorKind::TauriError, e, None, Location::caller())
+                    })?;
+
+                w.set_position(Position::Physical(PhysicalPosition::new(s.x, s.y)))
+                    .map_err(|e| {
+                        AppError::from_error(ErrorKind::TauriError, e, None, Location::caller())
+                    })?;
+
+                if s.is_maximized {
+                    w.maximize().map_err(|e| {
+                        AppError::from_error(ErrorKind::TauriError, e, None, Location::caller())
+                    })?;
+                } else {
+                    w.unmaximize().map_err(|e| {
+                        AppError::from_error(ErrorKind::TauriError, e, None, Location::caller())
+                    })?;
+                }
+                Ok(())
+            };
+
+        match state {
+            Some(s) => {
+                let _ = apply_geometry(&win, &s);
+            }
+            None => {
+                // Fallback: reuse existing size logic
+                let _ = win.center();
+            }
+        }
+
+        win.show().map_err(|e| {
+            AppError::from_error(ErrorKind::TauriError, e, None, Location::caller())
+        })?;
+        let _ = win.set_focus();
+
+        Ok(())
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Install ring crypto provider for rustls
@@ -569,6 +651,7 @@ pub fn run() {
             discover_oidc,
             get_authentication_result,
             cancel_http_request,
+            apply_window_state,
         ]);
 
     probe.mark("plugins_configured");

@@ -8,6 +8,7 @@ import App from "./App"
 import "./App.css"
 
 import { getStartupState, setStartupState } from "@/lib/startup-state"
+import { restoreMainWindowFromSettings } from "@/lib/window-state"
 import { loadApplication } from "@/state"
 import { asSuspense } from "@/state/utils"
 
@@ -38,6 +39,9 @@ try {
 }
 
 setStartupState(0)
+
+await loadApplication
+await restoreMainWindowFromSettings()
 
 export const hydrationResource = asSuspense<void>(loadApplication)
 

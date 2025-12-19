@@ -72,11 +72,28 @@ export const zDataSettings = z.object({
   appDataDir: z.string().readonly(),
 })
 
+export const zWindowGeometry = z.object({
+  x: z.number().int(),
+  y: z.number().int(),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+})
+export type WindowGeometry = z.infer<typeof zWindowGeometry>
+
+export const zWindowState = zWindowGeometry.extend({
+  isMaximized: z.boolean(),
+})
+export type WindowState = z.infer<typeof zWindowState>
+
+export const zWindowsSettings = z.record(z.string(), zWindowState)
+export type WindowsSettings = z.infer<typeof zWindowsSettings>
+
 export const zSettings = z.object({
   appearance: zAppearanceSettings,
   requests: zRequestSettings,
   advanced: zAdvancedSettings,
   data: zDataSettings,
+  windows: zWindowsSettings.optional().default({}),
 })
 export type Settings = z.infer<typeof zSettings>
 
@@ -104,6 +121,9 @@ export interface SettingsApi {
 
   // Advanced
   setDevMode(enabled: boolean): void
+
+  // Windows
+  setWindowState(windowName: string, state: WindowState): void
 }
 
 export interface SettingsSlice {
