@@ -30,6 +30,12 @@ const stateMocks = vi.hoisted(() => ({
 
 vi.mock("@/state", () => stateMocks)
 
+const windowStateMocks = vi.hoisted(() => ({
+  restoreMainWindowFromSettings: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock("@/lib/window-state", () => windowStateMocks)
+
 const suspenseMocks = vi.hoisted(() => {
   const resource = { read: vi.fn() }
   return {
