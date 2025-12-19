@@ -112,18 +112,21 @@ export const OAuth2Editor: FC<OAuth2EditorProps> = ({ auth, onUpdate, onDiscover
         )}
       </Field>
 
-      <Field label="Auth URL">
-        {(id) => (
-          <Input
-            id={id}
-            type="text"
-            value={auth.authUrl ?? ""}
-            onChange={(e) => onUpdate({ authUrl: e.target.value })}
-            className="w-full font-mono"
-            data-test-id="oauth2-editor:auth-url-input"
-          />
-        )}
-      </Field>
+      {grantType === "authorization_code" && (
+        <Field label="Auth URL">
+          {(id) => (
+            <Input
+              id={id}
+              type="text"
+              value={auth.authUrl ?? ""}
+              onChange={(e) => onUpdate({ authUrl: e.target.value })}
+              className="w-full font-mono"
+              data-test-id="oauth2-editor:auth-url-input"
+              placeholder="https://auth.example.com/authorize"
+            />
+          )}
+        </Field>
+      )}
 
       <Field label="Token URL">
         {(id) => (
@@ -140,8 +143,7 @@ export const OAuth2Editor: FC<OAuth2EditorProps> = ({ auth, onUpdate, onDiscover
 
       {(grantType === "client_credentials" ||
         grantType === "authorization_code" ||
-        grantType === "device_code" ||
-        grantType === "refresh_token") && (
+        grantType === "device_code") && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Field label="Client ID">
             {(id) => (
@@ -155,25 +157,26 @@ export const OAuth2Editor: FC<OAuth2EditorProps> = ({ auth, onUpdate, onDiscover
               />
             )}
           </Field>
-          <Field label="Client Secret">
-            {(id) => (
-              <Input
-                id={id}
-                type="password"
-                value={auth.clientSecret ?? ""}
-                onChange={(e) => onUpdate({ clientSecret: e.target.value })}
-                className="w-full font-mono"
-                data-test-id="oauth2-editor:client-secret-input"
-              />
-            )}
-          </Field>
+          {(grantType === "client_credentials" || grantType === "authorization_code") && (
+            <Field label="Client Secret">
+              {(id) => (
+                <Input
+                  id={id}
+                  type="password"
+                  value={auth.clientSecret ?? ""}
+                  onChange={(e) => onUpdate({ clientSecret: e.target.value })}
+                  className="w-full font-mono"
+                  data-test-id="oauth2-editor:client-secret-input"
+                />
+              )}
+            </Field>
+          )}
         </div>
       )}
 
       {(grantType === "client_credentials" ||
         grantType === "authorization_code" ||
-        grantType === "device_code" ||
-        grantType === "refresh_token") && (
+        grantType === "device_code") && (
         <Field label="Scope">
           {(id) => (
             <Input
@@ -182,6 +185,7 @@ export const OAuth2Editor: FC<OAuth2EditorProps> = ({ auth, onUpdate, onDiscover
               value={auth.scope ?? ""}
               onChange={(e) => onUpdate({ scope: e.target.value })}
               className="w-full font-mono"
+              placeholder="Optional: space-separated scope values"
               data-test-id="oauth2-editor:scope-input"
             />
           )}
@@ -241,27 +245,29 @@ export const OAuth2Editor: FC<OAuth2EditorProps> = ({ auth, onUpdate, onDiscover
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Field label="Client Authentication">
-          {(id) => (
-            <Select value={auth.clientAuth ?? "body"} onValueChange={(value) => onUpdate({ clientAuth: value })}>
-              <SelectTrigger
-                id={id}
-                className="w-full text-sm"
-                data-test-id="oauth2-editor:client-authentication-select"
-              >
-                <SelectValue placeholder="Select auth" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="body" data-test-id="oauth2-editor:client-authentication-option:body">
-                  Request body (client_id/client_secret)
-                </SelectItem>
-                <SelectItem value="basic" data-test-id="oauth2-editor:client-authentication-option:basic">
-                  Authorization header (Basic)
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        </Field>
+        {(grantType === "client_credentials" || grantType === "authorization_code") && (
+          <Field label="Client Authentication">
+            {(id) => (
+              <Select value={auth.clientAuth ?? "body"} onValueChange={(value) => onUpdate({ clientAuth: value })}>
+                <SelectTrigger
+                  id={id}
+                  className="w-full text-sm"
+                  data-test-id="oauth2-editor:client-authentication-select"
+                >
+                  <SelectValue placeholder="Select auth" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="body" data-test-id="oauth2-editor:client-authentication-option:body">
+                    Request body (client_id/client_secret)
+                  </SelectItem>
+                  <SelectItem value="basic" data-test-id="oauth2-editor:client-authentication-option:basic">
+                    Authorization header (Basic)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </Field>
+        )}
         <Field label="Token Strategy">
           {(id) => (
             <Select value={auth.tokenCaching ?? "always"} onValueChange={(value) => onUpdate({ tokenCaching: value })}>
