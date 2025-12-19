@@ -464,6 +464,71 @@ describe("[SUPPLEMENTAL] OAuth Flows", () => {
     // This confirms the request was sent successfully and OAuth added the Authorization header
   })
 
+  it("performs client_credentials with only required fields (no scope, no auth URL)", async () => {
+    // Test that client_credentials works with bare minimum: tokenUrl, clientId, clientSecret
+    // This verifies that optional fields like authUrl, deviceAuthorizationUrl are not required
+    const _tabKey = await openNewRequestViaUI()
+
+    // Set the request URL
+    await setInputText("request-workspace:url-input", testEndpoint)
+
+    // Click on Auth tab
+    await clickByTestId("request-editor:auth-tab")
+
+    // Click the auth dropdown trigger to open menu
+    await clickByTestId("request-editor:auth-tab-dropdown-trigger")
+
+    // Select OAuth2 auth type from menu
+    await clickByTestId("request-editor:auth-menu:type-oauth2")
+
+    // Wait for grant type select to be available
+    await getElementByTestId("oauth2-editor:grant-type-select", 5000)
+
+    // Set grant type to client_credentials
+    await selectOptionByTestId("oauth2-editor:grant-type-select", "oauth2-editor:grant-type-option:client_credentials")
+
+    // Set ONLY the required fields - nothing else
+    // Token URL
+    await getElementByTestId("oauth2-editor:token-url-input", 5000)
+    await setInputText("oauth2-editor:token-url-input", baseAuthConfig.tokenUrl)
+
+    // Client ID
+    await getElementByTestId("oauth2-editor:client-id-input", 5000)
+    await setInputText("oauth2-editor:client-id-input", clientId)
+
+    // Client Secret
+    await getElementByTestId("oauth2-editor:client-secret-input", 5000)
+    await setInputText("oauth2-editor:client-secret-input", clientSecret)
+
+    // DO NOT set scope, DO NOT set authUrl, DO NOT set deviceAuthorizationUrl
+    // Verify Auth URL field does NOT exist (should be hidden for client_credentials)
+    const authUrlFieldExists = await selectorExists('[data-test-id="oauth2-editor:auth-url-input"]')
+    await expect(authUrlFieldExists).toBe(false)
+
+    // Verify Device Auth URL field does NOT exist (should be hidden for client_credentials)
+    const deviceUrlFieldExists = await selectorExists('[data-test-id="oauth2-editor:device-url-input"]')
+    await expect(deviceUrlFieldExists).toBe(false)
+
+    // Click Send button
+    await clickByTestId("request-workspace:send-button")
+
+    // Wait for response to arrive
+    const responseHeading = await browser.waitUntil(
+      async () => {
+        const heading = await getTextBySelector('[data-test-id="response-viewer:heading"]')
+        return heading && heading.length > 0 ? heading : null
+      },
+      {
+        timeout: 10000,
+        timeoutMsg: "Response did not arrive within timeout",
+      },
+    )
+
+    // Verify response viewer appeared with content
+    await expect(responseHeading).toBeTruthy()
+    // This confirms OAuth2 worked with only the required fields
+  })
+
   it("performs authorization_code with PKCE flow", async () => {
     // Create a new request
     const _tabKey = await openNewRequestViaUI()
