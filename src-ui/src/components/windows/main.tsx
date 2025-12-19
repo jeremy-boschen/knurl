@@ -99,11 +99,24 @@ export function MainWindow() {
           return
         }
 
+        const prev = useApplication.getState().settingsState.windows?.main
+        const geometry =
+          isMaximized && prev
+            ? {
+                x: prev.x,
+                y: prev.y,
+                width: prev.width,
+                height: prev.height,
+              }
+            : {
+                x: position.x,
+                y: position.y,
+                width: size.width,
+                height: size.height,
+              }
+
         settingsApi().setWindowState("main", {
-          x: position.x,
-          y: position.y,
-          width: size.width,
-          height: size.height,
+          ...geometry,
           isMaximized,
         })
       } catch (error) {
