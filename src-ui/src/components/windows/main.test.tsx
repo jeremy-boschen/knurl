@@ -8,6 +8,10 @@ vi.mock("@/bindings/knurl", () => ({ deleteFile: deleteFileMock }))
 const closeHandlers: Array<() => Promise<void> | void> = []
 const moveHandlers: Array<() => Promise<void> | void> = []
 const resizeHandlers: Array<() => Promise<void> | void> = []
+const isMinimizedMock = vi.fn().mockResolvedValue(false)
+const isMaximizedMock = vi.fn().mockResolvedValue(false)
+const positionMock = vi.fn().mockResolvedValue({ x: 10, y: 20 })
+const sizeMock = vi.fn().mockResolvedValue({ width: 1234, height: 900 })
 vi.mock("@tauri-apps/api/window", () => ({
   getCurrentWindow: () => ({
     onCloseRequested: (handler: () => Promise<void> | void) => {
@@ -22,10 +26,10 @@ vi.mock("@tauri-apps/api/window", () => ({
       resizeHandlers.push(handler)
       return Promise.resolve(() => {})
     },
-    isMinimized: vi.fn().mockResolvedValue(false),
-    isMaximized: vi.fn().mockResolvedValue(false),
-    outerPosition: vi.fn().mockResolvedValue({ x: 10, y: 20 }),
-    outerSize: vi.fn().mockResolvedValue({ width: 1234, height: 900 }),
+    isMinimized: isMinimizedMock,
+    isMaximized: isMaximizedMock,
+    outerPosition: positionMock,
+    outerSize: sizeMock,
   }),
 }))
 
@@ -41,7 +45,7 @@ vi.mock("@/hooks/use-interval", () => ({
 const saveAllMock = vi.fn().mockResolvedValue(undefined)
 const getStateMock = vi.fn()
 const appState = {
-  settingsState: { requests: { autoSave: 30 } },
+  settingsState: { requests: { autoSave: 30 }, windows: {} },
 }
 const setWindowStateMock = vi.fn()
 
@@ -103,6 +107,10 @@ beforeEach(() => {
   deleteFileMock.mockReset()
   saveAllMock.mockClear()
   setWindowStateMock.mockClear()
+  isMinimizedMock.mockResolvedValue(false)
+  isMaximizedMock.mockResolvedValue(false)
+  positionMock.mockResolvedValue({ x: 10, y: 20 })
+  sizeMock.mockResolvedValue({ width: 1234, height: 900 })
   getStateMock.mockReturnValue({
     requestTabsState: {
       openTabs: {
@@ -157,5 +165,26 @@ describe("MainWindow", () => {
     await resizeHandlers[0]?.()
 
     expect(setWindowStateMock).toHaveBeenCalledTimes(3)
+  })
+
+  it("retains last restored geometry when maximized", async () => {
+    appState.settingsState.windows = {
+      main: { x: 50, y: 60, width: 800, height: 600, isMaximized: false },
+    }
+    isMaximizedMock.mockResolvedValue(true)
+    sizeMock.mockResolvedValue({ width: 1920, height: 1080 })
+    positionMock.mockResolvedValue({ x: 0, y: 0 })
+
+    render(<MainWindow />)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(setWindowStateMock).toHaveBeenCalledWith("main", {
+      x: 50,
+      y: 60,
+      width: 800,
+      height: 600,
+      isMaximized: true,
+    })
   })
 })
