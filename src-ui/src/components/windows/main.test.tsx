@@ -1,5 +1,5 @@
 import React from "react"
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import { beforeAll, beforeEach, afterAll, describe, expect, it, vi } from "vitest"
 
 const deleteFileMock = vi.fn()
@@ -80,22 +80,12 @@ vi.mock("@/components/ui/sonner", () => ({
 }))
 
 let MainWindow: typeof import("./main").MainWindow
-let setTimeoutSpy: ReturnType<typeof vi.spyOn>
 
 beforeAll(async () => {
-  vi.useFakeTimers()
-  setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation((fn: TimerHandler) => {
-    if (typeof fn === "function") {
-      fn()
-    }
-    return 0 as unknown as number
-  })
   ;({ MainWindow } = await import("./main"))
 })
 
 afterAll(() => {
-  setTimeoutSpy.mockRestore()
-  vi.useRealTimers()
 })
 
 beforeEach(() => {
@@ -112,6 +102,7 @@ beforeEach(() => {
   positionMock.mockResolvedValue({ x: 10, y: 20 })
   sizeMock.mockResolvedValue({ width: 1234, height: 900 })
   getStateMock.mockReturnValue({
+    settingsState: appState.settingsState,
     requestTabsState: {
       openTabs: {
         "tab-1": {
@@ -149,8 +140,7 @@ describe("MainWindow", () => {
   it("records window geometry on move/resize events", async () => {
     render(<MainWindow />)
 
-    await Promise.resolve()
-    await Promise.resolve()
+    await waitFor(() => expect(setWindowStateMock).toHaveBeenCalledTimes(1))
 
     // Initial sync + handlers
     expect(setWindowStateMock).toHaveBeenCalledWith("main", {
@@ -164,7 +154,7 @@ describe("MainWindow", () => {
     await moveHandlers[0]?.()
     await resizeHandlers[0]?.()
 
-    expect(setWindowStateMock).toHaveBeenCalledTimes(3)
+    await waitFor(() => expect(setWindowStateMock).toHaveBeenCalledTimes(3))
   })
 
   it("retains last restored geometry when maximized", async () => {
@@ -176,8 +166,7 @@ describe("MainWindow", () => {
     positionMock.mockResolvedValue({ x: 0, y: 0 })
 
     render(<MainWindow />)
-    await Promise.resolve()
-    await Promise.resolve()
+    await waitFor(() => expect(setWindowStateMock).toHaveBeenCalledTimes(1))
 
     expect(setWindowStateMock).toHaveBeenCalledWith("main", {
       x: 50,
