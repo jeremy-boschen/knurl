@@ -1426,6 +1426,11 @@ fn preferred_engine() -> Box<dyn HttpEngine> {
     Box::new(HyperEngine::new())
 }
 
+/// Normalize an optional string field: convert empty strings to None
+fn normalize_url_field(field: &Option<String>) -> Option<String> {
+    field.as_ref().filter(|s| !s.is_empty()).cloned()
+}
+
 async fn resolve_oauth_endpoints(
     app: &AppHandle,
     auth_url: &Option<String>,
@@ -1433,13 +1438,18 @@ async fn resolve_oauth_endpoints(
     device_authorization_url: &Option<String>,
     discovery_url: &Option<String>,
 ) -> Result<ResolvedOauthEndpoints, AppError> {
-    if let Some(discovery) = discovery_url {
+    // Normalize all URL fields: empty strings become None
+    let auth_url = normalize_url_field(auth_url);
+    let token_url = normalize_url_field(token_url);
+    let device_authorization_url = normalize_url_field(device_authorization_url);
+    let discovery_url = normalize_url_field(discovery_url);
+
+    // Only attempt discovery if a non-empty discovery_url is provided
+    if let Some(discovery) = &discovery_url {
         let discovery_result = discover_oidc(app.clone(), discovery.clone()).await?;
-        let authorization = auth_url.clone().or(discovery_result.authorization_endpoint);
-        let token = token_url.clone().or(discovery_result.token_endpoint);
-        let device = device_authorization_url
-            .clone()
-            .or(discovery_result.device_authorization_endpoint);
+        let authorization = auth_url.or(discovery_result.authorization_endpoint);
+        let token = token_url.or(discovery_result.token_endpoint);
+        let device = device_authorization_url.or(discovery_result.device_authorization_endpoint);
         Ok(ResolvedOauthEndpoints {
             authorization,
             token,
@@ -1447,9 +1457,9 @@ async fn resolve_oauth_endpoints(
         })
     } else {
         Ok(ResolvedOauthEndpoints {
-            authorization: auth_url.clone(),
-            token: token_url.clone(),
-            device: device_authorization_url.clone(),
+            authorization: auth_url,
+            token: token_url,
+            device: device_authorization_url,
         })
     }
 }
