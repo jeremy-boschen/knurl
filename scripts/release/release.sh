@@ -318,6 +318,8 @@ echo ""
 
 cd "$MAIN_DIR"
 
+yarn install --immutable
+
 echo "Creating git tag: $VERSION"
 if git rev-parse "$VERSION" &>/dev/null; then
   LOCAL_TAG_SHA="$(git rev-list -n 1 "$VERSION")"

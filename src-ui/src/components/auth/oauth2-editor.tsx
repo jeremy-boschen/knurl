@@ -141,9 +141,7 @@ export const OAuth2Editor: FC<OAuth2EditorProps> = ({ auth, onUpdate, onDiscover
         )}
       </Field>
 
-      {(grantType === "client_credentials" ||
-        grantType === "authorization_code" ||
-        grantType === "device_code") && (
+      {(grantType === "client_credentials" || grantType === "authorization_code" || grantType === "device_code") && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Field label="Client ID">
             {(id) => (
@@ -174,9 +172,7 @@ export const OAuth2Editor: FC<OAuth2EditorProps> = ({ auth, onUpdate, onDiscover
         </div>
       )}
 
-      {(grantType === "client_credentials" ||
-        grantType === "authorization_code" ||
-        grantType === "device_code") && (
+      {(grantType === "client_credentials" || grantType === "authorization_code" || grantType === "device_code") && (
         <Field label="Scope">
           {(id) => (
             <Input
