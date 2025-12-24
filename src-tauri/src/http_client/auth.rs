@@ -638,8 +638,10 @@ pub async fn get_authentication_result(
                 "Starting authentication (basic)",
                 None,
             );
-            let username = username.unwrap_or_default();
-            let password = password.unwrap_or_default();
+            // Normalize empty strings to actual empty strings (which is correct for auth)
+            // but for consistency, treat missing as empty
+            let username = normalize_optional_string(&username).unwrap_or_default();
+            let password = normalize_optional_string(&password).unwrap_or_default();
             let encoded = general_purpose::STANDARD.encode(format!("{username}:{password}"));
             let mut headers = HashMap::new();
             headers.insert("Authorization".to_string(), format!("Basic {encoded}"));
@@ -678,18 +680,23 @@ pub async fn get_authentication_result(
                 "Starting authentication (bearer)",
                 None,
             );
-            let token = token.unwrap_or_default();
+            let token = normalize_optional_string(&token).unwrap_or_default();
             // Default to header placement if not specified
-            let placement = placement.unwrap_or(AuthPlacement {
+            let mut placement = placement.unwrap_or(AuthPlacement {
                 r#type: "header".to_string(),
                 name: Some("Authorization".to_string()),
                 field_name: None,
                 content_type: None,
             });
+            // Normalize placement fields: empty strings become None
+            placement.name = normalize_optional_string(&placement.name);
+            placement.field_name = normalize_optional_string(&placement.field_name);
+            placement.content_type = normalize_optional_string(&placement.content_type);
+
             match placement.r#type.as_str() {
                 "header" => {
                     let mut headers = HashMap::new();
-                    let mut scheme = scheme.unwrap_or_else(|| "Bearer".to_string());
+                    let mut scheme = normalize_optional_string(&scheme).unwrap_or_else(|| "Bearer".to_string());
                     if scheme.trim().is_empty() {
                         scheme = "Bearer".to_string();
                     }
@@ -814,14 +821,19 @@ pub async fn get_authentication_result(
                 "Starting authentication (apiKey)",
                 None,
             );
-            let value = value.unwrap_or_default();
+            let value = normalize_optional_string(&value).unwrap_or_default();
             // Default to header placement if not specified
-            let placement = placement.unwrap_or(AuthPlacement {
+            let mut placement = placement.unwrap_or(AuthPlacement {
                 r#type: "header".to_string(),
                 name: Some("X-API-Key".to_string()),
                 field_name: None,
                 content_type: None,
             });
+            // Normalize placement fields: empty strings become None
+            placement.name = normalize_optional_string(&placement.name);
+            placement.field_name = normalize_optional_string(&placement.field_name);
+            placement.content_type = normalize_optional_string(&placement.content_type);
+
             match placement.r#type.as_str() {
                 "header" => {
                     let mut headers = HashMap::new();
@@ -947,6 +959,13 @@ pub async fn get_authentication_result(
             token_extra_params,
             discovery_url,
         } => {
+            // Normalize optional string fields: empty strings become None
+            let client_id = normalize_optional_string(&client_id);
+            let client_secret = normalize_optional_string(&client_secret);
+            let scope = normalize_optional_string(&scope);
+            let refresh_token = normalize_optional_string(&refresh_token);
+            let redirect_uri = normalize_optional_string(&redirect_uri);
+
             if is_stub_oauth_enabled() {
                 let req_id = parent_request_id
                     .clone()
@@ -1427,7 +1446,7 @@ fn preferred_engine() -> Box<dyn HttpEngine> {
 }
 
 /// Normalize an optional string field: convert empty strings to None
-fn normalize_url_field(field: &Option<String>) -> Option<String> {
+fn normalize_optional_string(field: &Option<String>) -> Option<String> {
     field.as_ref().filter(|s| !s.is_empty()).cloned()
 }
 
@@ -1439,10 +1458,10 @@ async fn resolve_oauth_endpoints(
     discovery_url: &Option<String>,
 ) -> Result<ResolvedOauthEndpoints, AppError> {
     // Normalize all URL fields: empty strings become None
-    let auth_url = normalize_url_field(auth_url);
-    let token_url = normalize_url_field(token_url);
-    let device_authorization_url = normalize_url_field(device_authorization_url);
-    let discovery_url = normalize_url_field(discovery_url);
+    let auth_url = normalize_optional_string(auth_url);
+    let token_url = normalize_optional_string(token_url);
+    let device_authorization_url = normalize_optional_string(device_authorization_url);
+    let discovery_url = normalize_optional_string(discovery_url);
 
     // Only attempt discovery if a non-empty discovery_url is provided
     if let Some(discovery) = &discovery_url {
