@@ -2,7 +2,7 @@
   "name": "knurl",
   "description": "Desktop HTTP client.",
   "private": true,
-  "version": "0.1.18",
+  "version": "0.1.19",
   "type": "module",
   "scripts": {
     "dev": "vite --port 1420",
